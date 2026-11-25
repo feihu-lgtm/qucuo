@@ -103,6 +103,50 @@ export function branchVisibleServer(chunk, lineage, currentTurn) {
   return true;
 }
 
+// ── WO-20B1 谱系/地点条件下推 FTS SQL ─────────────────────────────────────
+// 与 branchVisibleServer 严格同口径（改口径必须双侧同步）：
+//   head upTo=null → turn<=currentTurn（currentTurn 不有限则整支可见）；
+//   非头 turn<upTo 恒可见；turn=upTo 时 upToSeq 有限则要求 seq IS NULL（老数据兼容）
+//   或 seq<=upToSeq，upToSeq 不有限则可见；无 branchId/谱系外分支恒不可见——
+//   SQL 里不存在任何分支条件即 1=0，天然排除 NULL branch_id。
+// 同分支重复条目按 JS find 语义只认第一条。
+export function buildLineageSql(lineage, currentTurn, col = "c") {
+  const parts = [];
+  const params = [];
+  const seen = new Set();
+  for (const e of Array.isArray(lineage) ? lineage : []) {
+    if (!e || typeof e.b !== "string" || !e.b || seen.has(e.b)) continue;
+    seen.add(e.b);
+    if (e.upTo === null) {
+      if (Number.isFinite(currentTurn)) {
+        parts.push(`(${col}.branch_id = ? AND ${col}.turn <= ?)`);
+        params.push(e.b, currentTurn);
+      } else {
+        parts.push(`(${col}.branch_id = ?)`);
+        params.push(e.b);
+      }
+    } else {
+      // 数字字符串容错（复审）：JS branchVisibleServer 的 turn<branch.upTo 比较会
+      // 隐式 coercion 把 "6" 当 6 用——SQL 若按 Number.isFinite 严格判定会把整支
+      // 丢弃，向量召回仍进、关键词召回消失，两路口径裂开。此处对齐 coercion 语义。
+      const upToNum = Number.isFinite(e.upTo) ? e.upTo
+        : (typeof e.upTo === "string" && e.upTo.trim() !== "" && Number.isFinite(Number(e.upTo)) ? Number(e.upTo) : null);
+      const upToSeqNum = Number.isFinite(e.upToSeq) ? e.upToSeq
+        : (typeof e.upToSeq === "string" && e.upToSeq.trim() !== "" && Number.isFinite(Number(e.upToSeq)) ? Number(e.upToSeq) : null);
+      if (upToNum === null) continue; // 既非数字也非数字字符串也非 null——畸形条目不认
+      if (upToSeqNum !== null) {
+        parts.push(`(${col}.branch_id = ? AND (${col}.turn < ? OR (${col}.turn = ? AND (${col}.seq IS NULL OR ${col}.seq <= ?))))`);
+        params.push(e.b, upToNum, upToNum, upToSeqNum);
+      } else {
+        parts.push(`(${col}.branch_id = ? AND ${col}.turn <= ?)`);
+        params.push(e.b, upToNum);
+      }
+    }
+  }
+  if (!parts.length) return { clause: "1 = 0", params: [] };
+  return { clause: `(${parts.join(" OR ")})`, params };
+}
+
 function parseSeqFromChunkId(chunkId) {
   const parts = String(chunkId || "").split("_");
   const last = Number(parts[parts.length - 1]);
@@ -332,10 +376,37 @@ export function createHubStore(dbOrPath = ":memory:") {
 
     const visibleById = new Map(visibleRows.map((r) => [r.id, r]));
     const ftsQuery = buildFtsQuery(query);
-    const ftsRows = ftsQuery
-      ? stmtFtsSearch.all(ftsQuery, spaceId, maxTurnVal, maxTurnVal, Math.max(topK * 4, 20))
-          .filter((r) => visibleById.has(r.id))
-      : [];
+    // WO-20B1：谱系/地点条件下推进 SQL——候选 cap 不再先于谱系截取，
+    // 别分支/旧未来高评分副本挤占 topK 候选的问题在服务端消除。
+    // viewer 的 witnesses JSON 仍 JS 过滤（数组嵌套不宜下推），故 cap 后
+    // visibleById 过滤保留——它现在只挡 witnesses，不再挡谱系。
+    let ftsRows = [];
+    if (ftsQuery) {
+      const where = ["prose_fts MATCH ?", "c.space_id = ?"];
+      const params = [ftsQuery, spaceId];
+      if (useLineage) {
+        const lin = buildLineageSql(lineage, Number.isFinite(currentTurn) ? currentTurn : null);
+        where.push(lin.clause);
+        params.push(...lin.params);
+      } else {
+        where.push("(? IS NULL OR c.turn <= ?)");
+        params.push(maxTurnVal, maxTurnVal);
+      }
+      if (location) {
+        where.push("c.location = ?");
+        params.push(location);
+      }
+      const sql = `
+        SELECT c.id, bm25(prose_fts) AS bm25_score
+        FROM prose_fts
+        JOIN prose_chunks c ON c.id = prose_fts.rowid
+        WHERE ${where.join("\n          AND ")}
+        ORDER BY bm25_score ASC, c.turn DESC, c.id DESC
+        LIMIT ?
+      `;
+      ftsRows = db.prepare(sql).all(...params, Math.max(topK * 4, 20))
+        .filter((r) => visibleById.has(r.id));
+    }
 
     const qVec = queryEmbedding
       ? (queryEmbedding instanceof Float32Array ? queryEmbedding : Float32Array.from(queryEmbedding))

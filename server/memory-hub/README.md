@@ -94,12 +94,14 @@ canonical，绝不携带 embedding 字段。**明文口径（有意）**：prose
 威胁模型与存档相反，存档密文 at-rest、prose 明文对 hub 运营方可见，witnesses 元数据供可见性过滤；
 prose 路径绝不触碰存档密钥/密文。嵌入向量管线仍不做（后续工单）。
 
-## ⚠ known limitation（WO-19/20 PR-B 裁决接受）
+## ✅ WO-20B1：谱系/地点过滤已下推 SQL（原 known limitation 消除）
 
-FTS 候选 cap（`Math.max(topK*4, 20)`）在谱系/可见性过滤**之前**截取（hubCore queryProseChunks）——
-重度分叉/重迁移时别分支副本可能挤占候选名额，致当前分支命中减少甚至为零。这是谱系模型的内在代价
-（分叉本就要求每分支各存一份）。客户端云查询接入 recall 链路前，**必须另立服务端小单**把
-lineage/visibility 过滤下推进 SQL 或调整候选池策略。PR-B 阶段接受此限制：云查询尚未接入玩家可见链路。
+FTS 候选的谱系（branch_id/turn/seq 边界）与 location 条件已下推进 `queryProseChunks` 的动态 SQL——
+候选 cap（`Math.max(topK*4, 20)`）不再先于谱系截取，别分支/旧未来高评分副本挤占 topK 候选的问题
+在服务端消除。`buildLineageSql` 与 `branchVisibleServer` 严格同口径（head upTo=null 按 currentTurn、
+非头 turn<upTo 恒可见、turn=upTo 按 upToSeq/seq IS NULL 兼容、无 branchId 不可见；同分支重复条目
+按 JS find 语义只认第一条）。viewer 的 witnesses JSON 数组嵌套仍留 JS 层过滤（形状不变），cap 后的
+visibleById 过滤只挡 witnesses。API body/response 形状不变，客户端零改动。
 
 ## ⚠ pre-release schema 不兼容声明
 
