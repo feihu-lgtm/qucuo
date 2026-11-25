@@ -84,7 +84,22 @@ force 仍只能玩家显式「本地覆盖云端」触发。
 加密：payloadEnc 是 WebCrypto AES-GCM 密文串 `v1.<ivB64>.<ctB64>`，密钥首用生成存 localStorage
 （不离开客户端）；**换设备密钥恢复未做**——换机后无法解密云端快照，恢复链路随后续工单。
 绑定三件套（cloudUrl/spaceId/hubToken）缺一即 unbound 优雅降级，队列不推不丢。
-原文段落上行/查询与嵌入向量管线仍未做（PR-B 后续）。
+原文段落上行/查询已落地（WO-19/20 PR-B）：`src/infra/proseUplink.js` 复用 cloud 队列模式——
+本地 IndexedDB 段落库写成功后 enqueue，批量 POST `/api/spaces/<spaceId>/prose`；队列内按 chunkId 去重，
+幂等由服务端 `UNIQUE(space_id, chunk_id)` + INSERT OR IGNORE 兜底；断网/5xx/环境类 4xx（401/403/404/409/429）
+退避重发，确定形状坏 400/422 移 dead-letter 队列（cap 200 可打捞），413 超限批次动态减半、单段超限进 dead-letter；
+unbound 队列保留静默等待。云端 chunkId 是上行身份不保证等于本地 IndexedDB id——legacy 迁移段（id 无分支前缀）
+按 `${branchId}::${id}` 命名空间化，防重读再迁移时新旧分支互吞；查询消费方按 branchId/turn/seq/原文对照。查询客户端 `hubQueryProse` 走纯 FTS 路径：lineage+currentTurn 谱系参数直通
+canonical，绝不携带 embedding 字段。**明文口径（有意）**：prose 段服务端要建 FTS 索引必须明文上送——
+威胁模型与存档相反，存档密文 at-rest、prose 明文对 hub 运营方可见，witnesses 元数据供可见性过滤；
+prose 路径绝不触碰存档密钥/密文。嵌入向量管线仍不做（后续工单）。
+
+## ⚠ known limitation（WO-19/20 PR-B 裁决接受）
+
+FTS 候选 cap（`Math.max(topK*4, 20)`）在谱系/可见性过滤**之前**截取（hubCore queryProseChunks）——
+重度分叉/重迁移时别分支副本可能挤占候选名额，致当前分支命中减少甚至为零。这是谱系模型的内在代价
+（分叉本就要求每分支各存一份）。客户端云查询接入 recall 链路前，**必须另立服务端小单**把
+lineage/visibility 过滤下推进 SQL 或调整候选池策略。PR-B 阶段接受此限制：云查询尚未接入玩家可见链路。
 
 ## ⚠ pre-release schema 不兼容声明
 

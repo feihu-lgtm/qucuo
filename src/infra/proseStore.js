@@ -9,6 +9,7 @@
 //     entities, publicText, rawText, importance, anchorFactIds }
 
 import { memoryStoreOf } from "./memoryDb.js";
+import { enqueueProseUplink } from "./proseUplink.js";
 
 const STORE = "prose_chunks";
 
@@ -44,7 +45,11 @@ export async function addProseChunks(chunks) {
     req.onsuccess = () => resolve(chunk);
     req.onerror = () => reject(req.error);
   }));
-  return Promise.all(writes);
+  const written = await Promise.all(writes);
+  // WO-19/20 PR-B：本地落库成功后 enqueue 云端上行——fire-and-forget，
+  // unbound/断网都只在队列里等，绝不阻断本地写。迁移批量导入同路受益。
+  try { enqueueProseUplink(written); } catch { /* 上行层异常静默 */ }
+  return written;
 }
 
 export async function getProseChunksByTurn(turn) {
