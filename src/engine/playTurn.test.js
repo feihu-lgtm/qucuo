@@ -2,12 +2,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PHASE, turnMonitor } from "../infra/turnMonitor.js";
 import { gameActions, gameStore, subscribeGameReplaced } from "../store/gameStore.js";
 import { commitRound } from "./act/commitRound.js";
+import { runShadowJudge } from "./act/shadow/shadowJudge.js";
 import { runTurn } from "./runTurn.js";
 import { playTurn } from "./playTurn.js";
 import { createMockAi } from "./ports/ai.js";
 
 vi.mock("./act/commitRound.js", () => ({ commitRound: vi.fn() }));
 vi.mock("./runTurn.js", () => ({ runTurn: vi.fn() }));
+vi.mock("./act/shadow/shadowJudge.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  return { ...actual, runShadowJudge: vi.fn(() => Promise.resolve(null)) };
+});
 
 function makeContext(overrides = {}) {
   return {
@@ -88,4 +93,60 @@ describe("playTurn background bookkeep", () => {
     expect(bookkeep).toHaveBeenCalledTimes(1);
   });
 
+});
+
+describe("WO-16D 影子对账接线", () => {
+  beforeEach(() => {
+    runTurn.mockReset();
+    commitRound.mockReset();
+    commitRound.mockReturnValue({});
+    runShadowJudge.mockClear();
+  });
+
+  const shadowCtx = () => makeContext({
+    apiCfg: { bookkeepEnabled: true, extractionEnabled: false, shadowJudgeEnabled: true },
+  });
+
+  it("commit 成功后 fire-and-forget 影子（单调用+开开关）", async () => {
+    runTurn.mockResolvedValue({ narrativeText: "test" });
+    const result = await playTurn(shadowCtx(), "test");
+    expect(result.ok).toBe(true);
+    expect(runShadowJudge).toHaveBeenCalledTimes(1);
+    expect(runShadowJudge.mock.calls[0][0]).toMatchObject({ cmd: "test" });
+  });
+
+  it("commit 抛错不跑影子", async () => {
+    runTurn.mockResolvedValue({ narrativeText: "test" });
+    commitRound.mockImplementation(() => { throw new Error("commit boom"); });
+    const result = await playTurn(shadowCtx(), "test");
+    expect(result.ok).toBe(false);
+    expect(runShadowJudge).not.toHaveBeenCalled();
+  });
+
+  it("双调用模式不跑影子", async () => {
+    runTurn.mockResolvedValue({ narrativeText: "test" });
+    await playTurn(makeContext({
+      apiCfg: { extractionEnabled: true, shadowJudgeEnabled: true },
+    }), "test");
+    expect(runShadowJudge).not.toHaveBeenCalled();
+  });
+
+  it("开关关闭不跑影子", async () => {
+    runTurn.mockResolvedValue({ narrativeText: "test" });
+    await playTurn(makeContext({
+      apiCfg: { extractionEnabled: false, shadowJudgeEnabled: false },
+    }), "test");
+    expect(runShadowJudge).not.toHaveBeenCalled();
+  });
+
+  it("stale 回合不跑影子", async () => {
+    runTurn.mockResolvedValue({ narrativeText: "test" });
+    await playTurn(shadowCtx(), "test", { isStale: undefined });
+    // 用 isStale 恒 true 的 ctx
+    runShadowJudge.mockClear();
+    const ctxStale = { ...shadowCtx(), isStale: () => true };
+    const r = await playTurn(ctxStale, "test2");
+    expect(runShadowJudge).not.toHaveBeenCalled();
+    void r;
+  });
 });

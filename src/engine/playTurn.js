@@ -5,6 +5,7 @@ import { createWebAi } from "./ports/ai.js";
 import { createPhaseSetter } from "./turn/phaseSetter.js";
 import { narrateTurn } from "./turn/narrateTurn.js";
 import { finalizeTurn } from "./turn/finalizeTurn.js";
+import { runShadowJudge, resolveShadowJudgeEnabled } from "./act/shadow/shadowJudge.js";
 
 export const ROLLBACK_KEYS = [
   "room", "char", "dao", "skills", "inv", "exp", "pot", "flags",
@@ -60,9 +61,34 @@ export async function playTurn(ctx, cmd, opts = {}) {
     const turnOpts = { ...opts };
     const narrated = await narrateTurn(turnCtx, trace, cmd, turnOpts);
     if (narrated.stale) return stale();
-    return await finalizeTurn({
+    // WO-16D 影子对账：回合前快照切片在 commit 前捕获（store 值不可变，引用即快照）。
+    const shadowPre = resolveShadowJudgeEnabled(turnCtx.apiCfg) && !turnCtx.apiCfg?.extractionEnabled && snapshot
+      ? {
+        inv: snapshot.state.inv, flags: snapshot.state.flags, varTree: snapshot.state.varTree,
+        room: snapshot.state.room, questProgress: getGameState?.()?.questProgress,
+        char: snapshot.state.char, turn: snapshot.state.time,
+      }
+      : null;
+    const finalized = await finalizeTurn({
       ctx: turnCtx, trace, turn: narrated.turn, turnOpts, opts, setPhase,
     });
+    // commit 成功且未 stale 才 fire-and-forget；影子吃回合前快照、对比 commit 后现状，
+    // 结果只进 trace/内存聚合，异常静默，绝不阻塞回合。
+    if (shadowPre && finalized?.ok && !finalized?.stale && !turnCtx.isStale?.() && !opts.settle && !opts.isSettle) {
+      const liveAfter = getGameState?.() || {};
+      const shadowPost = {
+        inv: liveAfter.inv, flags: liveAfter.flags, varTree: liveAfter.varTree,
+        room: liveAfter.room, turn: liveAfter.time,
+      };
+      void runShadowJudge({
+        cmd, preState: shadowPre, postState: shadowPost,
+        ai: turnCtx.ai, apiCfg: turnCtx.apiCfg,
+        convo: turnCtx.convo || [], isTalk: !!opts.isTalk,
+        isStale: turnCtx.isStale, epochGuard: turnCtx.proseEpochGuard,
+        trace: (layer, status, detail) => turnMonitor.add(trace, layer, status, typeof detail === "string" ? { detail } : detail),
+      }).catch(() => { /* 影子异常静默 */ });
+    }
+    return finalized;
   } catch (error) {
     if (ctx.isStale?.()) return stale(error);
     if (snapshot) withTurnContext(trace, () => restoreSnapshot(snapshot, getGameState, gameActions));
