@@ -340,3 +340,50 @@ describe("WO-16G interim：带前提动作不结算", () => {
     expect(v2.facts.some((f) => f.itemName === "铁钥匙")).toBe(true);
   });
 });
+
+describe("S2 hostile 敌意档：辱骂签负好感+怨，暴烈性情置生气", () => {
+  const HOSTILE_NPCS = [
+    { name: "铁掌柜", personality: "暴烈如火", brief: "客栈掌柜" },
+    { name: "温伙计", personality: "温善和气", brief: "伙计" },
+  ];
+  function hostileEnv() {
+    return { turn: 42, day: 2, place: "天都镇·客栈", npcs: HOSTILE_NPCS, varTree: { 角色: {} }, inv: [], entries: [], budget: { riskLevel: 1 } };
+  }
+  function hostileIntake(target, text) {
+    return { read: "", refIds: [], actions: [{ kind: "talk", target, item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "hostile", outcome: "无", risk: "无", confidence: 0.9, text }], proposals: [] };
+  }
+
+  it("骂掌柜（hostile）：签 -3 负好感，ledgerKind 为怨", () => {
+    const verdict = judgeTurn(hostileEnv(), hostileIntake("铁掌柜", "当众羞辱你这黑心掌柜"), { rng: seqRng([0.5]) });
+    const social = verdict.facts.find((f) => f.op === "MUTATE_SOCIAL");
+    expect(social).toBeTruthy();
+    expect(social.affectionDelta).toBe(-3);
+    expect(social.ledgerKind).toBe("怨");
+  });
+
+  it("暴烈性情 + hostile：同时置生气，缘由为玩家原话前 20 字", () => {
+    const text = "你这黑心无赖掌柜又奸又猾今日非要当众揭穿你的丑恶嘴脸不可";
+    const verdict = judgeTurn(hostileEnv(), hostileIntake("铁掌柜", text), { rng: seqRng([0.5]) });
+    const social = verdict.facts.find((f) => f.op === "MUTATE_SOCIAL");
+    expect(social.anger).toBeTruthy();
+    expect(social.anger.active).toBe(true);
+    expect(social.anger.reason).toBe(text.slice(0, 20));
+  });
+
+  it("温善性情 + hostile：签负好感但不置生气", () => {
+    const verdict = judgeTurn(hostileEnv(), hostileIntake("温伙计", "当众羞辱你这窝囊伙计"), { rng: seqRng([0.5]) });
+    const social = verdict.facts.find((f) => f.op === "MUTATE_SOCIAL");
+    expect(social.affectionDelta).toBe(-3);
+    expect(social.anger).toBeUndefined();
+  });
+
+  it("casual 不回归：仍 +1 恩、无生气", () => {
+    const casual = hostileIntake("铁掌柜", "掌柜的近来可好");
+    casual.actions[0].stance = "casual";
+    const verdict = judgeTurn(hostileEnv(), casual, { rng: seqRng([0.5]) });
+    const social = verdict.facts.find((f) => f.op === "MUTATE_SOCIAL");
+    expect(social.affectionDelta).toBe(1);
+    expect(social.ledgerKind).toBe("恩");
+    expect(social.anger).toBeUndefined();
+  });
+});

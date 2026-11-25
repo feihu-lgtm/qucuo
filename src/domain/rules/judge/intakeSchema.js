@@ -27,7 +27,7 @@ export const INTAKE_JSON_SCHEMA = {
             direction: { type: "string", enum: ["n", "s", "e", "w", "none"] },
             condition: { type: "string", enum: ["无", "遇敌", "到达", "被拒", "其他"], description: "玩家说了「要是/如果/若/万一……就」前提时选类，没有填「无」" },
             condition_text: { type: "string", description: "前提原文照抄；没有前提填空串" },
-            stance: { type: "string", enum: ["sincere", "clever", "forceful", "casual", "perfunctory"] },
+            stance: { type: "string", enum: ["sincere", "clever", "forceful", "casual", "perfunctory", "hostile"] },
             outcome: { type: "string", enum: ["无", "伤损", "得财", "破费", "调息", "修习", "服用", "受寒中毒", "醉酒", "其他"], description: "按常理最可能的后果，不估数值；拿不准选「无」" },
             risk: { type: "string", enum: ["无", "低", "中", "高"], description: "动作本身有多险；闲谈赶路选「无」" },
             confidence: { type: "number", minimum: 0, maximum: 1, description: "0 到 1；十拿九稳才给 0.95 以上" },

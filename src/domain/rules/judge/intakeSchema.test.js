@@ -44,7 +44,7 @@ describe("INTAKE_JSON_SCHEMA（契约 B 冻结形状）", () => {
     const actionProps = INTAKE_JSON_SCHEMA.schema.properties.actions.items.properties;
     expect(actionProps.kind.enum).toEqual(["talk", "move", "inspect_container", "take", "give", "trade", "steal", "duel", "appease", "learn", "invite", "use_item", "equip", "free_act"]);
     expect(actionProps.direction.enum).toEqual(["n", "s", "e", "w", "none"]);
-    expect(actionProps.stance.enum).toEqual(["sincere", "clever", "forceful", "casual", "perfunctory"]);
+    expect(actionProps.stance.enum).toEqual(["sincere", "clever", "forceful", "casual", "perfunctory", "hostile"]);
     expect(INTAKE_JSON_SCHEMA.schema.properties.proposals.items.properties.fit.enum).toEqual(["natural", "stretch", "absurd"]);
     // B1：kind 枚举经派工核准扩展 quest_advance（任务推进提议），并允许可选 questId/flag
     expect(INTAKE_JSON_SCHEMA.schema.properties.proposals.items.properties.kind.enum).toEqual(["find_item", "secret_clue", "social_deal", "environment_use", "quest_advance"]);
