@@ -200,7 +200,9 @@ async function runTurnSteps(ctx, cmd, opts) {
   const talkTargetNow = ctx.talkTarget || deps.talkTarget || ctx.prompt?.talkTarget || "";
   // 门槛 >=2：roadmap 语义是「好几个人同在场」的多人群聊——单人在场未点选仍进
   // 判官 talkOnly（好感/熟人账照常），两名及以上在场才跳过判官走群聊尾章。
-  const isGroupTalk = !!isTalk && !talkTargetNow && visibleNpcsPre.length >= 2;
+  // settle 回合永不算群聊——结算叙事禁带尾章（roadmap「其余结算回合留空」），
+  // 否则送礼/赔罪 narration 会被要求写群聊 SEAL 并误切尾章。
+  const isGroupTalk = !!isTalk && !isSettle && !talkTargetNow && visibleNpcsPre.length >= 2;
   if (isGroupTalk && deps.apiCfg?.extractionEnabled) {
     const playerName0 = (ctx.getGameState?.()?.char || deps.char)?.name || "主角";
     deps.groupTalkRuleBlock = buildGroupTalkRuleBlock(playerName0);

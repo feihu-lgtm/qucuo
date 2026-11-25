@@ -73,4 +73,15 @@ describe("WO-16H-H1 群聊门槛与尾章消费", () => {
     expect(turn.judgePipelineActive).toBe(true);
     expect(turn.groupTalk).toBe(false);
   });
+
+  it("settle 回合即使两人在场无 talkTarget 也不算群聊（结算叙事禁尾章）", async () => {
+    const ai = createMockAi([
+      JSON.stringify({ read: "", refIds: [], actions: [], proposals: [] }),
+      "掌柜接过礼物道了谢",
+    ]);
+    const deps = makeDeps({ talkTarget: "" });
+    deps.ai = ai;
+    const turn = await runTurn(deps, "把青布送给掌柜", { settle: true, settleNpc: "掌柜" });
+    expect(turn.groupTalk).toBe(false);
+  });
 });
