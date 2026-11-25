@@ -254,6 +254,112 @@ describe("时间线谱系过滤（branchVisible 同口径）", () => {
   });
 });
 
+describe("WO-20B1 谱系条件下推 SQL（cap 不再先截取）", () => {
+  const lineage = [
+    { b: "b_old", upTo: 6, upToSeq: 3 },
+    { b: "b_head", upTo: null },
+  ];
+
+  it("别分支高评分副本挤满 cap 时，本分支低评分仍命中", () => {
+    const store = createHubStore(":memory:");
+    // 25 条别分支副本，关键词高频重复评分更高；topK=1 时 cap=max(4,20)=20，
+    // 下推前 20 个候选全被别分支占满，本分支那条永远进不了 visibleById 过滤。
+    const copies = [];
+    for (let i = 0; i < 25; i++) {
+      copies.push({ chunkId: `dup_${i}`, turn: 5, seq: i, branchId: "b_other", witnesses: ["*"], entities: [], rawText: "青铜印青铜印青铜印青铜印青铜印青铜印青铜印青铜印。" });
+    }
+    copies.push({ chunkId: "mine_1", turn: 5, seq: 1, branchId: "b_head", witnesses: ["*"], entities: [], rawText: "角落里静静躺着一枚青铜印。" });
+    store.appendProseChunks("sp", "batch_cap", copies);
+    const res = store.queryProseChunks("sp", {
+      query: "青铜印", viewer: "主角", lineage, currentTurn: 6, topK: 1, neighborRadius: 0,
+    });
+    const ids = res.results.map((r) => r.chunkId);
+    assert.deepEqual(ids, ["mine_1"]); // 本分支唯一可见命中——别分支 25 条全被 SQL 谱系滤掉
+    store.close();
+  });
+
+  it("同 turn upToSeq 边界在 SQL 层生效：seq 边界内可见、超界不可见、无 seq 老数据兼容可见", () => {
+    const store = createHubStore(":memory:");
+    store.appendProseChunks("sp", "batch_seq", [
+      { chunkId: "s_in", turn: 6, seq: 3, branchId: "b_old", witnesses: ["*"], entities: [], rawText: "边界内提到青铜印。" },
+      { chunkId: "s_out", turn: 6, seq: 4, branchId: "b_old", witnesses: ["*"], entities: [], rawText: "越界提到青铜印。" },
+      { chunkId: "s_legacy", turn: 6, branchId: "b_old", witnesses: ["*"], entities: [], rawText: "老数据无seq提到青铜印。" },
+    ]);
+    const res = store.queryProseChunks("sp", {
+      query: "青铜印", viewer: "主角", lineage, currentTurn: 6, topK: 10, neighborRadius: 0,
+    });
+    const ids = res.results.map((r) => r.chunkId);
+    assert.equal(ids.includes("s_in"), true);
+    assert.equal(ids.includes("s_out"), false);
+    assert.equal(ids.includes("s_legacy"), true); // seq IS NULL 兼容
+    store.close();
+  });
+
+  it("无 branchId 在 SQL 层不可见（cap 也救不回来）", () => {
+    const store = createHubStore(":memory:");
+    store.appendProseChunks("sp", "batch_nobid", [
+      { chunkId: "nobid_1", turn: 5, seq: 1, witnesses: ["*"], entities: [], rawText: "青铜印青铜印青铜印青铜印青铜印青铜印青铜印青铜印青铜印。" },
+      { chunkId: "head_1", turn: 5, seq: 1, branchId: "b_head", witnesses: ["*"], entities: [], rawText: "角落一枚青铜印。" },
+    ]);
+    const res = store.queryProseChunks("sp", {
+      query: "青铜印", viewer: "主角", lineage, currentTurn: 6, topK: 5, neighborRadius: 0,
+    });
+    const ids = res.results.map((r) => r.chunkId);
+    assert.deepEqual(ids, ["head_1"]);
+    store.close();
+  });
+
+  it("location+lineage 同 filter：跨地点同分支不可见、同地点别分支不可见", () => {
+    const store = createHubStore(":memory:");
+    store.appendProseChunks("sp", "batch_loc", [
+      { chunkId: "loc_yes", turn: 5, seq: 1, branchId: "b_head", location: "客栈", witnesses: ["*"], entities: [], rawText: "客栈里提到青铜印。" },
+      { chunkId: "loc_no", turn: 5, seq: 1, branchId: "b_head", location: "野外", witnesses: ["*"], entities: [], rawText: "野外提到青铜印青铜印青铜印青铜印。" },
+      { chunkId: "loc_otherbranch", turn: 5, seq: 1, branchId: "b_other", location: "客栈", witnesses: ["*"], entities: [], rawText: "客栈别分支青铜印青铜印青铜印。" },
+    ]);
+    const res = store.queryProseChunks("sp", {
+      query: "青铜印", viewer: "主角", location: "客栈", lineage, currentTurn: 6, topK: 5, neighborRadius: 0,
+    });
+    const ids = res.results.map((r) => r.chunkId);
+    assert.deepEqual(ids, ["loc_yes"]);
+    store.close();
+  });
+
+  it("viewer 不可见仍过滤（witnesses 留 JS 层语义不变）", () => {
+    const store = createHubStore(":memory:");
+    store.appendProseChunks("sp", "batch_viewer", [
+      { chunkId: "secret_1", turn: 5, seq: 1, branchId: "b_head", witnesses: ["老孙"], entities: [], rawText: "老孙私下提到青铜印。" },
+      { chunkId: "open_1", turn: 5, seq: 2, branchId: "b_head", witnesses: ["*"], entities: [], rawText: "众人面前提到青铜印。" },
+    ]);
+    const res = store.queryProseChunks("sp", {
+      query: "青铜印", viewer: "主角", lineage, currentTurn: 6, topK: 5, neighborRadius: 0,
+    });
+    const ids = res.results.map((r) => r.chunkId);
+    assert.deepEqual(ids, ["open_1"]);
+    store.close();
+  });
+
+  it("纯 FTS/向量 RRF/邻段不回归：lineage 下推后 RRF 排序与邻段扩展照常", () => {
+    const store = createHubStore(":memory:");
+    store.appendProseChunks("sp", "batch_rrf", [
+      { chunkId: "r1", turn: 5, seq: 1, branchId: "b_head", witnesses: ["*"], entities: [], rawText: "先一句闲笔。" },
+      { chunkId: "r2", turn: 5, seq: 2, branchId: "b_head", witnesses: ["*"], entities: [], rawText: "青铜印在此出世。", embedding: [1, 0, 0], embeddingModel: "m", embeddingDim: 3 },
+      { chunkId: "r3", turn: 5, seq: 3, branchId: "b_head", witnesses: ["*"], entities: [], rawText: "后一句闲笔。" },
+    ]);
+    const res = store.queryProseChunks("sp", {
+      query: "青铜印", viewer: "主角", lineage, currentTurn: 6, topK: 1, neighborRadius: 1,
+      queryEmbedding: [1, 0, 0], queryEmbeddingModel: "m", queryEmbeddingDim: 3,
+    });
+    assert.equal(res.hits.length, 1);
+    assert.equal(res.hits[0].chunkId, "r2");
+    // results 摊平 hits+邻段：锚点前后 ±1 邻段照常带出
+    const ids = res.results.map((r) => r.chunkId);
+    assert.equal(ids.includes("r1"), true);
+    assert.equal(ids.includes("r2"), true);
+    assert.equal(ids.includes("r3"), true);
+    store.close();
+  });
+});
+
 describe("DELETE 收紧与 force 严格布尔", () => {
   it("非 force 缺/非法 expectedRev → 400 不删；force:'false' 字符串不生效", () => {
     const store = createHubStore(":memory:");
