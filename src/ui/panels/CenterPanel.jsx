@@ -137,8 +137,10 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
       <IntentConfirmBar zoneTheme={zoneTheme} />
       {duelPending && (
         <div style={{ flexShrink: 0, padding: "10px 16px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(196,80,68,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ color: "var(--text)", fontSize: "var(--fs-sm)", flex: 1 }}>是否与「{duelPending.name}」正式切磋？一旦开打，就要见真章了。</span>
-          <span onClick={duelHandlers.confirmDuel} style={{ cursor: "pointer", fontSize: "var(--fs-sm)", padding: "4px 12px", borderRadius: 0, color: "var(--ink-bg-panel)", background: "var(--red-soft)", border: "1px solid var(--red-soft)" }}>确认切磋</span>
+          <span style={{ color: "var(--text)", fontSize: "var(--fs-sm)", flex: 1 }}>{duelPending.lethal
+            ? `是否与「${duelPending.name}」生死相搏？既分高下，也决生死——这一战没有点到为止。`
+            : `是否与「${duelPending.name}」正式切磋？一旦开打，就要见真章了。`}</span>
+          <span onClick={duelHandlers.confirmDuel} style={{ cursor: "pointer", fontSize: "var(--fs-sm)", padding: "4px 12px", borderRadius: 0, color: "var(--ink-bg-panel)", background: "var(--red-soft)", border: "1px solid var(--red-soft)" }}>{duelPending.lethal ? "决生死" : "确认切磋"}</span>
           <span onClick={duelHandlers.cancelDuel} style={{ cursor: "pointer", fontSize: "var(--fs-sm)", padding: "4px 12px", borderRadius: 0, color: "var(--text-dim)", border: "1px solid var(--ink-edge-quest)" }}>算了</span>
         </div>
       )}
