@@ -153,6 +153,57 @@ async function normalizeSaveResponse(res) {
   };
 }
 
+
+// ── WO-19/20 PR-B prose 原文上行/查询（canonical /prose 映射）────────────────
+// 明文口径（与存档密文相反，有意为之）：服务端 FTS 索引建立在 raw_text/public_text
+// 上，prose 段必须明文上送否则检索归零——威胁模型差异已在 docs 写明：
+// 存档密文 at-rest，prose 明文对 hub 运营方可见，witnesses 元数据供可见性过滤。
+// 绝不在 prose 路径触碰存档密钥/密文；embedding 向量管线本 PR 不做。
+
+// POST /api/spaces/<space>/prose：body {batchId, chunks}
+// chunks 元素 canonical 形状：{chunkId, turn, location, witnesses, entities,
+//   rawText, publicText, seq, branchId}——importance/anchorFactIds 服务端无列不落。
+// 幂等靠服务端 UNIQUE(space_id, chunk_id) + INSERT OR IGNORE：同 chunkId 重推不重复。
+export async function hubAppendProse(binding, batchId, chunks) {
+  const res = await doFetch(`${binding.host}/api/spaces/${encodeURIComponent(binding.spaceId)}/prose`, {
+    method: "POST",
+    headers: hubHeaders(binding, true),
+    body: JSON.stringify({ batchId, chunks }),
+  });
+  return normalizeProseResponse(res);
+}
+
+// POST /api/spaces/<space>/prose/query：纯 FTS 路径——绝不携带 queryEmbedding/
+// queryEmbeddingModel/queryEmbeddingDim（嵌入管线未做，形状都不许出现）。
+// 谱系过滤参数直通 canonical：lineage=[{b,upTo,upToSeq}] + currentTurn；
+// 未传 lineage 时才退 maxTurn 宽松口径（服务端同口径）。
+export async function hubQueryProse(binding, { query = "", viewer = "", location = "", lineage = null, currentTurn = null, maxTurn = null, topK = 5 } = {}) {
+  const res = await doFetch(`${binding.host}/api/spaces/${encodeURIComponent(binding.spaceId)}/prose/query`, {
+    method: "POST",
+    headers: hubHeaders(binding, true),
+    body: JSON.stringify({
+      query,
+      viewer,
+      ...(location ? { location } : {}),
+      ...(Array.isArray(lineage) && lineage.length ? { lineage, ...(Number.isFinite(currentTurn) ? { currentTurn } : {}) } : (Number.isFinite(maxTurn) ? { maxTurn } : {})),
+      topK,
+    }),
+  });
+  return normalizeProseResponse(res);
+}
+
+async function normalizeProseResponse(res) {
+  let body = null;
+  try { body = typeof res.json === "function" ? await res.json() : null; } catch { /* 无 body */ }
+  return {
+    ok: !!res.ok,
+    status: res.status,
+    inserted: Number.isInteger(body?.inserted) ? body.inserted : null,
+    hits: Array.isArray(body?.hits) ? body.hits : (Array.isArray(body?.results) ? body.results : []),
+    raw: body,
+  };
+}
+
 // 测试复位
 export function _resetCloudProtocolForTest() {
   _keyPromise = null;
