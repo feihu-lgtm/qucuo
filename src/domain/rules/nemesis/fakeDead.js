@@ -42,6 +42,6 @@ export function markNemesisStatus(roster, faction, name, status) {
 // returnAfterDay 按「日」（turn/24 整数）比较，含当日。
 export function dueReturns(book, currentDay = 0) {
   return Object.entries(book || {})
-    .filter(([, v]) => v?.fakeDead && Number.isFinite(v.returnAfterDay) && v.returnAfterDay <= currentDay)
+    .filter(([, v]) => v?.fakeDead && v?.returnedAt === undefined && Number.isFinite(v.returnAfterDay) && v.returnAfterDay <= currentDay)
     .map(([name, v]) => ({ name, ...v }));
 }

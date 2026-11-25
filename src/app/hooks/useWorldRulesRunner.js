@@ -11,6 +11,7 @@ import { npcLetterRule } from "../../features/pigeon/inbound.js";
 import { pactWatchRule } from "../../features/pigeon/pactWatch.js";
 import { nemesisDailyRule } from "../../domain/rules/nemesis/nemesisDaily.js";
 import { huntedNoticeRule } from "../../domain/rules/nemesis/huntedOrders.js";
+import { fakeDeadReturnRule } from "../../domain/rules/nemesis/fakeDeadReturn.js";
 import {
   alreadySatisfiedCollectRule,
   collectGroundItemsRule,
@@ -71,6 +72,7 @@ export function useWorldRulesRunner({
         pactWatchRule,
         nemesisDailyRule,
         huntedNoticeRule,
+        fakeDeadReturnRule,
         collectGroundItemsRule,
         innerGroundItemsRule,
         derivedMovesetRule,
