@@ -490,12 +490,71 @@ export function materializeFacts(state, facts, compiledWarrants) {
             .filter((k) => k !== "settled" && !(state.varTree?.世界?.契约?.[fact.npc]?.[k]?.settled));
           const keys = fact.settleKey ? [fact.settleKey] : fact.pactId ? [fact.pactId] : (existing.length ? existing : [pactKey]);
           for (const key of keys) {
+            // WO-22B-P3 履约物化闸：违约（breachTurn）后不可再履约——整条 settle
+            // 拒落（标记也不打）；已 settled 的幂等跳过不重发奖励。
+            const pactRec = state.varTree?.世界?.契约?.[fact.npc]?.[key];
+            if (pactRec?.breachTurn != null) {
+              logs.push({ t: "sys", text: `  ${fact.npc}的约已违约在先，履约拒落` });
+              continue;
+            }
+            if (pactRec?.settled) {
+              logs.push({ t: "sys", text: `  ${fact.npc}的约已了结，重复履约幂等跳过` });
+              continue;
+            }
             patches.push({
               op: "merge",
               path: ["varTree", "世界", "契约", fact.npc, key, "settled"],
               value: { turn, note: fact.note || "" },
               factId: fact.id,
             });
+            // WO-22B-P3 履约奖励机械物化（系统发，非 AI 直写）：
+            // ① 酬谢银两——rewardHint 明文「N 两」才发，写不出数额的不发不编；
+            // ② 酬谢实物——rewardHint 含对方身上实物名（≥2 字）才转交，查无此物不发；
+            // ③ 威望 +5（起步数额手册未定，clamp -100~100 与 breach 扣减同通道）；
+            // ④ 恩账一笔「践行之约」。无 rewardHint 的空约只结账+威望+恩账。
+            if (pactRec && typeof pactRec === "object") {
+              const hint = String(pactRec.rewardHint || "");
+              const silverMatch = hint.match(/(\d+)\s*两/);
+              if (silverMatch && char) {
+                const amt = parseInt(silverMatch[1], 10);
+                if (amt > 0) {
+                  const nextMoney = (char.money ?? 0) + amt;
+                  logs.push({ t: "stat", text: `  履约酬谢：银两 ${char.money ?? 0}→${nextMoney}` });
+                  char.money = nextMoney;
+                  charDirty = true;
+                }
+              }
+              const npcObj2 = (state.room?.npcs || []).find((n) => n?.name === fact.npc);
+              const carried = Array.isArray(npcObj2?.carriedItems) ? npcObj2.carriedItems : [];
+              const rewardItem = carried.find((it) => it && typeof it === "object" && it.name && it.name.length >= 2 && hint.includes(it.name) && !it.dropped);
+              if (rewardItem) {
+                if (!inv.some((e) => e && e.id && e.id === rewardItem.id)) {
+                  inv.push({ ...rewardItem, dropped: undefined, equipped: false });
+                  invDirty = true;
+                }
+                const idx = carried.indexOf(rewardItem);
+                if (idx !== -1) carried[idx] = { ...rewardItem, dropped: true };
+                roomDirty = true;
+                logs.push({ t: "item", text: `  履约酬谢：${fact.npc}把${rewardItem.name}交到你手上` });
+              }
+              patches.push({
+                op: "merge", path: ["varTree", "世界", "威望"],
+                value: (prev) => Math.max(-100, Math.min(100, (Number(prev) || 0) + 5)),
+                factId: fact.id,
+              });
+              const entry = createHeartLedgerEntry({
+                tag: "恩", summary: `践行「${String(pactRec.promise || "").slice(0, 20)}」之约`, turn,
+                place: state.room?.name || "", witnesses: ["主角", fact.npc],
+              });
+              if (entry) {
+                patches.push({
+                  op: "merge", path: ["varTree", "角色", fact.npc, "心账"],
+                  value: (prev) => capHeartLedgerEntries([...(Array.isArray(prev) ? prev : []), dedupeHeartLedgerId(entry, prev)]),
+                  factId: fact.id,
+                });
+              }
+              logs.push({ t: "narrator", text: `  你践行了与${fact.npc}的约定——江湖上说话算数的人，路会越走越宽。` });
+            }
           }
         } else {
           patches.push({
