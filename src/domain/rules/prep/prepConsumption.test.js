@@ -110,6 +110,81 @@ describe("判官消费 prep_item（仍在既有管线钳制内）", () => {
     const v2 = judgeWithPrep([]);
     expect((v2.facts || []).filter((f) => f.op === "GRANT_ITEM")).toHaveLength(0);
   });
+  it("WO-24E：备料物按 budget.maxQuality 二次钳制降档（低档不能出高阶）", () => {
+    // 搜刮额度耗尽→maxQuality 白（computeCausalBudget 口径）——紫阶备料封顶落白
+    const verdict = judgeTurn({
+      turn: 48, day: 3, place: "曲措客栈",
+      npcs: [], varTree: { 世界: {} }, inv: [], entries: [],
+      containers: { 木箱: { collapsed: false, presetItems: [] } }, containerPlace: "曲措客栈",
+      prepItems: [{ id: "p1", containerId: "木箱", name: "紫阶旧剑", quality: "紫", category: "weapon", clue: "x", taken: false }],
+      budget: { maxPointBudget: 0, maxQuality: "白", luck: 0, riskLevel: 0, dailyLootUsed: 99 },
+    }, {
+      read: "", refIds: [],
+      actions: [{ kind: "inspect_container", target: "木箱", itemId: "", direction: "none", stance: "casual", text: "翻木箱" }],
+      proposals: [],
+    }, { rng: () => 0.99 });
+    const grant = (verdict.facts || []).find((f) => f.op === "GRANT_ITEM");
+    expect(grant.quality).toBe("白");
+    expect(grant.itemName).toBe("紫阶旧剑"); // 物还是那件物，品阶被钳
+  });
+  it("WO-24E 初审裁决：两件备料分属两容器不串——翻书桌发不出铁柜草案", () => {
+    const verdict = judgeTurn({
+      turn: 48, day: 3, place: "曲措客栈",
+      npcs: [], varTree: { 世界: {} }, inv: [], entries: [],
+      containers: { 书桌: { collapsed: false, presetItems: [] } }, containerPlace: "曲措客栈",
+      prepItems: [
+        { id: "pa", containerId: "铁柜", name: "铁柜旧药", quality: "白", category: "misc", clue: "", taken: false },
+        { id: "pb", containerId: "木箱", name: "木箱杂物", quality: "白", category: "misc", clue: "", taken: false },
+      ],
+      budget: { maxPointBudget: 0, maxQuality: "白", luck: 0, riskLevel: 0 },
+    }, {
+      read: "", refIds: [],
+      actions: [{ kind: "inspect_container", target: "书桌", itemId: "", direction: "none", stance: "casual", text: "翻书桌" }],
+      proposals: [],
+    }, { rng: () => 0.99 });
+    expect((verdict.facts || []).filter((f) => f.op === "GRANT_ITEM")).toHaveLength(0); // 无匹配容器不发
+    // 翻对容器才发对应那一件
+    const v2 = judgeTurn({
+      turn: 48, day: 3, place: "曲措客栈",
+      npcs: [], varTree: { 世界: {} }, inv: [], entries: [],
+      containers: { 铁柜: { collapsed: false, presetItems: [] } }, containerPlace: "曲措客栈",
+      prepItems: [
+        { id: "pa", containerId: "铁柜", name: "铁柜旧药", quality: "白", category: "misc", clue: "", taken: false },
+        { id: "pb", containerId: "木箱", name: "木箱杂物", quality: "白", category: "misc", clue: "", taken: false },
+      ],
+      budget: { maxPointBudget: 0, maxQuality: "白", luck: 0, riskLevel: 0 },
+    }, {
+      read: "", refIds: [],
+      actions: [{ kind: "inspect_container", target: "铁柜", itemId: "", direction: "none", stance: "casual", text: "翻铁柜" }],
+      proposals: [],
+    }, { rng: () => 0.99 });
+    const grants = (v2.facts || []).filter((f) => f.op === "GRANT_ITEM");
+    expect(grants).toHaveLength(1);
+    expect(grants[0].itemName).toBe("铁柜旧药"); // 只发本容器那件
+  });
+  it("WO-24E：quality/category/clue 透传进 fact——materialize 不落「来历成谜」", () => {
+    const v = judgeWithPrep([{ id: "p2", containerId: "木箱", name: "旧伤药", quality: "白", category: "misc", clue: "箱角露出一线油纸", taken: false }]);
+    const grant = (v.facts || []).find((f) => f.op === "GRANT_ITEM");
+    expect(grant.quality).toBe("白");
+    expect(grant.category).toBe("misc");
+    expect(grant.desc).toBe("箱角露出一线油纸");
+  });
+  it("WO-24E：额度内不降档——maxQuality 紫则绿阶备料原样落绿", () => {
+    const verdict = judgeTurn({
+      turn: 48, day: 3, place: "曲措客栈",
+      npcs: [], varTree: { 世界: {} }, inv: [], entries: [],
+      containers: { 木箱: { collapsed: false, presetItems: [] } }, containerPlace: "曲措客栈",
+      prepItems: [{ id: "p3", containerId: "木箱", name: "绿阶护腕", quality: "绿", category: "armor", clue: "c", taken: false }],
+      budget: { maxPointBudget: 2, maxQuality: "紫", luck: 0, riskLevel: 0 },
+    }, {
+      read: "", refIds: [],
+      actions: [{ kind: "inspect_container", target: "木箱", itemId: "", direction: "none", stance: "casual", text: "翻木箱" }],
+      proposals: [],
+    }, { rng: () => 0.99 });
+    const grant = (verdict.facts || []).find((f) => f.op === "GRANT_ITEM");
+    expect(grant.quality).toBe("绿");
+    expect(grant.category).toBe("armor");
+  });
   it("resolvePrepItemsForJudge 是真实/影子同一入口", () => {
     const state = mkState();
     const seed = mkSeed(state, "prep_item", ITEM_PAYLOAD);
