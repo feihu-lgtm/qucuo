@@ -64,7 +64,9 @@ export function useTurn({
       }
       const result = receiptActionResult(gameStore.getState(), rawCmd);
       if (!result) return;
-      captureUndo();
+      // 仅在有实际状态变更时捕获回滚点：纯日志 no-op（满血拒服、已佩挂/已上阵
+      // 的幂等提示）不该抹掉上一动作的回滚能力。
+      if (result.changes && Object.keys(result.changes).length) captureUndo();
       return applyResult(runtimeCtx(), result, { feature: `receipt.${rawCmd.op}` });
     }
     if (!rawCmd.trim()) return;
