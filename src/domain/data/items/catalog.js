@@ -266,6 +266,8 @@ function isEmptyDict(v) {
 
 export function backfillItemFromCatalog(item) {
   if (!item || typeof item !== "object" || !item.name) return item;
+  // noCatalog 盾：判官条件券新铸的拾取物按 warrant 锁定数值出生，撞图鉴名也不补
+  if (item.noCatalog) return item;
   const entry = CATALOG_INDEX[item.name];
   if (!entry) return item;
   const patch = {};

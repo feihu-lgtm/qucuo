@@ -224,8 +224,13 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       : (lenNote.startsWith("篇幅要求：") ? lenNote : `篇幅要求：${lenNote}`);
 
   // 各分支的 JSON schema / 叙事指令，与旧模板字符串完全一致。
+  // WO-16C 修指令打架：判官激活时叙事末尾必须跟 ---SEAL--- 单行 JSON
+  // （judgeRuleBlock 强制），narrativeOnly 的"禁输出JSON"会把尾章禁掉、
+  // 填空券全作废。判官路只禁 MVU/杂项结构、放行唯一尾章；判官不在时原样。
   const schemaBlock = narrativeOnly
-    ? `直接输出叙事散文正文，写完即止；禁输出JSON、<mvu>块及任何结构化内容。`
+    ? opts.judgeActive
+      ? `直接输出叙事散文正文；写完正文换行输出 ---SEAL--- 紧跟单行 JSON（fills/respondedNpcs/spontaneousPact），此外禁输出JSON、<mvu>块及任何结构化内容。`
+      : `直接输出叙事散文正文，写完即止；禁输出JSON、<mvu>块及任何结构化内容。`
     : isSettle
       ? `回复纯JSON，字符串不换行。状态已结算，只写生动正文，禁改状态或重复结算奖励/物品/银两${opts.snowLeopardGift ? "：" : "，禁输出 room/char/dao/delta："}
 {"output":["行1","行2"],"memory":"≤50字客观事实"}
