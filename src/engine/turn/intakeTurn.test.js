@@ -160,6 +160,17 @@ describe("WO-16G-G2 三级分流闸门与本地合成", () => {
     }
     expect(out.proposals).toEqual([]);
     expect(synthesizeTalkIntake("喂", null).actions[0].target).toBe("无");
+    expect(synthesizeTalkIntake("喂", null, "才旦").actions[0].target).toBe("才旦");
+    expect(synthesizeTalkIntake("喂", "阿岚", "才旦").actions[0].target).toBe("阿岚");
+  });
+});
+
+describe("hasHostileHint", () => {
+  it("常见辱骂词命中，不直接定 stance 只决定是否多听一遍前哨", () => {
+    for (const text of ["你这个蠢货", "笨蛋", "废物", "滚开"]) {
+      expect(hasHostileHint(text)).toBe(true);
+    }
+    expect(hasHostileHint("最近可好？")).toBe(false);
   });
 });
 

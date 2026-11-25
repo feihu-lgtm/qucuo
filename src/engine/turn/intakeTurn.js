@@ -182,7 +182,7 @@ export function shouldSkipIntakeForTalk(isTalk, questCandidates) {
 // S2 补洞：纯搭话本地合成 stance 恒 casual——辱骂/羞辱若跳过前哨会反签 +1 好感。
 // 命中敌意提示时不跳前哨，交给模型按 INTAKE_SYS 的 hostile 定义裁定。
 // 本正则只做「要不要多听一遍」的提示，绝不直接决定 stance：误报代价只是一次听意调用。
-const HOSTILE_HINT = /骂|羞辱|混蛋|废物|畜生|滚|该死|找死|威胁|宰了|杀了你|教训你|无耻|下流|阴险|黑心/;
+const HOSTILE_HINT = /骂|羞辱|混蛋|废物|蠢货|笨蛋|白痴|傻子|贱人|畜生|王八|垃圾|滚|该死|找死|威胁|宰了|杀了你|教训你|无耻|下流|阴险|黑心/;
 export function hasHostileHint(text) {
   return HOSTILE_HINT.test(String(text || ""));
 }
@@ -191,7 +191,25 @@ export function hasHostileHint(text) {
 // 形状与 normalizeIntakeResult 输出完全一致（12 字段全 required），判官无感；
 // target 沿用上游 talkTarget 判定，查不出填「无」——judgeTurn 按白名单照常裁小额社交事实。
 // confidence:1 是本地占位值——判官当前不消费 confidence，它不表示任何模型确信度。
-export function synthesizeTalkIntake(cmd, talkTarget) {
+// 模型听意与本地合成共用的搭话对象回填：玩家显式点选优先；
+// 未点选但场上只有一名 NPC 时，未点名敌意/搭话也落到这位唯一在场者。
+// 模型点了名的绝不覆盖；多人未点选仍保持「无」，避免群聊误落个人好感。
+export function applyTalkTargetFallback(intakeResult, talkTarget, fallbackTarget = "") {
+  const target = (typeof talkTarget === "string" && talkTarget) || fallbackTarget || "";
+  if (!target || !intakeResult?.actions?.length) return intakeResult;
+  for (const act of intakeResult.actions) {
+    if (act?.kind !== "talk" || (act.target && act.target !== "无")) continue;
+    // 「无」同时覆盖未点名与点名了不在场者两种含义。若原话开头明显是
+    // 另一个称呼（如「王五你这个畜生」），不能把它误算到唯一在场者头上；
+    // 宁可不签，也不罚错旁观者。泛称/未点名（「你这个蠢货」）仍按唯一在场者回填。
+    const vocative = String(act.text || "").match(/^([\u4e00-\u9fa5]{2,4})(?=你|，|,|！|!|？|\?)/)?.[1];
+    if (vocative && vocative !== target) continue;
+    act.target = target;
+  }
+  return intakeResult;
+}
+
+export function synthesizeTalkIntake(cmd, talkTarget, fallbackTarget = "") {
   const text = String(cmd || "");
   return {
     read: text.slice(0, 40),
@@ -199,7 +217,7 @@ export function synthesizeTalkIntake(cmd, talkTarget) {
     actions: [{
       ...ACTION_DEFAULTS,
       kind: "talk",
-      target: typeof talkTarget === "string" && talkTarget ? talkTarget : "无",
+      target: (typeof talkTarget === "string" && talkTarget) || fallbackTarget || "无",
       confidence: 1,
       text,
     }],
