@@ -14,7 +14,7 @@ import { resolveFloatingItems } from "../../../domain/rules/judge/floatingRelics
 import { questAdvanceCandidates } from "../../../domain/rules/quests/questAdvanceCandidates.js";
 import { createRng } from "../../../utils/rng.js";
 import { diffSnapshots } from "./shadowDiff.js";
-import { projectFacts } from "./shadowTaxonomy.js";
+import { projectFacts, featureRoutedCats } from "./shadowTaxonomy.js";
 import { compareCategories } from "./shadowCompare.js";
 import { resolvePrepItemsForJudge, buildPrepMaterialBlock } from "../../../domain/rules/prep/prepConsumption.js";
 
@@ -220,7 +220,8 @@ export async function runShadowJudge({
 
     const diffOut = diffSnapshots(preState, postState, { moved });
     const proj = projectFacts(verdict?.facts || []);
-    const result = compareCategories(diffOut, proj);
+    // S5：feature 路由 kind 对应类目不参与比较（equip/use_item/take/invite）
+    const result = compareCategories(diffOut, proj, { featureRoutedCats: featureRoutedCats(intakeResult?.actions) });
     if (isStale?.() || epochGuard?.()) return null;
     recordAggregate(epoch, result, cmd);
     // 结构化 trace：verdicts 原样进 fields，TraceViewer 按类目渲染含 excluded 盲区；

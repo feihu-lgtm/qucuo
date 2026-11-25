@@ -46,7 +46,11 @@ describe("WO-16D-M1 四类目投影", () => {
     expect(mk(-10, -10).verdicts.vitals.verdict).toBe("match");
     expect(mk(-10, 0).verdicts.vitals.verdict).toBe("single_only");
     expect(mk(0, -10).verdicts.vitals.verdict).toBe("judge_only");
-    expect(mk(-10, -5).verdicts.vitals.verdict).toBe("both_diff");
+    // S5 两级判定：同号方向一致即覆盖——差 50% 以内计 match，超 50% 计 caliber_diff
+    // （口径差单独统计不计缺口）；反号才是 both_diff 真冲突。
+    expect(mk(-10, -5).verdicts.vitals.verdict).toBe("match");
+    expect(mk(-10, -4).verdicts.vitals.verdict).toBe("caliber_diff");
+    expect(mk(-10, 5).verdicts.vitals.verdict).toBe("both_diff");
     expect(mk(0, 0).verdicts.vitals.verdict).toBe("match");
   });
 

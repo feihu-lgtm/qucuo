@@ -94,6 +94,19 @@ export function diffSnapshots(pre, post, { moved = false } = {}) {
     if (before.status !== qp?.status || before.currentStageIndex !== qp?.currentStageIndex) out.quest.advance.push(qid);
   }
 
+  // S5 world 类目：varTree.世界 的数值标量 leaf 差（威望 等）——合法 mvu 写账
+  // 此前八类目无一覆盖（taxonomy 盲区）。只 diff 数值 leaf：对象/数组账本
+  // （容器/调息账/每日搜刮 等）是结构化账本不是标量状态，不混进此类目。
+  const preWorld = pre?.varTree?.世界 || {};
+  const postWorld = post?.varTree?.世界 || {};
+  for (const key of new Set([...Object.keys(preWorld), ...Object.keys(postWorld)])) {
+    const bv = preWorld[key], av = postWorld[key];
+    if (typeof bv !== "number" && typeof av !== "number") continue;
+    const before = Number.isFinite(bv) ? bv : 0;
+    const after = Number.isFinite(av) ? av : 0;
+    if (after !== before) out.world[key] = after - before;
+  }
+
   // 审计结论：room.npcs 在窗口内有整链系统改写（幽灵过滤/驻场剔除/战斗固化/
   // 移动落房/涌现实体化/焚卡烙印），纯 diff 无法归因——v1 恒 excluded，
   // 不做泛化复杂旁路（协调裁决）。

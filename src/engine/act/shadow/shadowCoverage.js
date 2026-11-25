@@ -23,6 +23,9 @@ export function summarizeShadowCoverage(agg) {
     const excluded = agg.excluded?.[cat] || 0;
     const comparable = Math.max(0, turns - excluded);
     const so = c.single_only || 0, jo = c.judge_only || 0, bd = c.both_diff || 0;
+    // S5 口径差：方向一致但数额差超 50%——单独统计，不计缺口不计噪声
+    // （判官定量 vs 模型随写本来就不同额，方向对就算覆盖）。
+    const cd = c.caliber_diff || 0;
     // quest 为 reference-only：不计入漏判缺口、不计入覆盖率——记为人工甄别噪声。
     const countsAsGap = cat === "quest" ? 0 : so;
     // quest reference-only 整体不进噪声门也不进信号总数——它天生是人工甄别参考
@@ -36,16 +39,18 @@ export function summarizeShadowCoverage(agg) {
     if (cat === "quest") totalNoise += 0; // 显式不计——保留注释位防回退
     categories[cat] = {
       comparable, excluded,
-      single_only: so, judge_only: jo, both_diff: bd,
-      match: Math.max(0, comparable - so - jo - bd),
+      single_only: so, judge_only: jo, both_diff: bd, caliber_diff: cd,
+      match: Math.max(0, comparable - so - jo - bd - cd),
       coverageRate: cat === "quest" ? null : pct(comparable - countsAsGap, comparable),
       gapRate: cat === "quest" ? null : pct(countsAsGap, comparable),
       referenceOnly: cat === "quest",
     };
   }
   const sampleList = agg.samples || [];
+  const totalCaliber = Object.values(agg.byCategory || {}).reduce((n, c) => n + (c?.caliber_diff || 0), 0);
   return {
     turns, match: agg.match || 0, gaps: agg.gaps || 0, judgeExtra: agg.judgeExtra || 0,
+    caliberDiffTotal: totalCaliber,
     matchRate: pct(agg.match || 0, turns),
     gapTurnRate: pct(agg.gaps || 0, turns),
     categories,
@@ -109,7 +114,7 @@ export function formatCoverageReport(summary, evaluation) {
   for (const [cat, c] of Object.entries(summary.categories)) {
     if (!c.comparable && !c.excluded) continue;
     const cov = c.referenceOnly ? "参考" : c.comparable === 0 ? "不可测(全盲区)" : c.coverageRate === null ? "无样本" : `${(c.coverageRate * 100).toFixed(1)}%`;
-    lines.push(`${cat}：覆盖率 ${cov} · 漏判 ${c.single_only} · 会判 ${c.judge_only} · 都偏 ${c.both_diff} · 盲区 ${c.excluded}/${c.comparable + c.excluded}`);
+    lines.push(`${cat}：覆盖率 ${cov} · 漏判 ${c.single_only} · 会判 ${c.judge_only} · 都偏 ${c.both_diff} · 口径差 ${c.caliber_diff || 0} · 盲区 ${c.excluded}/${c.comparable + c.excluded}`);
   }
   lines.push(`噪声占比 ${summary.noise.noiseShare === null ? "无信号" : `${(summary.noise.noiseShare * 100).toFixed(0)}%`}（会判噪声 ${summary.noise.totalNoise}/${summary.noise.totalSignals} · quest参考 ${summary.noise.questReference} 不计入）`);
   lines.push(`采样 ${summary.samples.count} 句（类目命中 ${summary.samples.catHits}）${summary.samples.saturated ? " · 已达 20 句上限" : ""}`);
