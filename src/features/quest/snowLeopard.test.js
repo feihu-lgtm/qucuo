@@ -113,6 +113,14 @@ describe("resolveSnowInteraction 触发面", () => {
   it("陈述句含怎么不误伤：我知道怎么做了", () => {
     expect(resolveSnowInteraction(base(), "我知道怎么做了，给雪豹挠痒")?.kind).toBe("scratch");
   });
+  it("长距离疑问（怎么才能安全地喂）不触发", () => {
+    expect(resolveSnowInteraction(base(), "怎么才能安全地喂雪豹吃肉")).toBeNull();
+    expect(resolveSnowInteraction(base(), "怎么才能帮雪豹挠痒")).toBeNull();
+  });
+  it("整句禁止式别把不触发", () => {
+    const st = base({ inv: [{ id: "m1", name: "羊肉" }] });
+    expect(resolveSnowInteraction(st, "别把我不吃的羊肉喂给雪豹")).toBeNull();
+  });
   it("未点名时取背包第一块肉", () => {
     const st = base({ inv: [{ id: "b1", name: "青稞饼" }, { id: "m1", name: "羊肉" }, { id: "m2", name: "牛肉干" }] });
     const r = resolveSnowInteraction(st, "喂雪豹吃肉");
