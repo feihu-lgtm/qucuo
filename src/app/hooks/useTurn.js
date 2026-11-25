@@ -18,6 +18,7 @@ import { parseDir } from "../../utils/mudHelpers.js";
 import { playTurn } from "../../engine/playTurn.js";
 import { resolveIntent } from "../../engine/turn/resolveIntent.js";
 import { createTurnContext } from "../../engine/turn/turnContext.js";
+import { executeJudgeRoutes } from "./judgeRoutes.js";
 import { settleInBackground } from "./settleBackfill.js";
 import { lookInBackground } from "./lookBackfill.js";
 import { lookNpcInBackground } from "./npcLookBackfill.js";
@@ -152,6 +153,8 @@ export function useTurn({
     const turnEpoch = getGameEpoch();
     const env = {
       cmd, opts, extraReplies, interactMode: effMode, apiCfg, gm, _trace, isStale,
+      // WO-16F-F2a：判官路由执行器（app 层）注入——engine 只调句柄不反引 features
+      executeJudgeRoutes,
       proseEpochGuard: () => isGameEpochStale(turnEpoch),
       proseEpoch: turnEpoch,
       // 段落 seq 同步分配器：zustand 写读同步，同一 tick 内先读再写即原子——

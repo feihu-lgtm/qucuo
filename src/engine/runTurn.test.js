@@ -221,6 +221,8 @@ describe("runTurn", () => {
     expect(turn.judgePipelineActive).toBe(true);
   });
 
+
+
   it("normalizes and returns a duel request for an NPC present in the room", async () => {
     const npc = { name: "才旦" };
     const commit = vi.fn();
