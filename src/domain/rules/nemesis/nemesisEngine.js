@@ -64,8 +64,11 @@ export function scarFromBattleLog(battleLog) {
     const row = battleLog[i];
     if (!row || !(row.result?.damageToB > 0)) continue;
     // 1v1 行挂 playerMove；组队战（TeamDuelScreen）行挂 actor/target——
-    // 玩家单位 id 固定 "player"，同伴/敌方出手不算玩家招式。
-    const move = row.playerMove || (row.actor?.id === "player" ? row.actor.move : null);
+    // 玩家单位 id 固定 "player"。非玩家出手/无法确定玩家出手的行跳过继续找
+    // 玩家本人上一击；只有锁定玩家出手但属性不可辨认才停笔不记。
+    const isPlayerHit = !!row.playerMove || row.actor?.id === "player";
+    if (!isPlayerHit) continue;
+    const move = row.playerMove || row.actor?.move || null;
     const attr = scarAttrOfMove(move);
     if (!attr) return null;
     const moveName = move?.name || "";
@@ -112,7 +115,7 @@ export function recordNemesisDuel(roster, npc, outcome, { turn = 0, scar = null,
     const id = nemesisEntryId(faction, npc.name, turn);
     const entry = {
       id, name: npc.name, faction,
-      tier: outcome === "lose" ? 1 : 1,
+      tier: 1,
       baseRole: npc.baseRole || npc.role || npc.tag || "",
       epithet: null, tauntLine: null, rumorSnippet: null,
       // 结仇原委（硬契约）：系统 deterministic 拼句，首次入谱写定后永不覆盖——

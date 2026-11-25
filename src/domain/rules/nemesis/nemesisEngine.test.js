@@ -81,6 +81,18 @@ describe("伤痕五类映射", () => {
     const teamLog = [{ round: 1, actor: { id: "player", move: { name: "青钢剑法" } }, result: { damageToB: 6 } }];
     expect(scarFromBattleLog(teamLog)).toMatchObject({ kind: "利刃", note: "最后一击：青钢剑法" });
     expect(scarFromBattleLog([{ round: 1, actor: { id: "leopard", move: { name: "青钢剑法" } }, result: { damageToB: 6 } }])).toBeNull();
+    // 逆序扫描跳过同伴行继续找玩家上一击
+    const mixed = [
+      { round: 1, actor: { id: "player", move: { name: "青钢剑法" } }, result: { damageToB: 4 } },
+      { round: 2, actor: { id: "leopard", move: { name: "烈爪" } }, result: { damageToB: 9 } },
+    ];
+    expect(scarFromBattleLog(mixed)).toMatchObject({ kind: "利刃", note: "最后一击：青钢剑法" });
+    // 玩家最后一击不可辨认则不记（不再继续往前找）
+    const unrecog = [
+      { round: 1, actor: { id: "player", move: { name: "青钢剑法" } }, result: { damageToB: 4 } },
+      { round: 2, actor: { id: "player", move: { name: "吐纳功" } }, result: { damageToB: 3 } },
+    ];
+    expect(scarFromBattleLog(unrecog)).toBeNull();
     // 命名误伤回归：刚锋腿/飘雪穿云掌归钝击不再误判利刃/寒冰
     expect(scarAttrOfMove({ name: "刚锋腿" })).toBe("钝击");
     expect(scarAttrOfMove({ name: "飘雪穿云掌" })).toBe("钝击");
