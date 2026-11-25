@@ -105,6 +105,12 @@ describe("WO-23C1 buildEpithetWriteChanges（写入只补三字段）", () => {
     const tree = treeWith(entry({ epithet: "旧绰号" }));
     expect(buildEpithetWriteChanges("雪山派", "xueshan_拉姆", valid)(tree)).toBe(tree);
   });
+  it("谱内他人已占该绰号（并发撞号）不写", () => {
+    const rival = entry({ id: "xueshan_扎西", name: "扎西", epithet: "雪岭阎罗" });
+    const me = entry();
+    const tree = { 世界: { 宿敌谱: roster({ 雪山派: { [rival.id]: rival, [me.id]: me } }) } };
+    expect(buildEpithetWriteChanges("雪山派", me.id, valid)(tree)).toBe(tree);
+  });
   it("条目消失/坏树不炸", () => {
     expect(buildEpithetWriteChanges("雪山派", "xueshan_拉姆", valid)({})).toEqual({});
     expect(buildEpithetWriteChanges("雪山派", "xueshan_拉姆", valid)(undefined)).toBe(undefined);

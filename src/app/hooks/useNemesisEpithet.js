@@ -59,6 +59,15 @@ export function useNemesisEpithet({ apiCfg }) {
           const latest = gameStore.getState();
           const cur = latest.varTree?.世界?.宿敌谱?.[cand.faction]?.entries?.[cand.entryId];
           if (!cur || cur.status !== "active" || String(cur.epithet || "").trim()) return;
+          // 落笔前按最新谱重跑完整校验：并发赐号（同场多 entry 或连场 duel）
+          // 各自拿的是结算后过期快照，AI 可能撞号——以最新账本为准再查一次重。
+          const latestRoster = latest.varTree?.世界?.宿敌谱 || {};
+          const fresh = validateEpithetOutput(valid, {
+            playerName: latest.char?.name || "",
+            existingEpithets: collectEpithets(latestRoster, cand.entryId),
+          });
+          if (!fresh.ok) return;
+          valid = fresh;
           applyResult(featureCtx(), {
             changes: {
               varTree: buildEpithetWriteChanges(cand.faction, cand.entryId, valid),

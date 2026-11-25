@@ -71,6 +71,9 @@ export function buildEpithetWriteChanges(faction, entryId, valid) {
     const group = book[faction];
     const target = group?.entries?.[entryId];
     if (!target || target.status !== "active" || String(target.epithet || "").trim()) return prev;
+    // 原子窗口内查重：并发赐号（同场多 entry/连场 duel）若撞号，后落笔者静默弃用。
+    const dup = collectEpithets(book, entryId).includes(valid.epithet);
+    if (dup) return prev;
     return {
       ...(prev || {}),
       世界: {
