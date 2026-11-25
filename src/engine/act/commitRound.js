@@ -132,7 +132,9 @@ export function commitRound(d) {
     varTree: d.getGameState?.()?.varTree, time: d.time,
     systemAcceptedNames: postCtx.systemAcceptedNames, luck: postCtx.luck, npcState: d.npcState,
   }));
-  applyPostResult(d, materializeEmergence({ p: d.p, luck: postCtx.luck, innerRoomName: d.innerRoomName, npcState: d.npcState })); // 涌现·实体化
+  // 私聊回合不实体化：writeRoom 在 isTalk 整体跳过，upsert 却不能跟着跳——
+  // 否则传闻人物会在密闭私聊里凭空进屋。跳过则传闻保留，留待非私聊回合再登场。
+  if (!d.isTalk) applyPostResult(d, materializeEmergence({ p: d.p, luck: postCtx.luck, innerRoomName: d.innerRoomName, npcState: d.npcState })); // 涌现·实体化
   applyPostResult(d, writeRoom({    // 房间写回（锁定目的地/固定地图/兜底）
     isTalk: d.isTalk, lockedDestName: d.lockedDestName, p: d.p, room: d.room, innerRoomName: d.innerRoomName,
     roomMap: _roomMap, outerDepart: d.outerDepart,
