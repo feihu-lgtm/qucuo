@@ -48,9 +48,42 @@ export function _resetShadowAggregates() {
 // 绝不记叙事正文/API key。这份清单是 WO-16F 判官规则补全的需求来源（roadmap 二.3）。
 const SAMPLE_CAP = 20;
 // 导出供 M2 聚合口径测试直探（生产路径仍只在 runShadowJudge 内部调用）。
+const VERDICT_LOG_CAP = 200;
+
+// 类目 verdict → 紧凑证据（值只留键/数值，长度截断，绝不记叙事正文）
+function compactEvidence(v) {
+  if (!v || typeof v !== "object") return null;
+  const slim = (x) => {
+    if (x == null) return x;
+    if (Array.isArray(x)) return x.slice(0, 6).map((e) => String(e).slice(0, 24));
+    if (typeof x === "object") {
+      const out = {};
+      for (const [k, val] of Object.entries(x)) {
+        if (Array.isArray(val)) out[k] = slim(val);
+        else if (typeof val === "number") out[k] = val;
+        else if (val && typeof val === "object" && val.verdict) out[k] = val.verdict; // vitals/cultivation sub
+      }
+      return out;
+    }
+    return x;
+  };
+  return { single: slim(v.single), judge: slim(v.judge), ...(v.sub ? { sub: slim(v.sub) } : {}) };
+}
+
 export function recordAggregate(epoch, result, cmd = "") {
   const agg = shadowAggregates(epoch);
   agg.turns += 1;
+  // WO-16D-3 per-turn verdict 证据：评审可据此判断 single_only/judge_only 是
+  // harness 噪声还是真 gap；cap 200 防爆内存，只进内存聚合不进持久层。
+  agg.log = agg.log || [];
+  if (agg.log.length < VERDICT_LOG_CAP) {
+    const cats = {};
+    for (const [cat, v] of Object.entries(result.verdicts || {})) {
+      if (v.verdict === "match") continue;
+      cats[cat] = { verdict: v.verdict, ...compactEvidence(v) };
+    }
+    agg.log.push({ n: agg.turns, cmd: String(cmd || "").slice(0, 60), cats });
+  }
   if (!result.hasGap && !result.judgeExtra) agg.match += 1;
   if (result.hasGap) agg.gaps += 1;
   if (result.judgeExtra) agg.judgeExtra += 1;
