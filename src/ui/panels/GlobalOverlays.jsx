@@ -37,6 +37,7 @@ const VersionHistoryPanel = lazy(() => import("../screens/VersionHistoryPanel.js
 const CharacterPage = lazy(() => import("../screens/CharacterPage.jsx"));
 const QuestLogScreen = lazy(() => import("../screens/QuestLogScreen.jsx"));
 const LetterPanel = lazy(() => import("../screens/LetterPanel.jsx"));
+const PactPanel = lazy(() => import("../screens/PactPanel.jsx"));
 const LoreScreen = lazy(() => import("../screens/LoreScreen.jsx"));
 const QijuzhuScreen = lazy(() => import("../screens/QijuzhuScreen.jsx"));
 const PortraitManager = lazy(() => import("../screens/PortraitManager.jsx"));
@@ -79,6 +80,7 @@ export default function GlobalOverlays({
   const showCardImport = useOverlay(OVERLAY.CARD_IMPORT);
   const showQuestLog = useOverlay(OVERLAY.QUEST_LOG);
   const showLetters = useOverlay(OVERLAY.LETTERS);
+  const showPacts = useOverlay(OVERLAY.PACTS);
   const showLore = useOverlay(OVERLAY.LORE);
   const showQijuzhu = useOverlay(OVERLAY.QIJUZHU);
   const showPortraitManager = useOverlay(OVERLAY.PORTRAIT_MANAGER);
@@ -131,6 +133,12 @@ export default function GlobalOverlays({
       <LetterPanel
         zoneTheme={zoneTheme}
         onClose={() => closeOverlay(OVERLAY.LETTERS)}
+      />
+    )},
+    { show: showPacts, render: () => (
+      <PactPanel
+        zoneTheme={zoneTheme}
+        onClose={() => closeOverlay(OVERLAY.PACTS)}
       />
     )},
     { show: showLore, render: () => (

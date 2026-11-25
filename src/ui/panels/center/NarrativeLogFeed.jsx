@@ -2,6 +2,7 @@ import LogEntry from "../../components/LogEntry.jsx";
 import { LOG_T } from "../../../domain/rules/log/logTypes.js";
 import { getGameDay } from "../../../utils/mudHelpers.js";
 import { useGameStore } from "../../../store/gameStore.js";
+import { openOverlay, OVERLAY } from "../../../store/uiStore.js";
 
 function formatEntryTurnLabel(entry) {
   if (typeof entry?.turn !== "number" || !Number.isFinite(entry.turn)) return "";
@@ -70,12 +71,12 @@ export default function NarrativeLogFeed({
 
   // 天机落账卡：EffectReceiptCard 派发结构化 action（id/factId/op/kind 齐全），
   // 原样透传给 act——useTurn 在 intent 识别前的系统边界按 id 寻址确定性执行，
-  // 行动识别关闭也同样生效。唯一例外是 viewPact：契约面板尚无结构化入口，
-  // 保留文本指令（有意例外，见 docs/AI调用链架构说明.md）。
+  // 行动识别关闭也同样生效。viewPact 已于 WO-22B-P4b 接结构化面板——
+  // 「阅契」开江湖契约面板纯读账本，不再发自由文本回合。
   const handleEntryAction = (a) => {
     if (a && typeof a === "object" && a.type === "effectReceipt") {
       if (a.op === "viewPact") {
-        act("查看江湖契约");
+        openOverlay(OVERLAY.PACTS);
         return;
       }
       act(a);

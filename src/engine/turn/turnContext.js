@@ -56,7 +56,7 @@ export function createTurnContext({ plan, env }) {
   const preActVarTree = getGameState?.()?.varTree ?? {};
 
   const callDeps = (memory = {}, prepared = {}) => ({
-    varTree: memory.varTree ?? getGameState?.()?.varTree, gm, isSettle, isTalk, intent, apiCfg, narrator,
+    varTree: memory.varTree ?? getGameState?.()?.varTree, gm, isSettle, isTalk, intent, apiCfg, narrator, room, time,
     scenario: preset.scenario, budgetInstruction: prepared.budgetInstruction,
     npcLoreBlockWithQuest: prepared.npcLoreBlockWithQuest || "",
     visibleNpcsCount: prepared.visibleNpcsCount || 0, charName: char.name, charBodyProfile: char.bodyProfile,
