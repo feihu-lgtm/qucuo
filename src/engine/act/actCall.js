@@ -196,8 +196,10 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
   // ④远方消息 ⑤往事召回 ⑥目标旧账 ⑦久别重逢 ⑧信息域 ⑨@江湖契约与宿敌
   // （WO-22/23 启用前留空）⑩尾章指引 ⑪篇幅与文体导向。现状即此序，最小重排不重写。
   const pactNemesisPart = ""; // ⑨占位：WO-22/23 接线点，启用前留空
+  // WO-16F-F3：判官激活的 appease settle 也必须接定案单——否则判官落了账、
+  // 正文却自由判成相反结果（本单要消灭的穿帮）。普通非判官 settle 仍不收尾章税。
   const inChatContent = d.isSettle
-    ? rulesPrefix + dynPrefix + (d.snowLeopardContext || "") + (d.settleNpc ? reunionPart : "") + ledgerSuffix + angrySettleNote + "\n\n" + steerSuffix
+    ? rulesPrefix + dynPrefix + (d.snowLeopardContext || "") + (d.settleNpc ? reunionPart : "") + ledgerSuffix + angrySettleNote + (d.judgeRuleBlock ? "\n\n" + d.judgeRuleBlock : "") + "\n\n" + steerSuffix
     : rulesPrefix + dynPrefix + d.ctx + distantBlock + recallPart + ledgerSuffix + reunionPart + infoDomainPart + pactNemesisPart + sealRulePart + "\n\n" + steerSuffix;
   const latestUserContent = cmdSuffix + (extraNudge || "");
 

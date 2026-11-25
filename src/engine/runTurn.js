@@ -249,10 +249,16 @@ async function runTurnSteps(ctx, cmd, opts) {
         // WO-16F-F3：appease settle 本地合成听意单——诚意 inferAppeaseStance 关键词
         // 保守判定，不再额外调 intake AI；玩家原话优先 settleOptions.attempt。
         const appeaseNpcName = typeof opts.settleNpc === "string" ? opts.settleNpc : opts.settleNpc?.name || "";
-        const attemptText = opts.attempt || cmd;
+        // 诚意只评真实玩家原话 opts.attempt——按钮模板 cmd（含「赔罪」字样）进关键词
+        // 判定会必中 sincere（模板穿透）；无 attempt 明确回落 casual。text 仍留 cmd 供叙事。
+        const attemptText = typeof opts.attempt === "string" && opts.attempt.trim() ? opts.attempt : "";
         intakeResult = {
           read: "", refIds: [],
-          actions: [{ kind: "appease", target: appeaseNpcName, itemId: "", direction: "none", stance: inferAppeaseStance(attemptText), text: attemptText }],
+          actions: [{
+            kind: "appease", target: appeaseNpcName, itemId: "", direction: "none",
+            stance: attemptText ? inferAppeaseStance(attemptText) : "casual",
+            text: cmd,
+          }],
           proposals: [],
         };
       } else if (shouldSkipIntakeForTalk(isTalk, questCandidates)) {
@@ -285,7 +291,10 @@ async function runTurnSteps(ctx, cmd, opts) {
       judgeVerdict = judgeTurn({
         turn: timeNow, day: Math.floor(timeNow / 24) + 1, place: deps.room?.name || "",
         npcs: visibleNpcs, varTree: vtNow,
-        inv: deps.inv || [], entries: [], talkOnly: isTalk,
+        inv: deps.inv || [], entries: [],
+        // WO-16F-F3：appease settle 听证不算纯搭话——否则 talkOnly 白名单会把
+        // appease 动作整条拦掉，判官路空转、旧仲裁又已被跳过（零裁决穿帮）。
+        talkOnly: isAppeaseSettle ? false : isTalk,
         // WO-16F-F1：steal/free_act 检定与伤损/破费定量要读玩家属性与气血银两。
         char: liveNow.char || deps.char || {},
         containers: containerView,

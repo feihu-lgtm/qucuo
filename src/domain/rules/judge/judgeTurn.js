@@ -333,6 +333,9 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
         facts.push({
           id: nextFactId(), op: "MUTATE_SOCIAL", npc: npc.name,
           affectionDelta: 3, ledgerKind: "见", reason: "赔罪言和", witnesses: ["主角", npc.name],
+          // WO-16F-F3：detail 明示正文方向——renderJudgeVerdict 逐字渲染进定案单，
+          // 主叙事不得写成余怒未消。
+          detail: "赔罪奏效，怒气消解，好感+3",
           // WO-16F-F3：成功消气 + 消解对方最近一条未了「怨」（不删原文，只打标记）。
           angerRelease: true, grudgeResolve: true,
         });

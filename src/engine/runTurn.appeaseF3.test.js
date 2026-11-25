@@ -73,6 +73,18 @@ describe("runTurn appease settle 进判官", () => {
     expect(turn.judgePipelineActive).toBe(true);
   });
 
+  it("按钮模板 cmd 不穿透 sincere：无 attempt 回落 casual", async () => {
+    const { inferAppeaseStance: infer } = await import("../domain/rules/npc/appeaseStance.js");
+    // 模板句本身含「赔罪」——若误拿它进关键词判定必中 sincere
+    expect(infer("趁八云气头上向他赔罪求和，借机赔罪缓和")).toBe("sincere"); // 证明风险真实存在
+    // 正解：无 attempt 时直接 casual，不进 infer
+    const ai = createMockAi(["八云哼了一声"]);
+    const deps = makeDeps();
+    deps.ai = ai;
+    const turn = await runTurn(deps, "趁八云气头上向他赔罪求和，借机赔罪缓和", { settle: true, settleKind: "appease", settleNpc: "八云" });
+    expect(turn.judgePipelineActive).toBe(true);
+  });
+
   it("送礼 settle 仍不进判官（回归）", async () => {
     const ai = createMockAi(["八云收下青布"]);
     const deps = makeDeps();
