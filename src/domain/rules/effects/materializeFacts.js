@@ -490,12 +490,73 @@ export function materializeFacts(state, facts, compiledWarrants) {
             .filter((k) => k !== "settled" && !(state.varTree?.世界?.契约?.[fact.npc]?.[k]?.settled));
           const keys = fact.settleKey ? [fact.settleKey] : fact.pactId ? [fact.pactId] : (existing.length ? existing : [pactKey]);
           for (const key of keys) {
+            // WO-22B-P3 履约物化闸：违约（breachTurn）后不可再履约——整条 settle
+            // 拒落（标记也不打）；已 settled 的幂等跳过不重发奖励。
+            const pactRec = state.varTree?.世界?.契约?.[fact.npc]?.[key];
+            if (pactRec?.breachTurn != null) {
+              logs.push({ t: "sys", text: `  ${fact.npc}的约已违约在先，履约拒落` });
+              continue;
+            }
+            if (pactRec?.settled) {
+              logs.push({ t: "sys", text: `  ${fact.npc}的约已了结，重复履约幂等跳过` });
+              continue;
+            }
             patches.push({
               op: "merge",
               path: ["varTree", "世界", "契约", fact.npc, key, "settled"],
               value: { turn, note: fact.note || "" },
               factId: fact.id,
             });
+            // WO-22B-P3 履约奖励机械物化（系统发，非 AI 直写）：
+            // ① 酬谢银两——rewardHint 明文「N 两」才发，写不出数额的不发不编；
+            // ② 酬谢实物——rewardHint 含对方身上实物名（≥2 字）才转交，查无此物不发；
+            // ③ 威望 +5（起步数额手册未定，clamp -100~100 与 breach 扣减同通道）；
+            // ④ 恩账一笔「践行之约」。无 rewardHint 的空约只结账+威望+恩账。
+            if (pactRec && typeof pactRec === "object") {
+              // WO-22B-P3 初审裁决：只兑立约时结构化锁死的字段——rewardHint 自由文本
+              // 绝不在此现场解析（防模型铸币）；旧档/无锁契约只有威望+恩账。
+              if (Number.isFinite(pactRec.rewardSilver) && pactRec.rewardSilver > 0 && char) {
+                const nextMoney = (char.money ?? 0) + pactRec.rewardSilver;
+                logs.push({ t: "stat", text: `  履约酬谢：银两 ${char.money ?? 0}→${nextMoney}` });
+                char.money = nextMoney;
+                charDirty = true;
+              }
+              // 实物按锁定 rewardItemId 走 TRANSFER_ITEM 同款 locateItem/三池原子转移——
+              // 只在 npc 池且未 dropped 才兑付；查无此物/已在玩家手里不兑付不编造。
+              if (pactRec.rewardItemId) {
+                const loc = locateItem({ ...state, inv, room }, pactRec.rewardItemId, null);
+                // 持有者必须是立约人本人——锁定物若已转给别的在场 NPC，
+                // 从错的人身上扒下来当酬谢等于系统抢劫（复审裁决）。
+                if (loc && loc.pool === "npc" && room.npcs[loc.npcIndex]?.name === fact.npc && !(loc.item && loc.item.dropped)) {
+                  const moving = typeof loc.item === "string" ? { name: loc.item } : { ...loc.item };
+                  room.npcs[loc.npcIndex].carriedItems[loc.index] = { ...moving, dropped: true };
+                  if (!inv.some((e) => e && e.id && e.id === moving.id)) {
+                    inv.push({ ...moving, dropped: undefined, equipped: false });
+                  }
+                  invDirty = true; roomDirty = true;
+                  logs.push({ t: "item", text: `  履约酬谢：${fact.npc}把${moving.name}交到你手上` });
+                } else {
+                  logs.push({ t: "sys", text: `  履约酬谢实物 ${pactRec.rewardItemName || pactRec.rewardItemId} 已不在对方身上，不兑付` });
+                }
+              }
+              patches.push({
+                op: "merge", path: ["varTree", "世界", "威望"],
+                value: (prev) => Math.max(-100, Math.min(100, (Number(prev) || 0) + 5)),
+                factId: fact.id,
+              });
+              const entry = createHeartLedgerEntry({
+                tag: "恩", summary: `践行「${String(pactRec.promise || "").slice(0, 20)}」之约`, turn,
+                place: state.room?.name || "", witnesses: ["主角", fact.npc],
+              });
+              if (entry) {
+                patches.push({
+                  op: "merge", path: ["varTree", "角色", fact.npc, "心账"],
+                  value: (prev) => capHeartLedgerEntries([...(Array.isArray(prev) ? prev : []), dedupeHeartLedgerId(entry, prev)]),
+                  factId: fact.id,
+                });
+              }
+              logs.push({ t: "narrator", text: `  你践行了与${fact.npc}的约定——江湖上说话算数的人，路会越走越宽。` });
+            }
           }
         } else {
           // 立约回执（WO-22B-P4b 复审）： EffectReceiptCard 的「阅契」按钮消费
@@ -509,6 +570,10 @@ export function materializeFacts(state, facts, compiledWarrants) {
               promise: fact.promise || "",
               deadlineHours: fact.deadlineHours ?? null,
               rewardHint: fact.rewardHint || "",
+              // WO-22B-P3 立诺锁奖：结构化奖励字段（sealVerifier 立约时已按 state
+              // 核验+cap 锁定）随约入账——履约只兑这些字段，绝不回 rewardHint 现场解析。
+              ...(Number.isFinite(fact.rewardSilver) ? { rewardSilver: fact.rewardSilver } : {}),
+              ...(fact.rewardItemId ? { rewardItemId: fact.rewardItemId, rewardItemName: fact.rewardItemName || "" } : {}),
               bindTurn: turn,
               place: state.room?.name || "", // 立约地点（WO-22B-P4a 复审）：逾期催问信要写「在何处说定」，不记就只能拿玩家当前所在房间冒充
               witnesses: fact.witnesses || [],
