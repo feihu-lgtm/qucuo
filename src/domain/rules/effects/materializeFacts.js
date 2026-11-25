@@ -18,6 +18,7 @@
 // （如 GRANT_ITEM 无编译产物时用事实字段拼白档兜底物），实在无法落地才进 logs 记异。
 
 import { QUALITY, statsForQuality } from "../economy/equipment.js";
+import { mintItemId } from "../clapboard/entityId.js";
 import { hpFromNeigong } from "../npc/npcGeneration.js";
 import { effectiveMaxHp } from "../../data/kungfu/qucuoKungfu.js";
 import { makeBuffFlag, mergeCombatBuff } from "../../../utils/buffSystem.js";
@@ -44,7 +45,9 @@ function qualityStepUp(quality) {
 
 // 在 inv / room.items / room.npcs[].carriedItems 三个池里按 itemId（或名字兜底）定位
 function locateItem(state, itemId, itemName) {
-  const match = (e) => e && typeof e === "object"
+  // 留档条目（dropped/sold/stolen）只是外观账，不再持有实物——定位时必须跳过，
+  // 否则第二人归还同名器物时会错配到前者的留档，复制出神兵
+  const match = (e) => e && typeof e === "object" && !e.dropped && !e.sold && !e.stolen
     && ((itemId && e.id === itemId) || (!itemId && itemName && e.name === itemName) || (itemId && itemName && e.name === itemName && !e.id));
   const invIdx = (state.inv || []).findIndex(match);
   if (invIdx !== -1) return { pool: "inv", index: invIdx, item: state.inv[invIdx] };
@@ -91,7 +94,7 @@ export function materializeFacts(state, facts, compiledWarrants) {
         if (!item) {
           // 保守不丢事实：编译缺失时按事实字段拼白档兜底物
           if (!fact.itemName) { logs.push({ t: "err", text: `  ⛔ 事实 ${fact.id} 无物可授（缺编译产物与物名）` }); break; }
-          item = { id: fact.itemId || `it_fallback_${fact.id || "x"}`, name: fact.itemName, category: fact.category || "misc", quality: fact.quality || "白", desc: "来历成谜的物件（编译缺失兜底）" };
+          item = { id: (typeof fact.itemId === "string" && /^it_[0-9a-f]+/.test(fact.itemId)) ? fact.itemId : mintItemId(fact.itemName, turn, 0), name: fact.itemName, category: fact.category || "misc", quality: fact.quality || "白", desc: "来历成谜的物件（编译缺失兜底）" };
         }
         if (inv.some((e) => e && e.id && e.id === item.id)) break; // 幂等：同 id 不重复入袋
         inv.push({ ...item });
@@ -301,19 +304,22 @@ export function materializeFacts(state, facts, compiledWarrants) {
       // ── 10. BIND_OR_SETTLE_PACT：契约缔结/了结 → applyPatches 指令 ──
       case "BIND_OR_SETTLE_PACT": {
         if (!fact.npc) break;
+        // 契约按 pactKey（fact.pactId 或本条 factId）一人一约共存——同一 NPC 的
+        // 多份约定互不覆盖，旧约原文永不丢（手册未定字段，保守取舍）
+        const pactKey = fact.pactId || fact.id || `pact_${turn}`;
         if (fact.settle === true || fact.settleKey) {
-          // 了结：标记已结（保守不删原文，留档可回溯）
-          const key = fact.settleKey || fact.npc;
+          // 了结：在指定旧约上打 settled 标记（settleKey 可点名旧约），不删原文
+          const key = fact.settleKey || pactKey;
           patches.push({
             op: "merge",
-            path: ["varTree", "世界", "契约", key, "settled"],
+            path: ["varTree", "世界", "契约", fact.npc, key, "settled"],
             value: { turn, note: fact.note || "" },
             factId: fact.id,
           });
         } else {
           patches.push({
             op: "merge",
-            path: ["varTree", "世界", "契约", fact.npc],
+            path: ["varTree", "世界", "契约", fact.npc, pactKey],
             value: {
               npc: fact.npc,
               promise: fact.promise || "",
@@ -335,7 +341,11 @@ export function materializeFacts(state, facts, compiledWarrants) {
         const id = fact.companionId || fact.id?.split("_")?.[0] || "companion";
         const updates = fact.updates || fact.fields || {};
         for (const [k, v] of Object.entries(updates)) {
-          patches.push({ op: "merge", path: ["companionState", id, k], value: v, factId: fact.id });
+          // 对象值浅并一层：applyMergePatch 是整体替换，直写会丢弃未提及的嵌套字段
+          const merged = v && typeof v === "object" && !Array.isArray(v)
+            ? (prev) => (prev && typeof prev === "object" && !Array.isArray(prev) ? { ...prev, ...v } : v)
+            : v;
+          patches.push({ op: "merge", path: ["companionState", id, k], value: merged, factId: fact.id });
         }
         if (!Object.keys(updates).length && fact.note) {
           patches.push({
@@ -351,10 +361,13 @@ export function materializeFacts(state, facts, compiledWarrants) {
       // ── 12. ALTER_WORLD_SCENE：世界场景改写 → applyPatches 指令 ──
       case "ALTER_WORLD_SCENE": {
         const sceneKey = fact.sceneKey || fact.place || "佚名之地";
-        const updates = fact.updates || (fact.key ? { [fact.key]: fact.value } : {});
+        const updates = { ...(fact.updates || (fact.key ? { [fact.key]: fact.value } : {})) }; // 拷贝：写 desc 不得突变入参 fact
         if (!Object.keys(updates).length && fact.note) updates.desc = fact.note;
         for (const [k, v] of Object.entries(updates)) {
-          patches.push({ op: "merge", path: ["varTree", "世界", "场景", sceneKey, k], value: v, factId: fact.id });
+          const merged = v && typeof v === "object" && !Array.isArray(v)
+            ? (prev) => (prev && typeof prev === "object" && !Array.isArray(prev) ? { ...prev, ...v } : v)
+            : v;
+          patches.push({ op: "merge", path: ["varTree", "世界", "场景", sceneKey, k], value: merged, factId: fact.id });
         }
         if (!Object.keys(updates).length) {
           logs.push({ t: "err", text: `  ⛔ 事实 ${fact.id}：场景改写无内容` });
@@ -373,7 +386,8 @@ export function materializeFacts(state, facts, compiledWarrants) {
   if (skillsDirty) changes.skills = skills;
   if (flagsDirty) changes.flags = flags;
   if (daoDirty) changes.dao = dao;
-  if (claimedDirty) changes.claimedMilestones = Array.from(claimed);
+  // 保持 Set：序列化成数组是 infra/saves 的职责，domain 输出不降级类型
+  if (claimedDirty) changes.claimedMilestones = new Set(claimed);
   if (expDirty) changes.exp = exp;
   if (potDirty) changes.pot = pot;
 

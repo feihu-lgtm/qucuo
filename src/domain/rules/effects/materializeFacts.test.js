@@ -179,7 +179,7 @@ describe("materializeFacts 十二律覆盖矩阵", () => {
     const types = out.patches.map((p) => `${p.op}:${p.path.join(".")}`);
     expect(types).toContain("add:varTree.角色.才旦.好感度");
     expect(types).toContain("merge:varTree.角色.才旦.心账");
-    expect(types).toContain("merge:varTree.世界.契约.才旦");
+    expect(types).toContain("merge:varTree.世界.契约.才旦.F17");
     expect(types).toContain("merge:companionState.雪豹.loyalty");
     expect(types).toContain("merge:varTree.世界.场景.鱼定村.mood");
     // 每条 patch 带 factId 供回溯
@@ -190,7 +190,7 @@ describe("materializeFacts 十二律覆盖矩阵", () => {
     const out = materializeFacts(baseState(), [
       { id: "F20", op: "BIND_OR_SETTLE_PACT", npc: "才旦", settle: true, note: "猎叉已还" },
     ], {});
-    expect(out.patches[0].path.join(".")).toBe("varTree.世界.契约.才旦.settled");
+    expect(out.patches[0].path.join(".")).toBe("varTree.世界.契约.才旦.F20.settled");
   });
 
   it("纯函数性：同一输入两次输出一致，入参零突变", () => {
@@ -205,6 +205,69 @@ describe("materializeFacts 十二律覆盖矩阵", () => {
     expect(JSON.stringify(a.changes)).toBe(JSON.stringify(b.changes));
     const after = JSON.parse(JSON.stringify({ ...state, claimedMilestones: [] }));
     expect(after).toEqual(frozen);
+  });
+
+  it("claimedMilestones 输出保持 Set（序列化是 infra 职责）", () => {
+    const out = materializeFacts(baseState(), [
+      { id: "F30", op: "SHIFT_SPECIAL_STAT", attr: "体魄", delta: 1, milestoneKey: "ms_x" },
+    ], {});
+    expect(out.changes.claimedMilestones instanceof Set).toBe(true);
+    expect(out.changes.claimedMilestones.has("ms_x")).toBe(true);
+  });
+
+  it("GRANT_ITEM 兜底 id 走 mintItemId 确定性 hex（it_ 前缀），同输入幂等", () => {
+    const a = materializeFacts(baseState(), [{ id: "F31", op: "GRANT_ITEM", itemName: "无名残页" }], {});
+    const b = materializeFacts(baseState(), [{ id: "F31", op: "GRANT_ITEM", itemName: "无名残页" }], {});
+    const ida = a.changes.inv.find((e) => e.name === "无名残页").id;
+    const idb = b.changes.inv.find((e) => e.name === "无名残页").id;
+    expect(ida).toMatch(/^it_[0-9a-f]+$/);
+    expect(ida).toBe(idb);
+    expect(ida).not.toContain("fallback");
+  });
+
+  it("TRANSFER_ITEM 不错配留档条目：前一人 dropped 的同名物不影响后一人真还", () => {
+    const state = baseState();
+    // 才旦身上的骨哨已被置 dropped（上次已给过玩家）；管家持有一件真品归还
+    state.room.npcs[0].carriedItems[0] = { id: "it_whistle", name: "骨哨", dropped: true };
+    state.inv = state.inv.filter((e) => e.id !== "it_whistle");
+    state.room.npcs[1].carriedItems.push({ id: "it_whistle2", name: "骨哨" });
+    const out = materializeFacts(state, [
+      { id: "F32", op: "TRANSFER_ITEM", itemId: "it_whistle2", itemName: "骨哨", from: "管家", to: "player" },
+    ], {});
+    // 管家真品进袋并被摘除；才旦的留档原样不动
+    expect(out.changes.inv.some((e) => e.id === "it_whistle2")).toBe(true);
+    expect(out.changes.room.npcs[1].carriedItems.some((e) => e.id === "it_whistle2" && !e.dropped)).toBe(false);
+    expect(out.changes.room.npcs[0].carriedItems[0]).toMatchObject({ id: "it_whistle", dropped: true });
+  });
+
+  it("MUTATE_COMPANION / ALTER_WORLD_SCENE 对象值浅并：未提及的嵌套字段不丢", () => {
+    const out = materializeFacts(baseState(), [
+      { id: "F33", op: "MUTATE_COMPANION", companionId: "雪豹", updates: { stats: { loyalty: 5 } } },
+      { id: "F34", op: "ALTER_WORLD_SCENE", sceneKey: "鱼定村", updates: { guard: { level: 2 } } },
+    ], {});
+    const compPatch = out.patches.find((p) => p.path.join(".") === "companionState.雪豹.stats");
+    const scenePatch = out.patches.find((p) => p.path.join(".") === "varTree.世界.场景.鱼定村.guard");
+    expect(typeof compPatch.value).toBe("function");
+    expect(compPatch.value({ loyalty: 1, trust: 9 })).toEqual({ loyalty: 5, trust: 9 });
+    expect(scenePatch.value({ level: 1, patrol: "夜" })).toEqual({ level: 2, patrol: "夜" });
+    // 原始值兜底：无旧值时直接用新对象
+    expect(compPatch.value(undefined)).toEqual({ loyalty: 5 });
+  });
+
+  it("ALTER_WORLD_SCENE 不突变入参 fact.updates", () => {
+    const updates = { mood: "戒备" };
+    materializeFacts(baseState(), [{ id: "F35", op: "ALTER_WORLD_SCENE", sceneKey: "村", updates }], {});
+    expect(updates).toEqual({ mood: "戒备" });
+  });
+
+  it("BIND_OR_SETTLE_PACT 同一 NPC 多约共存不互覆", () => {
+    const out = materializeFacts(baseState(), [
+      { id: "F36", op: "BIND_OR_SETTLE_PACT", npc: "才旦", promise: "约一" },
+      { id: "F37", op: "BIND_OR_SETTLE_PACT", npc: "才旦", promise: "约二" },
+    ], {});
+    const paths = out.patches.map((p) => p.path.join("."));
+    expect(paths).toContain("varTree.世界.契约.才旦.F36");
+    expect(paths).toContain("varTree.世界.契约.才旦.F37");
   });
 
   it("未知事实码不静默：进 logs 记异", () => {
