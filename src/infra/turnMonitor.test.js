@@ -1,24 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { runScript } from "../../cli/runner.mjs";
-import { createMockAi } from "../engine/ports/ai.js";
 import { createTurnMonitor, PHASE as P } from "./turnMonitor.js";
 import { fmtClock, formatTrace } from "../infra/actionTrace.js";
-
-it("shows the phase order and layered nodes of a mock AI script turn", async () => {
-  const output = [];
-  const script = ":new\n探索石阶\n:status\n:tree 1";
-  const ai = createMockAi(['{"output":["石阶旁的草叶轻轻摇动。"]}']);
-  expect(await runScript(script, {
-    out: (text) => output.push(text), ai,
-    // 单条 mock 回复只够主叙事用：关掉默认开启的行动识别/软结算保持确定性。
-    apiCfg: { intentRecognitionEnabled: false, extractionEnabled: false },
-  })).toBe(0);
-  expect(output.join("\n")).toMatch(/DONE · 完成/);
-  const tree = output.find((text) => text.includes("MACHINE →"));
-  expect(tree).toMatch(/=== \d{2}:\d{2}:\d{2} turn-\d+ 探索石阶/);
-  expect(tree).toMatch(/探索石阶 \| MACHINE → AI_WAIT → COMMIT → DONE/);
-  expect(tree).toMatch(/\[ui\].*\n\s+\[app\].*\n\s+\[feature\][\s\S]*\[domain\][\s\S]*\[engine\] 主叙事[\s\S]*\[engine\] 提交[\s\S]*\[rules\][\s\S]*\[result\]/);
-});
 
 it("formats local clock time in trace headers", () => {
   const ts = new Date(2024, 0, 2, 9, 3, 5).getTime();

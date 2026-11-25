@@ -5,6 +5,7 @@ import { OVERLAY, openOverlay } from "../../../store/uiStore.js";
 import { useGameStore } from "../../../store/gameStore.js";
 import { listCharacters, npcAffectionLabel } from "../../../domain/rules/prompt/mvu.js";
 import { getAvailableMilestone } from "../../../domain/data/character/characterMilestones.js";
+import { HEART_LEDGER_TAGS, normalizeLedgerEntries, groupHeartLedgerByTag } from "../../../domain/rules/memory/npcLedger.js";
 import { QUCUO_QUESTS } from "../../../domain/data/quests/qucuoQuests.js";
 import { SNOW_QUEST_ID, SNOW_SPIRITS, snowSpiritCount } from "../../../domain/rules/quests/snowLeopardQuest.js";
 import { getCurrentStage } from "../../../domain/rules/quests/questEngine.js";
@@ -79,6 +80,8 @@ function QuestDialItem({ q, prog, flags, zoneTheme }) {
 function RelationDialItem({ c, claimedMilestones, zoneTheme }) {
   const affection = c.attrs.好感度 ?? 0;
   const milestone = getAvailableMilestone(c.name, affection, claimedMilestones);
+  const { groups } = groupHeartLedgerByTag(normalizeLedgerEntries(c.attrs?.心账));
+  const tagCounts = HEART_LEDGER_TAGS.filter((tag) => groups[tag].length > 0);
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -89,6 +92,15 @@ function RelationDialItem({ c, claimedMilestones, zoneTheme }) {
       <div style={{ height: 5, background: "var(--bg-panel)", borderRadius: 0, overflow: "hidden", marginTop: 2 }}>
         <div style={{ height: "100%", width: `${Math.min(100, affection)}%`, background: "linear-gradient(90deg, var(--pink), var(--ember))" }} />
       </div>
+      {tagCounts.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 3 }}>
+          {tagCounts.map((tag) => (
+            <span key={tag} style={{ fontSize: "var(--fs-2xs)", color: zoneTheme.textDim, border: `1px solid ${zoneTheme.border}`, padding: "0 3px" }}>
+              {tag}{groups[tag].length}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { getPromptDef } from "../../domain/rules/prompt/registry.js";
 import { buildPrompt, estimatePromptTokens } from "../../domain/rules/prompt/buildPrompt.js";
 import { validateJsonSchema } from "../../utils/schemaValidate.js";
+import { recordIntakeMetric } from "./releaseMetrics.js";
 
 const THINKING_TAG_RE = /<think(?:ing)?\b[^>]*>[\s\S]*?<\/think(?:ing)?>|<think(?:ing)?\b[^>]*>[\s\S]*$/gi;
 
@@ -31,6 +32,7 @@ export async function withAI(
     maxTokens: optMaxTokens,
     callLabel: optCallLabel,
     modelOptions: optModelOptions,
+    epoch = "default",
     throwOnError = true,
   } = {},
 ) {
@@ -73,7 +75,13 @@ export async function withAI(
     };
   };
 
+  const recordIntake = (outcome) => {
+    if (callId === "turn.intake") recordIntakeMetric({ epoch, cfg: cfg || apiCfg, outcome });
+  };
+
   if (!ai || apiCfg?.offline) {
+    // offline/无 ai 是用户配置或环境状态，不是模型质量样本——不计入指标，
+    // 否则 dev 离线调试会污染合格率分母。
     const err = new Error(!ai ? "AI port is required" : "offline_mode");
     return failOrFallback(err.message, { error: err });
   }
@@ -133,12 +141,15 @@ export async function withAI(
       } catch {
         // 带上 raw/usage 透传：截断检测（finish_reason=length 藏在 raw.choices 里）依赖它，
         // schema 解析失败不能把这条诊断链弄丢。
+        recordIntake("parseFailed");
         return { ...failOrFallback("schema_json_parse_failed", { text, finishReason: res?.finishReason }), ...passthrough };
       }
       const verdict = validateJsonSchema(parsed, schema.schema || schema);
       if (!verdict.ok) {
+        recordIntake("validateFailed");
         return { ...failOrFallback(`schema_validate_failed: ${verdict.reason}`, { text, finishReason: res?.finishReason }), ...passthrough };
       }
+      recordIntake("schemaOk");
       return {
         ok: true,
         text,
@@ -171,6 +182,7 @@ export async function withAI(
       ...passthrough,
     };
   } catch (error) {
+    recordIntake("otherFailed");
     return failOrFallback(error?.message || "ai_error", { error });
   }
 }

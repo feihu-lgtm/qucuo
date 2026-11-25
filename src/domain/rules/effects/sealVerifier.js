@@ -95,6 +95,9 @@ export function verifySealAndMaterialize({
   const fills = sealData?.fills || {};
   const compiledWarrants = {};
   const rejectedAffixes = [];
+  // 尾章失职券（放行指标用）：正文埋了锚/券非条件，尾章却没填空——
+  // 模型自己的 SEAL 没尽责，必须计失败。条件券正文未埋锚的作废是叙事合法跳过，不计入。
+  const unfilledWarrants = [];
   for (const warrant of warrants) {
     const fill = fills[warrant.warrantId];
     // WO-16C 条件券双证据：①正文出现对应 F 锚点 且 ②fill 可编译，缺一即作废
@@ -107,10 +110,12 @@ export function verifySealAndMaterialize({
       }
       if (!fill) {
         notes.push(`${warrant.warrantId} 条件券正文已埋锚但尾章未填空，券作废`);
+        unfilledWarrants.push(warrant.warrantId);
         continue;
       }
     } else if (!fill) {
       notes.push(`${warrant.warrantId} 尾章未填空，该券作废`);
+      unfilledWarrants.push(warrant.warrantId);
       continue;
     }
     // 形状防线：name 必须是非空字符串——模型失控吐出对象时，
@@ -166,6 +171,7 @@ export function verifySealAndMaterialize({
     warnings,
     notes,
     rejectedAffixes,
+    unfilledWarrants,
     facts,
     materialized,
   };

@@ -5,6 +5,13 @@ import { diffSnapshots } from "./shadowDiff.js";
 import { compareCategories } from "./shadowCompare.js";
 import { projectFacts } from "./shadowTaxonomy.js";
 import { INTIMATE_TICKET_NAME } from "../../../domain/rules/npc/goldenEgg.js";
+import { vi } from "vitest";
+import { judgeTurn } from "../../../domain/rules/judge/judgeTurn.js";
+
+vi.mock("../../../domain/rules/judge/judgeTurn.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  return { ...actual, judgeTurn: vi.fn(actual.judgeTurn) };
+});
 
 const cfg = (over = {}) => ({ extractionEnabled: false, shadowJudgeEnabled: true, ...over });
 
@@ -141,5 +148,22 @@ describe("runShadowJudge 执行器门禁", () => {
       await runShadowJudge({ ...base, apiCfg: cfg(), preState: null, postState: null });
     } catch { threw = true; }
     expect(threw).toBe(false);
+  });
+});
+
+describe("影子时间口径（WO-16E 二审）", () => {
+  beforeEach(() => { _resetShadowAggregates(); judgeTurn.mockClear?.(); });
+  it("非搭话 commit 后 time+1，影子判官仍吃回合前 turn", async () => {
+    const base = {
+      cmd: "翻箱倒柜", apiCfg: { extractionEnabled: false, shadowJudgeEnabled: true },
+      preState: { inv: [], flags: [], varTree: {}, room: { npcs: [], name: "x" }, char: {}, turn: 48 },
+      postState: { inv: [], flags: [], varTree: {}, room: { npcs: [], name: "x" }, turn: 49 },
+      ai: { chat: async () => ({ text: "{}" }) },
+    };
+    await runShadowJudge(base);
+    expect(judgeTurn).toHaveBeenCalled();
+    const envelope = judgeTurn.mock.calls[0][0];
+    expect(envelope.turn).toBe(48); // 回合前，不是 commit 后 49
+    expect(envelope.day).toBe(Math.floor(48 / 24) + 1);
   });
 });

@@ -61,3 +61,15 @@ describe("validateEmergenceSeal 五路校验", () => {
     expect(vt3.世界.传闻人物.磨坊阿福).toBeUndefined();
   });
 });
+
+describe("重复传闻不计 rejections（放行指标口径）", () => {
+  it("已在册名字重复申报只进 notes，不压 passed", async () => {
+    const { validateEmergenceSeal } = await import("./npcEmergence.js");
+    const out = validateEmergenceSeal(
+      { mentionedNewNpcs: ["陈年旧事人"] },
+      { screenText: "陈年旧事人 又在巷口出现了", varTree: { 世界: { 传闻人物: { 陈年旧事人: { note: "旧" } } } }, roomNpcs: [] },
+    );
+    expect(out.notes.some((n) => n.includes("重复申报"))).toBe(true);
+    expect(out.rejections).toEqual([]);
+  });
+});

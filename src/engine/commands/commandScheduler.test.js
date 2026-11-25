@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { CATEGORY, COMMANDS } from "../../infra/commands.js";
 import { createScheduler, decide } from "./commandScheduler.js";
 import { formatTurnStatus, getTurnContext, PHASE, turnMonitor } from "../../infra/turnMonitor.js";
-import { classifyCliCommand } from "../../../cli/runner.mjs";
+import { classifyCliCommand } from "./index.js";
 
 const categories = Object.values(CATEGORY);
 const phases = ["machine", "ai", "commit"];

@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { expect, it } from "vitest";
 
 const SRC = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const ROOTS = [SRC, resolve(SRC, "..", "cli")];
+const ROOTS = [SRC];
 const EXPORT = /export\s+(?:async\s+)?(?:function\*?|const|let|class)\s+([A-Za-z_$][\w$]*)/g;
 
 const KEEP = {};

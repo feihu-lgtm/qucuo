@@ -11,7 +11,9 @@ import { getApiModel } from "../content/apiModel.js";
 import { filterPlanDelta, filterRejectedEffects } from "../domain/rules/intent/planNotes.js";
 import { classifyError } from "../utils/apiErrors.js";
 import { withAI } from "./ports/withAI.js";
+import { recordSealMetric } from "./ports/releaseMetrics.js";
 import { judgeTurn } from "../domain/rules/judge/judgeTurn.js";
+import { buildCausalBudgetInput } from "../domain/rules/judge/budgetInput.js";
 import { getInnerRoom } from "../domain/rules/map/innerMap.js";
 import { resolveContainerContext } from "../domain/rules/world/containers.js";
 import { renderJudgeVerdict, renderCausalBudget } from "../domain/rules/judge/judgeTurn.js";
@@ -222,7 +224,7 @@ async function runTurnSteps(ctx, cmd, opts) {
         questCandidates,
         containers: openContainers,
       });
-      const intakeRes = await withAI("turn.intake", { userContent: intakeContent, cfg: deps.apiCfg }, { ai, apiCfg: deps.apiCfg, throwOnError: false });
+      const intakeRes = await withAI("turn.intake", { userContent: intakeContent, cfg: deps.apiCfg }, { ai, apiCfg: deps.apiCfg, throwOnError: false, epoch: String(ctx.proseEpoch ?? "default") });
       if (ctx.isStale?.()) return { stale: true };
       const intakeResult = normalizeIntakeResult(intakeRes?.data);
       const timeNow = getGameStateTime(ctx, deps);
@@ -234,7 +236,17 @@ async function runTurnSteps(ctx, cmd, opts) {
         containerPlace,
         questCandidates,
         pickupJudgment: deps.pickupJudgment || null,
-        budget: { riskLevel: 0, luck: deps.char?.special?.气运 ?? 0 },
+        // WO-16E：授信输入由 buildCausalBudgetInput 装配（runTurn/shadow 同一入口），
+        // 不再硬编码 riskLevel:0——tension 读 encounter 势力字段、risk 按动作兜底、
+        // 每日搜刮配额读 varTree 账本跨日归零。
+        budget: buildCausalBudgetInput({
+          varTree: deps.varTree || ctx.memory?.varTreeLatest || {},
+          char: deps.char || liveNow.char || {},
+          room: deps.room || {}, inv: deps.inv || [],
+          turn: timeNow, day: Math.floor(timeNow / 24) + 1,
+          encounter: ctx.encounter || deps.encounter || null,
+          questCandidates,
+        }, intakeResult, { gm: !!ctx.gm }),
       }, intakeResult, { rng: random });
       // WO-16A respondedNpcs 系统推导：intake 听意单里 kind=talk 的 target 即
       // 本轮玩家对话对象——不再依赖叙事模型在 SEAL/JSON 里自证。SEAL 字段仅在
@@ -484,6 +496,19 @@ async function runTurnSteps(ctx, cmd, opts) {
         room: { ...(p.room || {}), npcs: roomNpcs },
       };
     }
+    // 放行指标在涌现校验之后统一记录——锚到了但尾章没填空（unfilledWarrants）、
+    // 声明新 NPC 被 emergence 拒绝（rejections）都必须计入 failed，早记会漏。
+    recordSealMetric({
+      epoch: String(ctx.proseEpoch ?? "default"),
+      cfg: deps.apiCfg,
+      sealText: sealParts?.sealText || "",
+      sealData: verified.sealData,
+      warnings: verified.warnings,
+      missingAnchors: verified.missingAnchors,
+      rejectedAffixes: verified.rejectedAffixes,
+      unfilledWarrants: verified.unfilledWarrants,
+      emergenceRejections: emergenceCheck.rejections,
+    });
     judgeEffects = { verdict: judgeVerdict, sealReport: verified, materialized: verified.materialized };
     trace("尾章校对", "pass", `锚点齐 ${judgeVerdict.facts.length - verified.missingAnchors.length}/${judgeVerdict.facts.length}，编译券 ${Object.keys(verified.materialized?.receipts || {}).length}，facts 落盘 ${verified.facts.length} 条`);
   }
