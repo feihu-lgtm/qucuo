@@ -279,6 +279,7 @@ flowchart LR
 | 噪声占比 | ≤ 60% | 噪声过半说明 mostly 人工甄别，自动放行收益不抵风险 |
 | 可对比但低覆盖类目 | 按不通过论 | `comparable>0` 且覆盖率不足不放行——宁可不放行不错放行 |
 | 全回合盲区类目 | 不可测跳过 | `comparable=0`（如 npcs 系统改写链恒 excluded）属结构性盲区，不参与门槛也不判负——否则任何真实样本永远卡死 |
+| S7-move move 最小确定路由 | 本 PR | intake kind=move 接 judgeRoutes：优先消费 intake.direction（不重猜长文本），内层移动复用 features/map innerMove 同一套账叙事前结算（锁门/无出口/新人物/lastSeen 全含），成功回执进判官铁律块；无效方向/被挡/外层一律「系统未结算，叙事不得写成已移动」。**缺口**：外层大地图移动不接——outerArrival 格子缓存/路遇/拾取判定与 AI 回合深度交织，叙事前复用需大改（精确阻塞点见 PR）。 |
 
 **使用**：dev 单调用模式游玩 → 全流程日志「影子对账聚合」→ 复制聚合JSON 存盘 → `npm run shadow:report -- <文件>`；退出码 0=通过 2=不通过，可进 CI/评审附件。
 

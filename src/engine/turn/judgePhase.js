@@ -243,7 +243,9 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
       //    立刻捡，前提裁决属 WO-16F 真条件规则，此处 trace/note 留痕不抢跑（G1 interim 口径）；
       // ② isTalk（判官 talkOnly 口径）下三类硬路由一律不执行——纯搭话回合判官白名单
       //    本就禁止硬事实，intake 误产/混产也不能落地。
-      const ROUTEABLE = ["equip", "use_item", "take", "invite"];
+      // S7：move 入路由——intake.direction 有效时内层移动叙事前确定性结算，
+      // 外层/无效方向回执「未结算」，叙事不得编位移。
+      const ROUTEABLE = ["equip", "use_item", "take", "invite", "move"];
       const routeCandidates = (intakeResult.actions || []).filter((a) => ROUTEABLE.includes(a?.kind));
       const conditioned = routeCandidates.filter((a) => a?.condition && a.condition !== "无");
       if (conditioned.length) {
