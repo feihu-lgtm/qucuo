@@ -21,7 +21,13 @@ function setterForKey(key) {
 function captureSnapshot(getGameState) {
   const state = getGameState();
   return {
-    state: Object.fromEntries(ROLLBACK_KEYS.map((key) => [key, state[key]])),
+    state: {
+      ...Object.fromEntries(ROLLBACK_KEYS.map((key) => [key, state[key]])),
+      // WO-16D-3 初审修：prepSeeds 只进快照切片不进 ROLLBACK_KEYS——
+      // 回滚不恢复它（备料缓存不属于回合事务），但影子/观测能拿到回合前引用，
+      // 不受 narrate 期间后台 world.prep 入库/失效污染。
+      prepSeeds: state.prepSeeds,
+    },
     rngState: getRngState(),
     squares: serializeSquares(),
   };
@@ -67,9 +73,7 @@ export async function playTurn(ctx, cmd, opts = {}) {
       ? {
         inv: snapshot.state.inv, flags: snapshot.state.flags, varTree: snapshot.state.varTree,
         room: snapshot.state.room, questProgress: getGameState?.()?.questProgress,
-        // WO-16D-3 同源失真修：ROLLBACK_KEYS 不含 prepSeeds，snapshot.state 取不到——
-        // 影子备料恒空，inspect_container 备料关覆盖率假报缺口。按 questProgress 同口径直读。
-        prepSeeds: getGameState?.()?.prepSeeds,
+        prepSeeds: snapshot.state.prepSeeds,
         // WO-16D-M1 四类目 diff 吃全字段——缺一则 diff 按零算假损/死度量（Review 修）
         char: snapshot.state.char, exp: snapshot.state.exp, pot: snapshot.state.pot,
         skills: snapshot.state.skills, turn: snapshot.state.time,
