@@ -2,6 +2,8 @@ import { getInnerRoom, hasInnerMap, isNpcVisibleInInnerRoom, visibleInnerExits }
 import { DIRS } from "../map/mapNarration.js";
 import { getTimeStr } from "../../../utils/mudHelpers.js";
 import { allFactSummaries } from "../prompt/knowledgeRoot.js";
+import { renderDiegeticState } from "../clapboard/diegeticState.js";
+import { renderNpcSoulFrames } from "../clapboard/npcSoulFrame.js";
 
 export function formatFactSummariesForPrompt(facts) {
   return facts.map((fact) => `· （${getTimeStr(fact.诞生回合 || 0)}）${fact.摘要}${fact.标签 ? `〔${fact.标签}〕` : ""}`).join("\n");
@@ -226,6 +228,18 @@ export const FIELDS = Object.freeze({
   "物价": { label: "物价参考", readOnly: true, refs: {
     "物价.主食": foodPrice,
     "物价.兵器": weaponPrice,
+  } },
+  "clapboard.diegeticState": { label: "体感态势", readOnly: true, refs: {
+    "体感态势": (s) => renderDiegeticState({ char: s.char, inv: s.inv, time: s.time }),
+  } },
+  "clapboard.npcSoulFrames": { label: "在场活人切片", readOnly: true, refs: {
+    "在场活人切片": (s) => renderNpcSoulFrames({
+      visibleNpcs: (s.room?.npcs || []).filter((npc) =>
+        typeof s.innerRoomName !== "string" || isNpcVisibleInInnerRoom(s.room?.name, s.innerRoomName, npc)),
+      varTree: s.varTree,
+      time: s.time,
+      clapboardEntries: s.clapboardEntries,
+    }),
   } },
   "giftInfo.weight": { label: "赠礼分量", readOnly: true, refs: {
     "赠礼.分量": (_s, weight) => weight?.label,

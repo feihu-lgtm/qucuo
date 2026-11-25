@@ -105,7 +105,7 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       if (o.giftInfo?.weight) return giftWeight(
         "\n【赠礼反应】「@giftInfo.itemName」已由系统交付，禁重复扣除。分量：@{赠礼.分量}；反应：@{赠礼.反应}。贴合收礼人性格，不同分量禁雷同。",
       ) + preferHint;
-      return `\n【送礼世界观铁律】曲措乡人情厚重，当面送礼无论贵贱皆生惊喜与暖意，绝不为难、起疑或冷脸不领情。本轮唯一走向：${o.settleNpc}面对${o.giftInfo?.itemName ? `「${o.giftInfo.itemName}」` : "这件礼物"}${o.giftInfo?.desc ? `（${o.giftInfo.desc}）` : ""}，必写欣然收下、态度转暖；禁写推辞、质疑来意或婉拒。` + preferHint;
+      return `\n【送礼反应铁律】「${o.giftInfo?.itemName ? o.giftInfo.itemName : "礼物"}」已由系统交付并结算完毕，禁重复扣除、禁改写收讫事实。${o.settleNpc}的反应按其自身性情与礼物分量自然写：性情冷傲者即便心里受用也只是淡淡收下，豪爽者拍腿道谢，精明者掂量估值；厚礼动心、薄礼随意，因人而异、禁千人一腔地惊喜转暖，也禁无由为难起疑。` + preferHint;
     }
     if (o.settleKind === "companion_invite") {
       const cn = o.settleNpc || "对方";
