@@ -25,7 +25,9 @@ export function materializeEmergence({ p, luck, innerRoomName, npcState }) {
           // 东西与叙事描述对不上。skills/combatStats 等推导数据仍不并。
           ...(proposed ? {
             ...(proposed.brief ? { brief: proposed.brief } : {}),
-            ...(proposed.carry !== undefined ? { carry: proposed.carry } : {}),
+            // 模型可能把 carry 返回成对象/字符串——非数组一律丢弃，
+            // 否则 attireExposure 的 ...(npc.carry||[]) 展开在后续回合直接抛错
+            ...(Array.isArray(proposed.carry) ? { carry: proposed.carry } : {}),
           } : {}),
           ...(r.npcs.find(n => n.name === p.emergedNpcName) || {}),
           // upsert 路径下原名单里没有此人，名字必须显式带上；id 用确定性派生——
