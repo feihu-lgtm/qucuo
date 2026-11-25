@@ -68,6 +68,26 @@ export default function NarrativeLogFeed({
     }
   }
 
+  // WO-14 天机落账卡：EffectReceiptCard 的按钮派发的是结构化 action
+  // （{ type:"effectReceipt", op, name, ... }），而 act 只认玩家指令文本。
+  // 在此统一翻成指令文本再走 act——组件不碰 gameStore、act 契约不变，
+  // 判官/落盘主链路（WO-13 起）接手后按文本意图正常裁决。
+  const handleEntryAction = (a) => {
+    if (a && typeof a === "object" && a.type === "effectReceipt") {
+      const name = a.name || "";
+      const cmd = {
+        equip: `佩挂 ${name}`,
+        consume: `服用 ${name}`,
+        activate: `设为主招 ${name}`,
+        viewPact: "查看江湖契约",
+      }[a.op];
+      if (!cmd) return;
+      act(cmd);
+      return;
+    }
+    act(a);
+  };
+
   return (
     <div data-testid="narrative-log" style={{ display: hidden ? "none" : "block", flex: 1, padding: "20px 32px", overflowY: "auto", overflowX: "hidden", fontSize: "var(--fs-lg)", lineHeight: "var(--lh-narrative)", letterSpacing: "0.3px" }}>
       {groups.map((g, gi) => {
@@ -76,7 +96,7 @@ export default function NarrativeLogFeed({
           const standaloneLabel = formatEntryTurnLabel(g.standalone);
           return (
             <div key={gi}>
-              <LogEntry entry={g.standalone} color={clr[g.standalone.t] || clr.desc} onAction={act} isDayMode={isDayMode} />
+              <LogEntry entry={g.standalone} color={clr[g.standalone.t] || clr.desc} onAction={handleEntryAction} isDayMode={isDayMode} />
               {standaloneLabel && g.standalone.t === LOG_T.ROOM && (
                 <div style={{ textAlign: "center", color: zoneTheme.textDim, fontSize: "var(--fs-2xs)", marginTop: -2, marginBottom: 4, fontVariantNumeric: "tabular-nums" }}>
                   {standaloneLabel}
@@ -127,7 +147,7 @@ export default function NarrativeLogFeed({
                   {canCollapse ? (collapsed ? "▶" : "▼") : ""}
                 </span>
                 <div style={{ flex: 1 }}>
-                  <LogEntry entry={g.cmd} color={clr[g.cmd.t] || clr.desc} onAction={act} isDayMode={isDayMode} />
+                  <LogEntry entry={g.cmd} color={clr[g.cmd.t] || clr.desc} onAction={handleEntryAction} isDayMode={isDayMode} />
                 </div>
                 {groupTurnLabel && (
                   <span style={{ color: zoneTheme.textDim, fontSize: "var(--fs-2xs)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
@@ -151,7 +171,7 @@ export default function NarrativeLogFeed({
                 {g.replies.map((entry, ri) => (
                   entry.skeleton
                     ? <NarrativeSkeleton key="narrative-skeleton" />
-                    : <LogEntry key={ri} entry={entry} color={clr[entry.t] || clr.desc} onAction={act} isDayMode={isDayMode} />
+                    : <LogEntry key={ri} entry={entry} color={clr[entry.t] || clr.desc} onAction={handleEntryAction} isDayMode={isDayMode} />
                 ))}
               </div>
             )}

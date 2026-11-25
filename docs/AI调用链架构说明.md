@@ -43,6 +43,7 @@ flowchart TD
 | 首字超时兜底 | 基础已落地/未接主链 | `streamWithFirstTokenFallback` 支持插入过渡行、首字抵达原位替换、超时静默降级；主循环接线属于后续工单。 |
 | 十二律落盘引擎 | 基础已落地/未接主链 | `materializeFacts` 已把十二类事实码编译成 `changes/patches/receipts/logs`；尚未进入主回路，接线属于后续主循环工单。 |
 | 前哨 intake + 判官 | 基础已落地/未接主链 | 契约 B、`turn.intake` 与 `judgeTurn` 已落地；尚未接入主回路，切换属于后续主循环工单。 |
+| 天机落账卡 UI | 已落地/动作仍走文本指令 | `EffectReceiptCard` 已消费 `receipts` 渲染落账条（品阶色/攻防/词条翻译/出生落款），按钮经 NarrativeLogFeed 翻成文本指令进 `act`；尚未走 WO-13 结构化落账链路，按钮语义依赖回合裁决而非直写状态。 |
 
 ## 4. 目标链路分层
 
