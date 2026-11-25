@@ -79,6 +79,39 @@ describe("normalizeIntakeResult 本地复核", () => {
     expect(out2.actions[0].item).toBe("无");
   });
 
+  it("proposals 残缺/非法整条丢弃，不补默认 kind/fit/claim", () => {
+    const mk = (patch) => ({ read: "x", refIds: [], actions: [], proposals: [{ claim: "桌上有剑谱", kind: "find_item", fit: "natural", questId: "", flag: "", ...patch }] });
+    // 缺 kind/fit/claim 或非法枚举——整条丢弃，绝不被伪造成合法寻宝提议
+    for (const bad of [
+      mk({ kind: undefined }),
+      mk({ fit: undefined }),
+      mk({ claim: "" }),
+      mk({ kind: "fly" }),
+      mk({ fit: "perfect" }),
+    ]) {
+      const out = normalizeIntakeResult(bad);
+      expect(out.proposals).toEqual([]);
+    }
+    // 完整合法的保留；questId/flag 缺失可补缺省空串
+    const good = normalizeIntakeResult(mk({}));
+    expect(good.proposals).toHaveLength(1);
+    const noQf = normalizeIntakeResult({ read: "x", refIds: [], actions: [], proposals: [{ claim: "桌上有剑谱", kind: "find_item", fit: "natural" }] });
+    expect(noQf.proposals).toHaveLength(1);
+    expect(noQf.proposals[0].questId).toBe("");
+  });
+
+  it("confidence 超 0-1 界不通过", () => {
+    const mk = (c) => ({
+      read: "x", refIds: [], proposals: [],
+      actions: [{ kind: "talk", target: "才旦", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: c, text: "x" }],
+    });
+    expect(normalizeIntakeResult(mk(1.5)).degraded).toBe(true);
+    expect(normalizeIntakeResult(mk(-0.1)).degraded).toBe(true);
+    expect(normalizeIntakeResult(mk(0.5)).degraded).toBeUndefined();
+    expect(normalizeIntakeResult(mk(0)).degraded).toBeUndefined();
+    expect(normalizeIntakeResult(mk(1)).degraded).toBeUndefined();
+  });
+
   it("枚举非法修不好才降级为空听意单（degraded 标记）", () => {
     const bad = { read: "x", refIds: [], actions: [{ kind: "fly" }], proposals: [] };
     const out = normalizeIntakeResult(bad);
@@ -119,14 +152,25 @@ describe("buildIntakeUserContent WO-16G 喂料", () => {
     expect(text).not.toContain("银两");
   });
 
-  it("可用出口经 visibleInnerExits 锁/内层过滤", () => {
-    // 鱼定村真实内层地图——无内层时出口为空不崩
-    const text = buildIntakeUserContent({
+  it("外层据点按 QUCUO_MAP 出口列，锁节点按解锁口径过滤", () => {
+    // 鱼定村外层四出口全开放
+    const open_ = buildIntakeUserContent({
       playerInput: "走",
       room: { name: "鱼定村", items: [] },
-      innerRoomName: "鱼定村广场",
+      innerRoomName: null,
       questProgress: {}, flags: [], inv: [], char: {}, varTree: {},
     });
-    expect(text).toContain("[可用出口]");
+    expect(open_).toContain("w(西→鱼定土司)");
+    expect(open_).toContain("n(北→喇嘛庙)");
+    // 锁节点：心灵之海/第三新东京市带 unlockCondition——站在有连锁出口处时未解锁不出现；
+    // 直接构造验证：给一个有锁出口的假据点名不存在则空，真实锁定节点不会从别处列出
+    const locked = buildIntakeUserContent({
+      playerInput: "走",
+      room: { name: "心灵之海", items: [] },
+      innerRoomName: null,
+      questProgress: {}, flags: [], inv: [], char: {}, varTree: {},
+    });
+    // 心灵之海本身 exits 为空——出口栏恒无
+    expect(locked).toContain("[可用出口] 无");
   });
 });

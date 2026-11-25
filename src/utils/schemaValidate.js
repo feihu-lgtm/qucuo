@@ -28,6 +28,15 @@ export function validateJsonSchema(value, schema, path = "$") {
       return { ok: false, reason: `${path} 类型应为 ${types.join("|")}，实为 ${Array.isArray(value) ? "array" : typeof value}` };
     }
   }
+  // 数值界约束：minimum/maximum 只在值是数值时判定（类型校验已在上面拦过非数值）。
+  if (typeof value === "number" && Number.isFinite(value)) {
+    if (Number.isFinite(schema.minimum) && value < schema.minimum) {
+      return { ok: false, reason: `${path} 值 ${value} 小于 minimum ${schema.minimum}` };
+    }
+    if (Number.isFinite(schema.maximum) && value > schema.maximum) {
+      return { ok: false, reason: `${path} 值 ${value} 大于 maximum ${schema.maximum}` };
+    }
+  }
   const isObjectType = types.includes("object") || (!types.length && schema.properties);
   if (isObjectType && value !== null && typeof value === "object" && !Array.isArray(value)) {
     const props = schema.properties || {};

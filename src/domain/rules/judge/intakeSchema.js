@@ -30,7 +30,7 @@ export const INTAKE_JSON_SCHEMA = {
             stance: { type: "string", enum: ["sincere", "clever", "forceful", "casual", "perfunctory"] },
             outcome: { type: "string", enum: ["无", "伤损", "得财", "破费", "调息", "修习", "服用", "受寒中毒", "醉酒", "其他"], description: "按常理最可能的后果，不估数值；拿不准选「无」" },
             risk: { type: "string", enum: ["无", "低", "中", "高"], description: "动作本身有多险；闲谈赶路选「无」" },
-            confidence: { type: "number", description: "0 到 1；十拿九稳才给 0.95 以上" },
+            confidence: { type: "number", minimum: 0, maximum: 1, description: "0 到 1；十拿九稳才给 0.95 以上" },
             text: { type: "string", description: "抄玩家原话对应那段，一字不改；只有一个动作抄整句" },
           },
         },

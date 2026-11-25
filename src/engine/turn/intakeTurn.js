@@ -6,7 +6,8 @@ import { definePrompt } from "../../domain/rules/prompt/registry.js";
 import { INTAKE_JSON_SCHEMA } from "../../domain/rules/judge/intakeSchema.js";
 import { validateJsonSchema } from "../../utils/schemaValidate.js";
 import { splitCompositeInput } from "../../domain/rules/input/compositeInput.js";
-import { visibleInnerExits } from "../../domain/rules/map/innerMap.js";
+import { visibleInnerExits, isInnerExitUnlocked } from "../../domain/rules/map/innerMap.js";
+import { QUCUO_MAP } from "../../domain/data/map/qucuoMap.js";
 
 // 组装喂给小模型的现场材料（纯函数）：
 //   最近两轮对话 + 在场角色与随身物 ID + 可引用场记板条目头。
@@ -25,10 +26,20 @@ export function buildIntakeUserContent({
   // 拆句 hints：借 compositeInput 现有切段口径，只做提示不物理分流
   const segments = splitCompositeInput(playerInput);
   lines.push(`[拆句提示] ${segments.length > 1 ? segments.map((seg) => `「${seg}」`).join("、") : "无"}`);
-  // 可用出口：visibleInnerExits 已按锁/内层过滤（未解锁隐藏方向不出现）
-  const exitMap = room?.name && innerRoomName
-    ? visibleInnerExits(room.name, innerRoomName, { questProgress, flags, inv, char, varTree })
-    : {};
+  // 可用出口：内层房间用 visibleInnerExits（未解锁隐藏方向不出现）；
+  // 外层据点按 QUCUO_MAP[room.name].exits 列——带 unlockCondition 的目的节点
+  // 用 isInnerExitUnlocked 同一解锁口径过滤（flag/quest/favor/钥匙锁全兼容）。
+  const unlockCtx = { questProgress, flags, inv, char, varTree };
+  let exitMap = {};
+  if (room?.name && innerRoomName) {
+    exitMap = visibleInnerExits(room.name, innerRoomName, unlockCtx);
+  } else if (room?.name && QUCUO_MAP[room.name]?.exits) {
+    for (const [dir, dest] of Object.entries(QUCUO_MAP[room.name].exits)) {
+      const destNode = QUCUO_MAP[dest];
+      if (destNode?.unlockCondition && !isInnerExitUnlocked(destNode.unlockCondition, unlockCtx)) continue;
+      exitMap[dir] = dest;
+    }
+  }
   const DIR_LABEL = { n: "北", s: "南", e: "东", w: "西" };
   const exitsText = Object.entries(exitMap).map(([dir, dest]) => `${dir}(${DIR_LABEL[dir] || dir}→${dest})`).join("、");
   lines.push(`[可用出口] ${exitsText || "无"}`);
@@ -123,7 +134,8 @@ const ACTION_DEFAULTS = {
   condition: "无", condition_text: "", stance: "casual",
   outcome: "无", risk: "无", confidence: 0, text: "",
 };
-const PROPOSAL_DEFAULTS = { claim: "", kind: "find_item", fit: "natural", questId: "", flag: "" };
+const PROPOSAL_KINDS = new Set(["find_item", "secret_clue", "social_deal", "environment_use", "quest_advance"]);
+const PROPOSAL_FITS = new Set(["natural", "stretch", "absurd"]);
 
 function repairEntry(entry, defaults) {
   if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
@@ -132,6 +144,23 @@ function repairEntry(entry, defaults) {
     out[key] = key in entry ? entry[key] : defaults[key];
   }
   return out;
+}
+
+// proposals 不做默认补全——kind/fit/claim 缺失或非法必须整条丢弃：
+// 补成合法 find_item/natural 等于把残缺提议伪造成有效寻宝声称，判官可能虚签事实。
+// 只有 questId/flag 允许补缺省空串（strict 全 required 的过渡兼容）。
+function repairProposal(entry) {
+  if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
+  if (typeof entry.claim !== "string" || !entry.claim.trim()) return null;
+  if (!PROPOSAL_KINDS.has(entry.kind)) return null;
+  if (!PROPOSAL_FITS.has(entry.fit)) return null;
+  return {
+    claim: entry.claim,
+    kind: entry.kind,
+    fit: entry.fit,
+    questId: typeof entry.questId === "string" ? entry.questId : "",
+    flag: typeof entry.flag === "string" ? entry.flag : "",
+  };
 }
 
 export function normalizeIntakeResult(data) {
@@ -143,7 +172,7 @@ export function normalizeIntakeResult(data) {
     read: typeof data.read === "string" ? data.read : "",
     refIds: Array.isArray(data.refIds) ? data.refIds.filter((x) => typeof x === "string") : [],
     actions: (Array.isArray(data.actions) ? data.actions : []).map((a) => repairEntry(a, ACTION_DEFAULTS)).filter(Boolean),
-    proposals: (Array.isArray(data.proposals) ? data.proposals : []).map((x) => repairEntry(x, PROPOSAL_DEFAULTS)).filter(Boolean),
+    proposals: (Array.isArray(data.proposals) ? data.proposals : []).map((x) => repairProposal(x)).filter(Boolean),
   };
   if (!validateJsonSchema(clean, INTAKE_JSON_SCHEMA.schema).ok) {
     return { read: "", refIds: [], actions: [], proposals: [], degraded: true };
