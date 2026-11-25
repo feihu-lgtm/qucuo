@@ -37,6 +37,10 @@ export default { district: {
         x: 0, y: -4,
         desc: `　　开放式的一间大厅。壁炉没生火，炉膛里堆着上一任主人烧剩的炭灰；壁炉架上落了一层细灰，用指头一划就是一道。一组布艺沙发，垫子拍一拍能扬起半尺高的尘。
 　　靠窗一张书桌。厨房连着客厅，灶台比寻常人家大三倍，调料架、烤炉一应俱全。墙边立着那只铁柜子，还是冰的——始终没人搞得懂它靠什么冷着。`,
+        containers: [
+          { name: "铁柜", presetItems: [{ name: "冰镇酸梅汤", desc: "铁柜里镇着的一壶酸梅汤，凉气沁人。" }] },
+          { name: "书桌", presetItems: [{ name: "半页旧信", desc: "字迹潦草的半页信纸，墨迹被水晕开过。" }] },
+        ],
         exits: { s: "山间别墅", n: "二楼主卧" },
         buildingId: "kitchen_shanbie",
         unlockCondition: { type: "item", itemName: "银灰色钥匙" },

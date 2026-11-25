@@ -110,7 +110,7 @@ export function materializeFacts(state, facts, compiledWarrants) {
           // GRANT 是新生一件，必须另 mint，否则后续 transfer/reforge 寻址错配
           const collision = supplied ? locateItem({ ...state, inv, room }, supplied, null) : null;
           const id = (supplied && !collision) ? supplied : mintItemId(fact.itemName, turn, seq);
-          item = { id, name: fact.itemName, category: fact.category || "misc", quality: fact.quality || "白", desc: "来历成谜的物件（编译缺失兜底）" };
+          item = { id, name: fact.itemName, category: fact.category || "misc", quality: fact.quality || "白", desc: fact.desc || "来历成谜的物件（编译缺失兜底）" };
         }
         if (inv.some((e) => e && e.id && e.id === item.id)) break; // 幂等：同 id 不重复入袋
         inv.push({ ...item });
@@ -424,6 +424,21 @@ export function materializeFacts(state, facts, compiledWarrants) {
             factId: fact.id,
           });
         }
+        break;
+      }
+
+      // ── 11b. COLLAPSE_CONTAINER：容器坍缩记账（WO-22A）──
+      // varTree.世界.容器[place][name] = { collapsed:true, turn }——懒初始化：
+      // merge 自动建中间层，旧档无容器字段不炸。坍缩是终态，重复事实幂等覆盖同值。
+      case "COLLAPSE_CONTAINER": {
+        const place = fact.place || "佚名之地";
+        const name = fact.containerName || "";
+        if (!name) { logs.push({ t: "err", text: `  ⛔ 事实 ${fact.id}：坍缩无容器名` }); break; }
+        patches.push({
+          op: "merge", path: ["varTree", "世界", "容器", place, name],
+          value: (prev) => ({ ...(prev && typeof prev === "object" ? prev : {}), collapsed: true, turn }),
+          factId: fact.id,
+        });
         break;
       }
 
