@@ -290,6 +290,25 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
     }
   }
 
+  // ── WO-16C 移动拾取条件券：rollMovementEvents 系统掷中的路遇拾取，只签空白
+  // 条件券（quality/category 系统硬账锁进 warrant，模型碰不到）——不进 facts。
+  // 双证据齐备才落账：正文落实处埋 ⟦Fid⟧ 锚点 + 尾章 fill 可编译；叙事此刻
+  // 不宜捡（被盯着/险境）就不埋锚不填空，券自然作废零落账——拒捡权归叙事、
+  // 数值权归系统，与器物天机券同口径。迁移期 pointBudget=0/无词条，保持旧
+  // 移动拾取本无词条的行为；预算整合归后续工单。
+  if (!talkOnly && envelope.pickupJudgment) {
+    const j = envelope.pickupJudgment;
+    const factId = nextFactId();
+    const warrantId = `W${turn}_${++warrantSeq}`;
+    warrants.push({
+      warrantId, factId, op: "GRANT_ITEM", conditional: true,
+      category: j.category || "misc", quality: j.quality || "白",
+      pointBudget: 0, allowedAffixes: [],
+      origin: { turn, day, place, fromNpc: "" },
+    });
+    notes.push(`路遇拾取条件券 ${warrantId}：品质「${j.quality}」类别「${j.category}」系统锁定，正文埋锚+尾章填空双证据齐备才落账`);
+  }
+
   // ── 第四步：签发 JudgeVerdict（契约 C） ──
   return {
     causalTier: budget.tier,
@@ -315,7 +334,11 @@ export function renderJudgeVerdict(verdict) {
     lines.push(`⟦${fact.id}⟧${fact.op}${fact.itemName ? `·${fact.itemName}` : ""}${fact.npc ? `·${fact.npc}` : ""}${fact.detail ? `·${fact.detail}` : ""}`);
   }
   for (const warrant of verdict.warrants || []) {
-    lines.push(`⟦${warrant.warrantId}⟧空白天机券 ${warrant.op}（${warrant.pointBudget} 点，待尾章填名）`);
+    if (warrant.conditional) {
+      lines.push(`⟦${warrant.factId}⟧条件拾取券/⟦${warrant.warrantId}⟧ GRANT_ITEM（品质「${warrant.quality}」/类别「${warrant.category}」系统锁定）：若写拾取，须在落实处埋 ⟦${warrant.factId}⟧ 并在尾章 fills 填名；若此刻不宜拾取，忽略此券即可（券自动作废，不会在正文外硬塞）。`);
+    } else {
+      lines.push(`⟦${warrant.warrantId}⟧空白天机券 ${warrant.op}（${warrant.pointBudget} 点，待尾章填名）`);
+    }
   }
   for (const note of verdict.notes || []) lines.push(`注：${note}`);
   return lines.join("\n");

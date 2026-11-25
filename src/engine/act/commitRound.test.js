@@ -227,6 +227,31 @@ describe("dealResult / 移动契约", () => {
   });
 });
 
+describe("WO-16C 判官拾取通道不重复入包", () => {
+  it("judgePipelineActive 时提取故障保底不发放（条件券通道接管）", () => {
+    const state = baseState();
+    const { deps } = makeDeps(state, {}, {
+      pickupJudgment: { quality: "蓝", category: "misc" },
+      pickupExtractionFailed: true,
+      judgePipelineActive: true,
+    });
+    commitRound(deps);
+    // 判官模式下绝不保底发放——否则与条件券合成事实重复入包
+    expect((state.inv || []).some((it) => typeof it === "object" && it.name?.includes("路遇之物"))).toBe(false);
+  });
+
+  it("单调用旧路不回归：提取故障仍保底发放", () => {
+    const state = baseState();
+    const { deps } = makeDeps(state, {}, {
+      pickupJudgment: { quality: "蓝", category: "misc" },
+      pickupExtractionFailed: true,
+      judgePipelineActive: false,
+    });
+    commitRound(deps);
+    expect((state.inv || []).some((it) => typeof it === "object" && it.name?.includes("路遇之物"))).toBe(true);
+  });
+});
+
 describe("memory / 已知人物 / 收尾契约", () => {
   it("p.memory → dayMaterial 入账 + registerFact 写 varTree.世界.知识领域（在场者目击）+ writeNote 异步落小纸条", () => {
     // 契约：三条记忆通道各自的输入——witnesses=在场 npcs 目击、fact.id=turn_<time>_<第一目击者>。
