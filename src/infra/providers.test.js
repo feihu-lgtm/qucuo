@@ -369,3 +369,31 @@ describe("callModel HTTP 错误分类", () => {
     expect(ec).toMatchObject({ kind: "network", retryable: true });
   });
 });
+
+describe("schema response_format 分支选择（WO-03）", () => {
+  it("strictCompatible 未标记：openai 挂 strict json_schema", async () => {
+    const { applyShortCallOpenAI } = await import("./providers.js");
+    const body = { model: "gpt-x" };
+    applyShortCallOpenAI(body, { id: "openai" }, { schema: { name: "s", schema: { type: "object" } } });
+    expect(body.response_format).toEqual({
+      type: "json_schema",
+      json_schema: { name: "s", strict: true, schema: { type: "object" } },
+    });
+  });
+
+  it("strictCompatible:false：openai/vertex/openrouter 回退 json_object 免服务端 400", async () => {
+    const { applyShortCallOpenAI } = await import("./providers.js");
+    for (const id of ["openai", "vertex", "openrouter"]) {
+      const body = { model: "m" };
+      applyShortCallOpenAI(body, { id }, { schema: { name: "forge_design", strictCompatible: false, schema: { type: "object" } } });
+      expect(body.response_format).toEqual({ type: "json_object" });
+    }
+  });
+
+  it("无 strictCompatible 标记的其他服务商：json_object", async () => {
+    const { applyShortCallOpenAI } = await import("./providers.js");
+    const body = { model: "m" };
+    applyShortCallOpenAI(body, { id: "deepseek" }, { schema: { name: "s", schema: { type: "object" } } });
+    expect(body.response_format).toEqual({ type: "json_object" });
+  });
+});

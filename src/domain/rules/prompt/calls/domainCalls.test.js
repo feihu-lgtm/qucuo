@@ -101,6 +101,7 @@ describe("domainCalls parity with legacy requests", () => {
       // WO-03 原生 schema：hit 枚举 = 本场 key id 全集 + null
       expect(opts.modelOptions.schema.name).toBe("persuasion_turn");
       expect(opts.modelOptions.schema.schema.properties.hit.enum).toEqual(["k1", "k2", "k3", null]);
+      expect(opts.modelOptions.schema.schema.properties.hit.type).toEqual(["string", "null"]);
       expect(opts.modelOptions.schema.schema.required).toEqual(["line", "hit", "guardDrop", "yield"]);
     }
   });

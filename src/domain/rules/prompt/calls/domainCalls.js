@@ -90,7 +90,9 @@ ${keysDesc}
           required: ["line", "hit", "guardDrop", "yield"],
           properties: {
             line: { type: "string" },
-            hit: { enum: [...keyIds, null] },
+            // OpenAI strict 可选值用 union type；null 表示未命中。
+            // Gemini 侧由 toGeminiResponseSchema 转写为 string + nullable。
+            hit: { type: ["string", "null"], enum: [...keyIds, null] },
             guardDrop: { type: "integer" },
             yield: { type: "boolean" },
           },
@@ -146,6 +148,10 @@ ${FORGE_EFFECT_WHITELIST}
     // schema 只锁其为对象、锁死 category 三选一与五个必填键；词条白名单裁剪仍在解析层。
     schema: {
       name: "forge_design",
+      // effect/sixDim 是开放词条对象（键名已声明但不闭合、键值类型异构），不满足
+      // OpenAI strict subset——openai/vertex/openrouter 见此标记回退 json_object，
+      // Gemini/Anthropic 仍用原生 schema，withAI 本地校验不受影响。
+      strictCompatible: false,
       schema: {
         type: "object",
         additionalProperties: false,
@@ -160,8 +166,22 @@ ${FORGE_EFFECT_WHITELIST}
               properties: {
                 name: { type: "string" },
                 category: { type: "string", enum: ["weapon", "armor", "accessory"] },
-                effect: { type: "object" },
-                sixDim: { type: "object" },
+                // 词条键名按白名单显式声明（Gemini 要 declared properties）；
+                // 键值类型异构（布尔旗/数值/嵌套对象）不锁 type，白名单裁剪仍在解析层。
+                effect: {
+                  type: "object",
+                  properties: Object.fromEntries([
+                    "forceFirst", "ignoreDefense", "doubleVsStatus", "lowHpBonus", "afterStatusBonus",
+                    "detonateMark", "enemyCostPenalty", "freezeEnergyRecovery", "applyMark", "applyMarkChance",
+                    "onCounterSuccessDamageRatio", "onCounterSuccessEnergyGain", "hpRestore", "energyRestore",
+                  ].map((k) => [k, {}])),
+                },
+                sixDim: {
+                  type: "object",
+                  properties: Object.fromEntries(
+                    ["气运", "身法", "根骨", "魅力", "智谋", "体魄", "悟性"].map((k) => [k, { type: "number" }]),
+                  ),
+                },
                 desc: { type: "string" },
               },
             },

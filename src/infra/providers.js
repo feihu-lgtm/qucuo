@@ -245,7 +245,13 @@ export function applyShortCallOpenAI(body, provider, opts = {}) {
   // 原生结构化输出：文档确认支持 json_schema 的三家挂 strict schema；其余兼容服务商退回 json_object。
   if (opts.schema) {
     if (["openai", "vertex", "openrouter"].includes(provider.id)) {
-      body.response_format = { type: "json_schema", json_schema: { name: opts.schema.name, strict: true, schema: opts.schema.schema } };
+      // schema 带 strictCompatible:false 元数据（开放词条对象等不满足 OpenAI strict subset
+      // 的形状）时回退 json_object 免服务端 400——本地 validateJsonSchema 校验照常。
+      if (opts.schema.strictCompatible === false) {
+        body.response_format = { type: "json_object" };
+      } else {
+        body.response_format = { type: "json_schema", json_schema: { name: opts.schema.name, strict: true, schema: opts.schema.schema } };
+      }
     } else {
       body.response_format = { type: "json_object" };
     }

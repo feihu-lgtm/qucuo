@@ -23,6 +23,13 @@ function stripAdditionalProperties(schema) {
     if (key === "additionalProperties") continue;
     out[key] = stripAdditionalProperties(val);
   }
+  // union type 是 OpenAI strict 方言，Gemini 不吃数组——含 null 转 nullable:true，取首个非 null 类型
+  if (Array.isArray(out.type)) {
+    const nonNull = out.type.filter((t) => t !== "null");
+    out.type = nonNull[0];
+    if (nonNull.length < out.type.length) out.nullable = true;
+    if (out.type === undefined) delete out.type;
+  }
   return out;
 }
 
@@ -218,9 +225,11 @@ async function requestModel(cfg, systemPrompt, messages, opts) {
         if (topK != null) abody.top_k = topK;
         // frequency_penalty/presence_penalty：Anthropic API 没有这两个概念，永远不传。
       }
-      applyThinkingAnthropic(abody, cfg, maxOutputTokens);
       // 原生结构化输出：Anthropic 没有 response_format，用单工具强制——挂唯一工具并
       // tool_choice 点名，模型只能以 tool_use.input 的形式吐出合规 JSON。
+      // 注意：extended thinking 与强制 tool_choice 互斥（Anthropic 直接拒绝同传），
+      // schema 调用本就是结构化抽取小调用，强制工具时不再挂思考。
+      applyThinkingAnthropic(abody, cfg, maxOutputTokens);
       if (opts.schema) {
         abody.tools = [{ name: opts.schema.name, input_schema: opts.schema.schema }];
         abody.tool_choice = { type: "tool", name: opts.schema.name };
