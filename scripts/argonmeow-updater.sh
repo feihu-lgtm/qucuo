@@ -9,9 +9,19 @@ REPO_URL="https://github.com/feihu-lgtm/qucuo.git"
 SRC="$HOME/argonmeow-qucuo-src"
 TARGET="/srv/argonmeow-qucuo"
 LOCK="/tmp/argonmeow-qucuo-updater.lock"
+REJECTED="$HOME/argonmeow-qucuo.rejected"
 
 exec 9>"$LOCK"
 flock -n 9 || exit 0
+
+# 上次若在“旧目录已挪开、新目录未换上”的窄窗口中断，先自愈出可访问站点，
+# 否则后续每次都会在备份步骤因 TARGET 不存在而失败。
+if [ ! -d "$TARGET" ]; then
+  latest_backup="$(ls -1dt /srv/argonmeow-qucuo.bak.* 2>/dev/null | head -1 || true)"
+  if [ -n "$latest_backup" ]; then
+    sudo -n mv "$latest_backup" "$TARGET" || true
+  fi
+fi
 
 if [ ! -d "$SRC/.git" ]; then
   rm -rf "$SRC"
@@ -23,6 +33,12 @@ remote="$(git rev-parse origin/main)"
 local="$(git rev-parse HEAD 2>/dev/null || echo none)"
 
 if [ "$local" = "$remote" ] && curl -fsS --max-time 10 https://argonmeow.online/qucuo/deploy-manifest.json 2>/dev/null | grep -q "\"commit\":\"$remote\""; then
+  exit 0
+fi
+
+# 验证失败并已回滚的 commit 不再每分钟反复发布；人工删除记录行才会重试。
+if grep -qx "$remote" "$REJECTED" 2>/dev/null; then
+  echo "[qucuo-updater] skipping rejected $remote"
   exit 0
 fi
 
@@ -73,10 +89,15 @@ for _ in 1 2 3 4 5; do
 done
 if [ "$ok" != 1 ]; then
   echo "[qucuo-updater] verification failed; rolling back" >&2
+  echo "$remote" >> "$REJECTED"
   sudo -n rm -rf "$TARGET.failed.$ts" || true
   sudo -n mv "$TARGET" "$TARGET.failed.$ts" || true
   sudo -n mv "$backup" "$TARGET" || true
   exit 1
 fi
+
+# 只保留最近 5 份成功备份/失败现场，避免每次发版复制整站最终填满磁盘。
+ls -1dt /srv/argonmeow-qucuo.bak.* 2>/dev/null | tail -n +6 | xargs -r -n1 sudo -n rm -rf
+ls -1dt /srv/argonmeow-qucuo.failed.* 2>/dev/null | tail -n +6 | xargs -r -n1 sudo -n rm -rf
 
 echo "[qucuo-updater] deployed $remote backup=$backup"
