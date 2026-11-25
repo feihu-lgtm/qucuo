@@ -16,6 +16,8 @@ describe("createClapboardEntry 规范化", () => {
     expect(createClapboardEntry({ kind: "fact_index", turn: 42, seq: 1 }).id).toBe("F42_1");
     expect(createClapboardEntry({ kind: "pact", turn: 42, seq: 3 }).id).toBe("pact_42_3");
     expect(createClapboardEntry({ kind: "prep_seed", turn: 7, seq: 1 }).id).toBe("prep_7_1");
+    expect(createClapboardEntry({ kind: "prep_seed", stateVersion: "abc123", seq: 2 }).id).toBe("prep_abc123_2");
+    expect(createClapboardEntry({ kind: "prep_seed", stateVersion: 42, seq: 3 }).id).toBe("prep_42_3");
   });
 
   it("非法 kind 降级 fact_index，不丢事实；importance 钳 1-3", () => {

@@ -17,11 +17,11 @@ export const CLAPBOARD_KINDS = [
 // pact/prep_seed 用带种类前缀的全形，其余事实类用 F<回合>_<序号>。
 const ID_PREFIX = { raw_memory: "P", pact: "pact_", prep_seed: "prep_" };
 
-function deriveId(kind, turn, seq) {
+function deriveId(kind, turn, seq, spec = {}) {
   const t = Number.isInteger(turn) ? turn : 0;
   const s = Number.isInteger(seq) ? seq : 0;
   if (kind === "pact") return `pact_${t}_${s}`;
-  if (kind === "prep_seed") return `prep_${t}_${s}`;
+  if (kind === "prep_seed") { if (spec.stateVersion != null && spec.stateVersion !== "") return `prep_${String(spec.stateVersion)}_${s}`; return `prep_${t}_${s}`; }
   return `${ID_PREFIX[kind] || "F"}${t}_${s}`;
 }
 
@@ -31,7 +31,7 @@ export function createClapboardEntry(spec = {}) {
   const kind = CLAPBOARD_KINDS.includes(spec.kind) ? spec.kind : "fact_index";
   const importance = [1, 2, 3].includes(spec.importance) ? spec.importance : 1;
   return {
-    id: typeof spec.id === "string" && spec.id ? spec.id : deriveId(kind, spec.turn, spec.seq),
+    id: typeof spec.id === "string" && spec.id ? spec.id : deriveId(kind, spec.turn, spec.seq, spec),
     kind,
     turn: Number.isInteger(spec.turn) ? spec.turn : 0,
     location: spec.location || "",
