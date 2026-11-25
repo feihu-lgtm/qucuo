@@ -12,6 +12,7 @@ import { filterPlanDelta, filterRejectedEffects } from "../domain/rules/intent/p
 import { classifyError } from "../utils/apiErrors.js";
 import { withAI } from "./ports/withAI.js";
 import { judgeTurn } from "../domain/rules/judge/judgeTurn.js";
+import { buildCausalBudgetInput } from "../domain/rules/judge/budgetInput.js";
 import { renderJudgeVerdict, renderCausalBudget } from "../domain/rules/judge/judgeTurn.js";
 import { buildIntakeUserContent, normalizeIntakeResult } from "./turn/intakeTurn.js";
 import { verifySealAndMaterialize } from "../domain/rules/effects/sealVerifier.js";
@@ -222,7 +223,17 @@ async function runTurnSteps(ctx, cmd, opts) {
         inv: deps.inv || [], entries: [], talkOnly: isTalk,
         questCandidates,
         pickupJudgment: deps.pickupJudgment || null,
-        budget: { riskLevel: 0, luck: deps.char?.special?.气运 ?? 0 },
+        // WO-16E：授信输入由 buildCausalBudgetInput 装配（runTurn/shadow 同一入口），
+        // 不再硬编码 riskLevel:0——tension 读 encounter 势力字段、risk 按动作兜底、
+        // 每日搜刮配额读 varTree 账本跨日归零。
+        budget: buildCausalBudgetInput({
+          varTree: deps.varTree || ctx.memory?.varTreeLatest || {},
+          char: deps.char || liveNow.char || {},
+          room: deps.room || {}, inv: deps.inv || [],
+          turn: timeNow, day: Math.floor(timeNow / 24) + 1,
+          encounter: ctx.encounter || deps.encounter || null,
+          questCandidates,
+        }, intakeResult, { gm: !!ctx.gm }),
       }, intakeResult, { rng: random });
       // WO-16A respondedNpcs 系统推导：intake 听意单里 kind=talk 的 target 即
       // 本轮玩家对话对象——不再依赖叙事模型在 SEAL/JSON 里自证。SEAL 字段仅在

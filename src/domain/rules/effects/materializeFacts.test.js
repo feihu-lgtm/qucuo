@@ -451,3 +451,34 @@ describe("materializeFacts 十二律覆盖矩阵", () => {
     expect(out.logs.some((l) => l.text.includes("SUMMON_DRAGON"))).toBe(true);
   });
 });
+
+describe("WO-16E 每日搜刮配额账", () => {
+  const lootState = () => ({
+    time: 48, inv: [], room: { npcs: [], items: [] }, varTree: { 世界: {} },
+    flags: [], skills: [], char: { hp: [10, 10], special: {} },
+  });
+  it("天机券编译入袋计数，预设/兜底不占配额", async () => {
+    const { materializeFacts } = await import("./materializeFacts.js");
+    // 编译产物入袋 → count+1
+    const r1 = materializeFacts(lootState(),
+      [{ id: "F1", op: "GRANT_ITEM", itemName: "匕首", to: "player" }],
+      { F1: { id: "it_x", name: "匕首", category: "weapon", quality: "绿" } });
+    const patch = r1.patches.find((pp) => pp.path?.join(".") === "varTree.世界.每日搜刮");
+    expect(patch).toBeTruthy();
+    expect(patch.value).toEqual({ day: 3, count: 1 });
+    // 无编译产物（预设物直发/兜底）→ 不计数
+    const r2 = materializeFacts(lootState(),
+      [{ id: "F2", op: "GRANT_ITEM", itemName: "预设物", to: "player" }], {});
+    expect(r2.patches.some((pp) => pp.path?.join(".") === "varTree.世界.每日搜刮")).toBe(false);
+  });
+  it("跨日归零重计", async () => {
+    const { materializeFacts } = await import("./materializeFacts.js");
+    const st = lootState();
+    st.varTree = { 世界: { 每日搜刮: { day: 2, count: 3 } } }; // 昨天的账
+    const r = materializeFacts(st,
+      [{ id: "F1", op: "GRANT_ITEM", itemName: "匕首", to: "player" }],
+      { F1: { id: "it_x", name: "匕首", category: "weapon", quality: "绿" } });
+    const patch = r.patches.find((pp) => pp.path?.join(".") === "varTree.世界.每日搜刮");
+    expect(patch.value).toEqual({ day: 3, count: 1 }); // 不是 4——跨日归零
+  });
+});

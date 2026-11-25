@@ -64,6 +64,8 @@ function stageCandidates(quest, stage, { room, inv, innerRoomName, questTriggerM
       questId: quest.id,
       flag,
       title: quest.title,
+      // WO-16E 因果授信：末阶段推进=支线高潮（climax），供 budgetInput 核定额度
+      isFinalStage: quest.stages[quest.stages.length - 1] === stage,
       stageBrief: String(stage.description || "").slice(0, 40),
       // deliver 元数据供判官去重：交付回合若 intake 同时报 give，
       // 赠礼转移必须与任务交付通道互斥，否则双扣件+虚假好感
