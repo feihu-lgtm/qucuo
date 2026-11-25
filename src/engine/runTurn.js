@@ -20,6 +20,7 @@ import { buildIntakeUserContent, normalizeIntakeResult, synthesizeTalkIntake, sh
 import { buildExtractionCfg } from "../domain/rules/prompt/structuredCallCfg.js";
 import { verifySealAndMaterialize } from "../domain/rules/effects/sealVerifier.js";
 import { buildJudgeRuleBlock, buildGroupTalkRuleBlock, parseGroupTalkSeal } from "../domain/rules/judge/judgeRuleBlock.js";
+import { collectDeferredIntents, deferredIntentReceipt, deferredFailureReceipt, DEFERRED_INTENT_KINDS } from "../domain/rules/judge/deferredIntents.js";
 import { writeTurnProse } from "./act/proseWrite.js";
 import { addProseChunks as proseChunkSink } from "./ports/recallBlock.js";
 import { random } from "../utils/rng.js";
@@ -347,6 +348,30 @@ async function runTurnSteps(ctx, cmd, opts) {
         } else {
           trace("判官管线", "warn", `equip/use_item/take 路由 ${judgeRoutes.length} 条无 executor（直调/测试环境），未结算`);
         }
+      }
+
+      // ── WO-16F-F2c duel/trade 交互意向收集（叙事前只收集不执行）──
+      // 战斗/商店是交互式子系统，绝不能叙事前开战/开市。收集结果挂 turn 对象
+      // deferredIntents，由 useTurn 在 playTurn resolve 且未 stale 后复用
+      // intentRouter runDeferred 接原入口。回执措辞必须是意向口径：
+      // 邀战/问价，绝不写已开打/已成交。condition/talkOnly 同闸不收集。
+      const deferredCandidates = (intakeResult.actions || []).filter((a) => DEFERRED_INTENT_KINDS.has(a?.kind));
+      const deferredConditioned = deferredCandidates.filter((a) => a?.condition && a.condition !== "无");
+      if (deferredConditioned.length) {
+        trace("判官管线", "skip", `前提未裁，暂不收集交互意向 ${deferredConditioned.length} 条：${deferredConditioned.map((a) => `${a.kind}:${a.target}`).join("、")}`);
+      }
+      if (isTalk && deferredCandidates.length) {
+        trace("判官管线", "skip", `talkOnly 回合禁止硬事实，${deferredCandidates.length} 条 duel/trade 意向不收集`);
+      }
+      const { intents: deferredIntents, failures: deferredFailures } = collectDeferredIntents(
+        intakeResult.actions || [], { npcs: visibleNpcs, isTalk },
+      );
+      if (deferredIntents.length || deferredFailures.length) {
+        deps.deferredIntents = deferredIntents;
+        deps.judgeRuleBlock += "\n\n【系统已受理·交互意向】以下交互意向系统已受理，正文只写意向本身，不得写成交互结果：\n"
+          + deferredIntents.map((it) => `· ${deferredIntentReceipt(it)}`).join("\n")
+          + (deferredFailures.length ? `\n${deferredFailures.map((f) => `· ${deferredFailureReceipt(f)}`).join("\n")}` : "");
+        trace("判官管线", "pass", `交互意向收集 ${deferredIntents.length} 条（${deferredIntents.map((it) => `${it.kind}→${it.target}`).join("、")}）${deferredFailures.length ? `，失败 ${deferredFailures.length} 条` : ""}`);
       }
       trace("判官管线", "pass", `intake ${intakeResult.actions?.length || 0} 动作/${intakeResult.proposals?.length || 0} 提议 → facts ${judgeVerdict.facts.length} 条/warrants ${judgeVerdict.warrants.length} 张（tier ${judgeVerdict.causalTier}）`);
     } catch (error) {
@@ -678,6 +703,9 @@ async function runTurnSteps(ctx, cmd, opts) {
     derivedRespondedNpcs: deps.derivedRespondedNpcs || null,
     judgePipelineActive: !!deps.judgePipelineActive,
     groupTalk: !!deps.groupTalkRuleBlock,
+    // WO-16F-F2c：交互意向随 turn 对象带出——finalizeTurn 无需特别处理，
+    // useTurn 在 result.ok && !stale 后复用 intentRouter runDeferred 消费。
+    deferredIntents: deps.deferredIntents || null,
   };
 }
 

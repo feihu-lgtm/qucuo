@@ -5,6 +5,7 @@ import { applyResult } from "../../features/run.js";
 import { parseLocalCommand } from "../../engine/localCommands.js";
 import { shouldThrottleMovement } from "../../features/map/logic.js";
 import { consumeDuelRequest } from "./useDuel.js";
+import { ACTION_KINDS } from "../../domain/rules/intent/actionKinds.js";
 import { classifyError } from "../../utils/apiErrors.js";
 import { step as traceStep } from "../../infra/actionTrace.js";
 import { getTurnContext, PHASE, turnMonitor } from "../../infra/turnMonitor.js";
@@ -225,6 +226,26 @@ export function useTurn({
       ]);
     }
     consumeDuelRequest(result, { opts, isStale, isTalk, interactMode: effMode, setActiveTarget, setDuelPending, trace: _trace });
+    // WO-16F-F2c 交互意向消费：duel/trade 在叙事完成、事务落盘且未 stale 后才接
+    // 交互入口——复用 intentRouter 既有 runDeferred 闭包（duel→handleNpcDuel/
+    // openDuelAfterNarration，trade→handleNpcTrade/setTradingShop），不重穿一份。
+    // result 不 ok（回滚）绝不消费；消费前再查 stale。
+    if (result.ok && !result.stale && !isStale()) {
+      const deferredIntents = result.turn?.deferredIntents;
+      if (Array.isArray(deferredIntents) && deferredIntents.length) {
+        const KIND_MAP = { duel: ACTION_KINDS.DUEL, trade: ACTION_KINDS.BUY };
+        for (const intent of deferredIntents) {
+          if (isStale()) break;
+          const kind = KIND_MAP[intent.kind];
+          if (!kind) continue;
+          try {
+            intentRouterRef.current?.runDeferred?.({ kind, target: intent.target, text: intent.text || "" }, true);
+          } catch (deferredError) {
+            traceStep(_trace, "交互意向", "fail", `${intent.kind}→${intent.target} 接入口异常：${deferredError?.message || deferredError}`);
+          }
+        }
+      }
+    }
     noteAction(isSettle ? "settle" : isTalk ? "talk" : "action");
     // 随行同伴随机插话（评价玩家活动）：概率触发、AI 现写（无 API 兜底句），记日志 + 进记忆
     if (result.ok && !isStale()) {

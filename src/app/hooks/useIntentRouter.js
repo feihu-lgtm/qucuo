@@ -153,6 +153,10 @@ export function useIntentRouter(routerRef, {
     };
     // 供 useTurn / useAutoTravel 在遇敌、到达、行程结束时驱动条件步。
     routerRef.current.fireTriggerStep = fireTriggerStep;
+    // WO-16F-F2c：暴露既有 deferred 闭包给判官链交互意向消费——
+    // duel→handleNpcDuel/openDuelAfterNarration、trade→handleNpcTrade/setTradingShop
+    // 全走这份旧逻辑，不在 useTurn 重穿一份。仅暴露句柄，不改旧行为。
+    routerRef.current.runDeferred = runDeferred;
     routerRef.current.fireEvent = (on, opts) => {
       const turn = getTurnContext();
       const beforeRoute = on === "arrive" && opts?.travelDone === false;
