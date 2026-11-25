@@ -33,6 +33,7 @@ export function openHubDb(dbPath = ":memory:") {
   const cols = new Set(db.prepare("PRAGMA table_info(prose_chunks)").all().map((r) => r.name));
   if (!cols.has("embedding_model")) db.exec("ALTER TABLE prose_chunks ADD COLUMN embedding_model TEXT");
   if (!cols.has("embedding_dim")) db.exec("ALTER TABLE prose_chunks ADD COLUMN embedding_dim INTEGER");
+  if (!cols.has("seq")) db.exec("ALTER TABLE prose_chunks ADD COLUMN seq INTEGER");
   return db;
 }
 
@@ -105,14 +106,14 @@ export function createHubStore(dbOrPath = ":memory:") {
     INSERT OR IGNORE INTO prose_chunks (
       space_id, batch_id, chunk_id, turn, location,
       witnesses_json, entities_json, raw_text, public_text, terms_segmented, embedding_blob,
-      embedding_model, embedding_dim
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      embedding_model, embedding_dim, seq
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const stmtSpaceChunks = db.prepare(`
     SELECT id, space_id, batch_id, chunk_id, turn, location,
            witnesses_json, entities_json, raw_text, public_text, terms_segmented, embedding_blob,
-           embedding_model, embedding_dim
+           embedding_model, embedding_dim, seq
     FROM prose_chunks
     WHERE space_id = ?
       AND (? IS NULL OR turn <= ?)
@@ -133,7 +134,7 @@ export function createHubStore(dbOrPath = ":memory:") {
   const stmtDeleteChunks = db.prepare("DELETE FROM prose_chunks WHERE space_id = ?");
   const stmtDeleteSaves = db.prepare("DELETE FROM saves WHERE space_id = ?");
 
-  function putSave(spaceId, slotId, { expectedRev = 0, payloadEnc, updatedAt = Date.now() } = {}) {
+  function putSave(spaceId, slotId, { expectedRev = 0, payloadEnc, updatedAt = Date.now(), force = false } = {}) {
     if (!spaceId || !slotId) throw new Error("spaceId and slotId are required");
     if (typeof payloadEnc !== "string") throw new Error("payloadEnc must be an opaque ciphertext string");
     if (!Number.isInteger(expectedRev) || expectedRev < 0) throw new Error("expectedRev must be a non-negative integer");
@@ -141,21 +142,29 @@ export function createHubStore(dbOrPath = ":memory:") {
     db.exec("BEGIN IMMEDIATE");
     try {
       const existing = stmtGetSave.get(spaceId, slotId);
+      // force 只能由客户端玩家显式裁决触发（WO-19 「本地覆盖云端」唯一合法路径）——
+      // 跳过 expectedRev 冲突检查直接覆盖；自动同步流程绝不许带 force。
       if (!existing) {
-        if (expectedRev !== 0) {
+        if (expectedRev !== 0 && !force) {
           db.exec("ROLLBACK");
-          return { ok: false, status: 409, conflict: true, currentRev: 0, reason: "save_not_found_rev_mismatch" };
+          return { ok: false, status: 409, conflict: true, currentRev: 0, serverRev: 0, reason: "save_not_found_rev_mismatch" };
         }
         stmtInsertSave.run(spaceId, slotId, 1, payloadEnc, updatedAt);
         db.exec("COMMIT");
         return { ok: true, status: 200, spaceId, slotId, rev: 1, updatedAt };
       }
-      if (existing.rev !== expectedRev) {
+      if (existing.rev !== expectedRev && !force) {
         db.exec("ROLLBACK");
-        return { ok: false, status: 409, conflict: true, currentRev: existing.rev, reason: "rev_mismatch" };
+        // serverRev 是 canonical 契约字段；currentRev 保留兼容老调用方。
+        return { ok: false, status: 409, conflict: true, currentRev: existing.rev, serverRev: existing.rev, reason: "rev_mismatch" };
       }
       const nextRev = existing.rev + 1;
-      stmtUpdateSave.run(nextRev, payloadEnc, updatedAt, spaceId, slotId, existing.rev);
+      if (force) {
+        db.prepare("UPDATE saves SET rev = ?, payload_enc = ?, updated_at = ? WHERE space_id = ? AND slot_id = ?")
+          .run(nextRev, payloadEnc, updatedAt, spaceId, slotId);
+      } else {
+        stmtUpdateSave.run(nextRev, payloadEnc, updatedAt, spaceId, slotId, existing.rev);
+      }
       db.exec("COMMIT");
       return { ok: true, status: 200, spaceId, slotId, rev: nextRev, updatedAt };
     } catch (err) {
@@ -225,6 +234,7 @@ export function createHubStore(dbOrPath = ":memory:") {
           blob,
           blob ? embeddingModel : null,
           blob ? embeddingDim : null,
+          Number.isInteger(c.seq) ? c.seq : null,
         );
         inserted += info.changes;
       }
@@ -329,8 +339,13 @@ export function createHubStore(dbOrPath = ":memory:") {
       for (let i = 0; i < siblings.length; i++) {
         const s = siblings[i];
         if (s.id === entry.row.id) continue;
-        const seq = parseSeqFromChunkId(s.chunk_id);
-        const bySeq = anchorSeq !== null && seq !== null && Math.abs(seq - anchorSeq) <= neighborRadius;
+        // 邻段距离优先吃显式 seq 列——chunkId 派生 id 会带导入戳后缀、
+        // branchId 本身也可能含下划线，拆 id 尾段在这两种情况下都会断邻段。
+        const anchorSeqCol = Number.isInteger(entry.row.seq) ? entry.row.seq : null;
+        const rowSeqCol = Number.isInteger(s.seq) ? s.seq : null;
+        const seqA = anchorSeqCol ?? anchorSeq;
+        const seqB = rowSeqCol ?? parseSeqFromChunkId(s.chunk_id);
+        const bySeq = seqA !== null && seqB !== null && Math.abs(seqB - seqA) <= neighborRadius;
         const byOrder = idx >= 0 && Math.abs(i - idx) <= neighborRadius;
         if (bySeq || byOrder) neighbors.push(hydrateRow(s));
       }
@@ -357,6 +372,19 @@ export function createHubStore(dbOrPath = ":memory:") {
     }
 
     return { hits, results };
+  }
+
+  // 单槽删除：expectedRev 不匹配且非 force → 409（带 serverRev）；
+  // 槽位不存在 → 幂等成功（deleted:0）。force=1 跳过 rev 检查，同样只许玩家显式裁决触发。
+  function deleteSave(spaceId, slotId, { expectedRev = null, force = false } = {}) {
+    if (!spaceId || !slotId) throw new Error("spaceId and slotId are required");
+    const existing = stmtGetSave.get(spaceId, slotId);
+    if (!existing) return { ok: true, status: 200, spaceId, slotId, deleted: 0, idempotent: true };
+    if (!force && Number.isInteger(expectedRev) && existing.rev !== expectedRev) {
+      return { ok: false, status: 409, conflict: true, currentRev: existing.rev, serverRev: existing.rev, reason: "rev_mismatch" };
+    }
+    const info = db.prepare("DELETE FROM saves WHERE space_id = ? AND slot_id = ?").run(spaceId, slotId);
+    return { ok: true, status: 200, spaceId, slotId, deleted: info.changes };
   }
 
   function deleteSpace(spaceId) {
@@ -387,6 +415,7 @@ export function createHubStore(dbOrPath = ":memory:") {
     listSaves,
     appendProseChunks,
     queryProseChunks,
+    deleteSave,
     deleteSpace,
     close,
   };

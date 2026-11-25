@@ -80,6 +80,19 @@ export function createHubServer({ dbPath = process.env.MEMORY_HUB_DB || "./memor
           sendJson(res, result.status, result);
           return;
         }
+        if (method === "DELETE") {
+          // 单槽删除：force=1（query 或 body）跳过 rev 检查——唯一合法触发源
+          // 是玩家在客户端显式裁决「确认删除/本地覆盖云端」，自动流程绝不许带。
+          let body = {};
+          try { body = await readJsonBody(req); } catch { body = {}; }
+          const force = url.searchParams.get("force") === "1" || body?.force === true;
+          const expectedRev = Number.isInteger(body?.expectedRev)
+            ? body.expectedRev
+            : (url.searchParams.has("expectedRev") ? Number(url.searchParams.get("expectedRev")) : null);
+          const result = store.deleteSave(spaceId, slotId, { expectedRev, force });
+          sendJson(res, result.status, result);
+          return;
+        }
       }
 
       const listMatch = path.match(/^\/api\/spaces\/([^/]+)\/saves$/);

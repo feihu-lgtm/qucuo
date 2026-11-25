@@ -147,6 +147,66 @@ describe("向量模型/维度元数据过滤", () => {
   });
 });
 
+describe("force 语义、单槽删除与 serverRev 别名", () => {
+  it("PUT force:true 跳过 rev 冲突覆盖；409 带 serverRev 别名", () => {
+    const store = createHubStore(":memory:");
+    store.putSave("sp", "s1", { expectedRev: 0, payloadEnc: "v1", updatedAt: 1 });
+    store.putSave("sp", "s1", { expectedRev: 1, payloadEnc: "v2", updatedAt: 2 });
+    //  stale expectedRev → 409 且同时给 serverRev/currentRev
+    const conflict = store.putSave("sp", "s1", { expectedRev: 1, payloadEnc: "stale", updatedAt: 3 });
+    assert.equal(conflict.status, 409);
+    assert.equal(conflict.serverRev, 2);
+    assert.equal(conflict.currentRev, 2);
+    // force 覆盖：rev 单调递增到 3，payload 被替换
+    const forced = store.putSave("sp", "s1", { expectedRev: 99, payloadEnc: "v3", updatedAt: 4, force: true });
+    assert.equal(forced.ok, true);
+    assert.equal(forced.rev, 3);
+    assert.equal(store.getSave("sp", "s1").payloadEnc, "v3");
+    store.close();
+  });
+
+  it("DELETE 单槽：rev 冲突 409、force 强删、无存档幂等成功", () => {
+    const store = createHubStore(":memory:");
+    store.putSave("sp", "s1", { expectedRev: 0, payloadEnc: "v1", updatedAt: 1 });
+    const conflict = store.deleteSave("sp", "s1", { expectedRev: 5 });
+    assert.equal(conflict.status, 409);
+    assert.equal(conflict.serverRev, 1);
+    assert.equal(store.getSave("sp", "s1") !== null, true);
+    const forced = store.deleteSave("sp", "s1", { force: true });
+    assert.equal(forced.deleted, 1);
+    assert.equal(store.getSave("sp", "s1"), null);
+    const again = store.deleteSave("sp", "s1", { force: true });
+    assert.equal(again.deleted, 0);
+    assert.equal(again.idempotent, true);
+    store.close();
+  });
+});
+
+describe("prose seq 列邻段（导入戳/下划线 branchId 不断邻段）", () => {
+  it("seq 列优先于 chunkId 拆尾：带导入戳后缀与下划线 branchId 的 id 邻段照常", () => {
+    const store = createHubStore(":memory:");
+    // branchId 含下划线 + 导入戳后缀：拆尾段完全不可靠（尾段是 impXXX 或乱序数字）
+    store.appendProseChunks("sp", "batch_seq", [
+      { chunkId: "b_root_x_3_1_impabc", turn: 3, seq: 1, witnesses: ["*"], entities: [], rawText: "邻段一：晨雾。" },
+      { chunkId: "b_root_x_3_2_impabc", turn: 3, seq: 2, witnesses: ["*"], entities: [], rawText: "邻段二：青铜印现世。" },
+      { chunkId: "b_root_x_3_3_impabc", turn: 3, seq: 3, witnesses: ["*"], entities: [], rawText: "邻段三：人声渐起。" },
+      { chunkId: "b_root_x_3_9_impabc", turn: 3, seq: 9, witnesses: ["*"], entities: [], rawText: "远段：不该被连带。" },
+    ]);
+    const res = store.queryProseChunks("sp", {
+      query: "青铜印",
+      viewer: "主角",
+      topK: 1,
+      neighborRadius: 1,
+    });
+    const ids = res.results.map((r) => r.chunkId);
+    assert.equal(ids.includes("b_root_x_3_1_impabc"), true);
+    assert.equal(ids.includes("b_root_x_3_2_impabc"), true);
+    assert.equal(ids.includes("b_root_x_3_3_impabc"), true);
+    assert.equal(ids.includes("b_root_x_3_9_impabc"), false);
+    store.close();
+  });
+});
+
 describe("HTTP server, DELETE /api/space/:spaceId + VACUUM, and API key rejection", () => {
   it("physically deletes space data + FTS entries and runs VACUUM on DELETE /api/space/:spaceId", async () => {
     const dir = mkdtempSync(join(tmpdir(), "qucuo-hub-"));
@@ -201,6 +261,30 @@ describe("HTTP server, DELETE /api/space/:spaceId + VACUUM, and API key rejectio
         body: JSON.stringify({ batchId: "b4", chunks: [], config: { Authorization: "Bearer x" } }),
       });
       assert.equal(bodyKeyReject.status, 400);
+
+      // PUT force 覆盖（玩家显式裁决路径）
+      const forcePut = await fetch(`${base}/api/spaces/spA/saves/slot1`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ expectedRev: 99, payloadEnc: "forced", updatedAt: 5, force: true }),
+      });
+      assert.equal(forcePut.status, 200);
+      // DELETE 单槽：先 409（expectedRev 不符），再 force 强删，再幂等
+      const delConflict = await fetch(`${base}/api/spaces/spA/saves/slot1?expectedRev=99`, { method: "DELETE" });
+      assert.equal(delConflict.status, 409);
+      const delConflictJson = await delConflict.json();
+      assert.equal(typeof delConflictJson.serverRev, "number");
+      const delForce = await fetch(`${base}/api/spaces/spA/saves/slot1?force=1`, { method: "DELETE" });
+      assert.equal(delForce.status, 200);
+      assert.equal(store.getSave("spA", "slot1"), null);
+      const delAgain = await fetch(`${base}/api/spaces/spA/saves/slot1?force=1`, { method: "DELETE" });
+      assert.equal(delAgain.status, 200);
+      // 重存一份供整space删除计数
+      await fetch(`${base}/api/spaces/spA/saves/slot1`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ expectedRev: 0, payloadEnc: "cipherA2", updatedAt: 6 }),
+      });
 
       const delRes = await fetch(`${base}/api/space/spA`, { method: "DELETE" });
       assert.equal(delRes.status, 200);

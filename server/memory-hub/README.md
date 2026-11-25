@@ -20,12 +20,18 @@ node --test server/memory-hub/hubCore.test.mjs
 - `GET /health`：健康检查
 - `GET /api/spaces/:spaceId/saves`：列出当前空间的存档槽位与 `rev`
 - `GET /api/spaces/:spaceId/saves/:slotId`：读取密文存档（`payload_enc`）
-- `PUT /api/spaces/:spaceId/saves/:slotId`：带 `expectedRev` 写入存档；版本冲突返回 HTTP `409` 不静默覆盖
+- `PUT /api/spaces/:spaceId/saves/:slotId`：带 `expectedRev` 写入存档；版本冲突返回 HTTP `409`（响应同时给 `serverRev`/`currentRev`）不静默覆盖；`force:true` 跳过冲突检查强制覆盖——**唯一合法触发源是玩家在客户端显式裁决「本地覆盖云端」，自动同步流程绝不许带 force**
+- `DELETE /api/spaces/:spaceId/saves/:slotId`：删除单槽；`expectedRev` 不符返回 `409`，`?force=1` 强删；槽位不存在时幂等成功（`deleted:0`）
 - `POST /api/spaces/:spaceId/prose`：批量写入原文段落（`UNIQUE(space_id, batch_id, chunk_id)` 保证断网重发幂等）
 - `POST /api/spaces/:spaceId/prose/query`：SQL 过滤 + FTS5 BM25 + 可选 embedding 余弦 RRF + 前后邻段连带召回
 - `DELETE /api/space/:spaceId`：物理级联删除存档与段落并执行 `VACUUM`
 
 服务端只存密文快照与分词段落，不接收也不中转任何模型 API Key（body 键名大小写不敏感拦截 + HTTP `Authorization`/`x-api-key` 等 header 拒收）。
+
+## 段落写入契约补充
+
+- `chunks[].seq`：显式同回合顺序号——邻段连带优先吃它。chunkId 拆尾段只是兼容兜底，
+  带导入戳后缀或 branchId 含下划线时拆尾不可靠。
 
 ## 向量元数据契约（硬要求）
 
@@ -34,9 +40,14 @@ node --test server/memory-hub/hubCore.test.mjs
 - 只有模型名逐字相同且维度相等的行参与向量余弦排序；换模型/换维度后的旧向量绝不参与比较。
 - 无向量元数据的旧行只做关键词（FTS5）召回，不会被丢弃。
 
-## ⚠ 与 WO-19 客户端 seam 的协议差异（接线前必读）
+## 与 WO-19 客户端 seam 的对接方式（canonical 协议 + 适配层）
 
-本服务的存档协议是 `/api/spaces/:spaceId/saves/:slotId` + `{expectedRev, payloadEnc}` 密文信封；
-WO-19 客户端（`src/infra/storageDriver.js`）当前写的是 `/saves/<key>` + `{rev, value}` 明文形状。
-**两者现在不能直接对接**——WO-19/20 接线前需要统一的协议适配层（路径/rev 字段名/密文封装/409 冲突语义对齐），
-在适配层落地前请勿假设客户端已可插用本服务。
+本服务协议是 **canonical 服务端契约**，不迎合已合并的 WO-19 client seam。对接路径：
+
+- URL 映射：WO-19 client 的 `cloudUrl` 可配置为 `<host>/api/spaces/<spaceId>`，其 `/saves/<key>` 拼接即 canonical 的 `/api/spaces/<spaceId>/saves/<slotId>`。
+- 形状适配：仍需一层适配层转换 `{rev, value}` ↔ `{expectedRev, payloadEnc}`——
+  包括 rev 语义（client 本地递 rev vs server 权威 rev）、密文封装/编码（`payloadEnc` 是不透明密文串，
+  client 当前传明文 value）、以及 409 冲突语义对齐（server 已同时返回 `serverRev` 供 client `keep_cloud` 对齐 rev）。
+- force 对齐：server 的 `force:true`/`?force=1` 与 client 「本地覆盖云端」裁决一一对应，只能由玩家显式触发。
+
+**在适配层落地前请勿假设客户端已可插用本服务。**
