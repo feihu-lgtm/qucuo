@@ -324,7 +324,7 @@ export function materializeFacts(state, facts, compiledWarrants) {
           // 正增量吃魅力修正与日涨 +12 上限；负增量（言语冲撞）不吃魅力、
           // 不进日涨账，clamp 到 0——统一走 helper 的同一份系统语义。
           const result = systemAffectionDelta(cursor, fact.npc, fact.affectionDelta,
-            { charm: state.char?.special?.魅力 ?? 5, time: turn });
+            { charm: state.effectiveSpecialNow?.魅力 ?? state.char?.special?.魅力 ?? 5, time: turn });
           socialTreeCursor = result.tree;
           if (result.delta !== 0) {
             const next = result.tree?.角色?.[fact.npc]?.好感度;

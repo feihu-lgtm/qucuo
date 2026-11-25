@@ -236,9 +236,10 @@ describe("memory / 已知人物 / 收尾契约", () => {
     commitRound(deps);
     expect(state._dayMaterial).toEqual([{ turn: 25, text: "少侠在村口救了一只猫" }]);
     const facts = state.varTree.世界.知识领域.事实;
-    expect(facts["turn_25_侠客"]).toBeDefined();
-    expect(facts["turn_25_侠客"].标签).toBe("见闻");
-    expect(facts["turn_25_侠客"].知晓者.侠客.途径).toBe("目击");
+    const key = Object.keys(facts).find((k) => k.startsWith("turn_25_侠客_"));
+    expect(key).toBeDefined();
+    expect(facts[key].标签).toBe("见闻");
+    expect(facts[key].知晓者.侠客.途径).toBe("目击");
     expect(writeNote).toHaveBeenCalledOnce();
     const arg = writeNote.mock.calls[0][0];
     expect(arg).toMatchObject({ text: "少侠在村口救了一只猫", turn: 25, source: NOTE_SOURCE.NARRATIVE, place: "鱼定村", owner: [] });
@@ -249,8 +250,9 @@ describe("memory / 已知人物 / 收尾契约", () => {
     const { deps } = makeDeps(state, { memory: "少侠答应了侠客一件事" }, { isTalk: true, talkTarget: "侠客" });
     commitRound(deps);
     const facts = state.varTree.世界.知识领域.事实;
-    expect(facts["turn_25_侠客"].标签).toBe("私语");
-    expect(facts["turn_25_侠客"].知晓者.侠客.途径).toBe("亲历");
+    const key = Object.keys(facts).find((k) => k.startsWith("turn_25_侠客_"));
+    expect(facts[key].标签).toBe("私语");
+    expect(facts[key].知晓者.侠客.途径).toBe("亲历");
     expect(writeNote.mock.calls[0][0]).toMatchObject({
       owner: [{ name: "侠客", via: VIA.FIRSTHAND }], source: NOTE_SOURCE.TALK,
     });

@@ -193,6 +193,7 @@ async function runTurnSteps(ctx, cmd, opts) {
         entries: [],
       });
       const intakeRes = await withAI("turn.intake", { userContent: intakeContent, cfg: deps.apiCfg }, { ai, apiCfg: deps.apiCfg, throwOnError: false });
+      if (ctx.isStale?.()) return { stale: true };
       const intakeResult = normalizeIntakeResult(intakeRes?.data);
       const timeNow = getGameStateTime(ctx, deps);
       judgeVerdict = judgeTurn({
@@ -387,6 +388,7 @@ async function runTurnSteps(ctx, cmd, opts) {
       flags: live.flags || deps.flags || [],
       varTree: live.varTree, companionState: live.companionState,
       claimedMilestones: live.claimedMilestones,
+      effectiveSpecialNow: deps.effectiveSpecialNow,
     };
     const verified = verifySealAndMaterialize({
       sealText: sealParts?.sealText || "",

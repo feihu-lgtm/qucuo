@@ -195,4 +195,39 @@ describe("judgeTurn 第四步：签发形状与渲染", () => {
     expect(renderCausalBudget(verdict.budget)).toContain("品阶上限");
     expect(renderCausalBudget(null)).toBe("");
   });
+
+  it("talkOnly 真白名单：appease 在纯搭话回合不触发随机社交", () => {
+    const verdict = judgeTurn(
+      { turn: 5, day: 1, place: "鱼定村", npcs: [{ name: "八云" }], varTree: { 角色: {} }, inv: [], talkOnly: true },
+      { read: "", refIds: [], actions: [
+        { kind: "appease", target: "八云", itemId: "", direction: "none", stance: "sincere" },
+      ], proposals: [] },
+      { rng: () => 0 },
+    );
+    // appease 被白名单拦截：零社交事实，notes 留痕
+    expect(verdict.facts.filter((f) => f.op === "MUTATE_SOCIAL")).toHaveLength(0);
+    expect(verdict.notes.some((n) => n.includes("appease"))).toBe(true);
+  });
+
+  it("无好感轨道对象判官不产社交事实（第一道防线）", () => {
+    for (const npc of [{ name: "雪豹", beast: true }, { name: "石佛", intimacy: { forbidden: true } }]) {
+      const verdict = judgeTurn(
+        { turn: 5, day: 1, place: "鱼定村", npcs: [npc], varTree: { 角色: {} }, inv: [], talkOnly: true },
+        { read: "", refIds: [], actions: [
+          { kind: "talk", target: npc.name, itemId: "", direction: "none", stance: "sincere" },
+        ], proposals: [] },
+        { rng: () => 0.5 },
+      );
+      expect(verdict.facts.filter((f) => f.op === "MUTATE_SOCIAL")).toHaveLength(0);
+    }
+    // 对照：cannotSpeak 不是无轨道，正常产事实
+    const verdict = judgeTurn(
+      { turn: 5, day: 1, place: "鱼定村", npcs: [{ name: "哑仆", cannotSpeak: true }], varTree: { 角色: {} }, inv: [], talkOnly: true },
+      { read: "", refIds: [], actions: [
+        { kind: "talk", target: "哑仆", itemId: "", direction: "none", stance: "sincere" },
+      ], proposals: [] },
+      { rng: () => 0.5 },
+    );
+    expect(verdict.facts.some((f) => f.op === "MUTATE_SOCIAL")).toBe(true);
+  });
 });

@@ -201,6 +201,20 @@ describe("materializeFacts 十二律覆盖矩阵", () => {
     expect(lastGained.value.gained).toMatchObject({ 才旦: 5, 卓玛: 4 });
   });
 
+  it("MUTATE_SOCIAL charm 口径：effectiveSpecialNow 优先于裸 char.special", () => {
+    const base = baseState();
+    base.varTree = { 角色: { 才旦: { 好感度: 50 } }, 世界: {} };
+    base.char = { ...base.char, special: { 魅力: 5 } };
+    base.effectiveSpecialNow = { 魅力: 10 };
+    base.room = { ...base.room, npcs: [{ name: "才旦" }] };
+    const out = materializeFacts(base, [
+      { id: "C1", op: "MUTATE_SOCIAL", npc: "才旦", affectionDelta: 10 },
+    ], {});
+    const patch = out.patches.find((p) => p.path.join(".") === "varTree.角色.才旦.好感度");
+    // 魅力 10 修正后增量 >10（裸 char.special 5 则是整 10→60），证明 effective 口径生效
+    expect(patch.value).toBeGreaterThan(60);
+  });
+
   it("MUTATE_SOCIAL 首识基线：无好感数值的 NPC 按初始好感 10 打底再结算增量", () => {
     const base = baseState();
     base.varTree = { 角色: {}, 世界: {} };

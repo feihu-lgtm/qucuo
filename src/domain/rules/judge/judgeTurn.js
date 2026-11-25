@@ -123,6 +123,11 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
 
     // 搭话：stance 映射确定性小额好感，不掷骰——闲聊不该有随机性社交风险。
     if (action.kind === "talk") {
+      // 第一道防线：无好感轨道对象（兽类/intimacy.forbidden）判官直接不产社交事实——
+      // findNpc 处本来就有对象，不必等 materialize 再拦。cannotSpeak 不算无轨道。
+      // 注：谓词就地内联而非 import affection.js——affection→applyWrite→fields
+      // 会循环依赖回本模块。口径与 hasNoAffectionTrack 一致：forbidden 或兽类。
+      if (npc?.intimacy?.forbidden || npc?.beast) continue;
       const delta = TALK_STANCE_DELTA[action.stance] ?? 0;
       if (!delta) continue; // perfunctory/未知：零事实
       facts.push({
@@ -133,7 +138,9 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
       continue;
     }
 
-    if (talkOnly && ["give", "inspect_container", "take", "steal", "trade", "learn", "use_item", "equip", "invite"].includes(action.kind)) {
+    // 真白名单：talkOnly 回合只有 talk 进社交结算，其余 action（含 appease——
+    // 不能随机 +3 漏进纯搭话）一律只留 notes，零物品/状态/好感搬动。
+    if (talkOnly) {
       notes.push(`纯搭话回合不结算${action.kind}（${npc.name}），无物品/状态搬动`);
       continue;
     }
