@@ -29,6 +29,7 @@ function _lsWrite(key, value) { try { localStorage.setItem(key, JSON.stringify(v
 let _flushTimer = null;
 let _retryMs = RETRY_BASE_MS;
 let _flushing = false;
+let _batchSize = BATCH_SIZE; // 413 时动态收缩，成功复位
 
 export function getProseUplinkQueue() { return _lsRead(QUEUE_KEY, []); }
 // dead-letter：确定形状坏（400/422）的批次移入此处——不是无声删除，
@@ -133,7 +134,7 @@ export async function flushProseUplink() {
       persistQueue(fresh);
       if (!fresh.length) return;
     }
-    const batch = fresh.slice(0, BATCH_SIZE).map(({ _space, ...c }) => c);
+    const batch = fresh.slice(0, _batchSize).map(({ _space, ...c }) => c);
     const batchId = `b_${Date.now().toString(36)}`;
     let result = null;
     try {
@@ -146,7 +147,23 @@ export async function flushProseUplink() {
       const done = new Set(batch.map((b) => b.chunkId));
       persistQueue(cur.filter((q) => !done.has(q.chunkId)));
       _retryMs = RETRY_BASE_MS;
+      _batchSize = BATCH_SIZE;
       if (cur.length - batch.length > 0) scheduleFlush(0); // 继续排空
+      return;
+    }
+    if (result && result.status === 413) {
+      // 413 体积超限（Review 修）：batch 收缩重试——同批原样退避会让后面的小段
+      // 永远堵在超限批次后面。收缩到 1 仍 413 说明单段本身超限，按形状坏进 dead-letter。
+      if (batch.length <= 1) {
+        pushDeadLetters(batch, 413);
+        const done = new Set(batch.map((b) => b.chunkId));
+        persistQueue(cur.filter((q) => !done.has(q.chunkId)));
+        console.warn(`[prose-uplink] 单段 413 超限，${batch[0]?.chunkId} 移入 dead-letter`);
+      } else {
+        _batchSize = Math.max(1, Math.floor(batch.length / 2));
+        console.warn(`[prose-uplink] 413 超限，批次收缩至 ${_batchSize} 重试`);
+        scheduleFlush(0);
+      }
       return;
     }
     if (result && (result.status === 400 || result.status === 422)) {
@@ -178,5 +195,6 @@ export function _resetProseUplinkForTest() {
   if (_flushTimer) { clearTimeout(_flushTimer); _flushTimer = null; }
   _retryMs = RETRY_BASE_MS;
   _flushing = false;
+  _batchSize = BATCH_SIZE;
   try { localStorage.removeItem(QUEUE_KEY); localStorage.removeItem(DEAD_KEY); } catch { /* */ }
 }

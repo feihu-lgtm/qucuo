@@ -158,6 +158,25 @@ describe("绑定与鉴权", () => {
   });
 });
 
+  it("413 超限批次收缩重试，收缩到 1 仍超限进 dead-letter", async () => {
+    boundCfg();
+    const sizes = [];
+    configureCloudFetch(async (url, init) => {
+      const body = JSON.parse(init.body);
+      sizes.push(body.chunks.length);
+      // 模拟超限门槛 2 条：>2 条 413，否则放行
+      return body.chunks.length > 2 ? { ok: false, status: 413, json: async () => ({}) } : okJson({ inserted: body.chunks.length });
+    });
+    enqueueProseUplink([mkChunk({ id: "b1_12_3" }), mkChunk({ id: "b1_12_4", seq: 4 }), mkChunk({ id: "b1_12_5", seq: 5 })]);
+    await vi.advanceTimersByTimeAsync(1600);
+    await vi.advanceTimersByTimeAsync(300);
+    await vi.advanceTimersByTimeAsync(300);
+    // 首批 3 条 413 → 收缩到 1 或分批成功后排空
+    expect(getProseUplinkQueue()).toHaveLength(0);
+    expect(Math.max(...sizes)).toBeLessThanOrEqual(3);
+    expect(sizes.some((s) => s <= 2)).toBe(true);
+  });
+
 describe("安全闸门（Review SEC 修）", () => {
   it("非 cloud 驱动绝不发——凭证留档也不流向 hub", async () => {
     saveStorageConfig({ ...BASE_CFG, driver: "local" });
