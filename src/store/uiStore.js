@@ -26,6 +26,7 @@ export const OVERLAY = Object.freeze({
   TRACE: "trace",
   BASEMENT: "basement",
   LETTERS: "letters",
+  PACTS: "pacts",
 });
 
 let noticeSequence = 0;

@@ -498,6 +498,9 @@ export function materializeFacts(state, facts, compiledWarrants) {
             });
           }
         } else {
+          // 立约回执（WO-22B-P4b 复审）： EffectReceiptCard 的「阅契」按钮消费
+          // kind:"pact"——此前从不签发，面板入口成了死按钮通路。
+          receipts.push({ kind: "pact", factId: fact.id || "", npc: fact.npc, promise: fact.promise || "" });
           patches.push({
             op: "merge",
             path: ["varTree", "世界", "契约", fact.npc, pactKey],

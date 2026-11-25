@@ -7,6 +7,7 @@ import { GM_RULE } from "../../domain/rules/prompt/enginePrompts.js";
 import { gateBodyProfile } from "../../domain/rules/character/bodyProfile.js";
 import { labelMessage, makeBlock } from "../../domain/rules/prompt/tavernMapping.js";
 import { buildDistantViewBlock } from "../../domain/rules/memory/daySummary.js";
+import { buildPactInjectBlock } from "../../domain/rules/judge/pactLines.js";
 import { targetLedger } from "../../domain/rules/prompt/materials/index.js";
 import { embeddingReady } from "../ports/embeddingService.js";
 import { buildExtractionCfg } from "../../domain/rules/prompt/structuredCallCfg.js";
@@ -195,7 +196,16 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
   // 场景/人物小传/物件志/谈物规矩/心海）③状态与@体感态势（d.ctx 内含在场活人切片）
   // ④远方消息 ⑤往事召回 ⑥目标旧账 ⑦久别重逢 ⑧信息域 ⑨@江湖契约与宿敌
   // （WO-22/23 启用前留空）⑩尾章指引 ⑪篇幅与文体导向。现状即此序，最小重排不重写。
-  const pactNemesisPart = ""; // ⑨占位：WO-22/23 接线点，启用前留空
+  // WO-22B-P4b ⑨江湖契约注入：确定性文本行，只列在场 NPC 未了之约（最多 3 条），
+  // 无契约零注入不污染形状；宿敌谱半块仍待 WO-23。绝不 AI 自证——行全部出自账本。
+  // 在场名册优先用 buildPresence 口径（visibleNpcNames：内层房过滤+随行同伴），
+  // 缺席时（部分测试直通）fallback d.room 全名册——复审：整据点花名册当在场会把
+  // 别的房的人写进正文背景。
+  const pactPresentNames = (Array.isArray(d.visibleNpcNames) && d.visibleNpcNames.length)
+    ? d.visibleNpcNames
+    : (d.room?.npcs || []).map((n) => n?.name);
+  const pactBlock = buildPactInjectBlock(d.varTree, pactPresentNames, d.time);
+  const pactNemesisPart = pactBlock ? `\n\n${pactBlock}` : "";
   // WO-16F-F3：判官激活的 appease settle 也必须接定案单——否则判官落了账、
   // 正文却自由判成相反结果（本单要消灭的穿帮）。普通非判官 settle 仍不收尾章税。
   const inChatContent = d.isSettle

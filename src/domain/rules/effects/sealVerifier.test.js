@@ -112,6 +112,8 @@ describe("verifySealAndMaterialize 铁律三：编译与 pact", () => {
       sealText: ok, screenText: "x", verdict: verdictWith(), anchorIds: ["F42_1"], state: STATE, turn: 42,
     });
     expect(out2.facts.some((f) => f.op === "BIND_OR_SETTLE_PACT" && f.deadlineHours === 4)).toBe(true);
+    // 立约回执（WO-22B-P4b 复审）：kind:"pact" 必须签发——「阅契」按钮通路不死
+    expect(out2.materialized.receipts.some((r) => r.kind === "pact" && r.npc === "才旦")).toBe(true);
   });
 
   it("尾章未填空的券作废不编译；坏 JSON 告警不崩", () => {
