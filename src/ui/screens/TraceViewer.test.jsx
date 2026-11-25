@@ -1,5 +1,11 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import TraceViewer from "./TraceViewer.jsx";
+import {
+  _resetReleaseMetrics,
+  _setReleaseMetricsEnabledForTest,
+  recordIntakeMetric,
+  recordSealMetric,
+} from "../../engine/ports/releaseMetrics.js";
 
 vi.mock("../../store/gameStore.js", () => ({
   gameStore: { getState: () => ({ time: 30 }) },
@@ -85,5 +91,44 @@ describe("WO-16D PR-D2 影子对账展示", () => {
     const tree = TraceViewer({ theme: {}, onClose: vi.fn(), onReport: vi.fn() });
     const text = extractText(tree).join(" ");
     expect(text).not.toContain("影子对账聚合");
+    expect(text).not.toContain("放行指标观测");
+  });
+});
+
+describe("放行指标观测与 Markdown 复制报告", () => {
+  beforeEach(() => {
+    _resetReleaseMetrics();
+    _setReleaseMetricsEnabledForTest(false);
+  });
+
+  afterEach(() => {
+    _resetReleaseMetrics();
+    _setReleaseMetricsEnabledForTest(null);
+    vi.unstubAllGlobals();
+  });
+
+  it("有观测样本时渲染 dev 聚合区，点击复制报告写入 Markdown 表格", async () => {
+    _setReleaseMetricsEnabledForTest(true);
+    recordIntakeMetric({ epoch: "0", cfg: { provider: "openai", model: "gpt-4o-mini" }, outcome: "schemaOk" });
+    recordSealMetric({ epoch: "0", cfg: { provider: "openai", model: "gpt-4o" }, sealText: "{\"fills\":{}}", sealData: { fills: {} } });
+
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { clipboard: { writeText } });
+
+    const tree = TraceViewer({ theme: {}, onClose: vi.fn(), onReport: vi.fn() });
+    const text = extractText(tree).join(" ");
+    expect(text).toContain("放行指标观测");
+    expect(text).toContain("intake[openai/gpt-4o-mini]");
+    expect(text).toContain("SEAL[openai/gpt-4o]");
+
+    const copyReportBtn = flatten(tree).find((n) => n.type === "button"
+      && flatten(n.props?.children).concat([n.props?.children]).flat().includes("复制报告"));
+    expect(copyReportBtn).toBeTruthy();
+    await copyReportBtn.props.onClick();
+    expect(writeText).toHaveBeenCalledTimes(1);
+    const report = writeText.mock.calls[0][0];
+    expect(report).toContain("### 2. turn.intake Schema 合格率");
+    expect(report).toContain("| openai | gpt-4o-mini | 1 | 1 | 0 | 0 | 0 | 100.0% |");
+    expect(report).toContain("### 3. ---SEAL--- 尾章合格率");
   });
 });

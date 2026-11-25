@@ -11,6 +11,7 @@ import { getApiModel } from "../content/apiModel.js";
 import { filterPlanDelta, filterRejectedEffects } from "../domain/rules/intent/planNotes.js";
 import { classifyError } from "../utils/apiErrors.js";
 import { withAI } from "./ports/withAI.js";
+import { recordSealMetric } from "./ports/releaseMetrics.js";
 import { judgeTurn } from "../domain/rules/judge/judgeTurn.js";
 import { getInnerRoom } from "../domain/rules/map/innerMap.js";
 import { resolveContainerContext } from "../domain/rules/world/containers.js";
@@ -222,7 +223,7 @@ async function runTurnSteps(ctx, cmd, opts) {
         questCandidates,
         containers: openContainers,
       });
-      const intakeRes = await withAI("turn.intake", { userContent: intakeContent, cfg: deps.apiCfg }, { ai, apiCfg: deps.apiCfg, throwOnError: false });
+      const intakeRes = await withAI("turn.intake", { userContent: intakeContent, cfg: deps.apiCfg }, { ai, apiCfg: deps.apiCfg, throwOnError: false, epoch: ctx.proseEpoch ?? "default" });
       if (ctx.isStale?.()) return { stale: true };
       const intakeResult = normalizeIntakeResult(intakeRes?.data);
       const timeNow = getGameStateTime(ctx, deps);
@@ -436,6 +437,15 @@ async function runTurnSteps(ctx, cmd, opts) {
       state: stateForFacts,
       luck: deps.char?.special?.气运 ?? 0,
       turn: stateForFacts.time,
+    });
+    recordSealMetric({
+      epoch: ctx.proseEpoch ?? "default",
+      cfg: deps.apiCfg,
+      sealText: sealParts?.sealText || "",
+      sealData: verified.sealData,
+      warnings: verified.warnings,
+      missingAnchors: verified.missingAnchors,
+      rejectedAffixes: verified.rejectedAffixes,
     });
     if (verified.missingAnchors.length) {
       const before = narrativeText || "";
