@@ -17,7 +17,7 @@ import { add, applyWrite, set, updateField } from "../../domain/rules/state/appl
 import { forceAdvanceQuest } from "../quest/logic.js";
 import { sectSparRepGain, SECT_SPARS } from "../../domain/rules/economy/sectSpar.js";
 import { factionRepDeltas } from "../../domain/rules/economy/factionRep.js";
-import { recordNemesisDuel, scarFromBattleLog } from "../../domain/rules/nemesis/nemesisEngine.js";
+import { recordNemesisDuel, scarFromBattleLog, nemesisFactionOf } from "../../domain/rules/nemesis/nemesisEngine.js";
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 // 一场切磋占用的游戏时间（time 一格 = 一小时），由系统直接加，不经过 AI
@@ -183,7 +183,7 @@ export function settleNpcDuel(state, npc, {
           世界: { ...(prev?.世界 || {}), 宿敌谱: rosterNext },
         }));
         if (outcome === "lose") {
-          logs.push({ t: "sys", text: `  ${npc.name}赢了你——${npc.faction}上下，有人记住你这张脸了。` });
+          logs.push({ t: "sys", text: `  ${npc.name}赢了你——${nemesisFactionOf(npc) || ""}上下，有人记住你这张脸了。` });
         } else if (scar) {
           logs.push({ t: "sys", text: `  ${npc.name}身上添了道${scar.kind}伤——这账，江湖记着。` });
         }

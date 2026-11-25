@@ -15,6 +15,13 @@ export const NEMESIS_TIER_CAP = 4;
 // entryId deterministic：faction+name+firstTurn 三段。同名撞键防护靠「按名扫描归并」
 // ——同一势力同名者永远归并到已存在 entry（见 findNemesisEntry），新 id 只在谱中
 // 无此名时生成，id 内嵌名字天然不与异名者相撞。
+// 势力归属权威：getNpcFaction（覆盖驻地 NPC id 映射+random passer 特判）兜底裸 faction；
+// 非五势力/散人返回 null——调用方（日志渲染/记账）同一口径，避免 undefined 穿帮。
+export function nemesisFactionOf(npc) {
+  const faction = getNpcFaction(npc) || (typeof npc?.faction === "string" ? npc.faction : null);
+  return faction && NEMESIS_FACTIONS.includes(faction) ? faction : null;
+}
+
 export function nemesisEntryId(faction, name, firstTurn) {
   const slug = (s) => String(s || "").replace(/\s+/g, "");
   return `nm_${slug(faction)}_${slug(name)}_${firstTurn | 0}`;
@@ -73,9 +80,8 @@ export function scarFromBattleLog(battleLog) {
 // outcome "win"（敌方落败）：scarAttr 非空才追加持久伤痕（同 turn 去重）。
 // 五势力外/无 outcome 返回 null——调用方零账。
 export function recordNemesisDuel(roster, npc, outcome, { turn = 0, scar = null, place = "" } = {}) {
-  // 势力归属权威：getNpcFaction（覆盖驻地 NPC id 映射+random passer 特判），不裸读 npc.faction
-  const faction = getNpcFaction(npc) || (typeof npc?.faction === "string" ? npc.faction : null);
-  if (!npc?.name || !faction || !NEMESIS_FACTIONS.includes(faction)) return null;
+  const faction = nemesisFactionOf(npc);
+  if (!npc?.name || !faction) return null;
   if (outcome !== "lose" && outcome !== "win") return null;
   const factionBook = roster?.[faction] || { entries: {} };
   const entries = { ...(factionBook.entries || {}) };
@@ -113,7 +119,7 @@ export function recordNemesisDuel(roster, npc, outcome, { turn = 0, scar = null,
       // 之后 deeper 结仇只加 grudge，origin 保持最初由来。
       origin: {
         turn, place,
-        summary: `在${place || "江湖"}切磋${outcome === "lose" ? "落败" : "取胜"}结怨`,
+        summary: `在${place || "江湖"}切磋${outcome === "lose" ? "胜了主角" : "败给主角"}结怨`,
       },
       scars: outcome === "win" && scar ? [{ kind: scar.kind, note: scar.note || "", turn }] : [],
       grudge: outcome === "lose" ? 1 : 0,

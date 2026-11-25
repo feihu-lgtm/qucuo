@@ -158,7 +158,14 @@ describe("settleNpcDuel 接线", () => {
     const vt = out2.changes.varTree({ 角色: {}, 世界: {} });
     const entry = Object.values(vt.世界.宿敌谱.雪山派.entries)[0];
     expect(entry.origin).toMatchObject({ turn: 20, place: "黑风寨" });
-    expect(entry.origin.summary).toBe("在黑风寨切磋落败结怨");
+    expect(entry.origin.summary).toBe("在黑风寨切磋胜了主角结怨");
+  });
+
+  it("驻地 NPC 落败日志不裸 faction（无 undefined 穿帮）", () => {
+    const out = settleNpcDuel(duelState(), { id: "resident_huyanxue", name: "呼延雪", levelCap: 3 }, { outcome: "lose", battleLog: [] });
+    const line = out.logs.find((l) => l.text.includes("记住你这张脸"));
+    expect(line?.text).toContain("雪山派上下");
+    expect(line?.text).not.toContain("undefined");
   });
 
   it("origin 首写不覆盖：后续结仇只加 grudge", () => {
