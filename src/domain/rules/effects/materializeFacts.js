@@ -96,7 +96,15 @@ export function materializeFacts(state, facts, compiledWarrants) {
         if (!item) {
           // 保守不丢事实：编译缺失时按事实字段拼白档兜底物
           if (!fact.itemName) { logs.push({ t: "err", text: `  ⛔ 事实 ${fact.id} 无物可授（缺编译产物与物名）` }); break; }
-          item = { id: (typeof fact.itemId === "string" && fact.itemId.startsWith("it_")) ? fact.itemId : mintItemId(fact.itemName, turn, factIndex), name: fact.itemName, category: fact.category || "misc", quality: fact.quality || "白", desc: "来历成谜的物件（编译缺失兜底）" };
+          // id 幂等维度取 fact.id：同一事实重复出现时 mint 结果一致被去重；
+          // 两件独立奖励（不同 factId）同名同回合也自然分叉
+          const seq = fact.id || factIndex;
+          const supplied = typeof fact.itemId === "string" && fact.itemId.startsWith("it_") ? fact.itemId : null;
+          // 供来的 id 若已在任何池存在（NPC 身上/地上/袋里），说明指的是那件实物——
+          // GRANT 是新生一件，必须另 mint，否则后续 transfer/reforge 寻址错配
+          const collision = supplied ? locateItem({ ...state, inv, room }, supplied, null) : null;
+          const id = (supplied && !collision) ? supplied : mintItemId(fact.itemName, turn, seq);
+          item = { id, name: fact.itemName, category: fact.category || "misc", quality: fact.quality || "白", desc: "来历成谜的物件（编译缺失兜底）" };
         }
         if (inv.some((e) => e && e.id && e.id === item.id)) break; // 幂等：同 id 不重复入袋
         inv.push({ ...item });

@@ -274,9 +274,9 @@ describe("materializeFacts 十二律覆盖矩阵", () => {
     const state = baseState();
     state.inv = [];
     const out = materializeFacts(state, [
-      { id: "F40", op: "GRANT_ITEM", itemId: "it_whistle", itemName: "骨哨" },
+      { id: "F40", op: "GRANT_ITEM", itemId: "it_whistle_new", itemName: "骨哨" },
     ], {});
-    expect(out.changes.inv[0].id).toBe("it_whistle");
+    expect(out.changes.inv[0].id).toBe("it_whistle_new");
   });
 
   it("GRANT_ITEM 兜底：同轮两件同名 fallback 物不撞 id、不丢第二件", () => {
@@ -302,6 +302,28 @@ describe("materializeFacts 十二律覆盖矩阵", () => {
     expect(paths).toContain("varTree.世界.契约.才旦.F_old1.settled");
     expect(paths).not.toContain("varTree.世界.契约.才旦.F_old2.settled"); // 已结的跳过
     expect(paths).not.toContain("varTree.世界.契约.才旦.F43.settled"); // 不写到自己名下
+  });
+
+  it("GRANT_ITEM 兜底：同一事实重复出现只授一件（factId 幂等）", () => {
+    const state = baseState();
+    state.inv = [];
+    const out = materializeFacts(state, [
+      { id: "F50", op: "GRANT_ITEM", itemName: "馒头" },
+      { id: "F50", op: "GRANT_ITEM", itemName: "馒头" },
+    ], {});
+    expect(out.changes.inv.filter((e) => e.name === "馒头")).toHaveLength(1);
+    expect(out.receipts).toHaveLength(1);
+  });
+
+  it("GRANT_ITEM 兜底：供来的 id 已被 NPC 持有时另 mint 新 id，不撞原主", () => {
+    const state = baseState();
+    state.inv = [];
+    const out = materializeFacts(state, [
+      { id: "F51", op: "GRANT_ITEM", itemId: "it_whistle", itemName: "骨哨" },
+    ], {});
+    const granted = out.changes.inv.find((e) => e.name === "骨哨");
+    expect(granted.id).not.toBe("it_whistle"); // NPC 身上那件才是真主
+    expect(granted.id).toMatch(/^it_[0-9a-f]+$/);
   });
 
   it("未知事实码不静默：进 logs 记异", () => {
