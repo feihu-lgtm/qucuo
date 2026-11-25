@@ -160,7 +160,7 @@ flowchart LR
 |---|---|---|
 | WO-01～WO-12 | 已合并 | 地基、场记板、因果授信、编译器、十二律、前哨判官都在 main。 |
 | WO-13 | 已合并 | web 默认 `judgePipelineEnabled=true`；CLI 老录制默认 false。激活还需非 settle、非纯搭话且 `extractionEnabled` 双调用叙事模式。因 entries/containers/prepItems/floatingItems 还没宿主喂入，很多回合会 no-op 退化，不能当成旧提取已替换。 |
-| WO-14 | 已合并/动作修包施工 | `EffectReceiptCard` 已消费 receipts 并随判官落账日志显示；按钮仍翻文本指令进 act，结构化直写修包正在施工。 |
+| WO-14 | 已合并；动作结构化直写随修包落地 | `EffectReceiptCard` 消费 receipts 并随判官落账日志显示；按钮结构化 action 按 id 寻址确定性执行，equip/activate 幂等 explicit-on；`viewPact` 保留文本指令例外。 |
 | WO-15 | 施工中 | 旧提取层与独立软结算通道删除已开工；未完成前，旧提取仍是主回路状态写入口的事实主流。 |
 | WO-16+ | 未开始 | 依赖 WO-15 及后续链条解锁。 |
 
