@@ -11,6 +11,7 @@ import { initCompanionState } from "../domain/rules/companion/companionState.js"
 import { npcTradeOf } from "../domain/rules/npc/npcTrade.js";
 import { CURRENT_VERSION } from "../utils/version.js";
 import { setRngState, setSeed } from "../utils/rng.js";
+import { stampLogEntries } from "../domain/rules/log/logTypes.js";
 
 export const DEFAULT_PRESETS = [QUCUO_PRESET];
 
@@ -78,8 +79,8 @@ export function buildInitialGameState(restored, seed) {
     npcState: restored?.snap.npcState || {},
     inv: backfillInventoryFromCatalog(restored?.snap.inv || [...DEFAULT_PRESETS[0].inv]),
     log: restored
-      ? [{ t: "sys", text: `── 已从上次自动存档恢复进度（${new Date(restored.snap.savedAt || Date.now()).toLocaleString()}） ──` }, ...restored.snap.log]
-      : [{ t: "sys", text: `MUD引擎 · 「${CURRENT_VERSION.codename}」${CURRENT_VERSION.time} · ${DEFAULT_PRESETS[0].name}` }, ...DEFAULT_PRESETS[0].opening],
+      ? [...stampLogEntries([{ t: "sys", text: `── 已从上次自动存档恢复进度（${new Date(restored.snap.savedAt || Date.now()).toLocaleString()}） ──` }], restored?.snap.time ?? 6), ...restored.snap.log]
+      : stampLogEntries([{ t: "sys", text: `MUD引擎 · 「${CURRENT_VERSION.codename}」${CURRENT_VERSION.time} · ${DEFAULT_PRESETS[0].name}` }, ...DEFAULT_PRESETS[0].opening], 6),
     convo: restored?.snap.convo || [],
     exp: restored?.snap.exp || 0,
     pot: restored?.snap.pot || 0,

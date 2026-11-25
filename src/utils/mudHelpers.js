@@ -68,4 +68,19 @@ const SHICHEN = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", 
 // 24小时制钟点：每半时辰=1小时，子初(idx0)=23:00、子正(idx1)=0:00(显示24:00)、丑初(idx2)=1:00…
 // 钟点 h=(idx+23)%24，h为0时按作者要求显示成24而非0。
 const getClockHour = (idx) => { const h = (idx + 23) % 24; return (h === 0 ? 24 : h); };
-export const getTimeStr = (t) => { const idx = ((t % 24) + 24) % 24; const day = Math.floor(t / 24) + 1; const shi = SHICHEN[Math.min(11, Math.floor(idx / 2))]; const half = idx % 2 === 0 ? "初" : "正"; return `第${day}日·${shi}${half}·${String(getClockHour(idx)).padStart(2, "0")}:00`; };
+export const getGameDay = (t) => Math.floor((Number(t) || 0) / 24) + 1;
+export const getTimeStr = (t) => { const idx = ((t % 24) + 24) % 24; const day = getGameDay(t); const shi = SHICHEN[Math.min(11, Math.floor(idx / 2))]; const half = idx % 2 === 0 ? "初" : "正"; return `第${day}日·${shi}${half}·${String(getClockHour(idx)).padStart(2, "0")}:00`; };
+
+export function formatRealDateTime(ts = Date.now(), { withDate = true, withSeconds = true } = {}) {
+  const d = ts instanceof Date ? ts : new Date(ts);
+  if (Number.isNaN(d.getTime())) return "";
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  const ss = String(d.getSeconds()).padStart(2, "0");
+  const clock = withSeconds ? `${hh}:${mm}:${ss}` : `${hh}:${mm}`;
+  if (!withDate) return clock;
+  const yyyy = d.getFullYear();
+  const mon = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mon}-${dd} ${clock}`;
+}

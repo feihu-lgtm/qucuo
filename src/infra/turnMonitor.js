@@ -23,7 +23,18 @@ export function createTurnMonitor({ now = Date.now, strict = !!import.meta.env?.
   let current = null;
   let backgroundCount = 0;
   let snapshot = { current, trees, backgroundCount };
+  let readGameClock = null;
   const listeners = new Set();
+
+  function snapGameClock() {
+    const t = readGameClock?.();
+    if (typeof t !== "number" || !Number.isFinite(t)) return { gameTurn: null, gameDay: null };
+    return { gameTurn: t, gameDay: Math.floor(t / 24) + 1 };
+  }
+
+  function setGameClockReader(fn) {
+    readGameClock = typeof fn === "function" ? fn : null;
+  }
 
   function trimHistory() {
     while (trees.length > LIMIT) {
@@ -51,8 +62,10 @@ export function createTurnMonitor({ now = Date.now, strict = !!import.meta.env?.
 
   function start(label, { raw = label, source = "command", background = false, parentId, passive = false, commandId } = {}) {
     const command = commandId && getCommand(commandId);
+    const { gameTurn, gameDay } = snapGameClock();
     const turn = { id: `turn-${++seq}`, cmd: label, raw, source, background, parentId,
       commandId: command?.id, category: command?.category,
+      gameTurn, gameDay,
       ts: now(), phase: MACHINE, phases: [MACHINE], nodes: [], model: null, passive };
     trees = [turn, ...trees];
     trimHistory();
@@ -72,6 +85,9 @@ export function createTurnMonitor({ now = Date.now, strict = !!import.meta.env?.
     turn.phase = next;
     turn.phases.push(next);
     if (terminal.has(next)) {
+      const endClock = snapGameClock();
+      turn.endGameTurn = endClock.gameTurn;
+      turn.endGameDay = endClock.gameDay;
       turn.totalMs = now() - turn.ts;
       turn.summary = detail;
       trimHistory();
@@ -122,7 +138,7 @@ export function createTurnMonitor({ now = Date.now, strict = !!import.meta.env?.
   }
 
   return {
-    start, add, transition, finish, beginAi,
+    start, add, transition, finish, beginAi, setGameClockReader,
     queue(turn) {
       turn.queued = true;
       add(turn, "app", turn.commandId === "rollback" ? "回滚已排队" : "命令已排队", { kind: "queued" });

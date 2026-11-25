@@ -43,7 +43,7 @@ export function settleInBackground(cmd, opts = {}, {
     canAsk,
     isStale: () => isGameEpochStale(epoch),
     setLog,
-    ask: () => ask(sys, user, { callLabel: "结算描写", maxTokens: 400 }),
+    ask: () => ask(sys, user, { callLabel: "结算描写", maxTokens: 2000 }),
     parse: parseSettleNarration,
   });
 }

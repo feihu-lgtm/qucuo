@@ -47,7 +47,7 @@ export function lookInBackground(cmd, {
     canAsk,
     isStale: () => isGameEpochStale(epoch),
     setLog,
-    ask: () => ask(sys, user, { callLabel: "环顾描写", maxTokens: 400 }),
+    ask: () => ask(sys, user, { callLabel: "环顾描写", maxTokens: 2000 }),
     parse: parseSettleNarration,
   });
 }

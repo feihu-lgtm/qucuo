@@ -614,7 +614,7 @@
     position: static !important;
     inset: auto !important;
     width: 100%;
-    max-width: 100%;
+    max-width: 100% !important;
     margin-top: auto;
     padding-top: 16px;
     box-sizing: border-box;
@@ -635,6 +635,17 @@
 
   .start-screen-footer-separator {
     display: none;
+  }
+
+  .start-screen-corner-status {
+    position: static !important;
+    inset: auto !important;
+    width: 100%;
+    max-width: 100% !important;
+    align-items: flex-start !important;
+    text-align: left !important;
+    padding-top: 8px;
+    box-sizing: border-box;
   }
 
   .start-screen-load-panel {
@@ -783,6 +794,12 @@
       grid-row: 2;
       margin-top: 0;
       padding-top: 8px;
+    }
+
+    .start-screen-corner-status {
+      grid-column: 1;
+      grid-row: 3;
+      padding-top: 4px;
     }
   }
 }

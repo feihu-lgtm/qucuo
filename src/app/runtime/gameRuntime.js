@@ -1,10 +1,13 @@
 // 模块级游戏运行时原语：不依赖 React 生命周期，任何地方可直接调用。
 // featureCtx / hook 传参应逐步收敛到这里——游戏状态读写统一走 gameStore。
-import { gameActions } from "../../store/gameStore.js";
+import { gameActions, gameStore } from "../../store/gameStore.js";
 import { burnSquare, consumeArrival } from "../../domain/rules/map/mapSquares.js";
+import { stampLogEntries } from "../../domain/rules/log/logTypes.js";
 
-export const addLog = (lines) =>
-  gameActions.setLog((prev) => [...(prev || []), ...lines]);
+export const addLog = (lines) => {
+  const time = gameStore.getState().time;
+  return gameActions.setLog((prev) => [...(prev || []), ...stampLogEntries(lines, time)]);
+};
 
 export const applySquareOps = (ops) => {
   for (const { op, key, day } of ops) {

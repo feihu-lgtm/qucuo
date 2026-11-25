@@ -38,6 +38,19 @@ export function fmtClock(ts) {
     .join(":");
 }
 
+export function fmtGameClock(turn) {
+  if (typeof turn?.gameTurn !== "number" || !Number.isFinite(turn.gameTurn)) return "";
+  const day = typeof turn.gameDay === "number" ? turn.gameDay : Math.floor(turn.gameTurn / 24) + 1;
+  const endTurn = typeof turn.endGameTurn === "number" && turn.endGameTurn !== turn.gameTurn
+    ? turn.endGameTurn
+    : null;
+  const endDay = typeof turn.endGameDay === "number" ? turn.endGameDay : (endTurn != null ? Math.floor(endTurn / 24) + 1 : day);
+  if (endTurn != null) {
+    return `第${day}日·第${turn.gameTurn}回合 → 第${endDay}日·第${endTurn}回合`;
+  }
+  return `第${day}日·第${turn.gameTurn}回合`;
+}
+
 export function pipelineTabs(p) {
   return {
     System: Array.isArray(p.systemPrompt)
@@ -51,8 +64,9 @@ export function pipelineTabs(p) {
 
 export function formatTrace(turn, { full = true } = {}) {
   const clock = fmtClock(turn.ts);
+  const gameClock = fmtGameClock(turn);
   return [
-    `=== ${clock ? `${clock} ` : ""}${turn.id} ${turn.raw} | ${turn.phases.join(" → ")} | ${fmtMs(turn.totalMs)}${turn.commandId ? ` | ${turn.commandId} · ${turn.category}` : ""} ===`,
+    `=== ${clock ? `${clock} ` : ""}${turn.id} ${turn.raw} | ${turn.phases.join(" → ")} | ${fmtMs(turn.totalMs)}${turn.commandId ? ` | ${turn.commandId} · ${turn.category}` : ""}${gameClock ? ` | ${gameClock}` : ""} ===`,
     ...turn.nodes.flatMap((node) => [
       `  [${node.layer}] ${node.label}${node.model ? ` · ${node.model}` : ""}${node.detail ? `：${node.detail}` : ""}${node.durationMs != null ? ` (${fmtMs(node.durationMs)})` : ""}`,
       ...(full && node.pipeline ? Object.entries(pipelineTabs(node.pipeline)).map(([tab, content]) => `[${tab}]\n${content ?? ""}`) : []),

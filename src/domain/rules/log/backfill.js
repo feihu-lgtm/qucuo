@@ -22,7 +22,13 @@ export function insertBackfill(log, key, lines) {
     next.push(entry);
     if (entry?.fillKey !== key) continue;
     const line = typeof lines[entry.fillSlot] === "string" ? lines[entry.fillSlot].trim() : "";
-    if (line) next.push({ t: LOG_T.DESC, text: `  ${line}`, fillKey: key, fillProse: true });
+    if (line) {
+      const stamped = { t: LOG_T.DESC, text: `  ${line}`, fillKey: key, fillProse: true };
+      if (typeof entry.turn === "number") stamped.turn = entry.turn;
+      if (typeof entry.day === "number") stamped.day = entry.day;
+      if (entry.realTs != null) stamped.realTs = entry.realTs;
+      next.push(stamped);
+    }
   }
   return next;
 }

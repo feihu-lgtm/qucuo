@@ -1,7 +1,7 @@
 import { getPromptDef } from "../../domain/rules/prompt/registry.js";
 import { buildPrompt, estimatePromptTokens } from "../../domain/rules/prompt/buildPrompt.js";
 
-const THINKING_TAG_RE = /<thinking>[\s\S]*?<\/thinking>/g;
+const THINKING_TAG_RE = /<think(?:ing)?\b[^>]*>[\s\S]*?<\/think(?:ing)?>|<think(?:ing)?\b[^>]*>[\s\S]*$/gi;
 
 function resolveCallCfg(call, apiCfg, ctx) {
   const baseCfg = typeof call.cfg === "function" ? call.cfg(apiCfg, ctx) : apiCfg;
@@ -84,6 +84,7 @@ export async function withAI(
     const callLabel = optCallLabel ?? built.callLabel ?? (typeof call.label === "function" ? call.label(ctx) : call.label);
     const extraModelOptions = typeof call.modelOptions === "function" ? call.modelOptions(ctx) : call.modelOptions;
     const modelOptions = {
+      ...(call.tier === "flavor" ? { disableThinking: true, thinkingBudget: 0 } : {}),
       ...(extraModelOptions || {}),
       ...(optModelOptions || {}),
       ...(maxTokens !== undefined ? { maxTokens } : {}),
@@ -110,7 +111,7 @@ export async function withAI(
       return { ok: false, text: "", finishReason: res?.finishReason, data: null, promptMeta };
     }
     const rawText = res?.text || "";
-    const text = call.tier === "flavor" ? rawText.replace(THINKING_TAG_RE, "").trim() : rawText;
+    const text = (call.tier === "flavor" || modelOptions.disableThinking) ? rawText.replace(THINKING_TAG_RE, "").trim() : rawText;
     const passthrough = {
       ...(res?.raw !== undefined ? { raw: res.raw } : {}),
       ...(res?.logprobs !== undefined ? { logprobs: res.logprobs } : {}),

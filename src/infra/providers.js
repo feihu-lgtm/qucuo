@@ -244,10 +244,21 @@ export function applyShortCallOpenAI(body, provider, opts = {}) {
   if (opts.jsonOnly && JSON_MODE_PROVIDERS.has(provider.id)) body.response_format = { type: "json_object" };
 }
 
-export function applyThinkingGemini(genConfig, cfg) {
+export function applyThinkingGemini(genConfig, cfg, opts = {}) {
+  const model = cfg.model || "";
+  if (opts?.disableThinking) {
+    if (/^gemini-3/i.test(model)) {
+      genConfig.thinkingConfig = { thinkingLevel: /flash/i.test(model) ? "minimal" : "low" };
+    } else {
+      const minBudget = /gemini-2\.5-pro/i.test(model) ? 128 : 0;
+      const budget = opts.thinkingBudget !== undefined ? Math.max(minBudget, Number(opts.thinkingBudget) || 0) : minBudget;
+      genConfig.thinkingConfig = { thinkingBudget: budget };
+    }
+    return;
+  }
   const mode = cfg.thinkingMode || "off";
   const effort = thinkingEffort(cfg);
-  if (/^gemini-3/i.test(cfg.model || "")) {
+  if (/^gemini-3/i.test(model)) {
     if (effort === "off") return;
     genConfig.thinkingConfig = { thinkingLevel: effort };
   } else {

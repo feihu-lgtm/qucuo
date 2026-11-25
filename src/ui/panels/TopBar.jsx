@@ -50,7 +50,8 @@ export function DevControls({ theme, addLog }) {
 }
 
 export function VersionHistoryButton({ theme }) {
-  return <button type="button" onClick={() => openOverlay(OVERLAY.VERSION_HISTORY)} title="点击查看版本历史目录" style={chromeBtn(theme, { active: false })}>{CURRENT_VERSION.time}</button>;
+  const label = CURRENT_VERSION.version ? `${CURRENT_VERSION.version} · ${CURRENT_VERSION.time}` : CURRENT_VERSION.time;
+  return <button type="button" onClick={() => openOverlay(OVERLAY.VERSION_HISTORY)} title={`当前版本「${CURRENT_VERSION.codename}」· 点击查看版本历史目录`} style={chromeBtn(theme, { active: false })}>{label}</button>;
 }
 
 export default function TopBar({

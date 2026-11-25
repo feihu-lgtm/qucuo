@@ -27,7 +27,7 @@ function ensureStorytellerPrompt() {
     route: "light",
     tier: "flavor",
     reviewDesc: "flavor 档强制关闭思考并剥除 <thinking> 标签，失败静默落回模板正文",
-    defaultMaxTokens: (ctx) => ctx.maxTokens ?? 800,
+    defaultMaxTokens: (ctx) => ctx.maxTokens ?? 2000,
     join: "",
     blocks: ["storyteller.sys", "storyteller.user"],
   });
@@ -48,7 +48,7 @@ export function hasApiKey() {
 // 短润色调用：经 withAI 的 flavor 档强制关思考（thinkingMode:off）并剥除思考标签——
 // 思考与输出共享 token 预算，会把两三句正文截断在半句（项目已知坑）。
 // 成功返回清理后的正文，任何失败返回 null，绝不抛出。
-export async function askStoryteller(sys, user, { callLabel, maxTokens = 800 } = {}) {
+export async function askStoryteller(sys, user, { callLabel, maxTokens = 2000 } = {}) {
   let cfg;
   try {
     cfg = loadConfig();

@@ -1,5 +1,6 @@
 import { getDistrictAnchor, getInnerRoom, hasInnerMap } from "../../../domain/rules/map/innerMap.js";
 import { getTimeStr } from "../../../utils/mudHelpers.js";
+import LiveClockText from "../../components/LiveClockText.jsx";
 
 // 左栏位置：外层据点与内层房间分两行写清，描写取此刻所在的内层房间。
 // 此前只在据点名后面挂一个小字「· 房间」，描写却是外层据点的，玩家分不清自己在哪。
@@ -19,8 +20,11 @@ export default function LocationModule({ zoneTheme, room, innerRoomName, time })
           {isAnchor && <span style={{ ...label, marginLeft: 6 }}>（进出口）</span>}
         </div>
       )}
-      <div style={{ color: zoneTheme.textDim, fontSize: "10.5px", marginBottom: 10 }}>{getTimeStr(time)}</div>
-      <div style={{ color: zoneTheme.text, fontSize: "12px", marginBottom: 14, lineHeight: "var(--lh-narrative)" }}>{innerRoom?.desc || room.desc}</div>
+      <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-xs)", lineHeight: 1.5, marginBottom: 10 }}>
+        <div>游戏 {getTimeStr(time)} · 第{time}回合</div>
+        <div>现实 <LiveClockText /></div>
+      </div>
+      <div style={{ color: zoneTheme.text, fontSize: "var(--fs-sm)", marginBottom: 14, lineHeight: "var(--lh-narrative)" }}>{innerRoom?.desc || room.desc}</div>
     </div>
   );
 }

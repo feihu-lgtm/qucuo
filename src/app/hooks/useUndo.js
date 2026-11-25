@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef } from "react";
 import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../../infra/turnMonitor.js";
-import { clearNextReplaceAsUndo, gameActions, markNextReplaceAsUndo } from "../../store/gameStore.js";
+import { clearNextReplaceAsUndo, gameActions, gameStore, markNextReplaceAsUndo } from "../../store/gameStore.js";
+import { stampLogEntries } from "../../domain/rules/log/logTypes.js";
 import { restoreDayMaterial, snapshotDayMaterial } from "./useNotes.js";
 
 const undoOwners = new WeakMap();
@@ -14,7 +15,7 @@ export function createUndoController({
   setWaitSecs, turnGenerationRef, turnInvalidationListeners = new Set(), confirmRollback = () => true,
 }) {
   // 缺省走 gameActions（路线一）；测试可直接注入自己的 addLog。
-  const writeLog = addLog || ((lines) => gameActions.setLog((p) => [...p, ...lines]));
+  const writeLog = addLog || ((lines) => gameActions.setLog((p) => [...p, ...stampLogEntries(lines, gameStore.getState().time)]));
   const onTurnsInvalidated = (listener) => {
     if (typeof listener !== "function") return () => {};
     turnInvalidationListeners.add(listener);

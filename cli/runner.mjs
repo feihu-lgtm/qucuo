@@ -19,6 +19,7 @@ import { decide } from "../src/engine/commands/commandScheduler.js";
 import { classifyCliCommand, dispatchCommand } from "../src/engine/commands/index.js";
 import { formatTrace } from "../src/infra/actionTrace.js";
 import { formatTurnStatus, getTurnContext, PHASE, turnMonitor, withTurnContext } from "../src/infra/turnMonitor.js";
+import { stampLogEntries } from "../src/domain/rules/log/logTypes.js";
 import { playTurn } from "../src/engine/playTurn.js";
 import { createPromptContext } from "../src/engine/prompt/index.js";
 import { createWorldRules } from "../src/engine/worldRules.js";
@@ -154,6 +155,7 @@ function actionForKey(key) {
 export { classifyCliCommand };
 
 export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, ai, apiCfg: apiCfgOverrides, getNow = () => Date.now() } = {}) {
+  turnMonitor.setGameClockReader(() => gameStore.getState().time);
   const emit = typeof out === "function" ? out : (text) => out.write(`${text}\n`);
   let pendingTurn = Promise.resolve(0);
   let pendingTurnCount = 0;
@@ -173,7 +175,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     }, 3500);
   };
   const featureCtx = {
-    addLog: (lines) => gameActions.setLog((previous) => [...(previous || []), ...lines]),
+    addLog: (lines) => gameActions.setLog((previous) => [...(previous || []), ...stampLogEntries(lines, gameStore.getState().time, getNow())]),
     jotNote: () => {},
     gameActions,
     setVarTree: gameActions.setVarTreeState,
@@ -278,7 +280,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
         _trace: trace,
         ai,
         intentPlan: opts.intentPlan,
-        addLog: (lines) => gameActions.setLog((previous) => [...(previous || []), ...lines]),
+        addLog: (lines) => gameActions.setLog((previous) => [...(previous || []), ...stampLogEntries(lines, gameStore.getState().time, getNow())]),
         setLog: gameActions.setLog,
       });
 
@@ -292,7 +294,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       const dayMaterialRef = { current: [] };
       const playedThisSessionRef = { current: false };
       const roundsSinceLastSaveRef = { current: 0 };
-      const addLog = (lines) => gameActions.setLog((previous) => [...(previous || []), ...lines]);
+      const addLog = (lines) => gameActions.setLog((previous) => [...(previous || []), ...stampLogEntries(lines, gameStore.getState().time, getNow())]);
       if (opts.echoCommand || opts.extraReplies?.length) {
         addLog([{ t: "cmd", text: `> ${opts.displayCmd || cmd}` }, ...(opts.extraReplies || [])]);
       }
@@ -521,7 +523,19 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
 
     if (line.startsWith(":expect ")) {
       const { path, value: expected } = parseAssignment(line.slice(8), true);
-      const actual = getNestedValue(gameStore.getState(), path);
+      let actual = getNestedValue(gameStore.getState(), path);
+      if (path[0] === "log" && Array.isArray(actual) && Array.isArray(expected)) {
+        const metaKeys = ["turn", "day", "realTs"];
+        const wantMeta = expected.some((item) => item && typeof item === "object" && metaKeys.some((k) => k in item));
+        if (!wantMeta) {
+          actual = actual.map((item) => {
+            if (!item || typeof item !== "object") return item;
+            const trimmed = { ...item };
+            for (const k of metaKeys) delete trimmed[k];
+            return trimmed;
+          });
+        }
+      }
       if (isDeepStrictEqual(actual, expected)) {
         emit(`✓ ${path.join(".")}`);
         return 0;

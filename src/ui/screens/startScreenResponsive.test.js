@@ -106,4 +106,12 @@ describe("StartScreen mobile layout", () => {
     expect(readFileSync(join(HERE, "BodyProfilePanel.jsx"), "utf-8")).toContain("body-profile-panel");
     expect(readFileSync(join(HERE, "PortraitBodyStep.jsx"), "utf-8")).toContain("character-create-appearance-layout");
   });
+
+  it("renders bottom-right corner status with live real clock and version in StartScreen and responsive CSS", () => {
+    const startSrc = readFileSync(join(HERE, "StartScreen.jsx"), "utf-8");
+    expect(startSrc).toContain('className="start-screen-corner-status"');
+    expect(startSrc).toContain("<LiveClockText withDate />");
+    expect(startSrc).toContain("CURRENT_VERSION.version");
+    expect(MOBILE_CSS).toContain(".start-screen-corner-status");
+  });
 });

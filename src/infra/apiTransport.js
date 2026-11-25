@@ -245,7 +245,7 @@ async function requestModel(cfg, systemPrompt, messages, opts) {
       // 要写死"只输出 JSON"，并对返回值做剥围栏/截取的容错解析。这里加上是因为
       // 原生支持时它确实能显著降低跑偏率，成本为零。
       if (opts.jsonOnly) genConfig.responseMimeType = "application/json";
-      applyThinkingGemini(genConfig, cfg);
+      applyThinkingGemini(genConfig, cfg, opts);
       const res = await fetchWithTimeout(url, {
         method: "POST",
         headers: { ...provider.extraHeaders, "Content-Type": "application/json" },

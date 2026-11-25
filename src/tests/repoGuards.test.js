@@ -53,6 +53,7 @@ describe("version.js 语法与结构（防「测试全绿但构建坏了」）",
     }
     expect(CURRENT_VERSION.codename).toBe(VERSION_HISTORY[0].codename);
     expect(CURRENT_VERSION.time).toBe(VERSION_HISTORY[0].time);
+    expect(CURRENT_VERSION.version).toBe(VERSION_HISTORY[0].version);
   });
 });
 
