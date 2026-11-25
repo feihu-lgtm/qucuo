@@ -55,6 +55,15 @@ export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, ch
       信鸽 {char.pigeons || 0}
     </span>
   );
+  // WO-23C4：契约与宿敌面板入口——此前只有契约落账回执的「阅契」能开，
+  // 只有宿敌没有契约的玩家连面板都进不去（招抚无路）。
+  const pactsEntry = (
+    <span onClick={() => openOverlay(OVERLAY.PACTS)}
+      title="江湖契约与宿敌谱"
+      style={{ fontSize: "var(--fs-2xs)", color: zoneTheme.textDim, flexShrink: 0, cursor: "pointer" }}>
+      契
+    </span>
+  );
   const unreadLetters = useGameStore((s) => (s.varTree?.世界?.来信箱 || []).filter((l) => !l.read).length);
   const lettersEntry = (
     <span onClick={() => openOverlay(OVERLAY.LETTERS)}
@@ -67,7 +76,7 @@ export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, ch
     <div style={{ marginBottom: 10 }}>
       {dbgPeople}
       {header("此地 · 在场", present.length, "present", zoneTheme.accentDim,
-        <span style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>{lettersEntry}{pigeonBadge}</span>)}
+        <span style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>{pactsEntry}{lettersEntry}{pigeonBadge}</span>)}
       {peoplePanel.present && (present.length === 0
         ? <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-xs)", marginBottom: 8, paddingLeft: 16 }}>空无一人</div>
         : <div style={{ marginBottom: 8 }}>{present.map((n, i) => {

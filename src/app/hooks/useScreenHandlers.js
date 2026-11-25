@@ -14,6 +14,7 @@ import {
 } from "../../features/npc/logic.js";
 import { inviteCompanion } from "../../features/npc/inviteCompanion.js";
 import { recruitOC, applyRecruit, hirePriceFor } from "../../features/npc/ocRecruit.js";
+import { recruitNemesis } from "../../features/npc/recruitNemesis.js";
 import { claimGoldenEgg } from "../../features/npc/goldenEgg.js";
 import { duoduoEggReaction } from "./eggBackfill.js";
 import { OC_BY_NAME } from "../../domain/rules/npc/npcCarry.js";
@@ -76,6 +77,15 @@ export function useScreenHandlers({
     setActiveTarget(npc.name);
     applyResult(featureCtx(), result);
   }, { feature: "npc.inviteCompanion" }), [captureUndo]);
+
+  // WO-23C4 宿敌收服：eligibility 系统判定（tier<=2 且心账恩>怨），AI 完全不参与；
+  // 被拒无 changes 不存撤销点，成功经 applyResult 单一边界落账。
+  const handleRecruitNemesis = useCallback((ref) => applyResult(featureCtx(), () => {
+    const result = recruitNemesis(gameStore.getState(), ref);
+    if (!result.changes) { if (result.logs?.length) applyResult(featureCtx(), { logs: result.logs }); return; }
+    captureUndo();
+    applyResult(featureCtx(), result);
+  }, { feature: "npc.recruitNemesis" }), [captureUndo]);
 
   // 元朵朵·金鸟金蛋：开奖卡片落定后，她的临场反应走 AI 后台补写（无 API 兜底句）
   const handleGoldenEgg = useCallback((npc) => applyResult(featureCtx(), () => {
@@ -250,6 +260,7 @@ export function useScreenHandlers({
     handleNpcTalk,
     handleNpcGift,
     handleInviteCompanion,
+    handleRecruitNemesis,
     handleOcRecruit,
     handleGoldenEgg,
     handleStationCompanion,

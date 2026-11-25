@@ -58,6 +58,7 @@ export function buildOverlayCtx({ ui, game, overlayState, autosave, actions, add
       handleNpcGift: screenHandlers.handleNpcGift, handleNpcDuel: duelHandlers.handleNpcDuel,
       handleNpcSteal: screenHandlers.handleNpcSteal, handleNpcLearnSkill: screenHandlers.handleNpcLearnSkill,
       handleNpcTrade: screenHandlers.handleNpcTrade, handleInviteCompanion: screenHandlers.handleInviteCompanion,
+      handleRecruitNemesis: screenHandlers.handleRecruitNemesis,
       handleOcRecruit: screenHandlers.handleOcRecruit, handleRecallCompanion: screenHandlers.handleRecallCompanion,
       handleGoldenEgg: screenHandlers.handleGoldenEgg,
       inspectItem: aiInspect.inspectItem, handleConsumeItem: screenHandlers.handleConsumeItem,

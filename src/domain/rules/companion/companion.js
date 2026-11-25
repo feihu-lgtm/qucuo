@@ -65,9 +65,11 @@ export function createImportedCompanion(npc) {
     levelCap, special, waigong, neigong, baseAtk: tier.baseAtk,
   };
   // npc.signatureMoves：OC 冒险者从 kungfu.moves 折好的专属槽（ocRecruit.ocSignatureMoves）
+  // 无专属招表的普通 NPC（如收编的五势力宿敌）兜底通用招组——
+  // 不能空 moveset 入队，否则出战位上阵每场自动回合都打不了。
   const moveset = npc.signatureMoves
     ? deriveMovesetFromSig(npcShape, npc.signatureMoves, { levelCap })
-    : deriveSignatureMoveset(npcShape, { levelCap });
+    : (deriveSignatureMoveset(npcShape, { levelCap }) || generateNpcMoveset(npcShape, { levelCap }));
 
   return {
     ...npcShape,
