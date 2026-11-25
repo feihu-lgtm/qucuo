@@ -223,6 +223,14 @@ async function runTurnSteps(ctx, cmd, opts) {
         entries: [],
         questCandidates,
         containers: openContainers,
+        // WO-16G PR-G1 喂料同源：房间/内层/任务进度/背包直传，清单口径全在
+        // buildIntakeUserContent 内部——shadow 传的是同一组参数名，两处不得各写。
+        room: deps.room || {}, innerRoomName: innerRoomNow,
+        questProgress: liveNow.questProgress || deps.questProgress || {},
+        flags: liveNow.flags || deps.flags || [],
+        inv: liveNow.inv || deps.inv || [],
+        char: liveNow.char || deps.char || {},
+        varTree: vtNow,
       });
       const intakeRes = await withAI("turn.intake", { userContent: intakeContent, cfg: deps.apiCfg }, { ai, apiCfg: deps.apiCfg, throwOnError: false, epoch: String(ctx.proseEpoch ?? "default") });
       if (ctx.isStale?.()) return { stale: true };

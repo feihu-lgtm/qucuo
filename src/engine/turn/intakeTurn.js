@@ -5,17 +5,63 @@
 import { definePrompt } from "../../domain/rules/prompt/registry.js";
 import { INTAKE_JSON_SCHEMA } from "../../domain/rules/judge/intakeSchema.js";
 import { validateJsonSchema } from "../../utils/schemaValidate.js";
+import { splitCompositeInput } from "../../domain/rules/input/compositeInput.js";
+import { visibleInnerExits, isInnerExitUnlocked } from "../../domain/rules/map/innerMap.js";
+import { QUCUO_MAP } from "../../domain/data/map/qucuoMap.js";
 
 // 组装喂给小模型的现场材料（纯函数）：
 //   最近两轮对话 + 在场角色与随身物 ID + 可引用场记板条目头。
 // 条目头只给【id】+ publicText 前 40 字，小模型只需选 ID 不需读全文。
-export function buildIntakeUserContent({ playerInput, recentTurns = [], npcs = [], entries = [], questCandidates = [], containers = [] } = {}) {
+// WO-16G PR-G1 喂料扩展：拆句 hints、可用出口（锁/内层过滤）、可赠/可用/可拾/可穿戴
+// 四张物件清单统一 `名字(编号)`。runTurn 与 shadowJudge 都调这一个入口——
+// 清单口径只此一份，不得在两处各写一份。
+// 不喂银两：WO-16D 审计实证仓内没有独立玩家钱币状态，roadmap 模板里的
+// 「赠予默认银两」是偏差口径，钱数事由判官 CHANGE_VITALS_SILVER 管。
+export function buildIntakeUserContent({
+  playerInput, recentTurns = [], npcs = [], entries = [], questCandidates = [], containers = [],
+  room = null, innerRoomName = null, questProgress = {}, flags = [], inv = [], char = {}, varTree = {},
+} = {}) {
   const lines = [];
   lines.push(`玩家这句话：「${playerInput || ""}」`);
+  // 拆句 hints：借 compositeInput 现有切段口径，只做提示不物理分流
+  const segments = splitCompositeInput(playerInput);
+  lines.push(`[拆句提示] ${segments.length > 1 ? segments.map((seg) => `「${seg}」`).join("、") : "无"}`);
+  // 可用出口：内层房间用 visibleInnerExits（未解锁隐藏方向不出现）；
+  // 外层据点按 QUCUO_MAP[room.name].exits 列——带 unlockCondition 的目的节点
+  // 用 isInnerExitUnlocked 同一解锁口径过滤（flag/quest/favor/钥匙锁全兼容）。
+  const unlockCtx = { questProgress, flags, inv, char, varTree };
+  let exitMap = {};
+  if (room?.name && innerRoomName) {
+    exitMap = visibleInnerExits(room.name, innerRoomName, unlockCtx);
+  } else if (room?.name && QUCUO_MAP[room.name]?.exits) {
+    for (const [dir, dest] of Object.entries(QUCUO_MAP[room.name].exits)) {
+      const destNode = QUCUO_MAP[dest];
+      if (destNode?.unlockCondition && !isInnerExitUnlocked(destNode.unlockCondition, unlockCtx)) continue;
+      exitMap[dir] = dest;
+    }
+  }
+  const DIR_LABEL = { n: "北", s: "南", e: "东", w: "西" };
+  const exitsText = Object.entries(exitMap).map(([dir, dest]) => `${dir}(${DIR_LABEL[dir] || dir}→${dest})`).join("、");
+  lines.push(`[可用出口] ${exitsText || "无"}`);
+  const renderItems = (list) => (list || []).filter((it) => it && it.name)
+    .map((it) => `${it.name}(${it.id || "无ID"})`).join("、");
+  // 四张物件清单（同源口径）：
+  //   赠予=背包未装备物件；使用=带 consumable 形状的消耗品；
+  //   拾取=地上陈设（room.items）；穿戴卸下=weapon/armor/accessory（已装备的标〔已装备〕）。
+  const invList = (inv || []).filter((it) => it && typeof it === "object" && it.name);
+  const giftItems = invList.filter((it) => !it.equipped);
+  const useItems = invList.filter((it) => it.consumable);
+  const equipItems = invList.filter((it) => ["weapon", "armor", "accessory"].includes(it.category));
+  const groundItems = (room?.items || []).filter((it) => it && it.name);
+  lines.push("[可用物件]");
+  lines.push(`· 赠予：${renderItems(giftItems) || "无"}`);
+  lines.push(`· 使用：${renderItems(useItems) || "无"}`);
+  lines.push(`· 拾取：${renderItems(groundItems) || "无"}`);
+  lines.push(`· 穿戴卸下：${equipItems.length ? equipItems.map((it) => `${it.name}(${it.id || "无ID"})${it.equipped ? "〔已装备〕" : ""}`).join("、") : "无"}`);
   if (recentTurns.length) {
     lines.push("最近两轮对话：");
     for (const turn of recentTurns.slice(-2)) {
-      lines.push(`[玩家] ${turn?.user || ""}\n[引擎] ${turn?.engine || ""}`);
+      lines.push(`[玩家] ${String(turn?.user || "").slice(0, 80)}\n[引擎] ${String(turn?.engine || "").slice(0, 80)}`);
     }
   }
   if (npcs.length) {
@@ -80,13 +126,58 @@ export function registerIntakeCalls() {
 
 registerIntakeCalls();
 
-// 本地复核：withAI 的原生 schema 校验之外，listen 结果再回验一遍形状，
-// 不合形制的降级为空听意单（actions/proposals 空数组），判官按自由行动处理。
+// 本地复核：withAI 的原生 schema 校验之外，listen 结果再回验一遍形状。
+// WO-16G 修复式复核：先按 schema 键表剥掉模型多填的字段、给 actions 缺省键补默认值，
+// 再回验——多填/漏填不再让整张听意单报废；修不好才降级为空单，判官按自由行动处理。
+const ACTION_DEFAULTS = {
+  kind: "free_act", target: "无", item: "无", itemId: "", direction: "none",
+  condition: "无", condition_text: "", stance: "casual",
+  outcome: "无", risk: "无", confidence: 0, text: "",
+};
+const PROPOSAL_KINDS = new Set(["find_item", "secret_clue", "social_deal", "environment_use", "quest_advance"]);
+const PROPOSAL_FITS = new Set(["natural", "stretch", "absurd"]);
+
+function repairEntry(entry, defaults) {
+  if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
+  const out = {};
+  for (const key of Object.keys(defaults)) {
+    out[key] = key in entry ? entry[key] : defaults[key];
+  }
+  return out;
+}
+
+// proposals 不做默认补全——kind/fit/claim 缺失或非法必须整条丢弃：
+// 补成合法 find_item/natural 等于把残缺提议伪造成有效寻宝声称，判官可能虚签事实。
+// 只有 questId/flag 允许补缺省空串（strict 全 required 的过渡兼容）。
+function repairProposal(entry) {
+  if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
+  if (typeof entry.claim !== "string" || !entry.claim.trim()) return null;
+  if (!PROPOSAL_KINDS.has(entry.kind)) return null;
+  if (!PROPOSAL_FITS.has(entry.fit)) return null;
+  return {
+    claim: entry.claim,
+    kind: entry.kind,
+    fit: entry.fit,
+    questId: typeof entry.questId === "string" ? entry.questId : "",
+    flag: typeof entry.flag === "string" ? entry.flag : "",
+  };
+}
+
 export function normalizeIntakeResult(data) {
-  if (!data || typeof data !== "object" || !validateJsonSchema(data, INTAKE_JSON_SCHEMA.schema).ok) {
+  if (!data || typeof data !== "object") {
     return { read: "", refIds: [], actions: [], proposals: [], degraded: true };
   }
-  return data;
+  // 修复式净化：只留 schema 声明的键，缺省补默认值
+  const clean = {
+    read: typeof data.read === "string" ? data.read : "",
+    refIds: Array.isArray(data.refIds) ? data.refIds.filter((x) => typeof x === "string") : [],
+    actions: (Array.isArray(data.actions) ? data.actions : []).map((a) => repairEntry(a, ACTION_DEFAULTS)).filter(Boolean),
+    proposals: (Array.isArray(data.proposals) ? data.proposals : []).map((x) => repairProposal(x)).filter(Boolean),
+  };
+  if (!validateJsonSchema(clean, INTAKE_JSON_SCHEMA.schema).ok) {
+    return { read: "", refIds: [], actions: [], proposals: [], degraded: true };
+  }
+  return clean;
 }
 
 // ── WO-15 窄过渡补洞：turn.appease 赔罪消气仲裁 ──

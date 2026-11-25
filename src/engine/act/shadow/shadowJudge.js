@@ -99,6 +99,14 @@ export async function runShadowJudge({
       entries: [],
       questCandidates,
       containers: openContainers,
+      // WO-16G PR-G1：与 runTurn 同源喂料——同一组参数名，口径只在
+      // buildIntakeUserContent 内部一份，影子吃的是回合前快照切片。
+      room: preState?.room || {}, innerRoomName: innerNow,
+      questProgress: preState?.questProgress || {},
+      flags: preState?.flags || [],
+      inv: preState?.inv || [],
+      char: preState?.char || {},
+      varTree: vtPre,
     });
     // 网关 guard 与 epoch 必须传入：stale/换档的影子样本不进网络也不计入
     // intake 指标桶（withAI 在 stale 时提前返回、不 recordIntakeMetric），

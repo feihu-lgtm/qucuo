@@ -15,13 +15,23 @@ export const INTAKE_JSON_SCHEMA = {
         items: {
           type: "object",
           additionalProperties: false,
-          required: ["kind", "target", "itemId", "direction", "stance"],
+          // WO-16G PR-G1：12 字段全 required（OpenAI strict 口径，禁联合类型），
+          // 缺省语义 空串/none/无/0——outcome/risk 只进 schema 与喂料，
+          // 判官消费在 WO-16F 接，risk 已被 budgetInput 兼容读取。
+          required: ["kind", "target", "item", "itemId", "direction", "condition", "condition_text", "stance", "outcome", "risk", "confidence", "text"],
           properties: {
             kind: { type: "string", enum: ["talk", "move", "inspect_container", "take", "give", "trade", "steal", "duel", "appease", "learn", "invite", "use_item", "equip", "free_act"] },
-            target: { type: "string" },
-            itemId: { type: "string" },
+            target: { type: "string", description: "在场角色或容器的准确名字，没点名或不在场填「无」" },
+            item: { type: "string", description: "物件名从清单里选；选不出填「无」" },
+            itemId: { type: "string", description: "清单括号里的编号；选不出填空串" },
             direction: { type: "string", enum: ["n", "s", "e", "w", "none"] },
+            condition: { type: "string", enum: ["无", "遇敌", "到达", "被拒", "其他"], description: "玩家说了「要是/如果/若/万一……就」前提时选类，没有填「无」" },
+            condition_text: { type: "string", description: "前提原文照抄；没有前提填空串" },
             stance: { type: "string", enum: ["sincere", "clever", "forceful", "casual", "perfunctory"] },
+            outcome: { type: "string", enum: ["无", "伤损", "得财", "破费", "调息", "修习", "服用", "受寒中毒", "醉酒", "其他"], description: "按常理最可能的后果，不估数值；拿不准选「无」" },
+            risk: { type: "string", enum: ["无", "低", "中", "高"], description: "动作本身有多险；闲谈赶路选「无」" },
+            confidence: { type: "number", minimum: 0, maximum: 1, description: "0 到 1；十拿九稳才给 0.95 以上" },
+            text: { type: "string", description: "抄玩家原话对应那段，一字不改；只有一个动作抄整句" },
           },
         },
       },

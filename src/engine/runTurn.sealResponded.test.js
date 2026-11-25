@@ -46,7 +46,7 @@ describe("SEAL respondedNpcs 兜底接线", () => {
   it("系统推导非空时：SEAL 不覆盖系统推导", async () => {
     const ai = createMockAi([
       JSON.stringify({ read: "", refIds: [], actions: [
-        { kind: "talk", target: "才旦", itemId: "", direction: "none", stance: "casual" },
+        { kind: "talk", target: "才旦", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "才旦，最近可好？" },
       ], proposals: [] }),
       sealLine(["幻觉人"]),
     ]);

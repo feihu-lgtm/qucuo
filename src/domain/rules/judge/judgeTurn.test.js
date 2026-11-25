@@ -310,3 +310,33 @@ describe("WO-21B 判官签发类目迁移：谊→恩、隙→怨、和→见", 
     expect(JSON.stringify(verdict.facts)).not.toMatch(/"ledgerKind":"[谊隙和]"/);
   });
 });
+
+describe("WO-16G interim：带前提动作不结算", () => {
+  const condInspect = {
+    kind: "inspect_container", target: "木箱", itemId: "", direction: "none", stance: "casual",
+    condition: "其他", condition_text: "要是没人看见",
+  };
+  it("条件翻箱：不坍缩、不给物、只留前提未裁 note", () => {
+    const verdict = judgeTurn(baseEnvelope({
+      containers: { 木箱: { collapsed: false, presetItems: [{ id: "it_pre", name: "铁钥匙" }] } },
+    }), { read: "", refIds: [], actions: [condInspect], proposals: [] }, { rng: seqRng([0.9]) });
+    expect(verdict.facts.filter((f) => f.op === "GRANT_ITEM")).toHaveLength(0);
+    expect(verdict.notes.join()).toContain("前提未裁");
+    expect(verdict.notes.join()).not.toContain("已坍缩");
+    // 容器不被消费——verdict 里无坍缩产物（collapse 相关的容器写不出现）
+    expect(JSON.stringify(verdict)).not.toContain("铁钥匙");
+  });
+  it("condition 为「无」或缺省照旧结算", () => {
+    const plain = { ...condInspect, condition: "无", condition_text: "" };
+    const verdict = judgeTurn(baseEnvelope({
+      containers: { 木箱: { collapsed: false, presetItems: [{ id: "it_pre", name: "铁钥匙" }] } },
+    }), { read: "", refIds: [], actions: [plain], proposals: [] }, { rng: seqRng([0.9]) });
+    expect(verdict.facts.some((f) => f.itemName === "铁钥匙")).toBe(true);
+    // 缺省（无 condition 键）旧形状也照常
+    const legacy = { kind: "inspect_container", target: "木箱", itemId: "", direction: "none", stance: "casual" };
+    const v2 = judgeTurn(baseEnvelope({
+      containers: { 木箱: { collapsed: false, presetItems: [{ id: "it_pre", name: "铁钥匙" }] } },
+    }), { read: "", refIds: [], actions: [legacy], proposals: [] }, { rng: seqRng([0.9]) });
+    expect(v2.facts.some((f) => f.itemName === "铁钥匙")).toBe(true);
+  });
+});

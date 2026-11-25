@@ -103,7 +103,15 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
   });
 
   // ── 第二步：赠礼/赔罪/求教收拒裁决 ──
-  const actions = Array.isArray(intakeResult.actions) ? intakeResult.actions : [];
+  const rawActions = Array.isArray(intakeResult.actions) ? intakeResult.actions : [];
+  // WO-16G interim：带前提（condition≠无）的动作全部机械结算跳过——前提是否成真
+  // 判官还没裁决能力（WO-16F 才做真条件裁决），提前结算会把「要是没人我就翻箱」
+  // 当成已经翻了：容器被耗竭、物件被搬空。只留 note 痕迹，其余 action 照常。
+  const conditioned = rawActions.filter((a) => a?.condition && a.condition !== "无");
+  for (const a of conditioned) {
+    notes.push(`前提未裁，暂不结算：${a.kind}${a.target && a.target !== "无" ? `→${a.target}` : ""}（${a.condition}：${a.condition_text || "未述"}）`);
+  }
+  const actions = rawActions.filter((a) => !(a?.condition && a.condition !== "无"));
   // 任务交付去重预扫：quest_advance 提议命中带 deliver 的合法候选时，同目标同物的
   // give 动作必须压制——交付件归属由 questFlagRule 任务通道扣件结算，赠礼通道再转
   // 一次就是双扣件+虚假好感（村2 糌粑→老孙：交差不是送礼）。
