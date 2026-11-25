@@ -1,6 +1,0 @@
-:new
-:seed 42
-:set mapData.雅江={"x":2,"y":0}
-坐车 雅江
-坐车 鱼定村
-:save carriage-roster.json

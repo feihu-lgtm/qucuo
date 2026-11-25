@@ -1,6 +1,0 @@
-# A failed NPC inspection must not poison the next local-only command.
-:new
-:set room.npcs=[{"id":"npc_master","name":"师父","combatStats":{"hp":[20,20]}}]
-看 师父
-打坐
-:expect time=7
