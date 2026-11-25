@@ -12,9 +12,9 @@
 //   不会每次战斗都不一样（跟 npcGeneration.js"出生固化"同一个哲学）。
 // - 战力走统一战力曲线（atkFromWaigong/hpFromNeigong），蓝档(levelCap=2)，
 import { generateNpcAttributes, getTierPower, hpFromNeigong, deriveSignatureMoveset } from "../npc/npcGeneration.js";
-import { findAdventurerByName } from "../follower/followers.js";
+import { findAdventurerByName, isSharedFollowerName } from "../follower/followers.js";
 import { ocSignatureMoves } from "./ocKungfu.js";
-import { deriveMovesetFromSig } from "../npc/npcMovesets.js";
+import { deriveMovesetFromSig, generateNpcMoveset } from "../npc/npcMovesets.js";
 import { createEmptyStatusSlots } from "../combat/statusEffects.js";
 import { COMPANION_SLOTS } from "./companionSlots.js";
 export { initCompanionState } from "./companionState.js";
@@ -97,18 +97,39 @@ export function unlockImportedCompanion(companionState, npc) {
   return next;
 }
 
-// ── 随从伙伴（元朵朵的铁伯）──────────────────────────────────────────
-// OC 的 follower 带 joinParty 预设时，主人入队后随从作为独立伙伴槽一并入队：
-//   key=imported_<随从名>，servantOf=主人槽 key，mute=true（机关人偶无通灵、不开口，
-//   只在随行插话里出机括声），active:false（出战位仍是主人，玩家想让他当盾可在队伍里换上）。
-// 为什么不改 2v2 引擎：团战只有「玩家+1 队友」两个己方位，铁伯跟朵朵并排上不了场。
-// 朵朵出战时，铁伯的"护主"已折进她的抱头蹲防（见其招式描述）；想让铁伯真身上阵就换他出战。
-// 留守/唤回见下方 bondGroup：主仆同进同出。
+// ── 随从伙伴：77 位 OC 冒险者每人带一个随从（元朵朵的铁伯、史燕的阿财……）──────────
+// 主人入队时随从作为独立伙伴槽一并入队——是两个人：各自能换上出战位、各自留守/唤回，
+// 切磋只带出战位那一个上场；随行插话两个人都会开口（哑的出机括声/兽声）。
+//   key=imported_<随从名>（随从重名时带主人名，见 followerKey），servantOf=主人槽 key（只记归属），
+//   active:false（出战位仍是主人）。
+// 战斗性格与开口方式按随从类型定；铁伯（joinParty: tank）另有手写的专属招式。
+const FOLLOWER_TYPE_PRESETS = {
+  兽: {
+    profile: { moveWeights: { 攻击: 0.55, 防御: 0.2, 状态: 0.25 }, riskAppetite: 0.6, avoidRepeat: 0.3 },
+    personality: "通人性的灵兽，不会说人话，靠叫声、动作和眼神表达",
+    beast: true,
+  },
+  人: {
+    profile: IMPORTED_COMPANION_PROFILE,
+    personality: "跟随主人多年的随从，护主心切",
+  },
+  剑灵: {
+    profile: { moveWeights: { 攻击: 0.4, 防御: 0.2, 状态: 0.4 }, riskAppetite: 0.5, avoidRepeat: 0.5 },
+    personality: "寄身器物的灵体，言语飘忽，只认主人",
+  },
+  机关人偶: {
+    profile: { moveWeights: { 攻击: 0.35, 防御: 0.45, 状态: 0.2 }, riskAppetite: 0.3, avoidRepeat: 0.2 },
+    personality: "无通灵的机关造物，只按机括回路行动",
+    mute: true,
+  },
+};
 const FOLLOWER_PRESETS = {
-  // 坦克：体魄高、身法慢，防御权重压过攻击，不冒进
+  // 坦克（铁伯）：比主人高一档，体魄高、身法慢，防御权重压过攻击，不冒进
   tank: {
     profile: { moveWeights: { 攻击: 0.3, 防御: 0.5, 状态: 0.2 }, riskAppetite: 0.25, avoidRepeat: 0.2 },
     personality: "沉默寡言的机关老仆，无通灵只按宠溺回路行动，一心护主",
+    levelBonus: 1,
+    statTweak: { 体魄: 3, 身法: -2, 悟性: -2 },
     sig: {
       攻击: { archetype: "硬攻", name: "铁臂横扫", desc: "精铁四肢抡开一记横扫，机括咔哒作响，沉而不快，挨上的人只觉像撞了堵铁墙。" },
       防御: { archetype: "防守反击", name: "精钢盾甲", desc: "四肢精钢盾甲层层展开，把主人护在身后，来力顺着甲面滑开，再顺势一拳砸回去。" },
@@ -118,27 +139,43 @@ const FOLLOWER_PRESETS = {
   },
 };
 
-// 随从战斗数据：比主人高一档（全靠它硬抗），体魄大幅拉高、身法拉低、悟性压低。
-// 一次性生成后固化进存档，跟其余伙伴同一个"出生固化"哲学。
+// 哑巴随从：机关人偶一律不开口（机括声）；人类随从卡上写明哑巴/口不能言的（铁牛、哑奴、抱剑童子……）
+// 也不开口，只比划；灵兽只出声。voice 存进槽位，随行插话按它选说法。
+function followerPreset(f) {
+  const base = FOLLOWER_TYPE_PRESETS[f.type] || FOLLOWER_TYPE_PRESETS.人;
+  const own = FOLLOWER_PRESETS[f.joinParty] || {};
+  const muteHuman = f.type === "人" && /哑|口不能言/.test(`${f.name}${f.desc || ""}`);
+  const mute = !!(base.mute || own.mute || muteHuman);
+  const voice = base.beast ? "beast" : base.mute || own.mute ? "mechanical" : muteHuman ? "silent" : "human";
+  return { ...base, ...own, mute, beast: !!base.beast, voice };
+}
+
+function followerKey(owner) {
+  const f = owner.follower;
+  return importedCompanionKey(isSharedFollowerName(f.name) ? `${owner.name}·${f.name}` : f.name);
+}
+
+// 随从战斗数据：与主人同档（铁伯高一档），一次性生成后固化进存档，跟其余伙伴同一个"出生固化"哲学。
 export function createFollowerCompanion(owner) {
   const f = owner.follower;
-  const preset = FOLLOWER_PRESETS[f.joinParty];
-  const levelCap = Math.min(5, (Number.isFinite(owner.levelCap) ? owner.levelCap : 1) + 1);
+  const preset = followerPreset(f);
+  const levelCap = Math.min(5, (Number.isFinite(owner.levelCap) ? owner.levelCap : 1) + (preset.levelBonus || 0));
   const special = generateNpcAttributes({ levelCap });
-  special.体魄 = Math.min(10, special.体魄 + 3);
-  special.身法 = Math.max(1, special.身法 - 2);
-  special.悟性 = Math.max(1, special.悟性 - 2);
+  for (const [stat, delta] of Object.entries(preset.statTweak || {})) {
+    special[stat] = Math.max(1, Math.min(10, (special[stat] ?? 5) + delta));
+  }
   const tier = getTierPower(levelCap);
   const maxHp = hpFromNeigong(tier.neigong, special.体魄);
   const npcShape = {
-    name: f.name, id: importedCompanionKey(f.name),
+    name: f.name, id: followerKey(owner),
     levelCap, special, waigong: tier.waigong, neigong: tier.neigong, baseAtk: tier.baseAtk,
   };
   return {
     ...npcShape,
-    beast: false,
+    beast: preset.beast,
     profile: preset.profile,
-    moveset: deriveMovesetFromSig(npcShape, preset.sig, { levelCap }),
+    // 只有手写了专属招式的随从（铁伯）走专属表，其余按品阶出通用招式
+    moveset: preset.sig ? deriveMovesetFromSig(npcShape, preset.sig, { levelCap }) : generateNpcMoveset(npcShape, { levelCap }),
     brief: f.desc || f.name,
     personality: preset.personality,
     equipAtk: 0, equipDef: 0,
@@ -146,17 +183,22 @@ export function createFollowerCompanion(owner) {
   };
 }
 
-// 主人入队后挂上随从槽（幂等；主人没入队/没配 joinParty 原样返回；不抢出战位）
+// 主人入队后挂上随从槽（幂等；主人没入队/没有随从原样返回；不抢出战位）
 export function unlockFollowerCompanion(companionState, owner) {
   const f = owner?.follower;
-  if (!f?.name || !FOLLOWER_PRESETS[f.joinParty]) return companionState;
+  if (!f?.name) return companionState;
   const ownerKey = importedCompanionKey(owner.name);
   if (!companionState?.[ownerKey]?.unlocked) return companionState;
-  const key = importedCompanionKey(f.name);
+  const key = followerKey(owner);
   if (companionState[key]?.unlocked && companionState[key]?.data) return companionState;
+  const preset = followerPreset(f);
   return {
     ...companionState,
-    [key]: { unlocked: true, active: false, data: createFollowerCompanion(owner), imported: true, label: f.name, beast: false, mute: true, servantOf: ownerKey },
+    [key]: {
+      unlocked: true, active: false, data: createFollowerCompanion(owner), imported: true,
+      label: f.name, beast: preset.beast, mute: preset.mute, voice: preset.voice,
+      cannotSpeak: preset.mute || preset.beast, servantOf: ownerKey,
+    },
   };
 }
 
@@ -164,7 +206,7 @@ export function unlockFollowerCompanion(companionState, owner) {
 //  ① 已入队的 OC 伙伴招式没有当前版本戳 → 按 kungfu.moves 重建（元朵朵：漫天花雨/抱头蹲防）。
 //     伙伴 data.moveset 在战斗外没有任何写回（成长招式只在战斗内的 movesetLocal 拷贝里累积，
 //     不回写伙伴数据），所以重建不会丢任何成长。
-//  ② OC 的随从带 joinParty、主人已入队而随从槽缺失 → 补建随从槽，留守状态跟主人一致。
+//  ② OC 主人已入队而随从槽缺失（旧档只给铁伯建过槽）→ 补建随从槽；主人当时留守在哪，随从就在哪。
 // 没变化时原样返回同一引用。
 export function migrateCompanionState(companionState) {
   if (!companionState || typeof companionState !== "object") return companionState;
@@ -181,7 +223,7 @@ export function migrateCompanionState(companionState) {
     }
     const withServant = unlockFollowerCompanion(next, adv);
     if (withServant !== next) {
-      const servantKey = importedCompanionKey(adv.follower.name);
+      const servantKey = followerKey(adv);
       const stationed = next[key].stationed;
       next = stationed
         ? { ...withServant, [servantKey]: { ...withServant[servantKey], stationed: { ...stationed } } }
@@ -233,38 +275,17 @@ export function duelAlly(companionState, foe) {
   return comp;
 }
 
-// 己方上场名单：出战伙伴打头，同一主仆组里随行（没留守）的另一方一并上场——
-// 朵朵出战，铁伯也打；对手若是组里的某人，那人不拉进己方。团战引擎的单位数组不限人数，
-// 第二位起的伙伴在 TeamDuelScreen 里恒托管。
+// 切磋只带出战位那一个上场：主人和随从是两个人，谁在出战位谁上，另一个不跟着下场。
 export function duelAllies(companionState, foe) {
   const lead = duelAlly(companionState, foe);
-  if (!lead) return [];
-  const mates = bondGroup(companionState, lead.key)
-    .filter(k => k !== lead.key && companionState[k]?.unlocked && companionState[k]?.data && !companionState[k].stationed)
-    .map(k => ({ key: k, label: companionMeta(companionState, k).label, beast: !!companionState[k].beast, ...companionState[k] }))
-    .filter(c => !isCompanionFoe(c, foe));
-  return [lead, ...mates];
+  return lead ? [lead] : [];
 }
 
-// 敌方随从：对手是带 joinParty 随从的 OC（元朵朵→铁伯）且玩家还没把她/随从收进队，
-// 随从陪在她身边一起迎战，返回 buildEnemyUnit 能直接用的 npc 形状；否则 null。
-// 随从数据与入队时同一份生成器（createFollowerCompanion），打赢不单独掉落（掉落只 roll 主敌）。
-export function duelFoeFollower(companionState, foe) {
-  const owner = foe?.name ? findAdventurerByName(foe.name) : null;
-  const f = owner?.follower;
-  if (!f?.name || !FOLLOWER_PRESETS[f.joinParty]) return null;
-  if (companionState?.[importedCompanionKey(owner.name)]?.unlocked || companionState?.[importedCompanionKey(f.name)]?.unlocked) return null;
-  const data = createFollowerCompanion(owner);
-  return { ...data, id: `foe_${f.name}`, personalityProfile: data.profile, follower: true };
-}
-
-// 切磋阵容：1v1 还是团战由这里统一裁决。己方有出战伙伴才走团战，此时对方的随从（铁伯）一并上场；
-// 玩家独自上阵时打 1v1（DuelScreen），随从不下场——团战屏没有战斗内道具栏，
-// 单挑也拉进团战会让玩家白白丢掉丹药等战斗道具。
+// 切磋阵容：1v1 还是团战由这里统一裁决。己方有出战伙伴走团战（玩家+出战伙伴 vs 对手），
+// 玩家独自上阵打 1v1（DuelScreen，保住战斗道具栏）。对手的随从不跟着下场。
 export function duelLineup(companionState, foe) {
   const allies = duelAllies(companionState, foe);
-  const follower = allies.length > 0 ? duelFoeFollower(companionState, foe) : null;
-  return { allies, enemies: follower ? [foe, follower] : [foe], team: allies.length > 0 };
+  return { allies, enemies: [foe], team: allies.length > 0 };
 }
 
 // 已解锁的候选（供 UI 列出可切换的队友）。返回 {key,label,beast}，形状同 COMPANION_SLOTS。
@@ -304,37 +325,22 @@ export function setActiveCompanion(companionState, key) {
 // 条目加 stationed: null | {district, roomId, roomName}。null=随行跟队注入上下文；
 // 有值=留在指定房间、落进该房间 npcs 可被对话唤回。active 出战队友不设留守——
 // 出战位只有一个，留守 active 等于出站位空转，调用方先 setActiveCompanion 换人。
-// 主仆同进同出：随从（servantOf）不单独留守/唤回——留守任一方即整组（主人+随从）留下；
-// 组里有人在出战位就整组拒绝（先换人）。无主仆关系的伙伴组就是自己一个，行为同旧版。
-function bondGroup(companionState, key) {
-  const root = companionState?.[key]?.servantOf || key;
-  return allCompanionKeys(companionState).filter(k => k === root || companionState?.[k]?.servantOf === root);
-}
-
+// 主人和随从是两个人，各自留守、各自唤回；servantOf 只记归属，不把两人绑成一组。
 export function stationCompanion(companionState, key, spot = {}) {
   const c = companionState?.[key];
-  if (!c?.unlocked || !c?.data) return companionState;
-  const group = bondGroup(companionState, key).filter(k => companionState[k]?.unlocked && companionState[k]?.data);
-  if (group.some(k => companionState[k].active)) return companionState;
+  if (!c?.unlocked || !c?.data || c.active) return companionState;
   // since 记留守起点（state.time），供重逢台词算"被丢了多久"
   const stationed = { district: spot.district || null, roomId: spot.roomId || null, roomName: spot.roomName || null, since: spot.since ?? null };
-  const next = { ...companionState };
-  for (const k of group) next[k] = { ...next[k], stationed: { ...stationed } };
-  return next;
+  return { ...companionState, [key]: { ...c, stationed } };
 }
 
-// 「跟上我」唤回：清 stationed，回随行队列（主仆整组一起回）。
+// 「跟上我」唤回：清 stationed，回随行队列。
 export function unstationCompanion(companionState, key) {
   const c = companionState?.[key];
   if (!c?.unlocked || !c?.data || !c.stationed) return companionState;
-  const next = { ...companionState };
-  for (const k of bondGroup(companionState, key)) {
-    if (!next[k]?.stationed) continue;
-    const entry = { ...next[k] };
-    delete entry.stationed;
-    next[k] = entry;
-  }
-  return next;
+  const entry = { ...c };
+  delete entry.stationed;
+  return { ...companionState, [key]: entry };
 }
 
 // 全部留守队友清单（上下文注入「谁在哪个房间等你」用）：[{key,label,stationed}]
@@ -348,7 +354,7 @@ export function stationedCompanions(companionState) {
 // 战斗数据（moveset/combatStats/七维…）整份带上：从名单点「切磋」时这份条目就是对手，
 // buildEnemyUnit/DuelScreen 读 moveset 选招，缺了第一回合就卡死。
 // id 用槽位键（唤回「跟上我」按它找槽），托管性格按敌方口径挂 personalityProfile。
-// 哑仆（铁伯，槽位 mute）折成 cannotSpeak：点「交谈」走不通人言的分支，不进普通对话。
+// 不会说话的队友（机关人偶、哑巴随从 mute；随从灵兽 cannotSpeak）折成 cannotSpeak：点「交谈」走不通人言的分支。
 export function companionNpcEntry(companionState, key, extra = {}) {
   const c = companionState?.[key];
   const d = c?.data || {};
@@ -356,7 +362,7 @@ export function companionNpcEntry(companionState, key, extra = {}) {
   return {
     ...d, personalityProfile: d.profile,
     name: meta.label, id: key, companion: true, beast: !!(meta.beast || c?.beast), brief: d.brief || meta.label, levelCap: d.levelCap,
-    ...(c?.mute ? { cannotSpeak: true } : {}),
+    ...(c?.mute || c?.cannotSpeak ? { cannotSpeak: true } : {}),
     ...extra,
   };
 }

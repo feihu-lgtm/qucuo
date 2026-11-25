@@ -11,9 +11,10 @@
 //   平均约每 5~6 回合有人说一句，4 位同伴轮着说，不会一人刷屏。
 //   回合计数/冷却记在模块级 memory（不进存档：读档后冷却清零，最多多说一句，无害）。
 //
-// 【谁怎么说话】voice 三种：human 能说人话（走 AI+兜底）；beast 真兽（只出声）；
-//   mechanical 机关人偶铁伯（只出机括声）。雪豹/珍珠已娘化为人形成年女子（humanForm），
-//   按 human 开口，用各自人设与兜底句库，保留豹耳/马耳/尾巴的出身风味。
+// 【谁怎么说话】voice 四种：human 能说人话（走 AI+兜底）；beast 真兽（只出声）；
+//   mechanical 机关人偶（铁伯等，只出机括声）；silent 哑巴随从（铁牛、哑奴……只比划）。
+//   雪豹/珍珠已娘化为人形成年女子（humanForm），按 human 开口，用各自人设与兜底句库。
+//   冒险者的随从入队时把 voice 写进槽位（见 companion.js followerPreset）。
 
 import { random } from "../../utils/rng.js";
 import { buildNpcContext } from "../../domain/rules/npc/npcContext.js";
@@ -30,12 +31,20 @@ const BEAST_FALLBACK = [
   "低低呜了一声，蹭了蹭你的衣角。",
   "甩了甩尾巴，东嗅嗅西嗅嗅。",
 ];
-// 机关人偶铁伯：无通灵、不开口，只有机括声和动作
+// 机关人偶：无通灵、不开口，只有机括声和动作
 const MECHANICAL_FALLBACK = [
   "（一身机括轻响，亦步亦趋地跟着。）",
-  "（黄玉目微微一亮，朝你缓缓点了点头。）",
+  "（机括咔哒一声，朝你缓缓点了点头。）",
   "（肚膛里传来发条咯吱上紧的声响。）",
 ];
+// 不会说人话的同伴也走 AI：提示词写清它怎么「开口」，由 AI 按人设现写，不用预制句。
+// 兽/机关的兜底句库只在没配 API 时用；哑巴随从没配 API 就不插话（不拿别人的句子凑）。
+const VOICE_RULE = {
+  human: "只说一句贴合人设的话（不超过30字），不带引号",
+  beast: "它是不会说人话的灵兽：只写一句它的叫声或动作（不超过25字，用全角括号包住），不出人言",
+  mechanical: "它是无通灵的机关造物，不会说话：只写一句机括声响或动作（不超过25字，用全角括号包住），不出人言",
+  silent: "此人是哑巴，不能出声：只写一句手势、神情或动作（不超过25字，用全角括号包住），不出人言",
+};
 const PLAIN_FALLBACK = [
   "打了个哈欠：“这路还得走多久？”",
   "左右张望：“这地方倒有几分意思。”",
@@ -83,8 +92,10 @@ const INTENT_TO_ACTIVITY = {
   GIFT: "gift", INTIMATE: "intimate", DUEL: "duel",
 };
 
-// 开口方式：mute（铁伯）=机括声；真兽=兽声；化形的雪豹/珍珠与人类 OC 都是 human。
+// 开口方式：冒险者随从入队时写进槽位的 voice 为准；旧档的铁伯（只有 mute）=机括声；
+// 真兽=兽声；化形的雪豹/珍珠与人类 OC 都是 human。
 export function chatterVoice(key, entry) {
+  if (entry?.voice) return entry.voice;
   if (entry?.mute) return "mechanical";
   if (entry?.beast && !isHumanFormCompanion(entry.label || entry.data?.name || key)) return "beast";
   return "human";
@@ -126,6 +137,7 @@ export function chatterFallback(who, rng = random, activityCode) {
   const pick = (arr) => arr[Math.floor(rng() * arr.length) % arr.length];
   if (who.voice === "beast") return pick(BEAST_FALLBACK);
   if (who.voice === "mechanical") return pick(MECHANICAL_FALLBACK);
+  if (who.voice === "silent") return null;
   const own = HUMAN_FORM_FALLBACK[who.key];
   const actLines = ACTIVITY_FALLBACK[INTENT_TO_ACTIVITY[activityCode]];
   // 有专属句库的（雪豹/珍珠）多让她说自己的话，别总是套通用评价
@@ -145,18 +157,18 @@ export async function companionChatterTick({ companionState, roomName, activity,
   memory.lastAny = memory.turn;
   memory.last[who.key] = memory.turn;
   let line = null;
-  if (who.voice === "human" && typeof ask === "function") {
+  if (typeof ask === "function") {
     const npcCtx = buildNpcContext({ name: who.name, personality: who.personality, brief: who.brief }, state || {}, { includeOcPool: true });
     const favorLine = npcCtx.favorability != null ? `\n对主角好感度：${npcCtx.favorability}/100` : "";
     const exposureLine = npcCtx.exposure ? `\n当下衣着状态：${npcCtx.exposure}` : "";
     line = await ask(
-      "你是武侠MUD里玩家的随行同伴。玩家刚做了一件事（或只是在赶路），你只说一句贴合人设的话（不超过30字）——可以赞、嗔、调侃、讨赏、提醒，或随口感叹周遭，照你的性子来；不推进事件、不描述玩家动作、不带引号。",
+      `你是武侠MUD里玩家的随行同伴。玩家刚做了一件事（或只是在赶路），${VOICE_RULE[who.voice] || VOICE_RULE.human}——可以赞、嗔、调侃、讨赏、提醒，或随口感叹周遭，照你的性子来；不推进事件、不描述玩家动作。`,
       `同伴：${who.name}（${npcCtx.chatterPersona}）\n当前所在：${roomName || "赶路途中"}${favorLine}${exposureLine}\n玩家刚做的事：${activity?.text || "赶路"}`,
       { callLabel: "companion-chatter", maxTokens: CHATTER_MAX_TOKENS },
     );
   }
   if (!line) line = chatterFallback(who, rng, activity?.intent);
-  return { speaker: who.name, line };
+  return line ? { speaker: who.name, line } : null;
 }
 
 // 重逢台词：唤回留守队友时，开口第一句按留守时长+好感演。
@@ -170,21 +182,21 @@ export async function companionReunionLine({ companionState, slotKey, favor, now
   const voice = chatterVoice(slotKey, c);
   const mood = days >= 3 ? "被丢久了，又幽又嗔" : days >= 1 ? "等了几日，嘴上埋怨心里欢喜" : "刚留守就等到你回来，开心";
   let line = null;
-  if (voice === "human" && typeof ask === "function") {
+  if (typeof ask === "function") {
     const npcCtx = buildNpcContext({ name, personality: c.data?.personality || HUMAN_FORM_PERSONA[slotKey] || "", brief: c.data?.brief || "" }, state || {}, { includeOcPool: true });
     const resolvedFavor = favor ?? npcCtx.favorability ?? "？";
     line = await ask(
-      `你是武侠MUD里被玩家留守后重逢的同伴。开口第一句：${mood}。按人设语气说（不超过30字），提及被丢在此地多久/好感深浅的分寸由你拿捏；不推进事件、不带引号。`,
+      `你是武侠MUD里被玩家留守后重逢的同伴。见面第一下：${mood}。${VOICE_RULE[voice] || VOICE_RULE.human}，提及被丢在此地多久/好感深浅的分寸由你拿捏；不推进事件。`,
       `同伴：${name}（${npcCtx.chatterPersona}）\n留守地点：${stationed?.roomName || stationed?.district || "此地"}\n留守天数：${days}天\n对你的好感度：${resolvedFavor}/100`,
       { callLabel: "companion-reunion", maxTokens: REUNION_MAX_TOKENS },
     );
   }
-  if (!line) {
+  if (!line && voice !== "silent") {
     line = voice === "beast" ? "（高兴地绕着你转了一圈。）"
       : voice === "mechanical" ? "（机括咔哒一响，缓缓朝你躬了躬身。）"
       : days >= 3 ? `幽幽道：“${days}天了……你可算想起我来了。”`
       : days >= 1 ? "嗔怪道：“就知道你会回来接我。”"
       : "眼睛一亮：“回来啦？走罢！”";
   }
-  return { speaker: name, line, dayCount: days };
+  return line ? { speaker: name, line, dayCount: days } : null;
 }

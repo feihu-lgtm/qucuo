@@ -100,9 +100,9 @@ export function useScreenHandlers({
     const spot = spotOverride === null ? null
       : { since: time || 0, ...(spotOverride || { district: room?.name, roomId: innerRoomName || room?.name, roomName: innerRoomName || room?.name }) };
     const next = spot ? stationCompanion(companionState, key, spot) : unstationCompanion(companionState, key);
-    // 被拒（主仆组里有人在出战位）返回同一引用：不存撤销点，免得顶掉上一步真改动的撤销点
+    // 被拒（出战位上的伙伴不能留守）返回同一引用：不存撤销点，免得顶掉上一步真改动的撤销点
     if (next === companionState) {
-      if (spot) addLog([{ t: "sys", text: "  出战位上的伙伴（连同主仆同组的人）不能留守，先换下出战位。" }]);
+      if (spot) addLog([{ t: "sys", text: "  出战位上的伙伴不能留守，先换下出战位。" }]);
       return;
     }
     captureUndo();

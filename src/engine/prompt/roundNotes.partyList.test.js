@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildPartyListBlock } from "./roundNotes.js";
-import { unlockImportedCompanion, stationCompanion } from "../../domain/rules/companion/companion.js";
+import { unlockImportedCompanion, unlockFollowerCompanion, stationCompanion } from "../../domain/rules/companion/companion.js";
+import { ADVENTURER_POOL_IP } from "../../domain/data/dungeon/adventurersIP.js";
 
 const ADV = { name: "小鱼儿", levelCap: 3 };
 
@@ -32,5 +33,13 @@ describe("buildPartyListBlock 随行/留守清单注入", () => {
     const block = buildPartyListBlock(cs);
     expect(block).toContain("随行队友");
     expect(block).not.toContain("留守队友");
+  });
+
+  it("不会说话的随从标出开口方式，主叙事不让他们说人话", () => {
+    const duoduo = ADVENTURER_POOL_IP.find((a) => a.name === "元朵朵");
+    const cs = unlockFollowerCompanion(unlockImportedCompanion({}, { name: "元朵朵", levelCap: 1 }), duoduo);
+    const block = buildPartyListBlock(cs);
+    expect(block).toContain("元朵朵（出战随行）");
+    expect(block).toContain("铁伯（随行·不能言，只有机括声与动作）");
   });
 });

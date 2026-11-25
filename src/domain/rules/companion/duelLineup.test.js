@@ -1,92 +1,97 @@
 import { describe, expect, it } from "vitest";
 import {
-  duelLineup, duelAllies, duelFoeFollower, unlockImportedCompanion, unlockFollowerCompanion,
-  unlockSnowLeopard, setActiveCompanion, stationCompanion, companionNpcEntry,
+  duelLineup, duelAllies, unlockImportedCompanion, unlockFollowerCompanion,
+  unlockSnowLeopard, setActiveCompanion, stationCompanion, unstationCompanion, companionNpcEntry,
+  createFollowerCompanion,
 } from "./companion.js";
 import { ocSignatureMoves } from "./ocKungfu.js";
-import { buildEnemyUnit, buildLeopardUnit, buildPlayerUnit } from "../combat/teamUnits.js";
-import { decideUnitMove, decideUnitTarget, runTeamTurn } from "../combat/teamBattleEngine.js";
+import { buildEnemyUnit, buildLeopardUnit } from "../combat/teamUnits.js";
 import { ensureNpcCombatData } from "../npc/npcGeneration.js";
+import { ADVENTURER_POOL } from "../../data/dungeon/adventurers.js";
 import { ADVENTURER_POOL_IP } from "../../data/dungeon/adventurersIP.js";
 
-const DUODUO = ADVENTURER_POOL_IP.find((a) => a.name === "元朵朵");
+const ALL_OC = [...ADVENTURER_POOL, ...ADVENTURER_POOL_IP];
+const byName = (name) => ALL_OC.find((a) => a.name === name);
+const DUODUO = byName("元朵朵");
 const duoduoNpc = () => ensureNpcCombatData({ id: "npc_duoduo", name: "元朵朵", levelCap: 1 }, { levelCap: 1 });
 
-// 朵朵已入队（出战）+ 铁伯随行
-const recruited = () => {
-  const withOwner = unlockImportedCompanion({}, { name: "元朵朵", levelCap: 1, signatureMoves: ocSignatureMoves(DUODUO) });
-  return unlockFollowerCompanion(withOwner, DUODUO);
+// 招募一位 OC：主人入队（出战）+ 随从作为另一个伙伴入队
+const recruit = (owner, cs = {}) => {
+  const withOwner = unlockImportedCompanion(cs, { name: owner.name, levelCap: owner.levelCap ?? 1, signatureMoves: ocSignatureMoves(owner) });
+  return unlockFollowerCompanion(withOwner, owner);
 };
 
-describe("敌方阵容：打元朵朵时铁伯陪她迎战", () => {
-  it("玩家独自上阵打朵朵走 1v1（保住战斗道具栏），铁伯不下场", () => {
-    const lineup = duelLineup({}, duoduoNpc());
-    expect(lineup.team).toBe(false);
-    expect(lineup.enemies.map((e) => e.name)).toEqual(["元朵朵"]);
+describe("每位冒险者的随从都随主人入队，是两个人", () => {
+  it("77 位冒险者的随从都建出独立伙伴槽，带得动的战斗数据", () => {
+    for (const owner of ALL_OC) {
+      const cs = recruit(owner);
+      const slots = Object.entries(cs).filter(([, c]) => c.servantOf);
+      expect(slots, owner.name).toHaveLength(1);
+      const [, slot] = slots[0];
+      expect(slot).toMatchObject({ unlocked: true, active: false, label: owner.follower.name });
+      expect(buildEnemyUnit(companionNpcEntry(cs, slots[0][0])).movesetLocal.length, owner.follower.name).toBeGreaterThan(0);
+    }
   });
 
-  it("铁伯作为敌方随从的战斗数据：防御权重压过攻击、带精钢盾甲", () => {
-    const tie = buildEnemyUnit(duelFoeFollower({}, duoduoNpc()), 1);
-    expect(tie.side).toBe("enemy");
-    expect(tie.movesetLocal.map((m) => m.name)).toContain("精钢盾甲");
+  it("重名随从（素商、仙音的青鸟）各占一个槽，不互相覆盖", () => {
+    const cs = recruit(byName("仙音"), recruit(byName("素商")));
+    expect(Object.values(cs).filter((c) => c.label === "青鸟")).toHaveLength(2);
+  });
+
+  it("开口方式按类型：机关人偶与哑巴随从不开口、灵兽不说人话、剑灵与人能说话", () => {
+    const voice = (name) => {
+      const owner = ALL_OC.find((a) => a.follower.name === name);
+      const cs = recruit(owner);
+      const key = Object.keys(cs).find((k) => cs[k].servantOf);
+      return { slot: cs[key], entry: companionNpcEntry(cs, key) };
+    };
+    expect(voice("铁伯").slot.mute).toBe(true);
+    expect(voice("哑奴").entry.cannotSpeak).toBe(true);
+    expect(voice("阿财")).toMatchObject({ slot: { beast: true, mute: false }, entry: { cannotSpeak: true } });
+    expect(voice("醉花").entry.cannotSpeak).toBeUndefined();
+    expect(voice("老仆阿福").entry.cannotSpeak).toBeUndefined();
+  });
+
+  it("铁伯保留手写招式与坦克性格", () => {
+    const tie = createFollowerCompanion(DUODUO);
+    expect(tie.moveset.map((m) => m.name)).toContain("精钢盾甲");
     expect(tie.profile.moveWeights.防御).toBeGreaterThan(tie.profile.moveWeights.攻击);
   });
-
-  it("玩家带雪豹打朵朵：己方雪豹，敌方朵朵+铁伯", () => {
-    const lineup = duelLineup(unlockSnowLeopard({}), duoduoNpc());
-    expect(lineup.allies.map((a) => a.key)).toEqual(["snowLeopard"]);
-    expect(lineup.enemies).toHaveLength(2);
-  });
-
-  it("别的对手仍是 1v1；朵朵/铁伯已在玩家队里时不再给她配敌方随从", () => {
-    expect(duelLineup({}, { name: "拦路山贼" }).team).toBe(false);
-    expect(duelFoeFollower(recruited(), duoduoNpc())).toBeNull();
-  });
 });
 
-describe("名单条目：哑仆点交谈走不通人言分支", () => {
-  it("铁伯的条目带 cannotSpeak，朵朵的不带", () => {
-    const cs = recruited();
-    expect(companionNpcEntry(cs, "imported_铁伯").cannotSpeak).toBe(true);
-    expect(companionNpcEntry(cs, "imported_元朵朵").cannotSpeak).toBeUndefined();
-  });
-});
-
-describe("己方阵容：朵朵出战，铁伯一并上场", () => {
-  it("allies = [朵朵(出战), 铁伯]；对手是朵朵本人时 1v1", () => {
-    const cs = recruited();
-    const lineup = duelLineup(cs, { name: "拦路山贼" });
+describe("切磋只带出战位那一个", () => {
+  it("朵朵出战：己方只有朵朵，铁伯不跟着下场", () => {
+    const lineup = duelLineup(recruit(DUODUO), { name: "拦路山贼" });
     expect(lineup.team).toBe(true);
-    expect(lineup.allies.map((a) => a.label)).toEqual(["元朵朵", "铁伯"]);
-    expect(lineup.enemies).toHaveLength(1);
-    expect(duelAllies(cs, { name: "元朵朵" })).toEqual([]);
+    expect(lineup.allies.map((a) => a.label)).toEqual(["元朵朵"]);
   });
 
-  it("留守的铁伯不上场；换成雪豹出战则只有雪豹", () => {
-    const cs = recruited();
-    const withLeopard = setActiveCompanion({ ...cs, snowLeopard: unlockSnowLeopard({}).snowLeopard }, "snowLeopard");
-    expect(duelAllies(withLeopard, { name: "山贼" }).map((a) => a.key)).toEqual(["snowLeopard"]);
-    const stationed = stationCompanion(withLeopard, "imported_铁伯", { roomName: "客栈" });
-    expect(duelAllies(setActiveCompanion(stationed, "imported_元朵朵"), { name: "山贼" }).map((a) => a.key)).toEqual(["imported_元朵朵"]);
+  it("换铁伯出战：己方只有铁伯", () => {
+    const cs = setActiveCompanion(recruit(DUODUO), "imported_铁伯");
+    expect(duelAllies(cs, { name: "山贼" }).map((a) => a.label)).toEqual(["铁伯"]);
+    expect(buildLeopardUnit(cs.imported_铁伯.data).movesetLocal.map((m) => m.name)).toContain("精钢盾甲");
   });
 
-  it("团战引擎吃得下 3 个己方单位：玩家+朵朵+铁伯 vs 敌方 1 个，一回合结算正常", () => {
-    const cs = recruited();
-    const [lead, mate] = duelAllies(cs, { name: "山贼" });
-    const playerChar = { name: "我", hp: [100, 100], special: {}, waigong: 0, neigong: 0 };
-    const allies = [
-      buildPlayerUnit({ playerChar, playerMoveset: duoduoNpc().moveset }),
-      buildLeopardUnit(lead.data),
-      buildLeopardUnit(mate.data),
-    ];
-    const enemies = [buildEnemyUnit(ensureNpcCombatData({ id: "bandit", name: "拦路山贼", levelCap: 1 }, { levelCap: 1 }))];
-    const intents = {};
-    for (const u of [...allies, ...enemies]) {
-      const move = decideUnitMove(u, { npcHistory: u.history, npcEnergy: u.energy[0], forbidDefense: u.defenseBroken });
-      intents[u.id] = { move, targetId: u.side === "ally" ? enemies[0].id : decideUnitTarget(allies) };
-    }
-    const { updatedAlly, updatedEnemy, turnLog } = runTeamTurn(allies, enemies, intents);
-    expect(updatedAlly).toHaveLength(3);
-    expect(turnLog.length).toBeGreaterThan(0);
+  it("独自上阵打朵朵走 1v1，对手的随从不下场；对手是出战伙伴本人时也是 1v1", () => {
+    expect(duelLineup({}, duoduoNpc())).toMatchObject({ team: false, enemies: [{ name: "元朵朵" }] });
+    expect(duelAllies(recruit(DUODUO), { name: "元朵朵" })).toEqual([]);
+    expect(duelLineup(unlockSnowLeopard({}), duoduoNpc()).enemies).toHaveLength(1);
+  });
+});
+
+describe("留守各管各的", () => {
+  it("留守铁伯只留他一个，朵朵照常随行；唤回也只唤他", () => {
+    const cs = setActiveCompanion(recruit(DUODUO), null);
+    const stationed = stationCompanion(cs, "imported_铁伯", { roomName: "客栈" });
+    expect(stationed.imported_铁伯.stationed).toMatchObject({ roomName: "客栈" });
+    expect(stationed.imported_元朵朵.stationed).toBeUndefined();
+    expect(unstationCompanion(stationed, "imported_铁伯").imported_铁伯.stationed).toBeUndefined();
+  });
+
+  it("出战位上的伙伴不能留守；随从在出战位不拦主人留守", () => {
+    const cs = recruit(DUODUO);
+    expect(stationCompanion(cs, "imported_元朵朵", { roomName: "客栈" })).toBe(cs);
+    const tieActive = setActiveCompanion(cs, "imported_铁伯");
+    expect(stationCompanion(tieActive, "imported_元朵朵", { roomName: "客栈" }).imported_元朵朵.stationed).toBeTruthy();
   });
 });

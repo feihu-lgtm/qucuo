@@ -172,13 +172,19 @@ export function buildPresence({ isTalk, lockedDestName, room, innerRoomName, com
 }
 
 // 随行/留守清单注入块：随行=非留守且已解锁（含出战位），留守=挂在某据点房间待唤回。
+// 不会说话的队友（机关人偶、哑巴随从、灵兽）标「不能言」，主叙事写到他们只用动作、声响、手势。
+const MUTE_NOTE = { mechanical: "不能言，只有机括声与动作", silent: "哑巴，只用手势神情", beast: "不说人话，只出声与动作" };
+function speechNote(slot) {
+  const note = MUTE_NOTE[slot?.voice] || (slot?.mute ? MUTE_NOTE.mechanical : "");
+  return note ? `·${note}` : "";
+}
 export function buildPartyListBlock(companionState) {
   if (!companionState) return "";
   const following = unlockedCompanions(companionState)
     .filter(slot => !companionState[slot.key]?.stationed)
-    .map(slot => `${slot.label}${slot.key === activeCompanionKey(companionState) ? "（出战随行）" : "（随行）"}`);
+    .map(slot => `${slot.label}（${slot.key === activeCompanionKey(companionState) ? "出战随行" : "随行"}${speechNote(companionState[slot.key])}）`);
   const stationed = stationedCompanions(companionState)
-    .map(c => `${c.label}（留守于${[c.stationed?.district, c.stationed?.roomName].filter(Boolean).join("·") || "不明处"}）`);
+    .map(c => `${c.label}（留守于${[c.stationed?.district, c.stationed?.roomName].filter(Boolean).join("·") || "不明处"}${speechNote(companionState[c.key])}）`);
   const lines = [];
   if (following.length) lines.push(`随行队友：${following.join("、")}`);
   if (stationed.length) lines.push(`留守队友：${stationed.join("、")}`);
