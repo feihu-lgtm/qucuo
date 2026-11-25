@@ -9,6 +9,13 @@ export function normalizeMemoryText(memory) {
   if (!memory) return memory;
   if (typeof memory === "string") return memory;
   if (Array.isArray(memory)) return memory.filter(Boolean).join("；");
+  if (typeof memory === "object") {
+    // 对象形态：优先取常见文本字段，否则 JSON 序列化——裸 String() 只会得到
+    // "[object Object]"，事实摘要全丢且不同内容哈希相同互相撞键。
+    const text = memory.text || memory.摘要 || memory.summary || memory.content;
+    if (typeof text === "string" && text) return text;
+    try { return JSON.stringify(memory); } catch { return String(memory); }
+  }
   return String(memory);
 }
 

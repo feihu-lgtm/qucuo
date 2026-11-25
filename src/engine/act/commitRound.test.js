@@ -290,6 +290,15 @@ describe("memory / 已知人物 / 收尾契约", () => {
     expect(facts[key].摘要).toBe("片段一；片段二");
   });
 
+  it("memory 为对象：取文本字段而非 [object Object]，不同对象不撞键", () => {
+    const state = baseState();
+    state.room.npcs = [{ name: "侠客" }];
+    const { deps } = makeDeps(state, { memory: { text: "对象的摘要内容" } });
+    commitRound(deps);
+    expect(state._dayMaterial).toEqual([{ turn: 25, text: "对象的摘要内容" }]);
+    expect(writeNote.mock.calls[0][0].text).toBe("对象的摘要内容");
+  });
+
   it("无 memory：不写 dayMaterial / 知识领域 / writeNote", () => {
     const state = baseState();
     const { deps } = makeDeps(state, {});
