@@ -86,6 +86,7 @@ function unitToSide(unit, move) {
     lastCounterSuccess: unit.lastCounterSuccess, pendingAtkBonus: unit.pendingAtkBonus ?? 0,
     costPenalty: unit.costPenalty?.value ?? 0,
     lastStatusApplied: unit.lastStatusApplied, counterStacks: unit.counterStacks ?? 0,
+    scarKinds: unit.scarKinds, // WO-23C5 旧伤弱点透传（装配层注入，谱只读）
   };
 }
 
