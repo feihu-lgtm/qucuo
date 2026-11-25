@@ -59,7 +59,7 @@ export default function GlobalOverlays({
   portraits, setPortraits,
   buildBugReportTurns, debugSources,
   handleNpcLook, handleNpcTalk, handleNpcGift, handleNpcDuel, handleNpcSteal,
-  handleNpcLearnSkill, handleNpcTrade, handleInviteCompanion,
+  handleNpcLearnSkill, handleNpcTrade, handleInviteCompanion, handleRecruitNemesis,
   handleOcRecruit, handleRecallCompanion, handleGoldenEgg,
   inspectItem, handleConsumeItem, handleCollectGround, handleToggleEquip,
   persuasionProgress, savePersuasionProgress, finishPersuasion,
@@ -139,6 +139,7 @@ export default function GlobalOverlays({
       <PactPanel
         zoneTheme={zoneTheme}
         onClose={() => closeOverlay(OVERLAY.PACTS)}
+        onRecruitNemesis={handleRecruitNemesis}
       />
     )},
     { show: showLore, render: () => (
