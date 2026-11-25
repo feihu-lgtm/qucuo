@@ -1,4 +1,5 @@
 import { buildSysBase } from "../../domain/rules/prompt/sysBase.js";
+import { createStorytellerStream, splitStorytellerText } from "../turn/storytellerStream.js";
 import { renderFieldScales, renderPromptTemplate } from "../../domain/rules/prompt/promptRefs.js";
 import { step as traceStep, attachInjectionSnapshot } from "../../infra/actionTrace.js";
 import { NSFW_RULES, MODE_PRIMER_MESSAGES } from "../../domain/rules/prompt/modePrimer.js";
@@ -160,7 +161,7 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
   const steerSuffix = (steerNote ? steerNote + "\n" : "") + proseRule;
   const inChatContent = d.isSettle
     ? rulesPrefix + dynPrefix + (d.snowLeopardContext || "") + (d.settleNpc ? reunionPart : "") + ledgerSuffix + angrySettleNote + softSettleNote + "\n\n" + steerSuffix
-    : rulesPrefix + dynPrefix + d.ctx + distantBlock + recallPart + ledgerSuffix + reunionPart + infoDomainPart + "\n\n" + steerSuffix;
+    : rulesPrefix + dynPrefix + d.ctx + distantBlock + recallPart + ledgerSuffix + reunionPart + infoDomainPart + (d.judgeRuleBlock ? "\n\n" + d.judgeRuleBlock : "") + "\n\n" + steerSuffix;
   const latestUserContent = cmdSuffix + (extraNudge || "");
 
   // 10 号位 Chat History / 11 号位 In-Chat Injection / 12 号位 User's Latest Message。
@@ -291,6 +292,7 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
 
   let streamLogIndex = null;
   let onChunk;
+  let judgeStream = null;
   if (stream) {
     d.addLog([{ t: "desc", text: "  ▌", streaming: true }]);
     d.setLog(l => {
@@ -298,12 +300,21 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
       streamLogIndex = l.length - 1;
       return l;
     });
+    if (d.judgePipelineActive && narrativeOnly) {
+      // WO-13：判官管线的流式——⟦F⟧ 锚点实时剥除，\n---SEAL--- 后冻结屏幕。
+      judgeStream = createStorytellerStream();
+    }
     onChunk = (_delta, fullSoFar) => {
+      if (judgeStream) {
+        // 以全量重放维持滑动缓冲（chunk 重放幂等：纯函数重算，成本 O(len)，可接受）
+        judgeStream = createStorytellerStream();
+        judgeStream.push(fullSoFar);
+      }
       d.setLog(l => {
         if (d.isStale?.() || streamLogIndex == null) return l;
         const copy = [...l];
-        // 叙事模式：直接展示散文文本；JSON模式：只看最后200字（避免长 JSON 刷屏）
-        copy[streamLogIndex] = { ...copy[streamLogIndex], t: "desc", text: "  " + (narrativeOnly ? fullSoFar : fullSoFar.slice(-200)) + " ▌", streaming: true };
+        const shown = judgeStream ? judgeStream.screenText : (narrativeOnly ? fullSoFar : fullSoFar.slice(-200));
+        copy[streamLogIndex] = { ...copy[streamLogIndex], t: "desc", text: "  " + shown + (judgeStream?.sealed ? "" : " ▌"), streaming: !judgeStream?.sealed };
         return copy;
       });
     };
@@ -341,6 +352,20 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
       // JSON 模式：移除占位条目（正式 output 会在解析后追加）
       d.setLog(l => (d.isStale?.() || streamLogIndex == null ? l : l.filter((_, i) => i !== streamLogIndex)));
     }
+  }
+  // WO-13：判官管线下剥锚点/切尾章——rawFull 只留屏幕正文，
+  // 尾章与锚点落段随结果带回给 runTurn 做 sealVerifier 校对。
+  if (d.judgePipelineActive) {
+    const split = splitStorytellerText(text);
+    if (stream && narrativeOnly) {
+      d.setLog(l => {
+        if (d.isStale?.() || streamLogIndex == null) return l;
+        const copy = [...l];
+        copy[streamLogIndex] = { ...copy[streamLogIndex], t: "desc", text: "  " + split.screenText.trim(), streaming: false, streamed: true };
+        return copy;
+      });
+    }
+    return { rawFull: split.screenText, finishReason, sealText: split.sealText, sealAnchors: split.anchors, sealed: split.sealed };
   }
   return { rawFull: text, finishReason };
 }
