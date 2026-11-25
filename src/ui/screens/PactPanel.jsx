@@ -8,7 +8,7 @@ import { flattenPacts, pactDeadlineLine } from "../../domain/rules/judge/pactLin
 // 旧档兼容：无 place/deadlineHours/breachTurn 字段不炸。
 
 const STATUS_LABEL = { open: "未了", settled: "已了", breached: "违约" };
-const STATUS_COLOR = { open: "var(--text)", settled: "var(--text-dim)", breached: "var(--danger, #c66)" };
+const STATUS_COLOR = { open: "var(--text)", settled: "var(--text-dim)", breached: "var(--red-soft)" };
 
 function PactRow({ pact, now, zoneTheme }) {
   const deadline = pactDeadlineLine(pact, now);
