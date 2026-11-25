@@ -18,32 +18,37 @@
 ```mermaid
 flowchart TD
   A[玩家输入] --> B[intent.classify 行动识别]
-  B --> C[resolveIntent / settleTurn 路由与软结算]
+  B --> C[resolveIntent 路由]
   C --> D[memory recall + prompt assembly]
   D --> Q{判官管线激活?}
   Q -- 是 --> I[turn.intake 前哨听意]
   I --> J[judgeTurn 纯函数判官]
   J --> E[turn.main 主叙事 streaming<br/>注入定案单与锚点铁律]
   Q -- 否 --> E
-  E --> F[turn.extraction 旧状态提取<br/>双调用模式仍运行]
   E --> V{有判官定案?}
   V -- 是 --> S[sealVerifier 尾章校对<br/>materializeFacts 编译十二律]
   V -- 否 --> G
-  F --> G[commitRound / applyPatches 统一写入口]
-  S --> G
+  S --> G[commitRound / applyPatches 统一写入口]
   G --> H[postCommit 日志、记账、补写、自动存档]
 ```
 
-上图画的是双调用叙事模式下的真实叠线：判官管线（WO-13）已并线接入，但旧提取仍同步运行作过渡兜底。判官支线的具体顺序是：`judgePipelineEnabled` 开启时，`turn.intake` 前哨听意 → `judgeTurn` 纯函数判官 → 定案单与锚点铁律注入主叙事 → 流式剥 `⟦F⟧` 锚点、`---SEAL---` 尾章校对 → `materializeFacts` 经 `commitRound` 落盘，全部发生在 `turn.main` 前后，不替换旧状态提取——旧提取/单调用链路仍原样保留兜底。
+WO-15 起这就是线上主回路：**旧状态提取层（turn.extraction/extractionSpecs/extractionEngine/appeaseExtraction）与独立软结算通道（settleTurn/runSoftSettle/softRules/settle.judge）已整块删除**。`judgePipelineEnabled` 开启时，`turn.intake` 前哨听意 → `judgeTurn` 纯函数判官 → 定案单与锚点铁律注入主叙事 → 流式剥 `⟦F⟧` 锚点、`---SEAL---` 尾章校对 → `materializeFacts` 经 `commitRound` 落盘。双调用模式下不再有第二次"从叙事反推状态"的提取调用——自由行动状态只来自判官 facts；settle 回合靠 feature 前置硬结算。单调用 JSON 老路（extractionEnabled=false）仍保留到 WO-16。
 
-**当前真实覆盖率**：web 端 `judgePipelineEnabled` 默认 `true`；CLI 老录制回放默认 `false`（保留旧链路对比）。激活还需同时满足两个条件——**非 settle 回合且非纯搭话回合**（settle 回合状态已由系统/软结算裁决落账，判官再裁会重复结算；纯搭话免费不动状态，判官收礼会越权搬背包）且 **`extractionEnabled` 双调用叙事模式**（单调用 JSON 老路的输出契约是纯 JSON 骨架，锚点+SEAL 散文指令会冲垮它）；任一不满足，新管线不激活、整链 no-op。场记板 entries、容器坍缩态、备料物、悬空道具尚无宿主系统喂入（属 WO-17/18/22/24），判官多数回合签出空 facts，新管线实际以 no-op 退化运行——链路已通但尚未全量替换旧状态提取，本节 mermaid 图仍是状态写入口的事实主流。
+**当前真实覆盖率**：web 端 `judgePipelineEnabled` 默认 `true`；CLI 老录制回放默认 `false`（单调用老路，WO-16 收尾）。激活还需同时满足两个条件——**非纯搭话回合**（纯搭话免费不动状态，判官收礼会越权搬背包）且 **`extractionEnabled` 双调用叙事模式**（单调用 JSON 老路的输出契约是纯 JSON 骨架，锚点+SEAL 散文指令会冲垮它）；任一不满足，新管线不激活、该回合无状态裁决。WO-15 起 **settle 回合（赠礼/赔罪/求教/邀同行）不再豁免**：软结算通道删除后，收拒与好感幅度由判官一裁定案（judgeTurn 内置 gift/appease/learn 收拒逻辑）。场记板 entries、容器坍缩态、备料物、悬空道具尚无宿主系统喂入（属 WO-17/18/22/24），判官多数回合签出空 facts。
+
+**WO-15 保留边界（如实声明）**：
+- `forgeDesign`（铸剑坊/金玉行定制设计）不属提取层，已迁入独立小文件 `src/engine/ports/forgeDesign.js` 保活。
+- 旁白私语好感裁决（原 narrator_affinity 软结算）不走回合判官管线（私聊是独立流程），已改写为独立结构化调用 `narrator.affinity`：AI 只做三选一分类（投机贴心/寻常闲聊/敷衍冒犯），数值映射、幅度裁剪、日上限账本全部在系统侧（usePrivateTalk）。
+- `buildExtractionCfg` 实为所有结构化小调用共用的 cfg 构造器，迁至 `src/domain/rules/prompt/structuredCallCfg.js` 存续（名称未改，供记忆召回/前哨听意/锻造设计等使用）。
+- 单调用 JSON 模式（extractionEnabled=false，CLI 回放默认）不受本工单影响，parseResponse 链路留待 WO-16。
+- CLI 回归集适配结果：全部 CLI fixture 录制于单调用模式（`extractionEnabled:false`），本来就绕开被删链路；`softSettleEnabled` 开关已随通道删除（设置 UI、apiConfig 默认值、CLI 参数同步移除），3494 项测试全绿、零跳过。
 
 ## 3. 已落地地基
 
 | 模块 | 状态 | 说明 |
 |---|---|---|
 | `withAI` 单一调用网关 | 已落地 | 新调用必须 `definePrompt` 注册后走 `src/engine/ports/withAI.js`，不允许散调 `callModel`。 |
-| 原生结构化输出 | 已落地 | OpenAI/Gemini/Anthropic 各有原生 schema 通道；`intent.classify`、软结算、劝服、锻造设计已接入。开放对象在 strict 通道回退 `json_object`，但本地 schema 校验仍跑。 |
+| 原生结构化输出 | 已落地 | OpenAI/Gemini/Anthropic 各有原生 schema 通道；`intent.classify`、`narrator.affinity`、劝服、锻造设计已接入。开放对象在 strict 通道回退 `json_object`，但本地 schema 校验仍跑。 |
 | 流式与缓存观测 | 已落地 | Gemini 原生 SSE；OpenAI/Anthropic/Gemini 都采集 token/cache 命中；dev proxy 逐块转发。 |
 | 冰山提示词 | 已落地 | `turn.main` 分成稳定前缀 `sysBlocks` 与动态聊天材料，稳定部分不因房间/人物/好感变化而改写。 |
 | 场记板 Clapboard | 已落地 | 事实条目有实体 ID、类别、见证者、`rawText/publicText` 双文本；NPC 只能看见自己见证过且允许公开的内容。 |
@@ -52,7 +57,7 @@ flowchart TD
 | 因果授信 CausalBudget | 已落地 | `computeCausalBudget` 按张力、风险、代价、交情、气运、支线高潮和每日搜刮额度算 T0–T3/GM。阈值为本实现自定刻度。 |
 | 天工铸物/原型创招 | 已落地 | `compileEmergentItem`、`compileEmergentSkill` 把授信额度编译成可进战斗/背包的真实物品与武学；越界词条物理驳回。 |
 | 首字超时兜底 | 基础已落地/未接主链 | `streamWithFirstTokenFallback` 支持插入过渡行、首字抵达原位替换、超时静默降级；主循环接线属于后续工单。 |
-| 十二律落盘引擎 | 已接主链/只承判官事实 | `materializeFacts` 已把十二类事实码编译成 `changes/patches/receipts/logs`，经 `finalizeTurn → commitRound` 统一落盘；`receipts` 挂到落账日志项。它目前只承接判官管线签出的事实，不等于旧提取已经废除。 |
+| 十二律落盘引擎 | 已接主链/只承判官事实 | `materializeFacts` 已把十二类事实码编译成 `changes/patches/receipts/logs`，经 `finalizeTurn → commitRound` 统一落盘；`receipts` 挂到落账日志项。WO-15 起它承接判官管线签出的事实，是双调用模式唯一状态落账来源。 |
 | 前哨 intake + 判官 + 锚点尾章管线 | 已接主链/常 no-op 退化 | 契约 B `turn.intake`、`judgeTurn`、`storytellerStream` 锚点剥离、`sealVerifier` 尾章校对、`materializeFacts` 落盘已全部接入 `runTurn`/`commitRound`；web 默认开、CLI 回放默认关；激活另需非 settle/非纯搭话回合 + extractionEnabled 双调用叙事模式，否则不激活。entries/containers/prepItems/floatingItems 无宿主喂入，多数回合签空 facts 退化运行。 |
 | 天机落账卡 UI | 已落地/动作结构化直写 | `EffectReceiptCard` 消费 `receipts` 渲染落账条；按钮派发结构化 action（itemId/skillId/factId/op/kind），经 NarrativeLogFeed 原样透传进 `act`，useTurn 在 intent 识别前的系统边界按 id 寻址确定性幂等执行（features/receipts/logic，equip/activate 为 explicit-on 语义），行动识别关闭同样生效，写账走 applyResult 统一边界。例外：`viewPact` 无结构化面板入口，保留文本指令。 |
 
@@ -113,10 +118,10 @@ flowchart LR
 | 位置 | 现状 | 迁移方向 |
 |---|---|---|
 | 主叙事 | `turn.main` streaming | 保留，但输入改成判官公开事实与叙事约束。 |
-| 状态提取 | `turn.extraction` 从正文提取 JSON/MVU | 降级为兼容层，最终删除。 |
+| 状态提取 | **已删除（WO-15）** | `turn.extraction`/extractionSpecs/extractionEngine/appeaseExtraction/ports/extraction 整块移除；双调用模式状态只来自判官 facts。 |
 | MVU 文本命令 | 仍有大量历史消费方 | 只保留必要字段协议，不再让 AI 自由写状态。 |
 | 账本写入 | `commitRound` + `applyPatches` | 保留统一写入口，新增事实账本先编译后提交。 |
-| 结算回合 | 多数功能先改系统值再让 AI 补描写 | 全部过渡到「事实行先落、正文后补」。 |
+| 结算回合 | 软结算通道已删（WO-15） | settleTurn/runSoftSettle/softRules/settle.judge 整块移除；赠礼/赔罪/求教/邀同行的收拒改由判官裁定。旁白私语好感走独立 `narrator.affinity` 调用。 |
 
 
 ## 5.1 关键契约速查
@@ -161,7 +166,7 @@ flowchart LR
 | WO-01～WO-12 | 已合并 | 地基、场记板、因果授信、编译器、十二律、前哨判官都在 main。 |
 | WO-13 | 已合并 | web 默认 `judgePipelineEnabled=true`；CLI 老录制默认 false。激活还需非 settle、非纯搭话且 `extractionEnabled` 双调用叙事模式。因 entries/containers/prepItems/floatingItems 还没宿主喂入，很多回合会 no-op 退化，不能当成旧提取已替换。 |
 | WO-14 | 已合并；动作结构化直写随修包落地 | `EffectReceiptCard` 消费 receipts 并随判官落账日志显示；按钮结构化 action 按 id 寻址确定性执行，equip/activate 幂等 explicit-on；`viewPact` 保留文本指令例外。 |
-| WO-15 | 施工中 | 旧提取层与独立软结算通道删除已开工；未完成前，旧提取仍是主回路状态写入口的事实主流。 |
+| WO-15 | 本 PR | 旧提取层与独立软结算通道整块删除；forgeDesign 迁出保活；旁白私语好感改走 narrator.affinity；appease 走 turn.appease 窄过渡仲裁；settle 维持排除判官；CLI 回归集适配全绿。 |
 | WO-16+ | 未开始 | 依赖 WO-15 及后续链条解锁。 |
 
 ## 6. 已确认的设计取舍

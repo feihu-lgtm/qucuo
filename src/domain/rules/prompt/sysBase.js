@@ -88,11 +88,8 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
   // if 分支，不用再动下面那坨模板字符串本身。
   //
   // narrativeOnly 分支：管"这一轮的散文该怎么写"（双调用模式下主叙事只产文本，
-  // 好感度等状态判定转交提取层，这里不涉及MVU）。
+  // 好感度等状态判定由判官管线裁决，这里不涉及MVU）。
   function buildSettleNarrativeNote(o) {
-    if (o.settleKind === "appease" && o.softSettle) {
-      return `\n【怒气缓和】系统已判定：${o.softSettle.note}。照此写${o.settleNpc || "对方"}的反应，不得改写结果。`;
-    }
     if (o.settleKind === "duel_invite") {
       const npcName = typeof o.settleNpc === "string" ? o.settleNpc : o.settleNpc?.name || "对方";
       return `\n【切磋邀战叙事铁律】只写玩家发出邀战、${npcName}接受邀战与双方摆开架势，写到第一招交手之前立刻停止。严禁描写任何招式交锋、回合、伤势、胜负、任一方喊停或${npcName}拒绝。切磋是否开始由玩家通过确认栏选择，本轮不得替玩家开始战斗。`;
@@ -128,9 +125,6 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
   // isSettle 分支：管"MVU 那部分该怎么写"（单调用模式下，主模型直接产 JSON+MVU，
   // 好感度等状态判定就在这一次调用里完成）。
   function buildSettleMvuNote(o) {
-    if (o.settleKind === "appease" && o.softSettle) {
-      return "\n本轮状态已由系统结算，不得输出 <mvu>。";
-    }
     if (o.settleKind === "duel_invite") {
       return `\n【切磋邀战状态铁律】本轮只是邀战与摆开架势，不发生战斗或任何状态变化。不得输出 <mvu>，不得修改气血、好感、物品或其他状态。`;
     }
@@ -160,7 +154,6 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
     return "";
   }
   function buildSettleMvuExample(o) {
-    if (o.settleKind === "appease" && o.softSettle) return "";
     if (o.settleKind === "duel_invite") {
       return `\n【切磋邀战状态示例】本轮没有任何状态变化，不输出 <mvu> 块。`;
     }
@@ -295,7 +288,7 @@ JSON后若需维护角色/世界状态变量，另起一行独立输出 <mvu> �
     scope === "full" ? "\n【战斗叙事边界】战斗的招式交锋与胜负均由系统结算，叙事不得自行描写。" : "",
     narrativeOnly ? buildSettleNarrativeNote(opts) : "",
     (!narrativeOnly && isSettle && wantMvu) ? buildSettleMvuNote(opts) : "",
-    (!narrativeOnly && isSettle && wantMvu && !opts.softSettle
+    (!narrativeOnly && isSettle && wantMvu
       && !["duel_invite", "gift", "companion_invite", "learn_skill", "appease"].includes(opts.settleKind))
       ? `\n关于下面那条 <mvu>：如果这一轮牵涉的人物（${opts.settleNpc}）对玩家的观感确有变化才给出。`
       : "",

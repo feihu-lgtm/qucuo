@@ -32,7 +32,7 @@ _.add('角色.杂货商人.好感度', 3);</mvu>`,
     const session = createSession({
       out: (text) => output.push(text), cwd: tempDir, ai,
       // 本用例走 mvu 生气解除老路（软结算关，行动识别关），mock 回复按顺序供主叙事。
-      apiCfg: { intentRecognitionEnabled: false, softSettleEnabled: false, extractionEnabled: false },
+      apiCfg: { intentRecognitionEnabled: false, extractionEnabled: false },
     });
 
     await session.runLine(":new");

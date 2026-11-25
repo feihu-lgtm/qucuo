@@ -1,7 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NNPC_STAGE } from "../narrator/narrator.js";
-import { callExtraction } from "../../../engine/ports/extraction.js";
-import { EXTRACTION_SPECS } from "./extractionSpecs.js";
 import { factSummaryRequest, factSummaryRequestFromRecall } from "./knowledge.js";
 import { buildPrompt } from "./buildPrompt.js";
 import "./calls/sideCalls.js";
@@ -66,10 +64,6 @@ const extractionState = {
   pickupJudgment: { quality: "绿", category: "misc" },
 };
 
-const extractionCases = Object.keys(EXTRACTION_SPECS).map((key) => ({
-  key,
-  settleOpts: SETTLE_OPTIONS[key] || null,
-}));
 
 const apiCfg = {
   model: "snapshot-model",
@@ -138,25 +132,7 @@ describe("model prompt golden snapshots", () => {
     vi.restoreAllMocks();
   });
 
-  it.each(extractionCases)("captures callExtraction prompt: $key", async ({ key, settleOpts }) => {
-    const calls = [];
-    const ai = {
-      chat: vi.fn(async (messages, options) => {
-        calls.push({ messages, options });
-        return { text: "{}" };
-      }),
-    };
-    const result = await callExtraction(key, "少侠走进村口，与才旦说了几句话。", extractionState, apiCfg, settleOpts, ai);
-    expect(JSON.stringify({
-      result: key === "META_QUERY" ? result : undefined,
-      prompt: calls.length ? {
-        systemPrompt: calls[0].options.systemPrompt,
-        messages: calls[0].messages,
-        modelOptions: calls[0].options.modelOptions,
-      } : null,
-    })).toMatchSnapshot(`callExtraction ${key}`);
-    expect(ai.chat).toHaveBeenCalledTimes(key === "META_QUERY" ? 0 : 1);
-  });
+
 
   it.each([
     { name: "with-gift", channel: "postgift", giftName: "青布" },

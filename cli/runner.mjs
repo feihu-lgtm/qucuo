@@ -78,7 +78,6 @@ export function buildCliApiConfig(overrides = {}) {
     maxTokens: overrides.maxTokens || 4000,
     extractionEnabled: overrides.extractionEnabled ?? true,
     bookkeepEnabled: overrides.bookkeepEnabled ?? false,
-    softSettleEnabled: overrides.softSettleEnabled ?? true,
     streamEnabled: false,
     // WO-13：CLI 老录制回放对比走旧链路——判官管线默认关（web 端默认开），需对比时显式开。
     judgePipelineEnabled: overrides.judgePipelineEnabled ?? false,

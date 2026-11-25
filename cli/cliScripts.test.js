@@ -20,7 +20,7 @@ const scriptFiles = readdirSync(scriptsDir)
 let tempDir;
 
 // 行动识别与软结算现在都默认开；本文件的脚本 fixture 录制于默认关的时代，确定性回放须显式关掉。
-const DETERMINISTIC_API = { intentRecognitionEnabled: false, softSettleEnabled: false, extractionEnabled: false };
+const DETERMINISTIC_API = { intentRecognitionEnabled: false, extractionEnabled: false };
 const createSession = (opts) => rawCreateSession({ apiCfg: DETERMINISTIC_API, ...opts });
 const runScript = (lines, opts) => rawRunScript(lines, { apiCfg: DETERMINISTIC_API, ...opts });
 

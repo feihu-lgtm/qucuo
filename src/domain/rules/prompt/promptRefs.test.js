@@ -8,7 +8,6 @@ import {
 } from "./promptRefs.js";
 import { buildPrompt } from "./buildPrompt.js";
 import "./calls/sideCalls.js";
-import { callExtraction } from "../../../engine/ports/extraction.js";
 import { AFFECTION_RULES, FIELD, FIELDS, WHISPER_AFFECTION_RULES } from "../state/fields.js";
 import { buildNarratorWhisperContext } from "../narrator/narrator.js";
 import { buildSysBase } from "./sysBase.js";
@@ -111,19 +110,7 @@ describe("declared numeric scales", () => {
     expect(prompt(false)).not.toContain("小额谢礼");
   });
 
-  it("shows only the appropriate fields in extraction prompts", async () => {
-    const chat = vi.fn(async () => ({ text: "{}" }));
-    for (const intent of ["LOOK", "COMBAT", "UNKNOWN"]) {
-      await callExtraction(intent, "点头", promptState(), {}, null, { chat });
-    }
-    const [look, combat, unknown] = chat.mock.calls.map(([messages]) => messages[0].content);
-    expect(look).not.toContain("本轮可写字段的尺度");
-    expect(combat).toContain(FIELDS[FIELD.hp].scale);
-    expect(combat).not.toContain("小额谢礼");
-    expect(unknown).toContain(renderFieldScales([FIELD.money]).split("\n").at(-1));
-    expect(unknown).toContain("随身银两=73两");
-    expect(unknown).toContain("不填本次收支额");
-  });
+
 
   it("keeps the pigeon affection scale while whisper dropped the hidden marker", () => {
     expect(buildPrompt("pigeon.reply", {
@@ -191,28 +178,5 @@ describe("model-bound state refs", () => {
     expect(trace).not.toHaveBeenCalled();
   });
 
-  it.each([
-    ["LOOK", '当前场景：鱼定村，NPCs：货郎阿吉、老猎户，物品：石子\n出口固定（不能改变）：[n,s]'],
-    ["EXPLORE_ACTION", "当前场景：鱼定村，背包：刀，草药"],
-    ["COMBAT", "当前状态：HP=70/100，背包：刀，草药"],
-    ["UNKNOWN", '当前状态：场景=鱼定村，HP=70/100，背包=刀，草药，NPC 关系={"货郎阿吉":{"好感度":37,"态度":"爽朗"}}，随身银两=73两'],
-    ["TALK_CASUAL", '当前 NPC 关系：{"货郎阿吉":{"好感度":37,"态度":"爽朗"}}\n在场人物与其随身之物：\n· 货郎阿吉〔身携:猎刀〕\n· 老猎户〔身无长物〕\n玩家背包：刀，草药'],
-    ["MOVE", "玩家到达新地点：山门（由系统固定，不能修改）\n固定出口：[w]（不能修改）"],
-  ])("%s preserves its state prefix and duel visibility constraint", async (intent, header) => {
-    const chat = vi.fn(async () => ({ text: "{}" }));
-    const trace = vi.fn();
-    await callExtraction(intent, "这里有 @missing 和 @背包", {
-      ...promptState(), lockedDestName: "山门", lockedExits: { w: "鱼定村" },
-    }, {}, null, { chat }, trace);
-    const [{ content }] = chat.mock.calls[0][0];
-    // TALK_CASUAL 在背包与叙事之间插了「在场者性情与界限」块，前/后两段分开断言。
-    if (intent === "TALK_CASUAL") {
-      expect(content).toContain(header);
-      expect(content).toContain("在场者性情与界限");
-    } else {
-      expect(content).toContain(header + "\n\n叙事内容：\n这里有 @missing 和 @背包");
-    }
-    expect(content).toContain("本轮在场 NPC 仅限：货郎阿吉。");
-    expect(trace).not.toHaveBeenCalled();
-  });
+
 });

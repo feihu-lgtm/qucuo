@@ -96,7 +96,6 @@ export function defaultConfig() {
     // 行动识别默认开：打字与按钮落到同一套系统结算路径；想要原来自由行动的用户可在设置里关。
     intentRecognitionEnabled: true,
     bookkeepEnabled: true,
-    softSettleEnabled: true,
     extractionModel: "",  // 空 = 沿用主模型；填入后所有意图共用此模型
     extractionModels: {   // 各意图可单独指定（空 = 回退到 extractionModel）
       LOOK: "", MOVE: "", TALK_CASUAL: "", EXPLORE_ACTION: "", COMBAT: "", UNKNOWN: "",

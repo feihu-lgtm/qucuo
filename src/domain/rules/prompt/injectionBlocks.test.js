@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   ACTION_VIEWS, KIND_META,
   STATIC_TEXT_KEYS, blocksForAction, schemaKeyFor,
-  giftSettleLawExample, giftNarrativeLawExample, giftExtractionSpecExample,
+  giftSettleLawExample, giftNarrativeLawExample,
 } from "./injectionBlocks.js";
 import * as enginePrompts from "./enginePrompts.js";
 
@@ -54,20 +54,21 @@ describe("blocksForAction：单调用（single）各动作分类的亮灭", () =
 });
 
 describe("blocksForAction：双调用（dual）结构不同", () => {
-  it("双调用砍掉 schema/isolation 两块，末尾追加提取层调用块", () => {
+  it("双调用砍掉 schema/isolation 两块，末尾追加判官管线块", () => {
     // 契约：双调用主叙事不产 JSON/MVU——不是"灭灯"，是这两块结构上不存在。
+    // WO-15：提取层已删，状态判定由判官管线（前哨听意+裁决+尾章校对）承担。
     const blocks = blocksForAction("combat", "dual");
     expect(byId(blocks, "schema")).toBeUndefined();
     expect(byId(blocks, "isolation")).toBeUndefined();
-    expect(blocks.at(-1).id).toBe("extraction_call");
+    expect(blocks.at(-1).id).toBe("judge_pipeline");
     expect(byId(blocks, "catalog").lit).toBe(false);
   });
 
-  it("双调用送礼：追加 gift_narrative_law + 提取层说明指向 GIFT 专属 spec", () => {
-    // 契约：送礼在双调用下好感判定在提取层，面板要把这一步讲清楚。
+  it("双调用送礼：追加 gift_narrative_law + 判官管线说明", () => {
+    // 契约：送礼在双调用下收拒与好感由判官一裁定案，面板要把这一步讲清楚。
     const blocks = blocksForAction("gift", "dual");
     expect(byId(blocks, "gift_narrative_law")).toBeTruthy();
-    expect(byId(blocks, "extraction_call").summary).toContain('settleKind:"gift"');
+    expect(byId(blocks, "judge_pipeline").summary).toContain("判官");
   });
 
   it("whisper 分类：全部点亮，不走 act/talk 结构", () => {
@@ -127,10 +128,5 @@ describe("送礼三段示例文本", () => {
     expect(t).toContain("本身不产生MVU");
   });
 
-  it("提取版：演示好感只能上升与 mvu JSON 形状", () => {
-    // 契约：giftExtractionSpecExample 与 EXTRACTION_SPECS.GIFT 模板同构。
-    const t = giftExtractionSpecExample();
-    expect(t).toContain("只能上升、不得为 0 或负数");
-    expect(t).toContain('"mvu":"_.add(');
-  });
+
 });

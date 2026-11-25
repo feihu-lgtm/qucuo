@@ -8,7 +8,6 @@ import { QUCUO_QUESTS } from "../domain/data/quests/qucuoQuests.js";
 import { commitModelFlags } from "../engine/act/commitFlags.js";
 import { createWorldRules } from "../engine/worldRules.js";
 import { buildQuestStageNote } from "../engine/prompt/roundNotes.js";
-import { callExtraction } from "../engine/ports/extraction.js";
 import { createExtractionState } from "../engine/runTurn.js";
 import { assemblePrompt } from "../engine/prompt/assemblePrompt.js";
 
@@ -184,19 +183,9 @@ describe("收复雪豹", () => {
     expect(snowLeopardNote(initial())).toBe("");
     expect(snowLeopardNote({ ...state, room: { npcs: [] } })).toBe("");
     expect(snowLeopardNote({ ...state, flags: ["snow_spirit_scratch", "snow_spirit_medicine"] })).not.toContain("像母鸡");
-    const chat = vi.fn().mockResolvedValue({ text: "{}" });
-    await callExtraction("TALK_CASUAL", "你替雪豹挠了痒。", state, {}, null, { chat });
-    expect(chat.mock.calls[0][0][0].content).toContain("snow_spirit_scratch");
   });
 
-  it("permits only the meat spirit in dual-call leopard gift extraction", async () => {
-    const chat = vi.fn().mockResolvedValue({ text: '{"delta":{"flags_add":["snow_spirit_meat"]}}' });
-    const result = await callExtraction("TALK_CASUAL", "雪豹吃掉了肉。", active(), {}, { settleKind: "gift", settleNpc: "雪豹" }, { chat });
-    const prompt = chat.mock.calls[0][0][0].content;
-    expect(prompt).toContain("flags_add只允许snow_spirit_meat");
-    expect(prompt).not.toContain("snow_spirit_scratch");
-    expect(result.p.delta.flags_add).toEqual(["snow_spirit_meat"]);
-  });
+
 });
 
 describe("和出战伙伴本人打是 1v1", () => {

@@ -32,8 +32,8 @@ describe("promptCatalog unified control matrix", () => {
     const ids = new Set(calls.map((c) => c.id));
     for (const required of [
       "main:combat", "main:move", "main:gift",
-      "narrator.whisper", "turn.extraction", "intent.classify",
-      "settle.judge", "bookkeep.turn", "day.summary", "pigeon.reply",
+      "narrator.whisper", "intent.classify",
+      "narrator.affinity", "bookkeep.turn", "day.summary", "pigeon.reply",
       "storyteller.flavor", "card.scan",
     ]) {
       expect(ids.has(required)).toBe(true);

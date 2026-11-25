@@ -100,14 +100,6 @@ function refBackedSetter(varTreeRef) {
   };
 }
 
-function makeSoftSettleContext(controller, varTreeRef, ai, isStale) {
-  const setVarTree = refBackedSetter(varTreeRef);
-  return {
-    apiCfg: {}, ai, bookkeep: false, setVarTree, refs: { varTreeRef }, isStale,
-    onTurnsInvalidated: controller.onTurnsInvalidated, commitDeps: () => ({ setVarTree }),
-    getGameState: () => gameStore.getState(), gameActions, subscribeGameReplaced,
-  };
-}
 
 describe("undo controller", () => { it("keeps the real pickup undo point when a queued duplicate is a no-op", () => {
     const item = { id: "ground-stone", name: "石子" };
@@ -334,71 +326,4 @@ describe("undo controller", () => { it("keeps the real pickup undo point when a 
     expect(calls).toEqual(["capture", "log", "branch", "duel"]);
   });
 
-});
-
-describe("soft-settle invalidation", () => {
-  beforeEach(() => {
-    runTurn.mockReset();
-    commitRound.mockReset().mockReturnValue({});
-    turnMonitor.clear();
-  });
-
-  afterEach(() => turnMonitor.clear());
-
-  it("reverts on stop, then preserves a retry when the old response arrives", async () => {
-    const originalTree = {
-      角色: { 八云: { 好感度: 20, 生气状态: { active: true, reason: "偷窃未遂" } } },
-      世界: { 威望: 0 },
-    };
-    const restoreStore = freshStore({ varTree: originalTree, time: 0 });
-    try {
-      const varTreeRef = { current: gameStore.getState().varTree };
-      const setVarTree = refBackedSetter(varTreeRef);
-      const controller = createController({
-        buildCurrentSnapshot: () => ({ varTree: gameStore.getState().varTree }),
-        applySnapshot: snapshot => setVarTree(snapshot.varTree),
-      });
-      controller.controller.captureUndo(null);
-      let resolveOldResponse;
-      let startOldRun;
-      const oldResponse = new Promise(resolve => { resolveOldResponse = resolve; });
-      const oldStarted = new Promise(resolve => { startOldRun = resolve; });
-      runTurn.mockImplementationOnce(() => {
-        startOldRun();
-        return oldResponse;
-      }).mockResolvedValueOnce({ narrativeText: "八云再次缓和下来。" });
-
-      const oldTurn = playTurn(makeSoftSettleContext(
-        controller.controller, varTreeRef,
-        createMockAi(['{"choice":"奏效","probs":{"奏效":0.9,"未奏效":0.1}}']),
-        createTurnStaleCheck(controller.turnGenerationRef),
-      ), "赔罪", { settle: true, settleKind: "appease", settleNpc: "八云" });
-      await oldStarted;
-      expect(varTreeRef.current.角色.八云.好感度).toBe(23);
-
-      controller.controller.invalidateTurns();
-      expect(gameStore.getState().varTree).toEqual(originalTree);
-      expect(varTreeRef.current.角色.八云).not.toHaveProperty("生气解除");
-      expect(varTreeRef.current.世界).not.toHaveProperty("好感日增");
-      expect(controller.controller.rollbackOneStep()).toBe(true);
-
-      const retry = await playTurn(makeSoftSettleContext(
-        controller.controller, varTreeRef,
-        createMockAi(['{"choice":"奏效","probs":{"奏效":0.9,"未奏效":0.1}}']),
-        createTurnStaleCheck(controller.turnGenerationRef),
-      ), "再次赔罪", { settle: true, settleKind: "appease", settleNpc: "八云" });
-      expect(retry.ok).toBe(true);
-      expect(varTreeRef.current.角色.八云.好感度).toBe(23);
-
-      controller.controller.invalidateTurns();
-      expect(varTreeRef.current.角色.八云.好感度).toBe(23);
-      resolveOldResponse({ narrativeText: "旧请求的迟到回应。" });
-      expect((await oldTurn).stale).toBe(true);
-      expect(varTreeRef.current.角色.八云).toMatchObject({
-        好感度: 23, 生气状态: { active: false, resolvedBy: "persuasion" },
-      });
-    } finally {
-      restoreStore();
-    }
-  });
 });

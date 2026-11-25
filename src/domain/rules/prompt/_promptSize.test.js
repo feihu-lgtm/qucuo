@@ -1,6 +1,4 @@
 import { describe, expect, it, vi } from "vitest";
-import { callExtraction } from "../../../engine/ports/extraction.js";
-import { EXTRACTION_SPECS } from "./extractionSpecs.js";
 import { buildSysBase } from "./sysBase.js";
 import { QUCUO_PRESET } from "../../data/presets/qucuo.js";
 
@@ -56,18 +54,5 @@ describe("prompt size baseline", () => {
     expect(rows.length).toBe(8);
   });
 
-  it("prints extraction user/system sizes per spec", async () => {
-    const rows = [];
-    for (const key of Object.keys(EXTRACTION_SPECS)) {
-      const calls = [];
-      const ai = { chat: vi.fn(async (messages, options) => { calls.push({ messages, options }); return { text: "{}" }; }) };
-      await callExtraction(key, "少侠走进村口，与才旦说了几句话。", state, apiCfg, SETTLE_OPTIONS[key] || null, ai);
-      if (!calls.length) { rows.push({ key, skipped: true }); continue; }
-      const sysLen = calls[0].options.systemPrompt.length;
-      const userLen = calls[0].messages.reduce((s, m) => s + m.content.length, 0);
-      rows.push({ key, sysLen, userLen, total: sysLen + userLen });
-    }
-    console.log(JSON.stringify(rows, null, 1));
-    expect(rows.length).toBeGreaterThan(5);
-  });
+
 });
