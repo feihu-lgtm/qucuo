@@ -114,7 +114,8 @@ describe("buildNemesisInjectBlock", () => {
 describe("状态/强度行", () => {
   it("nemesisStatusLine active 空串，fakeDead/settled 标注", () => {
     expect(nemesisStatusLine({ status: "active" })).toBe("");
-    expect(nemesisStatusLine({ status: "fakeDead" })).toBe("（假死）");
+    expect(nemesisStatusLine({ status: "fakeDead" })).toBe("（已故）"); // 玩家面板绝不泄「假死」
+    expect(nemesisStatusLine({ status: "fakeDead" })).not.toContain("假死");
     expect(nemesisStatusLine({ status: "settled" })).toBe("（已了结）");
   });
   it("nemesisGrudgeLine 分档", () => {
