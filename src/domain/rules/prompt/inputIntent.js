@@ -100,13 +100,19 @@ export function isGiftInput(rawInput) {
 // 不能因「问问」二字被当免费纯搭话吞掉（判官链下 turn.intake 根本不跑，
 // trade 动作从源头消失）。词面保守：只排明显交互动词，元问题/复杂否定先不做。
 const TRADE_RE = /买|卖|交易|问价|价格|价钱|多少钱|开价|拿货看看|什么货|进货|出货/;
+// 「买卖」的话题用法：所有格（村里的买卖）或闲谈动词引出（聊聊/谈谈买卖）——
+// 此时它是谈资不是交易请求；而「做笔买卖」的买卖是交易本体，不能剥。
+const TRADE_TOPIC_RE = /(?:的买卖|(?:聊|谈|说|唠|讲|听)[^，。！？]{0,6}买卖)/;
 export function isTradeInput(rawInput) {
-  // 「买卖」作名词（聊聊村里的买卖/做点买卖）是话题不是交易请求——先剥掉再测，
-  // 否则 买/卖 单字在复合名词里误中（Review：「聊聊村里的买卖」白耗一回合）。
-  const input = (rawInput || "").trim().replace(/买卖/g, "");
-  if (!TRADE_RE.test(input)) return false;
+  const input = (rawInput || "").trim();
+  if (!input) return false;
   // 元问题排除：「价格是什么/什么叫交易」这类概念问答不是交易意向。
-  return !/(是什么|什么意思|什么叫)/.test(input);
+  if (/(是什么|什么意思|什么叫)/.test(input)) return false;
+  if (!TRADE_RE.test(input)) return false;
+  // 话题用法且买卖是唯一线索→非意向（「聊聊村里的买卖」白耗一回合 Review 修）；
+  // 「做笔买卖」不属话题用法，保留命中。
+  if (TRADE_TOPIC_RE.test(input) && !TRADE_RE.test(input.replace(/买卖/g, ""))) return false;
+  return true;
 }
 
 export function classifyIntent(rawInput) {

@@ -73,8 +73,10 @@ describe("WO-16F-F2c isTradeInput 交易意向不进免费纯搭话", () => {
     expect(isTradeInput("什么叫交易")).toBe(false);
     expect(isTradeInput("这个多少钱")).toBe(true);
     expect(isTradeInput("问问价格")).toBe(true);
-    // Review 修：买卖作名词是话题非意向
+    // Review 两修：买卖作话题名词非意向；作交易本体（做笔买卖）仍命中
     expect(isTradeInput("聊聊村里的买卖")).toBe(false);
+    expect(isTradeInput("谈谈买卖的事")).toBe(false);
     expect(isTradeInput("买把剑")).toBe(true);
+    expect(isTradeInput("问问老孙愿不愿跟我做笔买卖")).toBe(true);
   });
 });
