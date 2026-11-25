@@ -108,3 +108,39 @@ describe("formatUsageTab", () => {
     expect(pipelineTabs({ systemPrompt: "s", userMessages: [], response: "x" })["用量"]).toBeUndefined();
   });
 });
+
+describe("readSSE idle 超时", () => {
+  const streamFrom = (chunks) => new ReadableStream({
+    async start(controller) {
+      for (const [text, delay] of chunks) {
+        if (delay) await new Promise((r) => setTimeout(r, delay));
+        controller.enqueue(new TextEncoder().encode(text));
+      }
+      controller.close();
+    },
+  });
+  const sseRes = (chunks) => ({ ok: true, headers: { get: () => "text/event-stream" }, body: streamFrom(chunks) });
+
+  it("首个 chunk 迟迟不到（headers 后 body 卡住）→ idle 超时", async () => {
+    const { readSSE } = await import("./apiSse.js");
+    await expect(readSSE(sseRes([["data: {}\n\n", 120]]), () => {}, { idleTimeoutMs: 40 }))
+      .rejects.toMatchObject({ code: "timeout" });
+  });
+
+  it("中途断流（chunk 间隔超 idle）→ idle 超时", async () => {
+    const { readSSE } = await import("./apiSse.js");
+    const events = [];
+    await expect(readSSE(sseRes([['data: {"a":1}\n\n', 0], ['data: {"b":2}\n\n', 120]]),
+      (e) => events.push(e), { idleTimeoutMs: 40 })).rejects.toMatchObject({ code: "timeout" });
+    expect(events).toEqual([{ a: 1 }]); // 已到达的事件照常解析
+  });
+
+  it("持续有字不误杀：间隔小于 idle 的长正文完整读完", async () => {
+    const { readSSE } = await import("./apiSse.js");
+    const events = [];
+    await readSSE(sseRes([
+      ['data: {"a":1}\n\n', 0], ['data: {"b":2}\n\n', 20], ['data: {"c":3}\n\n', 20],
+    ]), (e) => events.push(e), { idleTimeoutMs: 60 });
+    expect(events).toEqual([{ a: 1 }, { b: 2 }, { c: 3 }]);
+  });
+});

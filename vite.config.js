@@ -66,8 +66,15 @@ export default defineConfig({
             }
             res.end();
           } catch (e) {
-            res.writeHead(502, { "Content-Type": "text/plain" });
-            res.end("Proxy error: " + e.message);
+            if (!res.headersSent) {
+              res.writeHead(502, { "Content-Type": "text/plain" });
+              res.end("Proxy error: " + e.message);
+            } else {
+              // 流式转发途中上游断流：headers 早已发出，再 writeHead 会抛
+              // ERR_HTTP_HEADERS_SENT 打崩 dev server。直接销毁响应，让浏览器
+              // 读到连接中断（fetch 抛 network error），而不是干净结束半截正文。
+              res.destroy(e);
+            }
           }
         });
       },

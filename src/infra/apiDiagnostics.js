@@ -1,7 +1,7 @@
 import { observeAi } from "./observeAi.js";
 import { readSSE, stripReasoning } from "./apiSse.js";
 import { getApiModel } from "./apiModel.js";
-import { withProxy, httpFailure, callModel, fetchWithTimeout, readJsonOrThrow, setRequestTimeout, rejectNonStream, formatBlock, fetchOpenAI, isOpenAICompatible } from "./apiTransport.js";
+import { withProxy, httpFailure, callModel, fetchWithTimeout, readJsonOrThrow, setRequestTimeout, getRequestTimeout, rejectNonStream, formatBlock, fetchOpenAI, isOpenAICompatible } from "./apiTransport.js";
 import { API_TYPES, migrateProvider, DEFAULT_CALL_TOKEN_LIMITS, PROVIDERS,
   normalizeOpenAIEndpoint, normalizeAnthropicEndpoint, normalizeGeminiBase,
   applyThinkingAnthropic, applyThinkingGemini, applyThinkingOpenAI,
@@ -36,6 +36,8 @@ async function requestStream(cfg, systemPrompt, messages, onChunk, opts) {
   try {
     let full = "";
     let finishReason, usage; // 捕获停止原因与 token 用量，供 Pipeline 判断"是正常收尾还是被 length 截断"
+    // idle 超时与请求超时同值：流式期间每次等 chunk 也受约束，持续有字不误杀长正文。
+    const sse = (res, handler) => readSSE(res, handler, { idleTimeoutMs: getRequestTimeout() });
 
     if (cfg.apiType === API_TYPES.ANTHROPIC) {
       const provider = PROVIDERS[cfg.provider];
@@ -55,7 +57,7 @@ async function requestStream(cfg, systemPrompt, messages, onChunk, opts) {
         body: JSON.stringify(abody),
       });
       await rejectNonStream(res, "Anthropic 流式调用", url);
-      await readSSE(res, (eventData) => {
+      await sse(res, (eventData) => {
         if (eventData.type === "content_block_delta" && eventData.delta?.text) {
           full += eventData.delta.text;
           onChunk(eventData.delta.text, full);
@@ -71,7 +73,7 @@ async function requestStream(cfg, systemPrompt, messages, onChunk, opts) {
     } else if (isOpenAICompatible(cfg.apiType)) {
       const res = await fetchOpenAI(cfg, systemPrompt, messages, opts, true);
       await rejectNonStream(res, "OpenAI 兼容流式调用");
-      await readSSE(res, (eventData) => {
+      await sse(res, (eventData) => {
         const delta = eventData.choices?.[0]?.delta?.content || "";
         if (delta) { full += delta; onChunk(delta, full); }
         // finish_reason 出现在最后一个带 choices 的事件里；usage 需请求时开了 include_usage 才会在末尾单独一个事件给出
@@ -99,7 +101,7 @@ async function requestStream(cfg, systemPrompt, messages, onChunk, opts) {
         body: JSON.stringify({ contents, generationConfig: genConfig }),
       });
       await rejectNonStream(res, "Gemini 流式调用", url);
-      await readSSE(res, (eventData) => {
+      await sse(res, (eventData) => {
         const parts = eventData.candidates?.[0]?.content?.parts;
         const delta = parts?.map(p => p.text || "").join("") || "";
         if (delta) { full += delta; onChunk(delta, full); }
