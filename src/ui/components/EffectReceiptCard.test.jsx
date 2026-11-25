@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import EffectReceiptCard from "./EffectReceiptCard.jsx";
+import EffectReceiptCard, { buildReceiptAction } from "./EffectReceiptCard.jsx";
 import LogEntry from "./LogEntry.jsx";
 
 const grantReceipt = {
@@ -95,5 +95,15 @@ describe("LogEntry receipts 接线", () => {
       entry: { t: "desc", text: "寻常一段。" }, color: "var(--text)", onAction: () => {},
     }));
     expect(html).not.toContain("effect-receipt-card");
+  });
+});
+
+describe("buildReceiptAction 结构化字段链路", () => {
+  it("equip/consume/activate 载荷携带 id+factId+op+kind 全字段", () => {
+    const a = buildReceiptAction(grantReceipt, "equip", grantReceipt.item, false);
+    expect(a).toMatchObject({ type: "effectReceipt", op: "equip", kind: "grant_item", factId: "F42_3", itemId: "it_a1b2c3", name: "裂风豹骨哨" });
+    const b = buildReceiptAction(skillReceipt, "activate", skillReceipt.skill, true);
+    expect(b).toMatchObject({ op: "activate", kind: "bestow_skill", factId: "F42_4", skillId: "kf_emg_x" });
+    expect(b.itemId).toBeUndefined();
   });
 });

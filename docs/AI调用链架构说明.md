@@ -45,7 +45,7 @@ flowchart TD
 | 首字超时兜底 | 基础已落地/未接主链 | `streamWithFirstTokenFallback` 支持插入过渡行、首字抵达原位替换、超时静默降级；主循环接线属于后续工单。 |
 | 十二律落盘引擎 | 基础已落地/未接主链 | `materializeFacts` 已把十二类事实码编译成 `changes/patches/receipts/logs`；尚未进入主回路，接线属于后续主循环工单。 |
 | 前哨 intake + 判官 + 锚点尾章管线 | 已接主链/常 no-op 退化 | 契约 B `turn.intake`、`judgeTurn`、`storytellerStream` 锚点剥离、`sealVerifier` 尾章校对、`materializeFacts` 落盘已全部接入 `runTurn`/`commitRound`；web 默认开、CLI 回放默认关；激活另需非 settle/非纯搭话回合 + extractionEnabled 双调用叙事模式，否则不激活。entries/containers/prepItems/floatingItems 无宿主喂入，多数回合签空 facts 退化运行。 |
-| 天机落账卡 UI | 已落地/动作仍走文本指令 | `EffectReceiptCard` 已消费 `receipts` 渲染落账条（品阶色/攻防/词条翻译/出生落款），按钮经 NarrativeLogFeed 翻成文本指令进 `act`；尚未走 WO-13 结构化落账链路，按钮语义依赖回合裁决而非直写状态。 |
+| 天机落账卡 UI | 已落地/动作结构化直写 | `EffectReceiptCard` 消费 `receipts` 渲染落账条；按钮派发结构化 action（itemId/skillId/factId/op/kind），经 NarrativeLogFeed 原样透传进 `act`，useTurn 在 intent 识别前的系统边界按 id 寻址确定性执行（features/receipts/logic），行动识别关闭同样生效，写账走 applyResult 统一边界。例外：`viewPact` 无结构化面板入口，保留文本指令。 |
 
 ## 4. 目标链路分层
 

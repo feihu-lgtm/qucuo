@@ -39,7 +39,12 @@ export function consumeItem(state, item) {
   }
   changes.inv = updateField("inv", (previous) => {
     const next = [...previous];
-    const index = next.findIndex((entry) => itemNameOf(entry) === itemName);
+    // 按 id 精确寻址优先：同名两件并存时只吃掉这件（落账卡/地面物的结构化
+    // 动作都靠它不错杀旧件）；无 id 的老调用才退回按名第一件。
+    const hasId = typeof item === "object" && item?.id != null;
+    const index = next.findIndex((entry) => (
+      hasId ? (typeof entry === "object" && entry?.id === item.id) : itemNameOf(entry) === itemName
+    ));
     if (index !== -1) next.splice(index, 1);
     return set("inv", next);
   });

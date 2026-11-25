@@ -58,6 +58,20 @@ function buttonsFor(receipt) {
   return out;
 }
 
+// 结构化 action 构造器（导出供链路测试钉字段）：id/factId/op/kind 全携带，
+// 下游按 id 寻址，不再依赖名字翻文本。
+export function buildReceiptAction(receipt, op, payload, isSkill) {
+  return {
+    type: "effectReceipt",
+    op,
+    kind: receipt.kind,
+    factId: receipt.factId || "",
+    itemId: !isSkill ? payload.id : undefined,
+    skillId: isSkill ? payload.id : undefined,
+    name: payload.name || "",
+  };
+}
+
 export default function EffectReceiptCard({ receipt, onAction }) {
   const [usedOps, setUsedOps] = useState(() => new Set());
   if (!receipt || typeof receipt !== "object") return null;
@@ -85,15 +99,7 @@ export default function EffectReceiptCard({ receipt, onAction }) {
   const fire = (op) => {
     if (usedOps.has(op) || typeof onAction !== "function") return;
     setUsedOps((prev) => new Set([...prev, op]));
-    onAction({
-      type: "effectReceipt",
-      op,
-      kind: receipt.kind,
-      factId: receipt.factId || "",
-      itemId: !isSkill ? payload.id : undefined,
-      skillId: isSkill ? payload.id : undefined,
-      name: payload.name || "",
-    });
+    onAction(buildReceiptAction(receipt, op, payload, isSkill));
   };
 
   return (

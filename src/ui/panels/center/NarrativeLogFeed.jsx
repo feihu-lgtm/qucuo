@@ -68,21 +68,17 @@ export default function NarrativeLogFeed({
     }
   }
 
-  // WO-14 天机落账卡：EffectReceiptCard 的按钮派发的是结构化 action
-  // （{ type:"effectReceipt", op, name, ... }），而 act 只认玩家指令文本。
-  // 在此统一翻成指令文本再走 act——组件不碰 gameStore、act 契约不变，
-  // 判官/落盘主链路（WO-13 起）接手后按文本意图正常裁决。
+  // 天机落账卡：EffectReceiptCard 派发结构化 action（id/factId/op/kind 齐全），
+  // 原样透传给 act——useTurn 在 intent 识别前的系统边界按 id 寻址确定性执行，
+  // 行动识别关闭也同样生效。唯一例外是 viewPact：契约面板尚无结构化入口，
+  // 保留文本指令（有意例外，见 docs/AI调用链架构说明.md）。
   const handleEntryAction = (a) => {
     if (a && typeof a === "object" && a.type === "effectReceipt") {
-      const name = a.name || "";
-      const cmd = {
-        equip: `佩挂 ${name}`,
-        consume: `服用 ${name}`,
-        activate: `设为主招 ${name}`,
-        viewPact: "查看江湖契约",
-      }[a.op];
-      if (!cmd) return;
-      act(cmd);
+      if (a.op === "viewPact") {
+        act("查看江湖契约");
+        return;
+      }
+      act(a);
       return;
     }
     act(a);
