@@ -4,7 +4,9 @@ import { buildFtsQuery, segmentToSpaceString } from "./ftsTokenizer.mjs";
 
 const SCHEMA_SQL = readFileSync(new URL("./schema.sql", import.meta.url), "utf8");
 const RRF_K = 60;
-const API_KEY_KEYS = new Set(["apiKey", "api_key", "customKey", "openaiKey", "geminiKey", "anthropicKey", "authorization"]);
+// body 键名大小写不敏感 canonicalize——"apiKey"/"ApiKey"/"APIKEY" 同罪；
+// 键集合全小写存储，比较时统一 toLowerCase。
+const API_KEY_KEYS = new Set(["apikey", "api_key", "customkey", "openaikey", "geminikey", "anthropickey", "authorization"]);
 
 export function assertNoApiKeyPayload(obj, seen = new Set()) {
   if (!obj || typeof obj !== "object" || seen.has(obj)) return;
@@ -14,7 +16,7 @@ export function assertNoApiKeyPayload(obj, seen = new Set()) {
     return;
   }
   for (const [k, v] of Object.entries(obj)) {
-    if (API_KEY_KEYS.has(k) && v) {
+    if (typeof k === "string" && API_KEY_KEYS.has(k.toLowerCase()) && v) {
       const err = new Error("server/memory-hub 不接收也不中转任何模型 API Key");
       err.status = 400;
       throw err;
@@ -26,6 +28,11 @@ export function assertNoApiKeyPayload(obj, seen = new Set()) {
 export function openHubDb(dbPath = ":memory:") {
   const db = new DatabaseSync(dbPath);
   db.exec(SCHEMA_SQL);
+  // 存量库列补齐：CREATE TABLE IF NOT EXISTS 不会给老库加新列——
+  // embedding_model/embedding_dim 是 WO-20 复审后加的，ALTER 幂等补齐。
+  const cols = new Set(db.prepare("PRAGMA table_info(prose_chunks)").all().map((r) => r.name));
+  if (!cols.has("embedding_model")) db.exec("ALTER TABLE prose_chunks ADD COLUMN embedding_model TEXT");
+  if (!cols.has("embedding_dim")) db.exec("ALTER TABLE prose_chunks ADD COLUMN embedding_dim INTEGER");
   return db;
 }
 
@@ -97,13 +104,15 @@ export function createHubStore(dbOrPath = ":memory:") {
   const stmtInsertChunk = db.prepare(`
     INSERT OR IGNORE INTO prose_chunks (
       space_id, batch_id, chunk_id, turn, location,
-      witnesses_json, entities_json, raw_text, public_text, terms_segmented, embedding_blob
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      witnesses_json, entities_json, raw_text, public_text, terms_segmented, embedding_blob,
+      embedding_model, embedding_dim
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const stmtSpaceChunks = db.prepare(`
     SELECT id, space_id, batch_id, chunk_id, turn, location,
-           witnesses_json, entities_json, raw_text, public_text, terms_segmented, embedding_blob
+           witnesses_json, entities_json, raw_text, public_text, terms_segmented, embedding_blob,
+           embedding_model, embedding_dim
     FROM prose_chunks
     WHERE space_id = ?
       AND (? IS NULL OR turn <= ?)
@@ -195,6 +204,13 @@ export function createHubStore(dbOrPath = ":memory:") {
           ? c.termsSegmented.trim()
           : segmentToSpaceString(rawText || publicText, entities);
         const blob = encodeEmbedding(c.embedding);
+        // 向量元数据是 roadmap 硬要求：每条向量必须记下模型名与维度。
+        // 模型名只认显式申报（绝不猜）；维度未申报时取向量长度兜底。
+        const vecLen = c.embedding ? (c.embedding.length ?? c.embedding?.length ?? 0) : 0;
+        const embeddingModel = typeof c.embeddingModel === "string" && c.embeddingModel.trim() ? c.embeddingModel.trim() : null;
+        const embeddingDim = Number.isInteger(c.embeddingDim) && c.embeddingDim > 0
+          ? c.embeddingDim
+          : (blob && Number.isFinite(vecLen) && vecLen > 0 ? vecLen : null);
         const info = stmtInsertChunk.run(
           spaceId,
           batchId,
@@ -207,6 +223,8 @@ export function createHubStore(dbOrPath = ":memory:") {
           publicText,
           segmented,
           blob,
+          blob ? embeddingModel : null,
+          blob ? embeddingDim : null,
         );
         inserted += info.changes;
       }
@@ -239,6 +257,8 @@ export function createHubStore(dbOrPath = ":memory:") {
     location = "",
     maxTurn = null,
     queryEmbedding = null,
+    queryEmbeddingModel = "",
+    queryEmbeddingDim = null,
     topK = 5,
     neighborRadius = 1,
   } = {}) {
@@ -261,8 +281,14 @@ export function createHubStore(dbOrPath = ":memory:") {
     const qVec = queryEmbedding
       ? (queryEmbedding instanceof Float32Array ? queryEmbedding : Float32Array.from(queryEmbedding))
       : null;
-    const vecRanked = qVec
+    // 换模型/换维度后旧向量绝不参与比较（roadmap 硬要求）：
+    // 行必须显式带 embedding_model 且与查询申报模型逐字相同，维度与查询向量等长
+    // （或等于显式 queryEmbeddingDim）。无元数据的旧行只做关键词召回。
+    const qDim = Number.isInteger(queryEmbeddingDim) && queryEmbeddingDim > 0 ? queryEmbeddingDim : (qVec ? qVec.length : null);
+    const qModel = typeof queryEmbeddingModel === "string" ? queryEmbeddingModel.trim() : "";
+    const vecRanked = qVec && qModel
       ? visibleRows
+          .filter((row) => row.embedding_model === qModel && row.embedding_dim === qDim)
           .map((row) => ({ id: row.id, sim: cosineSimilarity(qVec, decodeEmbedding(row.embedding_blob)) }))
           .filter((x) => x.sim > 0)
           .sort((a, b) => b.sim - a.sim)

@@ -1,7 +1,9 @@
 import { createServer } from "node:http";
 import { createHubStore, assertNoApiKeyPayload } from "./hubCore.mjs";
 
-const FORBIDDEN_KEY_HEADERS = ["x-api-key", "x-goog-api-key", "x-openai-key"];
+// node:http 入站 header 名已全部小写化（RFC 层面大小写不敏感），无需另行 canonicalize。
+// authorization 也在拒收列：服务端当前没有任何鉴权用途，收到即说明客户端在误传凭证。
+const FORBIDDEN_KEY_HEADERS = ["x-api-key", "x-goog-api-key", "x-openai-key", "authorization"];
 
 function readJsonBody(req, limitBytes = 2 * 1024 * 1024) {
   return new Promise((resolve, reject) => {

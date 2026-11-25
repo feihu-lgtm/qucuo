@@ -23,6 +23,8 @@ CREATE TABLE IF NOT EXISTS prose_chunks (
   public_text TEXT NOT NULL,
   terms_segmented TEXT NOT NULL,
   embedding_blob BLOB,
+  embedding_model TEXT,
+  embedding_dim INTEGER,
   UNIQUE (space_id, batch_id, chunk_id)
 );
 

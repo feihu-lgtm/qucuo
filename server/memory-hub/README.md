@@ -25,4 +25,18 @@ node --test server/memory-hub/hubCore.test.mjs
 - `POST /api/spaces/:spaceId/prose/query`：SQL 过滤 + FTS5 BM25 + 可选 embedding 余弦 RRF + 前后邻段连带召回
 - `DELETE /api/space/:spaceId`：物理级联删除存档与段落并执行 `VACUUM`
 
-服务端只存密文快照与分词段落，不接收也不中转任何模型 API Key。
+服务端只存密文快照与分词段落，不接收也不中转任何模型 API Key（body 键名大小写不敏感拦截 + HTTP `Authorization`/`x-api-key` 等 header 拒收）。
+
+## 向量元数据契约（硬要求）
+
+- 写入：`chunks[].embedding` 必须配套 `embeddingModel`（模型名逐字）与可选 `embeddingDim`（缺省取向量长度）。
+- 查询：`queryEmbedding` 必须配套 `queryEmbeddingModel`（可选 `queryEmbeddingDim`，缺省取向量长度）。
+- 只有模型名逐字相同且维度相等的行参与向量余弦排序；换模型/换维度后的旧向量绝不参与比较。
+- 无向量元数据的旧行只做关键词（FTS5）召回，不会被丢弃。
+
+## ⚠ 与 WO-19 客户端 seam 的协议差异（接线前必读）
+
+本服务的存档协议是 `/api/spaces/:spaceId/saves/:slotId` + `{expectedRev, payloadEnc}` 密文信封；
+WO-19 客户端（`src/infra/storageDriver.js`）当前写的是 `/saves/<key>` + `{rev, value}` 明文形状。
+**两者现在不能直接对接**——WO-19/20 接线前需要统一的协议适配层（路径/rev 字段名/密文封装/409 冲突语义对齐），
+在适配层落地前请勿假设客户端已可插用本服务。

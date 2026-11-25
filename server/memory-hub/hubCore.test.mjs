@@ -57,14 +57,14 @@ describe("hubCore prose_chunks idempotency, FTS5 + vector RRF, and neighbor expa
   it("filters by space/turn/witnesses, ranks via FTS5 BM25 + embedding cosine RRF, and attaches ±1 neighbors", () => {
     const store = createHubStore(":memory:");
     store.appendProseChunks("space_1", "batch_a", [
-      { chunkId: "b1_3_1", turn: 3, location: "鱼定村", witnesses: ["主角", "才旦"], entities: ["才旦"], rawText: "前段铺垫：晨雾未散，才旦在石阶旁生火。", embedding: [0.9, 0.1] },
-      { chunkId: "b1_3_2", turn: 3, location: "鱼定村", witnesses: ["主角", "才旦"], entities: ["才旦", "赫连铸"], rawText: "赫连铸把一枚衔尾蛇门环塞进暗格。", embedding: [0.95, 0.05] },
-      { chunkId: "b1_3_3", turn: 3, location: "鱼定村", witnesses: ["主角", "才旦"], entities: ["才旦"], rawText: "后段收尾：他压低嗓音叮嘱莫声张。", embedding: [0.85, 0.15] },
-      { chunkId: "b1_3_4", turn: 3, location: "鱼定村", witnesses: ["主角", "白狼"], entities: ["赫连铸"], rawText: "私密对话：赫连铸另有秘令，但才旦当时不在场。", embedding: [1, 0] },
-      { chunkId: "b1_9_1", turn: 9, location: "鱼定村", witnesses: ["*"], entities: ["赫连铸"], rawText: "未来回合：赫连铸现身。", embedding: [1, 0] },
+      { chunkId: "b1_3_1", turn: 3, location: "鱼定村", witnesses: ["主角", "才旦"], entities: ["才旦"], rawText: "前段铺垫：晨雾未散，才旦在石阶旁生火。", embedding: [0.9, 0.1], embeddingModel: "emb-v1" },
+      { chunkId: "b1_3_2", turn: 3, location: "鱼定村", witnesses: ["主角", "才旦"], entities: ["才旦", "赫连铸"], rawText: "赫连铸把一枚衔尾蛇门环塞进暗格。", embedding: [0.95, 0.05], embeddingModel: "emb-v1" },
+      { chunkId: "b1_3_3", turn: 3, location: "鱼定村", witnesses: ["主角", "才旦"], entities: ["才旦"], rawText: "后段收尾：他压低嗓音叮嘱莫声张。", embedding: [0.85, 0.15], embeddingModel: "emb-v1" },
+      { chunkId: "b1_3_4", turn: 3, location: "鱼定村", witnesses: ["主角", "白狼"], entities: ["赫连铸"], rawText: "私密对话：赫连铸另有秘令，但才旦当时不在场。", embedding: [1, 0], embeddingModel: "emb-v1" },
+      { chunkId: "b1_9_1", turn: 9, location: "鱼定村", witnesses: ["*"], entities: ["赫连铸"], rawText: "未来回合：赫连铸现身。", embedding: [1, 0], embeddingModel: "emb-v1" },
     ]);
     store.appendProseChunks("space_2", "batch_other", [
-      { chunkId: "b2_3_1", turn: 3, location: "鱼定村", witnesses: ["*"], entities: ["赫连铸"], rawText: "串档数据：赫连铸在此。", embedding: [1, 0] },
+      { chunkId: "b2_3_1", turn: 3, location: "鱼定村", witnesses: ["*"], entities: ["赫连铸"], rawText: "串档数据：赫连铸在此。", embedding: [1, 0], embeddingModel: "emb-v1" },
     ]);
 
     const res = store.queryProseChunks("space_1", {
@@ -72,6 +72,7 @@ describe("hubCore prose_chunks idempotency, FTS5 + vector RRF, and neighbor expa
       viewer: "才旦",
       maxTurn: 5,
       queryEmbedding: [1, 0],
+      queryEmbeddingModel: "emb-v1",
       topK: 2,
       neighborRadius: 1,
     });
@@ -81,6 +82,67 @@ describe("hubCore prose_chunks idempotency, FTS5 + vector RRF, and neighbor expa
     assert.equal(returnedIds.includes("b1_3_4"), false);
     assert.equal(returnedIds.includes("b1_9_1"), false);
     assert.equal(returnedIds.includes("b2_3_1"), false);
+    store.close();
+  });
+});
+
+describe("向量模型/维度元数据过滤", () => {
+  it("不同 model/dim 不参与向量排序但 FTS 仍可召回；无元数据旧行只做关键词", () => {
+    const store = createHubStore(":memory:");
+    store.appendProseChunks("space_1", "batch_m", [
+      // 同模型同维度：应参与向量
+      { chunkId: "m_1_1", turn: 1, witnesses: ["*"], entities: [], rawText: "同模型段落提到青铜印。", embedding: [1, 0], embeddingModel: "emb-v1" },
+      // 不同模型：向量不参与，但 rawText 有关键词应走 FTS
+      { chunkId: "m_1_2", turn: 1, witnesses: ["*"], entities: [], rawText: "异模型段落也提到青铜印。", embedding: [1, 0], embeddingModel: "emb-v2" },
+      // 同模型不同维度：不参与向量
+      { chunkId: "m_1_3", turn: 1, witnesses: ["*"], entities: [], rawText: "异维度段落无关键词。", embedding: [1, 0, 0], embeddingModel: "emb-v1", embeddingDim: 3 },
+      // 无元数据旧行：只做关键词
+      { chunkId: "m_1_4", turn: 1, witnesses: ["*"], entities: [], rawText: "旧行无元数据提到青铜印。", embedding: [1, 0] },
+    ]);
+
+    // 向量相似度只有 m_1_1 合格；FTS 命中 m_1_1/m_1_2/m_1_4
+    const res = store.queryProseChunks("space_1", {
+      query: "青铜印",
+      viewer: "主角",
+      queryEmbedding: [1, 0],
+      queryEmbeddingModel: "emb-v1",
+      topK: 10,
+      neighborRadius: 0,
+    });
+    const byId = new Map(res.hits.map((h) => [h.chunkId, h]));
+    // 异模型/无元数据行 similarity 必须为 null（未参与向量排序）
+    assert.equal(byId.get("m_1_1").similarity > 0, true);
+    assert.equal(byId.get("m_1_2")?.similarity ?? null, null);
+    assert.equal(byId.get("m_1_4")?.similarity ?? null, null);
+    // 但 FTS 仍召回它们（bm25 非 null）
+    assert.equal(typeof byId.get("m_1_2")?.bm25, "number");
+    assert.equal(typeof byId.get("m_1_4")?.bm25, "number");
+    // 异维度行无关键词、也不进向量 → 不出现
+    assert.equal(byId.has("m_1_3"), false);
+
+    // 换模型查询：emb-v1 的向量全部不参与
+    const res2 = store.queryProseChunks("space_1", {
+      query: "青铜印",
+      viewer: "主角",
+      queryEmbedding: [1, 0],
+      queryEmbeddingModel: "emb-v2",
+      topK: 10,
+      neighborRadius: 0,
+    });
+    const byId2 = new Map(res2.hits.map((h) => [h.chunkId, h]));
+    assert.equal(byId2.get("m_1_1")?.similarity ?? null, null);
+    assert.equal(byId2.get("m_1_2")?.similarity > 0, true);
+
+    // 未申报模型：向量整体关闭，FTS 照常
+    const res3 = store.queryProseChunks("space_1", {
+      query: "青铜印",
+      viewer: "主角",
+      queryEmbedding: [1, 0],
+      topK: 10,
+      neighborRadius: 0,
+    });
+    assert.equal(res3.hits.every((h) => h.similarity === null), true);
+    assert.equal(res3.hits.length >= 3, true);
     store.close();
   });
 });
@@ -125,6 +187,20 @@ describe("HTTP server, DELETE /api/space/:spaceId + VACUUM, and API key rejectio
         body: JSON.stringify({ batchId: "b2", chunks: [] }),
       });
       assert.equal(keyReject.status, 400);
+
+      const authReject = await fetch(`${base}/api/spaces/spA/prose`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", authorization: "Bearer sk-secret" },
+        body: JSON.stringify({ batchId: "b3", chunks: [] }),
+      });
+      assert.equal(authReject.status, 400);
+
+      const bodyKeyReject = await fetch(`${base}/api/spaces/spA/prose`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ batchId: "b4", chunks: [], config: { Authorization: "Bearer x" } }),
+      });
+      assert.equal(bodyKeyReject.status, 400);
 
       const delRes = await fetch(`${base}/api/space/spA`, { method: "DELETE" });
       assert.equal(delRes.status, 200);
