@@ -47,3 +47,39 @@ describe("lethal 传递不串场", () => {
     expect(vt2.世界.宿敌谱.雪山派.entries.nm1.status).toBe("active");
   });
 });
+
+describe("WO-23C7 生死战后果收口", () => {
+  it("任务关键 active 宿敌入口禁用有原因；非关键不受影响", async () => {
+    const { nemesisLethalBlockReason, questCriticalNpcNames } = await import("./nemesisEngine.js");
+    const vt = { 世界: { 宿敌谱: ROSTER } };
+    // 白玛次仁是 yudingtusi-1a giver——谱中造一个 active entry
+    const vt2 = { 世界: { 宿敌谱: { 鱼定土司府: { entries: { nm9: { id: "nm9", name: "白玛次仁", faction: "鱼定土司府", status: "active", tier: 1, scars: [], grudge: 1, origin: { turn: 1, place: "x", summary: "s" } } } } } } };
+    const blocker = nemesisLethalBlockReason({ varTree: vt2, questProgress: {} }, { name: "白玛次仁", faction: "鱼定土司府" });
+    expect(blocker).toContain("未了之事");
+    // 已完成任务后解禁
+    const done = nemesisLethalBlockReason({ varTree: vt2, questProgress: { "yudingtusi_1_xunshan_cuiliang": { status: "completed" } } }, { name: "白玛次仁", faction: "鱼定土司府" });
+    expect(done).toBeNull();
+    // 非关键宿敌不受任务账本影响
+    expect(nemesisLethalBlockReason({ varTree: vt, questProgress: {} }, { name: "扎西", faction: "雪山派" })).toBeNull();
+    // 名册本身：未完成/无记录皆护
+    expect(questCriticalNpcNames({}).has("白玛次仁")).toBe(true);
+  });
+
+  it("随机路人无生死入口（跨日无身份持久化）", async () => {
+    const { nemesisLethalBlockReason } = await import("./nemesisEngine.js");
+    const vt = { 世界: { 宿敌谱: ROSTER } };
+    const blocker = nemesisLethalBlockReason({ varTree: vt, questProgress: {} }, { name: "扎西", faction: "雪山派", randomPasser: 3 });
+    expect(blocker).toContain("萍水相逢");
+  });
+
+  it("投放链统一过滤：fakeDead/dead 宿敌不进竞价/游走/过路/冒险者", async () => {
+    const { recruitedNemesisNames } = await import("../npc/rules.js");
+    // 过滤口径即 notRecruited——recruitedNemesisNames 含 fakeDead/dead/recruited，
+    // 本测试钉住该集合语义（投放链各处 .filter(notRecruited) 共用）
+    const names = recruitedNemesisNames({ 世界: { 宿敌谱: { 雪山派: { entries: { a: { name: "扎西", status: "fakeDead" }, b: { name: "死者", status: "dead" }, c: { name: "收服者", status: "recruited" }, d: { name: "活着", status: "active" } } } } } });
+    expect(names.has("扎西")).toBe(true);
+    expect(names.has("死者")).toBe(true);
+    expect(names.has("收服者")).toBe(true);
+    expect(names.has("活着")).toBe(false);
+  });
+});

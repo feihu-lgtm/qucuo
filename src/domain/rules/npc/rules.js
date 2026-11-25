@@ -123,6 +123,7 @@ export const residentNpcRule = {
         // 收货人若是常驻且住在别的据点（卓玛住玉泉寨、镖送到贡措海），只查本据点常驻永远找不到人。
         || Object.values(RESIDENT_NPCS).flat().find((npc) => npc.name === quest.targetNpc))
       .filter(Boolean)
+      .filter(notRecruited)
       .map(toRoomNpcWithCombat)
       .map((npc) => {
         // 收货人站在护送目的地写明的那间内层房间（驻场的人按其驻场绑定）
@@ -131,12 +132,16 @@ export const residentNpcRule = {
         return inner ? { ...npc, innerRoom: inner } : npc;
       });
     const hourNow = ((time % 24) + 24) % 24;
+    // WO-23C7：竞价/游走/护送/导入/过路所有真实世界 NPC 投放入口统一过滤宿敌谱
+    // inactive（fakeDead/dead/recruited——notRecruited 即此口径），死人不进竞价池。
     const gambleBidders = hasInnerMap(room.name) && getInnerRoomNames(room.name).includes("玉石料场")
       ? [
           ...NPC_POOL
             .filter((npc) => npc.gambleBidder && npc.lockInnerRoom === "玉石料场")
+            .filter(notRecruited)
             .map(toRoomNpcWithCombat),
           ...NPC_POOL
+            .filter(notRecruited)
             .filter((npc) => Array.isArray(npc.schedule)
               && npc.schedule.some((slot) => (
                 hourNow >= slot.slot[0]
@@ -156,6 +161,7 @@ export const residentNpcRule = {
       (name) => seededRand(dayIdx, `imported_${room.name}_${name}`),
     )
       .filter((npc) => !isCompanionUnlockedByName(companionState, npc.name))
+      .filter(notRecruited)
       .map(toRoomNpcWithCombat);
     // 名字避开玩家认识的人和导入角色卡；认识的人里，今天已经刷出来的那批（本地或别处缓存里）不算撞名，保证同日重进结果不变。
     const todaysPassers = new Set([room.npcs || [], ...Object.values(roomMap || {}).map((cached) => cached?.npcs || [])]
@@ -166,6 +172,7 @@ export const residentNpcRule = {
     // 已入队/留守的冒险者不再刷世界版（跟 importedNpcs 同一道闸）：
     // 招募后房间里会同时存在"世界版陌生人"和"留守队友"两个同名身。
     const worldAdventurers = getWorldAdventurers(room.name, time)
+      .filter(notRecruited)
       .filter((adv) => !isCompanionUnlockedByName(companionState, adv.name))
       .map((adv) => {
         const existing = existingByName.get(adv.name);
@@ -182,7 +189,7 @@ export const residentNpcRule = {
       ...importedNpcs.map((npc) => npc.name),
       ...advRosterNames,
     ]);
-    const passers = getRandomPassers(room.name, time, passerReserved)
+    const passers = getRandomPassers(room.name, time, passerReserved).filter(notRecruited)
       .map((passer) => {
         const existing = existingByName.get(passer.name);
         return buildRoomNpcWithCombat(passer, { existingNpc: existing?.randomPasser === dayIdx ? existing : undefined, luck, trade: npcTradeOf(state.npcState, passer) });

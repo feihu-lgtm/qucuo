@@ -28,7 +28,7 @@ import ErrorBoundary from "../components/ErrorBoundary.jsx";
 import NpcActionMenu from "../components/NpcActionMenu.jsx";
 import ItemActionMenu from "../components/ItemActionMenu.jsx";
 import { awakenableWeapons } from "../../domain/rules/items/itemAwaken.js";
-import { isActiveNemesisNpc } from "../../domain/rules/nemesis/nemesisEngine.js";
+import { isActiveNemesisNpc, nemesisLethalBlockReason } from "../../domain/rules/nemesis/nemesisEngine.js";
 import { OVERLAY, closeOverlay, openOverlay, useOverlay } from "../../store/uiStore.js";
 import {
   useSessionUi, setActiveNpcMenu, setActiveItemMenu, setCharacterPageTarget,
@@ -213,6 +213,7 @@ export default function GlobalOverlays({
         ocRoutes={OC_BY_NAME[activeNpcMenu.name] ? ocMenuRoutes({ flags, varTree, companionState }, OC_BY_NAME[activeNpcMenu.name]) : []}
         flags={flags} companionUnlocked={isCompanionUnlockedByName(companionState, activeNpcMenu.name)}
         nemesisActive={isActiveNemesisNpc(varTree, activeNpcMenu)}
+        lethalBlockReason={nemesisLethalBlockReason({ varTree, questProgress }, activeNpcMenu)}
       />
     )},
     { show: activeItemMenu, render: () => (

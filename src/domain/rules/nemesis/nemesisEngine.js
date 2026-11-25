@@ -143,3 +143,30 @@ export function isActiveNemesisNpc(varTree, npc) {
   const entry = findNemesisEntry(varTree?.世界?.宿敌谱 || {}, faction, npc.name);
   return !!entry && entry.status === "active";
 }
+
+// ── WO-23C7 生死战后果收口：入口阻断纯函数 ─────────────────────────────
+import { QUCUO_QUESTS } from "../../data/quests/qucuoQuests.js";
+
+// 未完成任务关键对象（giver）名册：questProgress 无记录或 status!=="completed"
+// 即未了——保守方向宁可误护（failed/locked 也护），生死战入口对这些 NPC 隐藏，
+// 不为每个任务手补大型死亡分支。
+export function questCriticalNpcNames(questProgress = {}) {
+  const out = new Set();
+  for (const quest of QUCUO_QUESTS) {
+    if (!quest?.giver) continue;
+    const progress = questProgress?.[quest.id];
+    if (!progress || progress.status !== "completed") out.add(quest.giver);
+  }
+  return out;
+}
+
+// 生死战入口阻断原因（纯函数）：返回 null 表示可生死战；否则给玩家一句
+// deterministic 原因。审计结论（randomPassers.js:1-7 + rules.js:185）：
+// 随机路人按日种子重刷、跨日无身份持久化——活人都不会回来，遑论假死重逢，
+// 故 randomPasser 一律不给生死入口（与任务关键 NPC 同一收口模式）。
+export function nemesisLethalBlockReason({ varTree, questProgress }, npc) {
+  if (!isActiveNemesisNpc(varTree, npc)) return null;
+  if (npc?.randomPasser != null) return "此人不过是萍水相逢的过客，行踪无定，生死相搏无从谈起。";
+  if (questCriticalNpcNames(questProgress).has(npc?.name)) return "此人牵扯未了之事，此刻还不能生死相搏。";
+  return null;
+}
