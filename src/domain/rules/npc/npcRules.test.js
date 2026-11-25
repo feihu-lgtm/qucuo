@@ -187,6 +187,7 @@ describe("resident NPC world rule", () => {
 
   it("depends on imported registry revision, quest progress, and flags", () => {
     const deps = residentNpcRule.deps(makeState());
-    expect(deps).toEqual(["鱼定村", 0, {}, [], 0]);
+    // WO-23C4：过滤所读状态进 deps——companionState/宿敌谱变化必须触发重算
+    expect(deps).toEqual(["鱼定村", 0, {}, [], 0, {}, undefined]);
   });
 });

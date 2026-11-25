@@ -15,6 +15,18 @@ import { parseQuestPlace, questPlaceDistrict } from "../quests/questPlace.js";
 
 // 已入队的驻场人不再重复注入房间：companionCandidate（雪豹）、OC 驻场（homeDistrict 出身，
 // 如元朵朵）、与 OC 同名的驻场条目（姬无双/樊未离——数据里同一人被收编后驻场壳也要撤）都算。
+// WO-23C4：已被招抚的宿敌（谱中 status==="recruited"）世界版不再注入——
+// 人已是 companion，驻场/游走池再刷会分身。按名字唯一惯例匹配，与 removeNpc 同口径。
+export function recruitedNemesisNames(varTree) {
+  const out = new Set();
+  for (const group of Object.values(varTree?.世界?.宿敌谱 || {})) {
+    for (const e of Object.values(group?.entries || {})) {
+      if (e && e.status === "recruited" && e.name) out.add(e.name);
+    }
+  }
+  return out;
+}
+
 export function isResidentJoinedCompanion(npc, companionState) {
   if (!(npc?.companionCandidate || npc?.homeDistrict || OC_BY_NAME[npc?.name])) return false;
   return isCompanionUnlockedByName(companionState, npc.name);
@@ -57,6 +69,9 @@ export const residentNpcRule = {
     state.questProgress,
     state.flags,
     state.importedVer,
+    // 过滤所读状态必须进 deps：companion 解锁/宿敌招抚后不重刷就滤不掉
+    state.companionState,
+    state.varTree?.世界?.宿敌谱,
   ],
   run(state, { importedRegistry, roomMap, companionState = state.companionState }) {
     const { room, time, questProgress = {}, flags = [], char } = state;
@@ -75,8 +90,9 @@ export const residentNpcRule = {
     // 常驻写了 goneFlags（被处决、囚禁等），任一 flag 已立就不再出现，旧缓存里的也清掉
     const isGoneResident = (npc) => (npc.goneFlags || []).some((flag) => flags.includes(flag));
     const goneResidentNames = new Set(getResidentNpcs(room.name).filter(isGoneResident).map((npc) => npc.name));
+    const recruitedInRoom = recruitedNemesisNames(state.varTree);
     const staleNames = new Set((room.npcs || [])
-      .filter((npc) => !npc.imported && (RELOCATED_RESIDENTS[npc.name] === room.name || goneResidentNames.has(npc.name)))
+      .filter((npc) => !npc.imported && (RELOCATED_RESIDENTS[npc.name] === room.name || goneResidentNames.has(npc.name) || recruitedInRoom.has(npc.name)))
       .map((npc) => npc.name));
     const toRoomNpcWithCombat = (poolNpc) => buildRoomNpcWithCombat(poolNpc, {
       existingNpc: existingByName.get(poolNpc.name),
@@ -84,8 +100,11 @@ export const residentNpcRule = {
       trade: npcTradeOf(state.npcState, poolNpc),
     });
 
-    const poolNpcs = getScheduledNpcs(room.name, time).map(toRoomNpcWithCombat);
+    const recruitedNames = recruitedNemesisNames(state.varTree);
+    const notRecruited = (npc) => !recruitedNames.has(npc?.name);
+    const poolNpcs = getScheduledNpcs(room.name, time).filter(notRecruited).map(toRoomNpcWithCombat);
     const residentNpcs = getResidentNpcs(room.name)
+      .filter(notRecruited)
       .filter((npc) => !isResidentJoinedCompanion(npc, companionState))
       .filter((npc) => !isGoneResident(npc))
       .filter((npc) => currentNpcNames.has(npc.name) || !cachedNpcNames.has(npc.name))

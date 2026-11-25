@@ -4,11 +4,17 @@
 // · 宿敌谱 entry status → "recruited"（注入层只认 active，自动退场；
 //   UI nemesisStatusLine 显示「已收服」）；
 // · companionState 复用 unlockImportedCompanion 转入——绝不起平行同伴系统；
-// · 原势力无既有声誉轨道（五势力只有 varTree.世界.威望 玩家个人标量）——
-//   按工单退路只记 deterministic「追杀令」账（varTree.世界.追杀令），偏差已声明；
+// · 原势力声誉接既有轨道 varTree.世界.势力声誉 deterministic 扣减（RECRUIT_REP_PENALTY=-10），
+//   另记 deterministic「追杀令」账（varTree.世界.追杀令）；
+// · 当前房间若有同名世界版 NPC 一并移除（按名字唯一惯例），池子/驻场注入侧由
+//   residentNpcRule 按 recruited 过滤防隔天刷回；
 // · 幂等：已 recruited 直接拒、companion 解锁天然幂等、追杀令按 entryId dedupe。
 import { nemesisRecruitEligibility, appendHuntedOrder } from "../../domain/rules/nemesis/recruitCheck.js";
 import { unlockImportedCompanion } from "../../domain/rules/companion/companion.js";
+import { applyFactionRep } from "../../domain/rules/economy/factionRep.js";
+import { removeNpc } from "../../domain/rules/npc/roomNpcs.js";
+
+export const RECRUIT_REP_PENALTY = -10;
 
 export function recruitNemesis(state, ref = {}) {
   const { faction, entryId } = ref;
@@ -40,15 +46,18 @@ export function recruitNemesis(state, ref = {}) {
         const book = prev?.世界?.宿敌谱 || {};
         const grp = book[faction];
         const target = grp?.entries?.[entryId];
-        if (!target || target.status !== "active") return prev; // 写入前再核，状态已变不动账
+        if (!target || target.status !== "active") return prev; // 写入前再核，状态已变不动账（声誉/追杀令也不重复扣记）
         const orders = appendHuntedOrder(prev?.世界?.追杀令, {
           faction, entryId, name: entry.name, turn,
           note: `${entry.name}背${faction}投敌，悬令追杀`,
         });
+        // 原势力声誉 deterministic 扣减（接既有 applyFactionRep 轨道）——
+        // 与状态翻转同窗：只有真从 active 转 recruited 才扣，幂等天然成立。
+        const withRep = applyFactionRep(prev, { [faction]: RECRUIT_REP_PENALTY }, { step: Infinity, ripple: false });
         return {
-          ...(prev || {}),
+          ...(withRep || {}),
           世界: {
-            ...(prev?.世界 || {}),
+            ...(withRep?.世界 || {}),
             追杀令: orders,
             宿敌谱: {
               ...book,
@@ -63,6 +72,11 @@ export function recruitNemesis(state, ref = {}) {
           },
         };
       },
+      // 当前房间同名世界版 NPC 一并撤下——不撤会分身（世界版+companion 同屏）。
+      room: (prev) => ({
+        ...prev,
+        npcs: removeNpc(prev?.npcs, (n) => n?.name === entry.name),
+      }),
     },
     logs: [
       { t: "sys", text: `  ${entry.name}沉默良久，终是长叹一声，愿听你差遣。` },

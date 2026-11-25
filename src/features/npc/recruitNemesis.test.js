@@ -66,6 +66,34 @@ describe("WO-23C4 recruitNemesis（deterministic 闭环+幂等）", () => {
     expect(recruitNemesis(stateWith(e, null), { faction: e.faction, entryId: e.id }).logs[0].text).toContain("无恩义往来");
     expect(recruitNemesis(stateWith(e, GOOD), { faction: "雪山派", entryId: "x" }).logs[0].text).toContain("查无此人");
   });
+  it("原势力声誉 deterministic -10、写入再核不重复扣", () => {
+    const e = entry();
+    const st = stateWith(e, GOOD);
+    st.varTree.世界.势力声誉 = { 黑风寨: 30 };
+    const res = recruitNemesis(st, { faction: e.faction, entryId: e.id });
+    const vt = res.changes.varTree(st.varTree);
+    expect(vt.世界.势力声誉.黑风寨).toBe(20);
+    // 写入时状态已翻（重复收服）→ 返回原树，声誉不重复扣
+    const mutated = stateWith(entry({ status: "recruited" }), GOOD).varTree;
+    mutated.世界.势力声誉 = { 黑风寨: 20 };
+    expect(res.changes.varTree(mutated)).toBe(mutated);
+  });
+  it("当前房间同名世界版 NPC 撤下、他人不误伤", () => {
+    const e = entry();
+    const st = stateWith(e, GOOD);
+    const res = recruitNemesis(st, { faction: e.faction, entryId: e.id });
+    const room = { name: "黑风寨", npcs: [{ name: "麻三", id: "x" }, { name: "旁人" }] };
+    const next = res.changes.room(room);
+    expect(next.npcs.map((n) => n.name)).toEqual(["旁人"]);
+  });
+  it("无专属招式的宿敌入队后 moveset 兜底非空（出战位能上阵）", () => {
+    const e = entry();
+    const res = recruitNemesis(stateWith(e, GOOD), { faction: e.faction, entryId: e.id });
+    const cs = res.changes.companionState({});
+    const data = cs[Object.keys(cs)[0]].data;
+    expect(Array.isArray(data.moveset)).toBe(true);
+    expect(data.moveset.length).toBeGreaterThan(0);
+  });
   it("坏账不炸", () => {
     expect(() => recruitNemesis({ varTree: null }, { faction: "x", entryId: "y" })).not.toThrow();
     expect(() => recruitNemesis({}, {})).not.toThrow();
