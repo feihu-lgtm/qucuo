@@ -274,6 +274,22 @@ describe("memory / 已知人物 / 收尾契约", () => {
     expect(state.varTree.世界.已认识人物).toEqual(["在场者"]);
   });
 
+  it("memory 为数组：commitRound 入口统一归一，writeNote/appendDayMaterial/registerFact 拿到的都是字符串", () => {
+    const state = baseState();
+    state.room.npcs = [{ name: "侠客" }];
+    const { deps } = makeDeps(state, { memory: ["片段一", "片段二"] });
+    commitRound(deps);
+    // appendDayMaterial 拿到归一后的字符串
+    expect(state._dayMaterial).toEqual([{ turn: 25, text: "片段一；片段二" }]);
+    // writeNote 拿到的也是字符串而非数组
+    expect(writeNote).toHaveBeenCalledOnce();
+    expect(writeNote.mock.calls[0][0].text).toBe("片段一；片段二");
+    // registerFact 入账不抛错且摘要为字符串
+    const facts = state.varTree.世界.知识领域.事实;
+    const key = Object.keys(facts).find((k) => k.startsWith("turn_25_侠客_"));
+    expect(facts[key].摘要).toBe("片段一；片段二");
+  });
+
   it("无 memory：不写 dayMaterial / 知识领域 / writeNote", () => {
     const state = baseState();
     const { deps } = makeDeps(state, {});

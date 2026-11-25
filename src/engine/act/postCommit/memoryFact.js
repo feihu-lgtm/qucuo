@@ -2,12 +2,20 @@
 // 路线甲纯函数化：返回 { changes, refWrites } 由 commitRound 统一落盘。
 import { registerFact } from "../../../domain/rules/prompt/knowledge.js";
 
+// 单调用 JSON 可能把 memory 吐成数组/对象——所有消费口（writeMemoryNote/
+// appendDayMaterial/registerMemoryFact）共用这一归一，否则数组逐字哈希/拼接
+// 流程会在叙事上屏后抛错，整轮回滚。commitRound 在进 postCommit 链前统一调用。
+export function normalizeMemoryText(memory) {
+  if (!memory) return memory;
+  if (typeof memory === "string") return memory;
+  if (Array.isArray(memory)) return memory.filter(Boolean).join("；");
+  return String(memory);
+}
+
 export function registerMemoryFact({ p, room, activeTarget, isTalk, talkTarget, time, appendDayMaterial }) {
   if (!p.memory) return null;
-  // 单调用 JSON 可能把 memory 吐成数组/对象——入账前一律归一成字符串，
-  // 否则逐字哈希/入账流程会在叙事上屏后抛错，整轮回滚。
   if (typeof p.memory !== "string") {
-    p = { ...p, memory: Array.isArray(p.memory) ? p.memory.filter(Boolean).join("；") : String(p.memory) };
+    p = { ...p, memory: normalizeMemoryText(p.memory) };
     if (!p.memory) return null;
   }
   const roomNpcs = (p.room && Array.isArray(p.room.npcs) ? p.room.npcs : room.npcs) || [];
