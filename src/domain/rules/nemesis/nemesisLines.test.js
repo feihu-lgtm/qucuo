@@ -84,7 +84,7 @@ describe("buildNemesisInjectBlock", () => {
       grudge: 5,
     });
     const block = buildNemesisInjectBlock(mkTree({ e1: e }), ["赫连铸"]);
-    expect(block).toContain("雪山派·tier3");
+    expect(block).toContain("雪山派·第3阶");
     expect(block).toContain("寒潭孤剑");
     expect(block).not.toContain("利刃伤"); // slice(-2) 只带最新两条
     expect(block).toContain("火毒伤");
@@ -94,6 +94,20 @@ describe("buildNemesisInjectBlock", () => {
     const bare = buildNemesisInjectBlock(mkTree({ e1: mkEntry({ epithet: null, grudge: 0 }) }), ["赫连铸"]);
     expect(bare).toContain("尚无绰号");
     expect(bare).not.toContain("小有嫌隙"); // grudge 0 不提
+  });
+  it("结仇原委：有 origin 注入截 18 字，无 origin 不炸不带", () => {
+    const withOrigin = mkEntry({ origin: { turn: 3, place: "雪山派", summary: "你当众折了他的剑叫他颜面扫地从此再也在江湖上抬不起头来" } });
+    const block = buildNemesisInjectBlock(mkTree({ e1: withOrigin }), ["赫连铸"]);
+    expect(block).toContain("结仇原委：你当众折了他的剑叫他颜面扫地从此"); // 18 字截断
+    expect(block).not.toContain("再难抬头");
+    const bare = buildNemesisInjectBlock(mkTree({ e1: mkEntry() }), ["赫连铸"]);
+    expect(bare).not.toContain("结仇原委");
+    // 坏形状 origin 不炸
+    expect(flattenNemeses(mkTree({ e1: mkEntry({ origin: "bad" }) }))[0].origin).toBeNull();
+  });
+  it("缺 id 的条目丢弃", () => {
+    const noId = mkEntry(); delete noId.id;
+    expect(flattenNemeses(mkTree({ e1: noId }))).toEqual([]);
   });
 });
 

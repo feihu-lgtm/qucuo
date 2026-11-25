@@ -44,11 +44,16 @@ function NemesisRow({ entry, zoneTheme }) {
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ color: "var(--text)", fontSize: "var(--fs-sm)" }}>{entry.name}</span>
-        <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)" }}>{entry.faction}·tier{entry.tier}</span>
+        <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)" }}>{entry.faction}·第{entry.tier}阶</span>
         {nemesisStatusLine(entry) && <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)" }}>{nemesisStatusLine(entry)}</span>}
         {grudgeLine && <span style={{ color: "var(--red-soft)", fontSize: "var(--fs-2xs)", marginLeft: "auto" }}>{grudgeLine}</span>}
       </div>
       <div style={{ color: "var(--text)", fontSize: "var(--fs-xs)" }}>{String(entry.epithet || "").trim() || "尚无绰号"}</div>
+      {entry.origin?.summary ? (
+        <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)" }}>
+          结仇原委：{entry.origin.summary}{entry.origin.place ? `（${entry.origin.place}）` : ""}
+        </div>
+      ) : null}
       {scars.length > 0 && (
         <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)" }}>
           旧伤：{scars.map((s) => `${s.kind}${s.note ? `（${String(s.note).slice(0, 12)}）` : ""}`).join("、")}

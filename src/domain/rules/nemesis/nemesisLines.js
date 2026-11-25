@@ -23,7 +23,7 @@ export function flattenNemeses(varTree) {
     const entries = group?.entries;
     if (!entries || typeof entries !== "object") continue;
     for (const [entryKey, entry] of Object.entries(entries)) {
-      if (!entry || typeof entry !== "object" || !entry.name) continue;
+      if (!entry || typeof entry !== "object" || !entry.name || !entry.id) continue;
       out.push({
         entryKey,
         ...entry,
@@ -34,6 +34,10 @@ export function flattenNemeses(varTree) {
         scars: Array.isArray(entry.scars)
           ? entry.scars.filter((s) => s && typeof s === "object" && VALID_KINDS.has(s.kind))
           : [],
+        // 结仇原委（复审契约补）：{turn,place,summary}，无 origin/坏形状兼容为 null 不炸
+        origin: entry.origin && typeof entry.origin === "object" && entry.origin.summary
+          ? { turn: entry.origin.turn ?? null, place: entry.origin.place || "", summary: String(entry.origin.summary) }
+          : null,
       });
     }
   }
@@ -63,11 +67,13 @@ function nemesisLineText(entry) {
   const epithet = String(entry.epithet || "").trim() || "尚无绰号";
   const scars = (entry.scars || []).slice(-2).map((s) => `${s.kind}伤${s.note ? `（${String(s.note).slice(0, 12)}）` : ""}`);
   const grudgeLine = nemesisGrudgeLine(entry.grudge);
+  const originLine = entry.origin?.summary ? `结仇原委：${String(entry.origin.summary).slice(0, 18)}` : "";
   return [
-    `${entry.faction}·tier${entry.tier}`,
+    `${entry.faction}·第${entry.tier}阶`,
     epithet,
     ...(scars.length ? [`旧伤：${scars.join("、")}`] : []),
     ...(grudgeLine ? [grudgeLine] : []),
+    ...(originLine ? [originLine] : []),
   ].join("，");
 }
 
