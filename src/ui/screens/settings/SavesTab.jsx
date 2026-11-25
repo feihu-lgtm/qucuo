@@ -149,7 +149,7 @@ export function StorageDriverSection() {
     <div style={{ ...sectionStyle }} data-testid="storage-driver-section">
       <div style={labelStyle}>存档存储方式</div>
       <div style={{ display: "flex", gap: 8, marginBottom: 6 }}>
-        {[["local", "本地（默认）"], ["cloud", "云端同步"], ["file", "文件备份"]].map(([k, label]) => (
+        {[["local", "本地（默认）"], ["cloud", "云端备份（单向）"], ["file", "文件备份"]].map(([k, label]) => (
           <span key={k} data-testid={`driver-${k}`}
             style={{ ...btnStyle, flex: 1, textAlign: "center", ...(cfg.driver === k ? { color: "var(--gold)", borderColor: "var(--ink-edge-gold)" } : {}) }}
             onClick={() => { setStorageDriver(k); force(); }}
@@ -158,7 +158,7 @@ export function StorageDriverSection() {
       </div>
       <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 8 }}>
         {cfg.driver === "local" && "存档只存在这台设备的浏览器里，离线可玩，换设备请用文件导出。"}
-        {cfg.driver === "cloud" && "本地照存一份，同时排队推送到云服务。断网不丢，恢复后自动补推。云服务器尚未部署（后续工单），当前推送会在后台退避重试。"}
+        {cfg.driver === "cloud" && "本地照存一份，同时排队推送到云服务做备份——这是单向备份：拉取/换设备恢复随后续工单落地。断网不丢，恢复后自动补推。云服务器尚未部署，当前推送会在后台退避重试。「放弃本次推送」只是暂停同步该键，若服务端未回报版本号，下次推送仍可能冲突。"}
         {cfg.driver === "file" && "用上方「导出/导入」按钮手动备份整包（含回忆原文段落）。"}
       </div>
       {cfg.driver === "cloud" && (

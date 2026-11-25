@@ -132,6 +132,40 @@ describe("storageDriver 配置与驱动切换", () => {
     expect(calls.every((c) => !c.force)).toBe(true);
   });
 
+  it("flush 在飞互斥：并发重入返回 busy 不双 flush", async () => {
+    vi.useRealTimers();
+    boundCfg();
+    const calls = [];
+    configureCloudFetch(async (url, init) => { calls.push(init); await new Promise((r) => setTimeout(r, 5)); return { ok: true, status: 200 }; });
+    enqueueCloudPush("autosave", { v: 1 });
+    const [r1, r2] = await Promise.all([flushCloudQueue(), flushCloudQueue()]);
+    expect([r1, r2].some((r) => r.reason === "busy")).toBe(true);
+    expect(calls).toHaveLength(1);
+  });
+
+  it("keep_cloud 带 serverRev 时本地 rev 对齐，下次推送不再必然 409", async () => {
+    vi.useRealTimers();
+    boundCfg();
+    configureCloudFetch(async () => ({ ok: false, status: 409, json: async () => ({ serverRev: 7 }) }));
+    enqueueCloudPush("slot:1", { v: "mine" });
+    await flushCloudQueue();
+    resolveCloudConflict("slot:1", "keep_cloud");
+    expect(getCloudRevs()["slot:1"]).toBe(7);
+  });
+
+  it("del 冲突 keep_local 走 force DELETE 不静默无效", async () => {
+    vi.useRealTimers();
+    boundCfg();
+    const calls = [];
+    configureCloudFetch(async (url, init) => { calls.push({ url, method: init.method }); return { ok: false, status: 409, json: async () => ({}) }; });
+    enqueueCloudPush("slot:1", undefined, "del");
+    await flushCloudQueue();
+    configureCloudFetch(async (url, init) => { calls.push({ url, method: init.method }); return { ok: true, status: 200 }; });
+    resolveCloudConflict("slot:1", "keep_local");
+    await new Promise((r) => setTimeout(r, 20));
+    expect(calls.some((c) => c.method === "DELETE" && c.url.includes("force=1"))).toBe(true);
+  });
+
   it("wipeCloudAll 调 DELETE /saves 并清空本地队列/rev/冲突；未绑定拒绝", async () => {
     const calls = [];
     configureCloudFetch(async (url, init) => { calls.push({ url, method: init.method }); return { ok: true, status: 200 }; });

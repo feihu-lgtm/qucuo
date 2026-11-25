@@ -27,7 +27,13 @@ export function loadStorageConfig() {
       cloudUrl: typeof cfg.cloudUrl === "string" ? cfg.cloudUrl : "",
       deviceId: typeof cfg.deviceId === "string" && cfg.deviceId
         ? cfg.deviceId
-        : (() => { const id = `dev_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`; return id; })(),
+        : (() => {
+          // 设备 id 一旦生成立即持久化——每次现造随机 id 等于每次都换设备，
+          // 服务端按设备判冲突会全乱（二审必修 1）。
+          const id = `dev_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+          try { localStorage.setItem(CONFIG_KEY, JSON.stringify({ ...cfg, deviceId: id })); } catch { /* */ }
+          return id;
+        })(),
       boundAt: cfg.boundAt || null,
     };
   } catch {
@@ -79,10 +85,21 @@ function nextRev(key) {
 let _debounceTimer = null;
 let _retryTimer = null;
 let _retryDelay = 1000;
+// 队列配额（二审必修 3）：快照整份入库体积大，LS 配额有限。封顶 100 条——
+// 超出丢最老并显式 console.warn（不静默），丢条目画面可从队列长度变化观察；
+// _lsWrite 失败同样 warn 不静默。极端体量（全槽位全量快照排长队）的根治
+// 是 flush 时从本地存档现取，留待 WO-20 服务端语义落定后改造。
+const QUEUE_CAP = 100;
 export function enqueueCloudPush(key, value, op = "put") {
   const queue = getCloudQueue().filter((e) => e.key !== key);
   queue.push({ key, op, value: op === "put" ? value : undefined, queuedAt: Date.now() });
-  _lsWrite(QUEUE_KEY, queue);
+  while (queue.length > QUEUE_CAP) {
+    const dropped = queue.shift();
+    console.warn(`[cloud] 推送队列超 ${QUEUE_CAP} 条上限，丢弃最老条目 ${dropped?.key}（该键云端将落后于本地，可手动重新同步）`);
+  }
+  if (!_lsWrite(QUEUE_KEY, queue)) {
+    console.warn("[cloud] 推送队列写 localStorage 失败（配额满？）——本次入队可能丢失，云端将落后于本地");
+  }
   if (_debounceTimer) clearTimeout(_debounceTimer);
   _debounceTimer = setTimeout(() => { void flushCloudQueue(); }, 3000);
   return queue.length;
@@ -90,16 +107,29 @@ export function enqueueCloudPush(key, value, op = "put") {
 
 // 推送：逐条 POST /saves/<key>，body 带 rev。409 → 进冲突登记、不重试不覆盖；
 // 网络/5xx 失败 → 保留队列、指数退避重试（1s 起翻倍，封顶 60s）。
+let _flushing = false;
+// 抹除代次：wipeCloudAll 递增，在飞 flush 逐条核对——服务端已确认删除后再推
+// 新存档等于撤销玩家的抹除确认（复审必修）。
+let _wipeEpoch = 0;
 export async function flushCloudQueue() {
+  // 在飞互斥（二审必修 2）：防抖到期与「立即推送」并发双 flush 会交错递增 rev 乱序。
+  // 重入直接返回——在飞那次 flush 结束时会处理队列里所有条目（含新入队的）。
+  if (_flushing) return { ok: false, reason: "busy" };
+  _flushing = true;
+  try { return await _flushCloudQueueInner(); } finally { _flushing = false; }
+}
+async function _flushCloudQueueInner() {
   if (_retryTimer) { clearTimeout(_retryTimer); _retryTimer = null; }
   const cfg = loadStorageConfig();
   if (!cfg.cloudUrl) return { ok: false, reason: "unbound" };
   let queue = getCloudQueue();
   if (!queue.length) return { ok: true, pushed: 0 };
+  const startEpoch = _wipeEpoch;
   const remaining = [];
   let pushed = 0;
   let failed = false;
   for (const entry of queue) {
+    if (_wipeEpoch !== startEpoch) { failed = false; break; } // 抹除发生：立即停止，剩余条目已被清空不再推
     try {
       const rev = entry.op === "put" ? nextRev(entry.key) : (getCloudRevs()[entry.key] || 0) + 1;
       const res = await doFetch(`${cfg.cloudUrl.replace(/\/$/, "")}/saves/${encodeURIComponent(entry.key)}`, {
@@ -108,9 +138,12 @@ export async function flushCloudQueue() {
         body: entry.op === "put" ? JSON.stringify({ rev, value: entry.value, deviceId: cfg.deviceId }) : undefined,
       });
       if (res.status === 409) {
-        // 冲突：绝不静默覆盖——登记后等玩家显式裁决
+        // 冲突：绝不静默覆盖——登记后等玩家显式裁决。
+        // 尽力读取服务端 rev（WO-20 契约：409 body 可带 serverRev），供 keep_cloud 对齐用。
+        let serverRev = null;
+        try { const j = typeof res.json === "function" ? await res.json() : null; serverRev = j?.serverRev ?? null; } catch { /* 无 body 就算了 */ }
         const conflicts = getCloudConflicts().filter((c) => c.key !== entry.key);
-        conflicts.push({ key: entry.key, rev, queuedAt: entry.queuedAt, detectedAt: Date.now(), op: entry.op, value: entry.value });
+        conflicts.push({ key: entry.key, rev, serverRev, queuedAt: entry.queuedAt, detectedAt: Date.now(), op: entry.op, value: entry.value });
         _lsWrite(CONFLICTS_KEY, conflicts);
         pushed += 1; // 出队——它不是失败，是待裁决
         continue;
@@ -123,8 +156,13 @@ export async function flushCloudQueue() {
       failed = true;
     }
   }
-  _lsWrite(QUEUE_KEY, remaining);
-  if (failed && remaining.length) {
+  // 合并写回（复审必修）：flush 期间玩家可能又存档——整队覆盖会把新条目抹掉。
+  // 只按 key+queuedAt 身份移除本批已推送/已登记的条目，其余（新入队/失败）全保留。
+  const doneIds = new Set(queue.filter((e) => !remaining.includes(e)).map((e) => `${e.key}@${e.queuedAt}`));
+  const merged = getCloudQueue().filter((e) => !doneIds.has(`${e.key}@${e.queuedAt}`));
+  for (const e of remaining) if (!merged.some((m) => m.key === e.key && m.queuedAt === e.queuedAt)) merged.push(e);
+  _lsWrite(QUEUE_KEY, merged);
+  if (failed && merged.length) {
     _retryTimer = setTimeout(() => { void flushCloudQueue(); }, _retryDelay);
     _retryDelay = Math.min(_retryDelay * 2, 60000);
   } else {
@@ -140,8 +178,28 @@ export function resolveCloudConflict(key, choice) {
   const hit = conflicts.find((c) => c.key === key);
   _lsWrite(CONFLICTS_KEY, conflicts.filter((c) => c.key !== key));
   if (!hit) return false;
-  if (choice === "keep_local" && hit.op === "put") {
-    enqueueCloudForcePush(key, hit.value);
+  if (choice === "keep_local") {
+    if (hit.op === "put") {
+      enqueueCloudForcePush(key, hit.value);
+    } else if (hit.op === "del") {
+      // del 冲突的 keep_local：force DELETE（二审必修 5）——不再是静默无效选项
+      const cfg = loadStorageConfig();
+      if (cfg.cloudUrl) {
+        const rev = nextRev(key);
+        void Promise.resolve(doFetch(`${cfg.cloudUrl.replace(/\/$/, "")}/saves/${encodeURIComponent(key)}?force=1&rev=${rev}`, {
+          method: "DELETE", headers: { "X-Device-Id": cfg.deviceId },
+        })).catch(() => enqueueCloudPush(key, undefined, "del"));
+      }
+    }
+  } else if (choice === "keep_cloud") {
+    // rev 对齐（二审必修 4）：把本地 rev 对齐到服务端 rev，下次推送用 serverRev+1
+    // 不再必然 409。服务端未上报 serverRev 时无法对齐——UI 文案需说明这只是暂停
+    // 同步、下次推送仍可能冲突（见 SavesTab）。
+    if (Number.isFinite(hit.serverRev)) {
+      const revs = getCloudRevs();
+      revs[key] = hit.serverRev;
+      _lsWrite(REVS_KEY, revs);
+    }
   }
   return true;
 }
@@ -172,6 +230,7 @@ export async function wipeCloudAll() {
       headers: { "X-Device-Id": cfg.deviceId },
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    _wipeEpoch += 1; // 服务端确认删除后才翻代——在飞 flush 即刻停推
     _lsWrite(QUEUE_KEY, []);
     _lsWrite(REVS_KEY, {});
     _lsWrite(CONFLICTS_KEY, []);
@@ -188,6 +247,16 @@ export function mirrorSaveWrite(key, value) {
 }
 export function mirrorSaveRemove(key) {
   if (getStorageDriver() === "cloud") enqueueCloudPush(key, undefined, "del");
+}
+
+// 刷新恢复（复审必修）：重载页面后没有新写就不会有 flush——滞留队列永远卡住。
+// 模块加载时若 cloud 档且队列非空，延迟一拍自动补推（等 LS/环境就绪，避免与启动竞态）。
+if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+  setTimeout(() => {
+    try {
+      if (getStorageDriver() === "cloud" && getCloudQueue().length) void flushCloudQueue();
+    } catch { /* 增量层静默 */ }
+  }, 3500);
 }
 
 // 测试复位
