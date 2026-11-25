@@ -51,6 +51,38 @@ describe("materializeFacts 十二律覆盖矩阵", () => {
     expect(out.changes.inv.some((e) => e.name === "无名残页")).toBe(true);
   });
 
+  // WO-24F：编译缺失兜底物并入 statsForQuality 系统表数值
+  it("GRANT_ITEM 兜底 weapon 有 atk>0、armor 有 def>0", () => {
+    const sword = materializeFacts(baseState(), [{ id: "Fw", op: "GRANT_ITEM", itemName: "无名铁剑", category: "weapon", quality: "白" }], {});
+    const blade = sword.changes.inv.find((e) => e.name === "无名铁剑");
+    expect(blade.atk).toBeGreaterThan(0);
+    const armor = materializeFacts(baseState(), [{ id: "Fa", op: "GRANT_ITEM", itemName: "无名皮甲", category: "armor", quality: "白" }], {});
+    expect(armor.changes.inv.find((e) => e.name === "无名皮甲").def).toBeGreaterThan(0);
+  });
+
+  it("GRANT_ITEM 兜底 misc 不强行加攻防", () => {
+    const out = materializeFacts(baseState(), [{ id: "Fm", op: "GRANT_ITEM", itemName: "无名残页", category: "misc", quality: "白" }], {});
+    const page = out.changes.inv.find((e) => e.name === "无名残页");
+    expect(page.atk).toBeUndefined();
+    expect(page.def).toBeUndefined();
+  });
+
+  it("GRANT_ITEM 兜底品质变数值变", () => {
+    const white = materializeFacts(baseState(), [{ id: "F1", op: "GRANT_ITEM", itemName: "剑", category: "weapon", quality: "白" }], {});
+    const blue = materializeFacts(baseState(), [{ id: "F2", op: "GRANT_ITEM", itemName: "剑", category: "weapon", quality: "蓝" }], {});
+    const atkW = white.changes.inv.find((e) => e.name === "剑").atk;
+    const atkB = blue.changes.inv.find((e) => e.name === "剑").atk;
+    expect(atkB).toBeGreaterThan(atkW);
+  });
+
+  it("GRANT_ITEM 外部传入 atk/def 不能覆盖系统表", () => {
+    const out = materializeFacts(baseState(), [{ id: "Fx", op: "GRANT_ITEM", itemName: "铁剑", category: "weapon", quality: "白", atk: 999, def: 999 }], {});
+    const blade = out.changes.inv.find((e) => e.name === "铁剑");
+    expect(blade.atk).not.toBe(999);
+    expect(blade.def).not.toBe(999);
+    expect(blade.atk).toBeGreaterThan(0);
+  });
+
   it("TRANSFER_ITEM：NPC → 玩家，源头条目置 dropped:true 留档", () => {
     const out = materializeFacts(baseState(), [
       { id: "F2", op: "TRANSFER_ITEM", itemId: "it_whistle", from: "才旦", to: "player" },

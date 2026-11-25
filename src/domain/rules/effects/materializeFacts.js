@@ -131,7 +131,16 @@ export function materializeFacts(state, facts, compiledWarrants) {
           // GRANT 是新生一件，必须另 mint，否则后续 transfer/reforge 寻址错配
           const collision = supplied ? locateItem({ ...state, inv, room }, supplied, null) : null;
           const id = (supplied && !collision) ? supplied : mintItemId(fact.itemName, turn, seq);
-          item = { id, name: fact.itemName, category: fact.category || "misc", quality: fact.quality || "白", desc: fact.desc || "来历成谜的物件（编译缺失兜底）" };
+          // WO-24F 兜底装备基础数值最小修：并入唯一确定性表 statsForQuality——
+          // weapon 有 atk/armor 有 def/misc 自然空。spread 在最后：事实字段（含外部
+          // 传入的 atk/def）不得覆盖系统表数值，品阶升降数值随表变。
+          const fallbackCategory = fact.category || "misc";
+          const fallbackQuality = fact.quality || "白";
+          item = {
+            id, name: fact.itemName, category: fallbackCategory, quality: fallbackQuality,
+            desc: fact.desc || "来历成谜的物件（编译缺失兜底）",
+            ...statsForQuality(fallbackCategory, fallbackQuality),
+          };
         }
         if (inv.some((e) => e && e.id && e.id === item.id)) break; // 幂等：同 id 不重复入袋
         inv.push({ ...item });
