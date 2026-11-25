@@ -137,7 +137,10 @@ export function formatReleaseGateMarkdown({ epoch = "default", shadowAgg = null,
     if (cats.length) {
       parts.push("", "| 类目 | single_only(漏判) | judge_only(会判) | both_diff |", "|---|---:|---:|---:|");
       for (const [cat, c] of cats) {
-        parts.push(`| ${cat} | ${c.single_only || 0} | ${c.judge_only || 0} | ${c.both_diff || 0} |`);
+        // WO-16D-M2：quest 类目 reference-only——状态驱动推进归因不可靠，
+        // 不计入 gaps 缺口汇总，表中标注人工甄别；数值类目混合方向见 Trace 逐 sub 明细。
+        const label = cat === "quest" ? `${cat}（参考·不计入缺口）` : cat;
+        parts.push(`| ${label} | ${c.single_only || 0} | ${c.judge_only || 0} | ${c.both_diff || 0} |`);
       }
     }
   }
