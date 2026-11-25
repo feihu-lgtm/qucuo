@@ -26,7 +26,8 @@ function runOne(action) {
     return { kind: action?.kind, ok: false, text: `「${itemLabel || "未名之物"}」未能如愿：行动缺少明确的物件，系统未结算。` };
   }
   const state = gameStore.getState();
-  const step = { kind, item: itemLabel, target: action.target, text: action.text || "" };
+  // itemId 随步骤传递——stepEffect 按 id 优先寻址，同名两件不错副本
+  const step = { kind, item: itemLabel, itemId: action.itemId || "", target: action.target, text: action.text || "" };
   const result = stepEffect(state, step);
   const ok = !!(result && result.changes && Object.keys(result.changes).length > 0);
   if (result && (result.changes || result.logs?.length)) {

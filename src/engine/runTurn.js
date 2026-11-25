@@ -313,7 +313,21 @@ async function runTurnSteps(ctx, cmd, opts) {
       // 照写系统已发生事实，找不到物件/结算失败的绝不许写成成功。
       // 群聊回合根本不激活判官（上方闸门），settle/GM/单调用不受影响；
       // executor 缺失（测试/直调）时只 trace 不签成功。
-      const judgeRoutes = (intakeResult.actions || []).filter((a) => ["equip", "use_item", "take"].includes(a?.kind));
+      // 路由只执行判官当前允许机械结算的【无前提】动作：
+      // ① condition≠「无」的动作一律暂不路由——「要是没人我就捡起钥匙」不能无视前提
+      //    立刻捡，前提裁决属 WO-16F 真条件规则，此处 trace/note 留痕不抢跑（G1 interim 口径）；
+      // ② isTalk（判官 talkOnly 口径）下三类硬路由一律不执行——纯搭话回合判官白名单
+      //    本就禁止硬事实，intake 误产/混产也不能落地。
+      const ROUTEABLE = ["equip", "use_item", "take"];
+      const routeCandidates = (intakeResult.actions || []).filter((a) => ROUTEABLE.includes(a?.kind));
+      const conditioned = routeCandidates.filter((a) => a?.condition && a.condition !== "无");
+      if (conditioned.length) {
+        trace("判官管线", "skip", `前提未裁，暂不路由 ${conditioned.length} 条：${conditioned.map((a) => `${a.kind}:${a.item}`).join("、")}（待 WO-16F 真条件裁决）`);
+      }
+      const judgeRoutes = isTalk ? [] : routeCandidates.filter((a) => !(a?.condition && a.condition !== "无"));
+      if (isTalk && routeCandidates.length) {
+        trace("判官管线", "skip", `talkOnly 回合禁止硬事实，${routeCandidates.length} 条 equip/use_item/take 不路由`);
+      }
       if (judgeRoutes.length) {
         if (typeof ctx.executeJudgeRoutes === "function") {
           try {
