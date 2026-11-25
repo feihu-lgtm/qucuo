@@ -17,11 +17,13 @@ import { parseQuestPlace, questPlaceDistrict } from "../quests/questPlace.js";
 // 如元朵朵）、与 OC 同名的驻场条目（姬无双/樊未离——数据里同一人被收编后驻场壳也要撤）都算。
 // WO-23C4：已被招抚的宿敌（谱中 status==="recruited"）世界版不再注入——
 // 人已是 companion，驻场/游走池再刷会分身。按名字唯一惯例匹配，与 removeNpc 同口径。
+// WO-23C2b 泛化：recruited/fakeDead/dead 不刷世界版（招抚分身/假死复活前活人站位都防）。
+// settled（恩怨已了结）不在过滤之列——了结后回归常人，驻场/游走池照常。
 export function recruitedNemesisNames(varTree) {
   const out = new Set();
   for (const group of Object.values(varTree?.世界?.宿敌谱 || {})) {
     for (const e of Object.values(group?.entries || {})) {
-      if (e && e.status === "recruited" && e.name) out.add(e.name);
+      if (e && e.name && ["recruited", "fakeDead", "dead"].includes(e.status)) out.add(e.name);
     }
   }
   return out;

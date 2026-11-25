@@ -238,10 +238,19 @@ export function settleNpcDuel(state, npc, {
       const roll = rollFakeDead({ turn: state.time || 0, npcName: npc.name, faction: faction0 });
       deathMark = roll.entersPool ? "fakeDead" : "dead";
       if (roll.entersPool) {
+        // 重逢账身份：faction+entryId 入簿，dueReturns 按势力+entry 精确重逢不串同名
+        const activeEntry = findNemesisEntry(rosterPre, faction0, npc.name);
         bookNext = {
           ...bookNext,
-          [npc.name]: { ...bookNext[npc.name], fakeDead: true, fakeDeadAt: state.time || 0, returnAfterDay: roll.returnAfterDay },
+          [npc.name]: {
+            ...bookNext[npc.name], fakeDead: true, fakeDeadAt: state.time || 0,
+            returnAfterDay: roll.returnAfterDay, faction: faction0, entryId: activeEntry?.id || "",
+          },
         };
+      } else {
+        // dead 同样带身份（账实一致，重逢池只认 fakeDead 但簿上留精确身份）
+        const activeEntry = findNemesisEntry(rosterPre, faction0, npc.name);
+        bookNext = { ...bookNext, [npc.name]: { ...bookNext[npc.name], faction: faction0, entryId: activeEntry?.id || "" } };
       }
     }
     if (verdict && bookNext) {
@@ -256,12 +265,25 @@ export function settleNpcDuel(state, npc, {
         }
         return { ...(prev || {}), 世界: world };
       });
+      // 死亡表象口径：置谱（fakeDead/dead）后玩家看到的必须是「死了」——
+      // 气绝/一动不动，假死前提才成立；非候选普通 dying 仍是气若游丝（或可救治）。
+      // 「假死」二字绝不进文案。
+      const facade = deathMark
+        ? `  ${npc.name}倒在血泊里，一动不动——气绝了。`
+        : `  ${npc.name}倒在血泊里，气若游丝——生死战的账，不是切磋能比的。`;
       logs.push({
         t: "sys",
         text: verdict.status === "spared"
           ? `  你收住杀招——${npc.name}捡回一条命，踉跄退开。`
-          : `  ${npc.name}倒在血泊里，气若游丝——生死战的账，不是切磋能比的。`,
+          : facade,
       });
+      // 世界版撤下：置谱（fakeDead/dead）的同名 NPC 当场退出房间，不能活人说笑
+      if (deathMark && Array.isArray(working.room?.npcs)) {
+        addChange(changes, working, "room", (prev) => ({
+          ...(prev || {}),
+          npcs: (prev?.npcs || []).filter((n) => n?.name !== npc.name),
+        }));
+      }
     }
   }
 
