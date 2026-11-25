@@ -1,7 +1,5 @@
 import { callMainOnce } from "./act/actCall.js";
 import { parseMainResponse } from "./act/parseResponse.js";
-import { buildExtractionCfg, normalizeDuelRequest } from "../domain/rules/prompt/extractionEngine.js";
-import { callExtraction } from "./ports/extraction.js";
 import { step as traceStep } from "../infra/actionTrace.js";
 import { PHASE, turnMonitor } from "../infra/turnMonitor.js";
 import { runKnowledgeTurn, runRecall } from "./act/memoryLayer.js";
@@ -10,9 +8,7 @@ import { buildHistBlock, histBlockSavings } from "../domain/rules/memory/histWin
 import { bindTurnAi, createWebAi } from "./ports/ai.js";
 import { assemblePrompt } from "./prompt/assemblePrompt.js";
 import { getApiModel } from "../content/apiModel.js";
-import { filterPlanDelta, filterRejectedEffects, planExtractionNote } from "../domain/rules/intent/planNotes.js";
-import { SOFT_SETTLE_KINDS } from "../domain/rules/settle/softRules.js";
-import { UNKNOWN_CHOICE } from "../domain/rules/settle/judge.js";
+import { filterPlanDelta, filterRejectedEffects } from "../domain/rules/intent/planNotes.js";
 import { classifyError } from "../utils/apiErrors.js";
 import { withAI } from "./ports/withAI.js";
 import { judgeTurn } from "../domain/rules/judge/judgeTurn.js";
@@ -20,6 +16,7 @@ import { renderJudgeVerdict, renderCausalBudget } from "../domain/rules/judge/ju
 import { buildIntakeUserContent, normalizeIntakeResult } from "./turn/intakeTurn.js";
 import { verifySealAndMaterialize } from "../domain/rules/effects/sealVerifier.js";
 import { random } from "../utils/rng.js";
+import { getPresentNpcs } from "../domain/rules/prompt/promptRefs.js";
 
 const MAX_AUTO_RETRY = 2;
 
@@ -166,7 +163,6 @@ async function runTurnSteps(ctx, cmd, opts) {
     room: ctx.prompt?.room ?? baseDeps.room,
     activeTarget: ctx.prompt?.activeTarget ?? baseDeps.activeTarget,
     talkTarget: ctx.prompt?.talkTarget ?? ctx.prompt?.recall?.talkTarget ?? baseDeps.talkTarget,
-    softSettle: opts.softSettle,
     cmd,
     ai,
   };
@@ -180,8 +176,9 @@ async function runTurnSteps(ctx, cmd, opts) {
   let judgeVerdict = null;
   // 闸门：① 单调用 JSON 模式的输出契约是纯 JSON，锚点+SEAL 的散文指令会让模型
   // 丢 JSON 骨架，故只在双调用叙事（extractionEnabled）模式激活；
-  // ② settle 回合（赠礼/赔罪/求教等）状态已由系统/软结算裁决落账，
-  // 判官再裁一次会重复加好感——settle 回合不激活；
+  // ② settle 回合（赠礼/赔罪/求教等）状态在进叙事前已由 feature 层硬结算落账
+  // （giftNpc/learnNpcSkill/inviteCompanion 先扣先写），判官再裁会双重结算——
+  // settle 回合不激活；待后续工单把前置硬写改成「事实请求先裁后落」才可开放。
   // ③ 纯搭话回合不发生任何动作（搭话免费、不动状态），判官收礼会越权搬背包。
   if (deps.apiCfg?.judgePipelineEnabled && deps.apiCfg?.extractionEnabled && !isSettle && !isTalk) {
     try {
@@ -217,6 +214,42 @@ async function runTurnSteps(ctx, cmd, opts) {
       trace("判官管线", "fail", `前哨听意异常降级：${error?.message || error}`);
     }
   }
+  // ── WO-15 窄过渡：赔罪（appease）开庭前仲裁 ──
+  // 旧 settleTurn 在叙事前跑就是为了把裁定注入叙事——正文必须与系统落账同向，
+  // 否则会出现"正文写已消气但系统零写入"的穿帮。裁定结果经 deps.appeaseVerdict
+  // 流入 buildSysBase 的 settle 叙事铁律。玩家原话优先取 settleOptions.attempt
+  // （按钮/路由生成的 cmd 是模板句，无法判断诚意）。
+  let appeaseVerdict = null;
+  if (apiCfg.extractionEnabled && isSettle && opts.settleKind === "appease" && opts.settleNpc) {
+    const npcName = typeof opts.settleNpc === "string" ? opts.settleNpc : opts.settleNpc?.name || "";
+    const npcState = (deps.varTree?.角色 || ctx.memory?.varTreeLatest?.角色 || {})[npcName] || {};
+    const anger = npcState.生气状态 || {};
+    try {
+      const appeaseRes = await withAI(
+        "turn.appease",
+        {
+          cfg: deps.apiCfg,
+          npc: npcName,
+          reason: anger.reason || "",
+          attemptText: opts.attempt || cmd,
+          attemptKind: "求和赔罪",
+          personality: npcState.性情 || "",
+          affection: npcState.好感度,
+        },
+        { ai, apiCfg: deps.apiCfg, throwOnError: false },
+      );
+      if (ctx.isStale?.()) return { stale: true };
+      const choice = appeaseRes?.data?.choice;
+      appeaseVerdict = { choice, npc: npcName };
+      if (choice === "奏效") trace("赔罪仲裁", "pass", `${npcName}消了气（系统落账：生气解除+好感+3）`);
+      else trace("赔罪仲裁", "skip", `${npcName}未消气（${choice || "判不了"}），本轮零写入`);
+    } catch (error) {
+      trace("赔罪仲裁", "fail", `裁决异常：${error?.message || error}，本轮零写入`);
+      appeaseVerdict = { choice: null, npc: npcName };
+    }
+    deps.appeaseVerdict = appeaseVerdict;
+  }
+
   let rawFull = "";
   let sealParts = null;
   let p = {};
@@ -226,8 +259,6 @@ async function runTurnSteps(ctx, cmd, opts) {
   let pickupExtractionFailed = false;
 
   if (apiCfg.extractionEnabled) {
-    const extractionSpecKey = deps.isTalk ? "TALK_CASUAL" : deps.intent.code;
-    const extractionCfg = buildExtractionCfg(extractionSpecKey, apiCfg);
     let mainFinishReason;
     for (let attempt = 1; attempt <= MAX_AUTO_RETRY + 1; attempt++) {
       try {
@@ -273,51 +304,17 @@ async function runTurnSteps(ctx, cmd, opts) {
       addLog([{ t: "sys", text: "  ⚠ 本轮叙事被接口中途截断（撞到输出 token 上限），以上是已收到的部分。提取层只能按这段残文结算状态，本轮状态可能不全。" }]);
     }
 
-    // settle 回合的状态已由系统/软结算裁决并落账，提取层只对自由行动/闲聊等未裁决回合补漏。
-    // 例外：软种类（赔罪/赠礼/邀同行/求教）在软结算被关掉或没裁出结果时，叙事里没有裁决，
-    // 提取层仍是兜底裁决者——否则道歉消不了气、送礼学艺不结算。
-    const settleDecided = isSettle && (
-      !SOFT_SETTLE_KINDS.has(opts.settleKind)
-      || (opts.softSettle && opts.softSettle.choice !== UNKNOWN_CHOICE)
-    );
-    if (settleDecided) {
-      trace("提取调用", "skip", "settle 回合由系统结算接管状态，跳过提取");
-    } else {
-      const extractionState = createExtractionState(ctx, deps);
-      const settleOptions = (opts.settleKind && opts.settleNpc)
-        ? {
-          settleKind: opts.settleKind,
-          settleNpc: opts.settleNpc,
-          giftInfo: opts.giftInfo,
-          learnInfo: opts.learnInfo,
-          settleBeast: !!opts.settleBeast,
-        }
-        : null;
-      const extracted = await callExtraction(
-        extractionSpecKey,
-        rawFull + planExtractionNote(deps.intentPlan),
-        extractionState,
-        apiCfg,
-        settleOptions,
-        deps.ai,
-        onPromptRefMissing,
-      ).catch((error) => {
-        if (!ctx.isStale?.()) {
-          addLog([{ t: "sys", text: `  ⚠ 提取层调用失败（${error.message || error}），本轮状态未更新` }]);
-          trace("提取调用", "fail", `提取模型=${extractionCfg.model || "未设置"}调用异常：${error.message || error}，本轮状态未更新`);
-        }
-        return null;
-      });
-      if (ctx.isStale?.()) return { stale: true };
-      pickupExtractionFailed = !extracted || !!extracted.parseFailed;
-      if (extracted?.parseFailed) {
-        addLog([{ t: "sys", text: "  ⚠ 提取层返回的不是合法JSON（可能被截断或模型没按格式输出），本轮状态未更新" }]);
-        trace("提取调用", "fail", `返回内容无法解析（提取模型=${extractionCfg.model || "未设置"}），本轮状态未更新`);
-      } else if (extracted) {
-        trace("提取调用", "pass", `状态提取完成（提取模型=${extractionCfg.model || "未设置"}${settleOptions ? `·${settleOptions.settleKind}专属spec` : ""}）`);
-      }
-      p = filterPlanDelta(extracted?.p || {}, deps.intentPlan);
-      mvuCommands = filterRejectedEffects(extracted?.mvuCommands || [], deps.intentPlan);
+    // WO-15：独立提取层已整块删除。双调用模式下自由行动状态只来自判官管线的
+    // materializeFacts 落账（尾章校对段），不再二次提取；settle 回合靠 feature 前置硬结算。
+    p = {};
+    mvuCommands = [];
+
+    // WO-15 窄过渡：赔罪裁定在开庭前已完成（见上），这里只按定案落系统 mvu。
+    if (appeaseVerdict?.choice === "奏效") {
+      mvuCommands = [
+        { op: "set", path: `角色.${appeaseVerdict.npc}.生气解除`, value: true },
+        { op: "add", path: `角色.${appeaseVerdict.npc}.好感度`, value: 3 },
+      ];
     }
   } else {
     for (let attempt = 1; attempt <= MAX_AUTO_RETRY + 1; attempt++) {
@@ -428,4 +425,17 @@ async function runTurnSteps(ctx, cmd, opts) {
     newConvo,
     judgeEffects,
   };
+}
+
+// WO-15：normalizeDuelRequest 自 extractionEngine 内联——单调用 JSON 模式的
+// duelRequest 名字解析回在场 NPC 对象（双调用判官管线不经此路）。
+function normalizeDuelRequest(parsed, state = {}) {
+  if (!parsed || typeof parsed !== "object" || parsed.duelRequest == null) return parsed;
+  const raw = parsed.duelRequest;
+  let name = "";
+  if (typeof raw === "string") name = raw.trim();
+  else if (typeof raw?.name === "string") name = raw.name.trim();
+  const npc = getPresentNpcs(state).find((candidate) => candidate.name === name);
+  if (npc) parsed.duelRequest = npc; else delete parsed.duelRequest;
+  return parsed;
 }

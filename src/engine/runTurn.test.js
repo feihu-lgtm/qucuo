@@ -60,38 +60,6 @@ function createPlayTurnContext(ai, commitRound) {
   return ctx;
 }
 
-describe("soft-settled appease MVU protection", () => {
-  it("drops narrator anger and affection writes and traces the system decision", () => {
-    const noop = vi.fn();
-    const trace = startTrace("soft-settle-filter");
-    const refs = Object.fromEntries("outerDepartRef pendDirRef pickupJudgmentRef pickupExtractionFailedRef collectGrantedRef dayMaterialRef roundsSinceLastSaveRef playedThisSessionRef".split(" ").map((key) => [key, { current: null }]));
-    refs.collectGrantedRef.current = [];
-    refs.dayMaterialRef.current = [];
-    const deps = new Proxy({
-      p: { output: ["叙事"], delta: {} }, rawFull: "叙事",
-      mvuCommands: [{ op: "add", path: "角色.八云.好感度", value: 5 }, { op: "set", path: "角色.八云.生气解除", value: true }, { op: "set", path: "角色.八云.生气状态.active", value: false }, { op: "add", path: "角色.阿旺.好感度", value: 1 }],
-      softSettle: { target: "八云", choice: "未奏效" },
-      room: { name: "鱼定村", npcs: [{ name: "八云" }, { name: "阿旺" }], items: [] },
-      varTreeRef: { current: { 角色: { 八云: {}, 阿旺: {} } } },
-      roomMapRef: { current: {} }, gambleTalkCtx: { current: null }, ...refs,
-      addLog: noop, setVarTree: noop, setTime: noop, setConvo: noop, _trace: trace,
-      char: { name: "主角", special: { 气运: 5 } }, isTalk: false, gm: false,
-      time: 1, questProgress: {}, newConvo: [],
-    }, {
-      get(target, key) {
-        if (key in target) return target[key];
-        return String(key).startsWith("set") ? noop : undefined;
-      },
-    });
-    Object.assign(deps, refAccessors(deps));
-
-    commitRound(deps);
-
-    expect(deps.mvuCommands).toEqual([{ op: "add", path: "角色.阿旺.好感度", value: 1 }]);
-    expect(trace.nodes.some(({ label, status, detail }) => label === "MVU裁决" && status === "block" && detail.includes("已由系统结算"))).toBe(true);
-  });
-});
-
 describe("stale turn handling", () => {
   it("does not commit an AI response after turn invalidation", async () => {
     let releaseResponse;

@@ -2,7 +2,6 @@
 import "../../domain/rules/prompt/calls/unifiedCalls.js";
 import "../../domain/rules/prompt/calls/domainCalls.js";
 import "../../domain/rules/prompt/calls/sideCalls.js";
-import "../../domain/rules/settle/judge.js";
 import "../../domain/rules/memory/bookkeep.js";
 import "../../engine/ports/storyteller.js";
 import "../../engine/ports/cardScan/scanCalls.js";

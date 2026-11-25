@@ -4,7 +4,6 @@ import {
   STATIC_TEXT_KEYS, schemaKeyFor, giftSettleLawExample, giftNarrativeLawExample,
 } from "../../domain/rules/prompt/injectionBlocks.js";
 import * as ENGINE from "../../domain/rules/prompt/enginePrompts.js";
-import { buildExtractionSpecExample } from "../../domain/rules/prompt/extractionEngine.js";
 import { getTraceLog } from "../../infra/actionTrace.js";
 import { getPositionMeta } from "../../domain/rules/prompt/tavernMapping.js";
 import {
@@ -83,7 +82,6 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
     if (b.id === "catalog") return ENGINE.CATALOG_TAIL;
     if (b.id === "gift_settle_law") return giftSettleLawExample();
     if (b.id === "gift_narrative_law") return giftNarrativeLawExample();
-    if (b.id === "extraction_call") return buildExtractionSpecExample(v.intent || "UNKNOWN", v.settleKind || null);
     return null;
   };
 

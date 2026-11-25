@@ -316,7 +316,7 @@ export const DEFAULT_CALL_TOKEN_LIMITS = {
   pigeonReply:    3000,  // 飞鸽回信书信体（MudRPG 飞鸽回信）
   inspect:        4000,  // 查看物品/武学介绍（MudRPG inspect 缓存）
   persuasion:     2000,  // 说服台词（persuasion.js）
-  extraction:     2000,  // 意图/方位抽取（extractionEngine.js）
+  extraction:     2000,  // 结构化小调用（记忆召回/前哨听意等）
   knowledge:      2000,  // 事实抽取（knowledge.js）
   daySummary:     2000,  // 日总结（大纸条）后台归纳（memory/daySummary.js）
   direction:       200,  // 方位单字判定（qucuoMap.js，本只答一个字，默认给小但可调大）

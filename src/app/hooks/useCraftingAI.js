@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { setGambleSession } from "../../store/sessionUiStore.js";
-import { forgeDesign } from "../../engine/ports/extraction.js";
+import { forgeDesign } from "../../engine/ports/forgeDesign.js";
 import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
 import { createWebAi } from "../../engine/ports/ai.js";
 import { withAI } from "../../engine/ports/withAI.js";

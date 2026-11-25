@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resetPromptRegistryForTest } from "../registry.js";
 import { createMockAi } from "../../../../engine/ports/ai.js";
 import { withAI } from "../../../../engine/ports/withAI.js";
-import { buildExtractionCfg } from "../extractionEngine.js";
+import { buildExtractionCfg } from "../structuredCallCfg.js";
 import { registerDomainCalls } from "./domainCalls.js";
 
 const LEGACY_FORGE_WHITELIST = `

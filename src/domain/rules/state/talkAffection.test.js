@@ -3,7 +3,6 @@
 // 这里验的是裁决层对三类输入形态的处理。
 import { describe, it, expect } from "vitest";
 import { applyWrite, add } from "./applyWrite.js";
-import { EXTRACTION_SPECS } from "../prompt/extractionSpecs.js";
 
 const TALK_OPTS = { source: "mvu", talkRange: [-5, 8], charm: 5, time: 0 };
 const vt = (favor = 50) => ({ 角色: { 阿妙: { 好感度: favor }, 铁伯: { 好感度: 10 } } });
@@ -59,10 +58,7 @@ describe("聊天好感裁决 · clamp 与跳过", () => {
 });
 
 describe("裁决细节 · Review 修复", () => {
-  it("玩家原话里的 @xxx 不被当占位符吃掉", () => {
-    const prompt = EXTRACTION_SPECS.TALK_CASUAL.user("叙事", { room: { npcs: [] }, varTree: {}, cmd: "我问 @阿妙 在吗" }, null, (t) => t);
-    expect(prompt).toContain("玩家这轮说的话：我问 @阿妙 在吗");
-  });
+
   it("_.set 半分扣减不被吃掉（留守衰减留下 .5）", () => {
     const tree = { 角色: { 阿妙: { 好感度: 50.5 } } };
     const r = applyWrite({ varTree: tree }, { op: "set", path: "角色.阿妙.好感度", value: 50 }, TALK_OPTS);
@@ -71,29 +67,3 @@ describe("裁决细节 · Review 修复", () => {
   });
 });
 
-describe("TALK_CASUAL spec · 性情进上下文", () => {
-  const state = {
-    varTree: { 角色: { 阿妙: { 好感度: 50 }, 铁伯: { 好感度: 0 } } },
-    room: {
-      name: "茶肆", npcs: [
-        { name: "阿妙", personality: "冷傲寡语", intimacy: { threshold: 70, style: "内敛" } },
-        { name: "铁伯", intimacy: { forbidden: true } },
-        { name: "雪豹", beast: true },
-      ],
-    },
-  };
-  it("在场者性情与界限注入提取提示", () => {
-    const prompt = EXTRACTION_SPECS.TALK_CASUAL.user("你在跟阿妙说话", state, null, (t) => t);
-    expect(prompt).toContain("在场者性情与界限");
-    expect(prompt).toContain("冷傲寡语");
-    expect(prompt).toContain("好感界限 70");
-    expect(prompt).toContain("铁伯：不通人情");
-    expect(prompt).toContain("雪豹：不通人情");
-    expect(prompt).toContain("-5~+8");
-  });
-  it("无在场者提示词照常渲染", () => {
-    const prompt = EXTRACTION_SPECS.TALK_CASUAL.user("narrative", { room: { npcs: [] }, varTree: {} }, null, (t) => t);
-    expect(prompt).toContain("当前 NPC 关系");
-    expect(prompt).not.toContain("在场者性情与界限");
-  });
-});

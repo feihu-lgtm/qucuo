@@ -14,7 +14,6 @@ import { loadConfig, callModel, hasApiCredentials, API_TYPES } from "../engine/p
 import { describeInnerArrival } from "../domain/rules/map/mapNarration.js";
 import { resolveInnerExit } from "../domain/rules/map/innerMap.js";
 import { extractMvuBlock, applyMvuCommands, initialVarTree } from "../domain/rules/prompt/mvu.js";
-import { callExtraction } from "../engine/ports/extraction.js";
 
 const redact = (k) => (k ? `***${String(k).slice(-4)}` : "(空)");
 const describeCredentials = cfg => cfg.apiType === API_TYPES.VERTEX ? "ADC 已导入" : `key ${redact(cfg.apiKey)}`;
@@ -78,27 +77,6 @@ export default function DebugConsole() {
     setBusy(false);
   }
 
-  // ── 调 AI：callExtraction 叙事→状态 ──
-  async function runExtract() {
-    const c = loadConfig();
-    log("========== 叙事→状态 · callExtraction ==========");
-    if (!hasApiCredentials(c)) { log("⚠ 未配置 API 凭证。去游戏 ⚙设置 里配置，再点上方「重载配置」。", ""); return; }
-    setBusy(true);
-    const narrative = "你从怀里摸出一壶温热的青稞酒递过去，呼延雪怔了怔，接过时指尖微顿，冷淡的眉眼间难得柔和了几分，低声道了句「有心了」。";
-    const state = {
-      room: { name: "雪山派·内堂", npcs: [{ name: "呼延雪" }], items: [], exits: ["s"] },
-      char: { hp: [80, 100] }, inv: ["青稞酒"], dao: { karma: 0, jie: 0 },
-      varTree: { 角色: { 呼延雪: { 好感度: 20, 态度: "冷淡" } } }, lockedDestName: null, lockedExits: null,
-    };
-    log(`意图 TALK_CASUAL｜叙事：${narrative.slice(0, 26)}…`);
-    const t0 = Date.now();
-    try {
-      const r = await callExtraction("TALK_CASUAL", narrative, state, c);
-      log(`✓ 提取成功（${Date.now() - t0}ms）`, `p       = ${JSON.stringify(r.p)}`, `mvu指令 = ${JSON.stringify(r.mvuCommands)}`, "");
-    } catch (e) { log(`✗ 提取失败（${Date.now() - t0}ms）：${e.message || e}`, ""); }
-    setBusy(false);
-  }
-
   const btn = {
     background: "var(--ink-wood-mid)", color: "var(--qb-narrative)", border: "1px solid var(--ink-brass-edge)",
     padding: "8px 14px", borderRadius: 0, cursor: busy ? "wait" : "pointer",
@@ -134,7 +112,6 @@ export default function DebugConsole() {
           <button style={pureBtn} onClick={runInner} disabled={busy}>内层移动（纯逻辑）</button>
           <button style={pureBtn} onClick={runMvu} disabled={busy}>MVU 裁决（纯逻辑）</button>
           <button style={btn} onClick={runApi} disabled={busy}>API 连通（调 AI）</button>
-          <button style={btn} onClick={runExtract} disabled={busy}>叙事→状态（调 AI）</button>
           <button style={{ ...btn, borderColor: "var(--tavern-table-edge)", color: "var(--qb-status-text)", marginLeft: "auto" }} onClick={clear} disabled={busy}>清屏</button>
         </div>
 

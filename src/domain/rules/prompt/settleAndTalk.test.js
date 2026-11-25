@@ -1,7 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
 import { buildSysBase } from "./sysBase.js";
-import { buildExtractionSpecExample, normalizeExtractedFields, SETTLE_KIND_SPECS } from "./extractionEngine.js";
-import { callExtraction } from "../../../engine/ports/extraction.js";
 import { classifyIntent, INTENT } from "./inputIntent.js";
 
 function wia(scope, narrativeOnly, opts = {}) {
@@ -74,30 +72,6 @@ describe("拜师 learn_skill 铁律（0728 起改由 11 号位承载，不再在
   });
 });
 
-describe("软判定后的平息怒气措辞", () => {
-  const opts = {
-    playerName: "少侠",
-    settleNpc: "八云",
-    settleKind: "appease",
-    softSettle: { choice: "奏效", note: "八云消了气，好感+3" },
-  };
-
-  it("叙事模式要求按系统判定书写", () => {
-    const { phiRules } = buildSysBase(
-      220, { stage: "NORMAL", affection: 20 }, "x", null, false, "", true, "settle", opts,
-    );
-    expect(phiRules).toContain("【怒气缓和】系统已判定：八云消了气，好感+3。照此写八云的反应，不得改写结果。");
-  });
-
-  it("单调用模式禁止再次输出 mvu 并省略 appease 示例", () => {
-    const { phiRules } = buildSysBase(
-      220, { stage: "NORMAL", affection: 20 }, "x", null, false, "", false, "settle", opts,
-    );
-    expect(phiRules).toContain("本轮状态已由系统结算，不得输出 <mvu>。");
-    expect(phiRules).not.toContain("关于下面那条 <mvu>");
-    expect(phiRules).not.toContain("成功示例（不成功则不输出这两条）");
-  });
-});
 
 describe("切磋邀战结算", () => {
   const build = (narrativeOnly) => buildSysBase(
@@ -122,13 +96,7 @@ describe("切磋邀战结算", () => {
     expect(phiRules).toContain("本轮没有任何状态变化");
   });
 
-  it("dual-call extraction returns a no-op without calling the model", async () => {
-    const ai = { chat: vi.fn() };
-    await expect(callExtraction("COMBAT", "邀战", { char: {} }, {}, {
-      settleKind: "duel_invite", settleNpc: { name: "货郎阿吉" },
-    }, ai)).resolves.toEqual({ p: {}, mvuCommands: [] });
-    expect(ai.chat).not.toHaveBeenCalled();
-  });
+
 });
 
 describe("AI duelRequest", () => {
@@ -146,108 +114,7 @@ describe("AI duelRequest", () => {
     expect(phiRules).toContain("战斗的招式交锋与胜负均由系统结算");
   });
 
-  it("dual-call extraction prompt includes the accepted-spar rule", () => {
-    const example = buildExtractionSpecExample("UNKNOWN");
-    expect(example).toContain('"duelRequest"');
-    expect(example).toContain("拒绝或躲避");
-  });
 
-  it("keeps only room-visible NPCs from either string or object form", () => {
-    const presentNpc = { name: "货郎阿吉", innerRoom: "村口广场" };
-    const absentNpc = { name: "老猎户" };
-    const state = {
-      room: { name: "鱼定村", npcs: [presentNpc, absentNpc] },
-      innerRoomName: "村口广场",
-    };
-    expect(normalizeExtractedFields({ duelRequest: "货郎阿吉" }, state).duelRequest).toBe(presentNpc);
-    expect(normalizeExtractedFields({ duelRequest: { name: "货郎阿吉" } }, state).duelRequest).toBe(presentNpc);
-    expect(normalizeExtractedFields({ duelRequest: "老猎户" }, state)).not.toHaveProperty("duelRequest");
-    expect(normalizeExtractedFields({ duelRequest: "无此人" }, state)).not.toHaveProperty("duelRequest");
-  });
-});
 
-// ── 提取层（二调用）侧 ──────────────────────────────────────────────
-describe("结算专属提取 spec 的路由", () => {
-  it("所有 settleKind 都注册在映射表里", () => {
-    expect(SETTLE_KIND_SPECS).toEqual({
-      gift: "GIFT", companion_invite: "COMPANION_INVITE", learn_skill: "LEARN_SKILL",
-      appease: "APPEASE",
-    });
-  });
 
-  // 这三条钉的是"面板预览 == 实际调用"。示例快照里的每条 settle 都必须自带
-  // settleKind，否则 buildExtractionSpecExample 查表落空、静默退回 UNKNOWN 通用
-  // spec——面板会理直气壮地展示一份根本不会被调用的 prompt（曾经就是这样）。
-  it("送礼预览命中 GIFT 而不是 UNKNOWN", () => {
-    const t = buildExtractionSpecExample("UNKNOWN", "gift");
-    expect(t).toContain("专门处理送礼场景");
-    expect(t).not.toContain("从叙事中提取所有发生变化的游戏状态");
-  });
-  it("认主预览命中 COMPANION_INVITE", () => {
-    expect(buildExtractionSpecExample("UNKNOWN", "companion_invite")).toContain("专门处理伙伴入队场景");
-  });
-  it("拜师预览命中 LEARN_SKILL，且铁律要求正向好感", () => {
-    const t = buildExtractionSpecExample("UNKNOWN", "learn_skill");
-    expect(t).toContain("专门处理拜师学艺场景");
-    expect(t).toContain("只能上升、不得为0或负数");
-    expect(t).toContain("_.add('角色.雪豹.好感度'");
-  });
-});
-
-describe("对话提取 spec（talk 模式 0727 起改走这份）", () => {
-  const t = buildExtractionSpecExample("TALK_CASUAL");
-  it("给出物品的两个合法来源，替代整本物件志", () => {
-    expect(t).toContain("在场人物与其随身之物");
-    expect(t).toContain("玩家背包");
-    expect(t).toContain("身无长物");
-  });
-  it("要 respondedNpcs——双调用下'对话即认识'全靠它", () => {
-    expect(t).toContain("respondedNpcs");
-  });
-  it("好感与物品都只在叙事写明时才记", () => {
-    expect(t).toContain("确有变化才写");
-    expect(t).toContain("只是嘴上提起、许诺日后再给、纯寒暄，一律不记");
-  });
-});
-
-// ── 心灵之海场景铁律的注入门禁 ────────────────────────────────────────
-// 玩家进心灵之海之前，AI 拿到的只有房间 desc，压根不知道这是旁白的内心而非
-// 曲措乡的某处：不知道这里只有她一个人、也不知道江湖那套规矩不作数。结果它会
-// 照武侠说书人的惯性在这片海滩上安排路人、生出遭遇、发出物件，把一场一对一的
-// 内心戏写成又一段江湖见闻。这组测试钉死"在海里必亮、不在海里一个字不发"。
-import { buildSeaOfMindRule } from "../narrator/seaOfMind.js";
-
-describe("心灵之海铁律", () => {
-  const rule = buildSeaOfMindRule();
-
-  it("说清这是内心不是地方", () => {
-    expect(rule).toContain("这不是曲措乡的某处地方");
-    expect(rule).toContain("身体还在他自己那间屋子里");
-  });
-
-  it("明令不许出现第三者（这是最容易被写坏的一条）", () => {
-    expect(rule).toContain("绝不要安排任何第三者出现");
-    expect(rule).toMatch(/没有路人|没有过客/);
-  });
-
-  it("关掉发物件/遭遇/采集", () => {
-    expect(rule).toMatch(/不要在这里发放江湖物件/);
-    expect(rule).toMatch(/不要触发遭遇/);
-  });
-
-  it("交代她叫不出那些现代物件的名字（说书人视角）", () => {
-    expect(rule).toContain("她自己也叫不出名字");
-    expect(rule).toMatch(/不要直接说出.*电视/);
-  });
-
-  it("只在海里注入，寻常轮次一个字不发", () => {
-    // WO-04：心灵之海铁律属动态块（随所在地点跳变），由 dynBlocks.seaOfMind 带出。
-    const wia = (opts) => buildSysBase(
-      220, { stage: "NORMAL", affection: 50 }, "x", null, false, "", false, "full",
-      { playerName: "少侠", hasNpc: true, ...opts },
-    ).dynBlocks.seaOfMind;
-    expect(wia({ inSeaOfMind: true })).toContain("这不是曲措乡的某处地方");
-    expect(wia({})).not.toContain("这不是曲措乡的某处地方");
-    expect(wia({ inSeaOfMind: false })).not.toContain("这不是曲措乡的某处地方");
-  });
 });

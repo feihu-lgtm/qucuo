@@ -56,11 +56,9 @@ describe("cleanJsonString", () => {
 describe("bookkeep configuration", () => {
   it("defaults on and treats saved configs without the key as enabled", () => {
     expect(defaultConfig().bookkeepEnabled).toBe(true);
-    expect(defaultConfig().softSettleEnabled).toBe(true);
     vi.stubGlobal("localStorage", {
       getItem: () => JSON.stringify({ apiType: "openai" }),
     });
     expect(loadConfig().bookkeepEnabled).toBe(true);
-    expect(loadConfig().softSettleEnabled).toBe(true);
   });
 });

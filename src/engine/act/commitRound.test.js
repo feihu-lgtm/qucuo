@@ -118,23 +118,7 @@ describe("MVU 裁决契约", () => {
     expect(logs).toContainEqual({ t: "affection", text: "  ✓ 侠客的怒气已经消解，这场风波算是揭过去了。" });
   });
 
-  it("softSettle.target：该角色的 生气解除/生气状态/好感度 指令被整体裁决丢弃，别的指令放行", () => {
-    // 契约：系统已结算的字段不再接受 AI 的 mvu 写入。
-    const state = baseState();
-    state.varTree.角色.侠客 = { 好感度: 50 };
-    const { deps } = makeDeps(state, {}, {
-      softSettle: { target: "侠客" },
-      mvuCommands: [
-        { op: "set", path: "角色.侠客.生气解除", value: true },
-        { op: "add", path: "角色.侠客.好感度", value: 5 },
-        { op: "set", path: "主角.别名", value: "青衣" },
-      ],
-    });
-    commitRound(deps);
-    expect(state.varTree.角色.侠客.生气解除).toBeUndefined();
-    expect(state.varTree.角色.侠客.好感度).toBe(50); // 未被 AI 指令加
-    expect(state.varTree.主角.别名).toBe("青衣");
-  });
+
 
   it("giftSettlement：只放行该 NPC 的一条 add 好感度指令，其余 mvu 全丢", () => {
     const state = baseState();

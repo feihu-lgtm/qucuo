@@ -11,7 +11,7 @@ it("shows the phase order and layered nodes of a mock AI script turn", async () 
   expect(await runScript(script, {
     out: (text) => output.push(text), ai,
     // 单条 mock 回复只够主叙事用：关掉默认开启的行动识别/软结算保持确定性。
-    apiCfg: { intentRecognitionEnabled: false, softSettleEnabled: false, extractionEnabled: false },
+    apiCfg: { intentRecognitionEnabled: false, extractionEnabled: false },
   })).toBe(0);
   expect(output.join("\n")).toMatch(/DONE · 完成/);
   const tree = output.find((text) => text.includes("MACHINE →"));

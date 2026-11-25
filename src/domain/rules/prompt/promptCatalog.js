@@ -7,7 +7,6 @@ import {
   blocksForAction, giftNarrativeLawExample, giftSettleLawExample, schemaKeyFor,
 } from "./injectionBlocks.js";
 import * as ENGINE from "./enginePrompts.js";
-import { buildExtractionSpecExample } from "./extractionEngine.js";
 import { NSFW_RULES } from "./modePrimer.js";
 import { getActivePreset } from "./presetSystem.js";
 
@@ -120,9 +119,6 @@ function resolveMainStaticText(id, actionView, { presetScenario } = {}) {
   }
   if (id === "gift_settle_law") return giftSettleLawExample();
   if (id === "gift_narrative_law") return giftNarrativeLawExample();
-  if (id === "extraction_call" && actionView) {
-    return buildExtractionSpecExample(actionView.intent || "UNKNOWN", actionView.settleKind || null);
-  }
   return null;
 }
 

@@ -20,8 +20,7 @@ describe("CLI API configuration", () => {
     expect(buildCliApiConfig({ bookkeepEnabled: true })).toMatchObject({ bookkeepEnabled: true });
   });
 
-  it("keeps soft settle on by default and honors an explicit opt-out", () => {
-    expect(buildCliApiConfig()).toMatchObject({ softSettleEnabled: true });
-    expect(buildCliApiConfig({ softSettleEnabled: false })).toMatchObject({ softSettleEnabled: false });
+  it("WO-15 后软结算通道已删，CLI 配置不再携带 softSettleEnabled", () => {
+    expect(buildCliApiConfig()).not.toHaveProperty("softSettleEnabled");
   });
 });

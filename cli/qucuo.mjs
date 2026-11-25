@@ -25,7 +25,6 @@ async function main() {
   let recordFile;
   let intent = true;
   let bookkeep = false;
-  let softSettle = true;
   let extraction = true;
   const nextValue = (name, index) => {
     const value = args[index + 1];
@@ -71,12 +70,6 @@ async function main() {
         break;
       case "--bookkeep":
         bookkeep = true;
-        break;
-      case "--soft-settle":
-        softSettle = true;
-        break;
-      case "--no-soft-settle":
-        softSettle = false;
         break;
       case "--extraction":
         extraction = true;
@@ -148,7 +141,6 @@ async function main() {
 
   apiCfg = { ...apiCfg, intentRecognitionEnabled: intent };
   if (bookkeep) apiCfg = { ...apiCfg, bookkeepEnabled: true };
-  apiCfg = { ...apiCfg, softSettleEnabled: softSettle };
   apiCfg = { ...apiCfg, extractionEnabled: extraction };
   const options = { out: print, seed, ai, apiCfg };
   if (script) {

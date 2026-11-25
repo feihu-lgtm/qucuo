@@ -47,7 +47,6 @@ export default function ApiGenerationFields({
         <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 8, lineHeight: 1.5 }}>每回合结束后台用提取模型记一笔人物旧账，多一次小调用</div>
       </div>
       <div style={{ borderTop: "1px solid var(--ink-divider-blue)", paddingTop: 12, marginTop: 12 }}>
-        <label htmlFor="softSettleEnabled" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, fontSize: "var(--fs-sm)", color: "var(--accent)", cursor: "pointer", userSelect: "none" }}><input type="checkbox" id="softSettleEnabled" checked={cfg.softSettleEnabled !== false} onChange={e => patch({ softSettleEnabled: e.target.checked })} style={{ cursor: "pointer" }} />结算软判定（平息怒气）</label>
         <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 8, lineHeight: 1.5 }}>赔罪是否奏效先由小模型判一道选择题，系统定数值，叙事照写</div>
       </div>
       {cfg.extractionEnabled && (

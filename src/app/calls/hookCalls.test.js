@@ -9,7 +9,7 @@ import { buildOutfitRequest } from "../../domain/rules/character/bodyProfile.js"
 import { ITEM_CATEGORY } from "../../domain/rules/economy/equipment.js";
 import { effectBrief } from "../../domain/rules/economy/itemEffectText.js";
 import { buildSquarePrompt } from "../../domain/rules/map/mapSquares.js";
-import { buildExtractionCfg } from "../../domain/rules/prompt/extractionEngine.js";
+import { buildExtractionCfg } from "../../domain/rules/prompt/structuredCallCfg.js";
 import { registerHookCalls } from "./hookCalls.js";
 
 describe("hookCalls parity with legacy requests", () => {

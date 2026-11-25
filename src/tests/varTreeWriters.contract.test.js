@@ -6,13 +6,10 @@ import { describe, expect, it } from "vitest";
 import { applyWrite, set, add } from "../domain/rules/state/applyWrite.js";
 import { applyPatches, commitPatches } from "../domain/rules/state/applyPatches.js";
 import { applyMvuCommands } from "../domain/rules/prompt/mvu.js";
-import { settledToPatches } from "../domain/rules/settle/settle.js";
 import { ledgerToPatches, LEDGER_LINE_MAX, LEDGER_MAX_LINES } from "../domain/rules/memory/npcLedger.js";
 import { bookkeepToPatches } from "../domain/rules/memory/bookkeep.js";
 import { stageRewardPatches } from "../domain/rules/quests/questRewards.js";
 
-const applySettledDeltas = (tree, deltas) =>
-  applyPatches({ varTree: tree }, settledToPatches(deltas)).state.varTree;
 const applyLedgerUpdate = (tree, name, lines, turn) =>
   applyPatches({ varTree: tree }, ledgerToPatches(tree, name, lines, turn)).state.varTree;
 const applyBookkeep = (tree, result, turn) =>
@@ -135,35 +132,6 @@ describe("applyMvuCommands：指令队列 → {tree, applied, rejected, logs}", 
     expect(t.世界.好感日增.dayStamp).toBe(1);
     expect(applied[0].actualDelta).toBe(2); // 当日只剩 2 点
     expect(t.世界.好感日增.gained.侠客).toBe(12);
-  });
-});
-
-describe("settledToPatches+applyPatches：软结算 deltas → 新 varTree", () => {
-  it("按 {path, finalValue} 形态写入，自动建中间层，不动兄弟键", () => {
-    // 契约：等价 patch = 每条 { path, finalValue } 的 set。
-    const vt = tree({ 侠客: { 好感度: 60 } });
-    const t = applySettledDeltas(vt, [
-      { path: "角色.侠客.好感度", finalValue: 75 },
-      { path: "角色.新客.旧账.lines", finalValue: ["x"] },
-    ]);
-    expect(t.角色.侠客.好感度).toBe(75);
-    expect(t.角色.新客.旧账.lines).toEqual(["x"]);
-    expect(t.角色.侠客).toEqual({ 好感度: 75 });
-  });
-
-  it("跳过缺 path/finalValue 的畸形项；varTree 为 null 时按空树起步", () => {
-    const vt = tree({ 侠客: {} });
-    expect(applySettledDeltas(vt, [{ path: "角色.侠客.x" }, { finalValue: 1 }, null]).角色).toEqual({ 侠客: {} });
-    expect(applySettledDeltas(null, [{ path: "a.b", finalValue: 1 }])).toEqual({ a: { b: 1 } });
-    expect(applySettledDeltas(vt)).toBe(vt);
-  });
-
-  it("幂等且不可变：重放同批 deltas 结果相同，输入不被改写", () => {
-    const vt = tree({ 侠客: { 好感度: 60 } });
-    const deltas = [{ path: "角色.侠客.好感度", finalValue: 75 }];
-    const once = applySettledDeltas(vt, deltas);
-    expect(applySettledDeltas(once, deltas)).toEqual(once);
-    expect(vt.角色.侠客.好感度).toBe(60);
   });
 });
 

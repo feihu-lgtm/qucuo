@@ -5,7 +5,6 @@ import { parseLocalCommand } from "../engine/localCommands.js";
 import { computeGiftWeight } from "../domain/rules/npc/giftWeight.js";
 import { NPC_POOL, toRoomNpc } from "../domain/data/npc/npcPool.js";
 import { getResidentNpcs } from "../domain/data/npc/residentNpcs.js";
-import { callExtraction } from "../engine/ports/extraction.js";
 import { buildSysBase } from "../domain/rules/prompt/sysBase.js";
 import { deposit, pledge, redeem, withdraw } from "../features/bank/logic.js";
 import { meditate, trainNeigong } from "../features/cultivation/logic.js";
@@ -88,7 +87,7 @@ it("shares money gifting between web and CLI and rejects insufficient cash or ab
   }
 });
 
-it("passes the band and its reaction to both narration and extraction", async () => {
+it("passes the band and its reaction to narration", async () => {
   const state = { ...baseState(), room: { name: "市集", npcs: [chieftain] } };
   const { settleOptions } = parseLocalCommand("给桑杰朵杰 10元", state).result;
   for (const narrativeOnly of [true, false]) {
@@ -97,11 +96,6 @@ it("passes the band and its reaction to both narration and extraction", async ()
     expect(phiRules).toContain("礼貌致谢");
     if (!narrativeOnly) expect(phiRules).toContain("1~+2");
   }
-  const chat = vi.fn(async () => ({ text: "{}" }));
-  await callExtraction("UNKNOWN", "对方道谢。", state, {}, settleOptions, { chat });
-  expect(chat.mock.calls[0][0][0].content).toContain("分量：薄礼");
-  expect(chat.mock.calls[0][0][0].content).toContain("1~+2");
-  expect(chat.mock.calls[0][0][0].content).not.toContain("@赠礼");
 });
 
 it.each([0, 11])("clamps the gift and preserves the daily cap (already gained %s)", (gained) => {
