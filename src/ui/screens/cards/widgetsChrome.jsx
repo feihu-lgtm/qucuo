@@ -47,7 +47,7 @@ export function Bar({ children, right }) {
       // 上下 border 各 15px，留 16px 给文字，故 minHeight 46
       padding: "0 10px", minHeight: 46,
     }}>
-      <span style={{ color: "var(--tutorial-title)", fontSize: 13, letterSpacing: 2, textShadow: "0 1px 3px rgba(0,0,0,.8)" }}>
+      <span style={{ color: "var(--tutorial-title)", fontSize: "var(--fs-md)", letterSpacing: 2, textShadow: "0 1px 3px rgba(0,0,0,.8)" }}>
         {children}
       </span>
       <span style={{ flex: 1 }} />
@@ -92,7 +92,7 @@ export function JadeTier({ value, onChange, size = 30, title, withSelect = false
             appearance: "none", WebkitAppearance: "none", MozAppearance: "none",
             width: "100%", height: "100%", background: "transparent", border: "none",
             textAlign: "center", textAlignLast: "center",
-            color: t.color, fontSize: 12, fontWeight: 700, outline: "none",
+            color: t.color, fontSize: "var(--fs-sm)", fontWeight: 700, outline: "none",
             cursor: "pointer", fontFamily: "inherit", textShadow: "0 1px 2px rgba(0,0,0,.9)",
           }}>
           {TIERS.map((x, i) => (
@@ -117,7 +117,7 @@ export function Step({ children, onClick, disabled }) {
         backgroundImage: `url('${S("ui/btn_blank.webp")}')`,
         backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
         cursor: disabled ? "default" : "pointer",
-        color: disabled ? "var(--gamble-button-edge)" : "var(--paper)", fontSize: 11, lineHeight: 1,
+        color: disabled ? "var(--gamble-button-edge)" : "var(--paper)", fontSize: "var(--fs-xs)", lineHeight: 1,
         opacity: disabled ? .35 : 1,
       }}>{children}</span>
   );

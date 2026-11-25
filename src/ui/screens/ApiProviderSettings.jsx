@@ -119,7 +119,7 @@ export default function ApiProviderSettings({
                       type="button"
                       onClick={() => patch({ endpoint: alt.url })}
                       aria-pressed={cfg.endpoint === alt.url}
-                      style={{ ...chromeBtn(zoneTheme, { active: cfg.endpoint === alt.url }), padding: "3px 8px", fontSize: "10.5px" }}
+                      style={{ ...chromeBtn(zoneTheme, { active: cfg.endpoint === alt.url }), padding: "3px 8px", fontSize: "var(--fs-xs)" }}
                     >{alt.label}</button>
                   ))}
                 </div>

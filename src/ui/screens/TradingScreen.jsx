@@ -77,7 +77,7 @@ export default function TradingScreen({ shopName, shopItems = [], playerInv, pla
                 display: "flex", justifyContent: "space-between", alignItems: "center",
                 padding: "6px 8px", marginBottom: 4, background: "rgba(255,255,255,0.02)", borderRadius: 0,
               }}>
-                <div style={{ fontSize: 11.5 }}>
+                <div style={{ fontSize: "var(--fs-sm)" }}>
                   <span className="mobile-touch-target"
                     onClick={() => onInspect?.("item", item.name, null, item)}
                     style={{ color: QUALITY_COLOR[item.quality] || "var(--text)", cursor: onInspect ? "pointer" : "default", textDecoration: onInspect ? "underline" : "none", textDecorationStyle: "dotted" }}
@@ -125,7 +125,7 @@ export default function TradingScreen({ shopName, shopItems = [], playerInv, pla
                             padding: "6px 8px", marginBottom: 4, background: "rgba(255,255,255,0.02)", borderRadius: 0,
                             opacity: notForSale ? 0.55 : 1,
                           }}>
-                            <div style={{ fontSize: 11.5 }}>
+                            <div style={{ fontSize: "var(--fs-sm)" }}>
                               <span className="mobile-touch-target"
                                 onClick={() => onInspect?.("item", entry.name, null, entry)}
                                 style={{ color: QUALITY_COLOR[entry.quality] || "var(--text)", cursor: onInspect ? "pointer" : "default", textDecoration: onInspect ? "underline" : "none", textDecorationStyle: "dotted" }}
@@ -168,7 +168,7 @@ export default function TradingScreen({ shopName, shopItems = [], playerInv, pla
                   display: "flex", justifyContent: "space-between", alignItems: "center",
                   padding: "6px 8px", marginBottom: 4, background: "rgba(255,255,255,0.02)", borderRadius: 0,
                 }}>
-                  <div style={{ fontSize: 11.5 }}>
+                  <div style={{ fontSize: "var(--fs-sm)" }}>
                     <span className="mobile-touch-target"
                       onClick={() => onInspect?.("item", item.name, null, item)}
                       style={{ color: QUALITY_COLOR[item.quality] || "var(--text)", cursor: onInspect ? "pointer" : "default", textDecoration: onInspect ? "underline" : "none", textDecorationStyle: "dotted" }}

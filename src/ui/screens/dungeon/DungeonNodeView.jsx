@@ -119,7 +119,7 @@ export default function DungeonNodeView({
         <div style={{
           ...cardStyle(zoneTheme),
           borderStyle: "dashed",
-          fontSize: 11.5,
+          fontSize: "var(--fs-sm)",
           color: zoneTheme.textDim,
           lineHeight: 1.6,
         }}>

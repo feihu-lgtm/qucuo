@@ -31,7 +31,7 @@ export default function BodyProfilePanel({
 
   const inputStyle = {
     width: "100%", background: "var(--bg-panel)", border: `1px solid ${border}`, borderRadius: 0,
-    color: "var(--text)", padding: "6px 8px", fontFamily: "inherit", fontSize: "12px",
+    color: "var(--text)", padding: "6px 8px", fontFamily: "inherit", fontSize: "var(--fs-sm)",
     boxSizing: "border-box", lineHeight: 1.6, resize: "vertical",
   };
 
@@ -47,10 +47,10 @@ export default function BodyProfilePanel({
           onClick={() => { if (!hidden) setEditing(isEditing ? null : f.key); }}
           style={{ display: "flex", alignItems: "baseline", gap: 8, cursor: hidden ? "default" : "pointer" }}
         >
-          <span style={{ width: 60, flexShrink: 0, fontSize: "11px", color: val ? accent : textDim }}>
+          <span style={{ width: 60, flexShrink: 0, fontSize: "var(--fs-xs)", color: val ? accent : textDim }}>
             {f.label}
           </span>
-          <span style={{ flex: 1, fontSize: "11.5px", color: val ? "var(--text)" : "var(--body-empty)", minWidth: 0 }}>
+          <span style={{ flex: 1, fontSize: "var(--fs-sm)", color: val ? "var(--text)" : "var(--body-empty)", minWidth: 0 }}>
             {hidden ? (val ? maskText(val) : "—")
               : isEditing ? ""
               : (previewText(val) || <span style={{ color: "var(--body-empty)" }}>未填</span>)}
@@ -82,7 +82,7 @@ export default function BodyProfilePanel({
                       border: `1px solid color-mix(in srgb, ${border} 55%, transparent)`,
                       borderRadius: 0,
                       color: textDim,
-                      fontSize: "10px",
+                      fontSize: "var(--fs-2xs)",
                       padding: "2px 6px",
                       cursor: "pointer",
                       fontFamily: "inherit",
@@ -117,12 +117,12 @@ export default function BodyProfilePanel({
         style={{
           background: "var(--bg-panel)", border: `1px solid ${border}`, borderRadius: 0, padding: 18,
           width: 480, maxWidth: "92vw", maxHeight: "85vh", overflowY: "auto",
-          fontFamily: "inherit", fontSize: "12.5px", color: "var(--text)",
+          fontFamily: "inherit", fontSize: "var(--fs-md)", color: "var(--text)",
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
           <span style={{ color: accent, fontSize: "var(--fs-base)" }}>◈ 体貌</span>
-          <span style={{ color: "var(--text-dim)", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
+          <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
         </div>
 
         <div style={{ fontSize: "var(--fs-xs)", color: textDim, lineHeight: 1.7, marginBottom: 10 }}>
@@ -169,7 +169,7 @@ export default function BodyProfilePanel({
                       onClick={() => onChange(applyBodyPreset(p, preset, { includeIntimate: false }))}
                       style={{
                         background: "var(--bg-panel)", border: `1px solid ${border}`, borderRadius: 0,
-                        color: accent, fontSize: "10px", padding: "3px 8px", cursor: "pointer", fontFamily: "inherit",
+                        color: accent, fontSize: "var(--fs-2xs)", padding: "3px 8px", cursor: "pointer", fontFamily: "inherit",
                       }}
                     >
                       套公开层
@@ -180,7 +180,7 @@ export default function BodyProfilePanel({
                         onClick={() => onChange(applyBodyPreset(p, preset, { includeIntimate: true }))}
                         style={{
                           background: "var(--bg-panel)", border: "1px solid var(--body-nsfw)", borderRadius: 0,
-                          color: "var(--body-nsfw)", fontSize: "10px", padding: "3px 8px", cursor: "pointer", fontFamily: "inherit",
+                          color: "var(--body-nsfw)", fontSize: "var(--fs-2xs)", padding: "3px 8px", cursor: "pointer", fontFamily: "inherit",
                         }}
                       >
                         含私密层
@@ -209,7 +209,7 @@ export default function BodyProfilePanel({
           </span>
           <span
             onClick={() => setShowIntimate(v => !v)}
-            style={{ marginLeft: "auto", fontSize: "10px", color: accent, cursor: "pointer" }}
+            style={{ marginLeft: "auto", fontSize: "var(--fs-2xs)", color: accent, cursor: "pointer" }}
           >
             {showIntimate ? "◉ 隐藏" : "○ 显示"}
           </span>
@@ -232,7 +232,7 @@ export default function BodyProfilePanel({
             onClick={() => { if (!recommendState?.loading) onRecommend?.(); }}
             style={{
               cursor: recommendState?.loading ? "default" : "pointer",
-              display: "inline-block", padding: "5px 14px", borderRadius: 0, fontSize: "11.5px",
+              display: "inline-block", padding: "5px 14px", borderRadius: 0, fontSize: "var(--fs-sm)",
               color: recommendState?.loading ? textDim : "var(--bg-panel)",
               background: recommendState?.loading ? "var(--bg-panel)" : accent,
               border: `1px solid ${recommendState?.loading ? border : accent}`,

@@ -8,7 +8,7 @@ import {
 
 const btnStyle = {
   cursor: "pointer", color: "var(--ink-accent)", padding: "5px 12px", background: "var(--bg-ink)",
-  border: "1px solid var(--ink-border)", borderRadius: 0, fontSize: "11.5px", display: "inline-block",
+  border: "1px solid var(--ink-border)", borderRadius: 0, fontSize: "var(--fs-sm)", display: "inline-block",
 };
 const dimBtn = { ...btnStyle, color: "var(--ink-text-dim)", borderColor: "var(--homestead-dim-edge)" };
 
@@ -29,7 +29,7 @@ export default function HomesteadPanel({ roomName, inv, setInv, char, setChar, z
               <span style={{ cursor: "pointer" }} onClick={() => setActiveFeature(null)}>← 返回 · {home.label}</span>
             ) : `🏠 ${home.label}`}
           </span>
-          <span style={{ color: "var(--ink-text-dim)", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
+          <span style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
         </div>
 
         {!activeFeature && (
@@ -140,7 +140,7 @@ function WineFeature({ roomName, inv, setInv, addLog, runCommand }) {
             const remain = Math.max(0, Math.ceil((c.readyAt - now) / 60000));
             return (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: "1px solid var(--bg-slate)" }}>
-                <span style={{ flex: 1, fontSize: "11.5px", color: ready ? "var(--ink-tier-text)" : "var(--ink-text-dim)" }}>
+                <span style={{ flex: 1, fontSize: "var(--fs-sm)", color: ready ? "var(--ink-tier-text)" : "var(--ink-text-dim)" }}>
                   🍶 {c.result} {ready ? "· 已成" : `· 还需${remain}分钟`}
                 </span>
                 <span onClick={ready ? () => collect(i) : undefined} style={ready ? btnStyle : dimBtn}>{ready ? "取酒" : "等待"}</span>
@@ -198,7 +198,7 @@ function GardenFeature({ roomName, inv, setInv, addLog, runCommand }) {
             const remain = Math.max(0, Math.ceil((g.readyAt - now) / 60000));
             return (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: "1px solid var(--bg-slate)" }}>
-                <span style={{ flex: 1, fontSize: "11.5px", color: ready ? "var(--ink-tier-text)" : "var(--ink-text-dim)" }}>
+                <span style={{ flex: 1, fontSize: "var(--fs-sm)", color: ready ? "var(--ink-tier-text)" : "var(--ink-text-dim)" }}>
                   🌱 {g.yield} {ready ? "· 熟了" : `· 还需${remain}分钟`}
                 </span>
                 <span onClick={ready ? () => harvest(i) : undefined} style={ready ? btnStyle : dimBtn}>{ready ? "收" : "等"}</span>

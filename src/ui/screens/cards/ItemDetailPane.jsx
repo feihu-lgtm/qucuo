@@ -31,7 +31,7 @@ export default function ItemDetailPane({ item, onClose, onPatch }) {
           {CAT_LABEL[category] || category} · {quality}档
         </span>
         <span style={{ flex: 1 }} />
-        <span onClick={onClose} style={{ cursor: "pointer", fontSize: 10, color: "var(--ink-text-dim)" }}>收起</span>
+        <span onClick={onClose} style={{ cursor: "pointer", fontSize: "var(--fs-2xs)", color: "var(--ink-text-dim)" }}>收起</span>
       </div>
 
       {/* 伤害 / 防御 */}
@@ -72,7 +72,7 @@ export default function ItemDetailPane({ item, onClose, onPatch }) {
           value={item.desc || ""}
           placeholder="写它什么样、什么手感或什么来历"
           onChange={e => onPatch(nameOf(item), { desc: e.target.value.slice(0, 200) })}
-          style={{ width: "100%", boxSizing: "border-box", background: "rgba(0,0,0,.35)", border: "1px solid var(--border-deep)", borderRadius: 0, padding: "5px 8px", color: "var(--ink-text)", fontSize: 10.5, lineHeight: 1.7, resize: "vertical", fontFamily: "inherit" }} />
+          style={{ width: "100%", boxSizing: "border-box", background: "rgba(0,0,0,.35)", border: "1px solid var(--border-deep)", borderRadius: 0, padding: "5px 8px", color: "var(--ink-text)", fontSize: "var(--fs-xs)", lineHeight: 1.7, resize: "vertical", fontFamily: "inherit" }} />
       ) : (
         <div style={{ fontSize: "var(--fs-xs)", color: "var(--ink-text)", lineHeight: 1.6 }}>
           {desc || "在册物品，运行时按名字查百物录补全数值与词条。"}
@@ -90,7 +90,7 @@ export default function ItemDetailPane({ item, onClose, onPatch }) {
                 <span key={choice.key} onClick={() => onPatch(nameOf(item), { effect: toggleItemEffect(item, choice) })}
                   title={`${choice.def === true ? "" : `默认 ${JSON.stringify(choice.def)} `}装备时叠到招式上`}
                   style={{
-                    cursor: "pointer", fontSize: 10, padding: "2px 7px", borderRadius: 0,
+                    cursor: "pointer", fontSize: "var(--fs-2xs)", padding: "2px 7px", borderRadius: 0,
                     border: `1px solid ${on ? "var(--green-soft)" : "var(--bg-card)"}`,
                     color: on ? "var(--ci-pick)" : "var(--muted)",
                     background: on ? "rgba(138,176,112,.12)" : "transparent",
@@ -101,12 +101,12 @@ export default function ItemDetailPane({ item, onClose, onPatch }) {
         </div>
       ) : (
         effectText && (
-          <div style={{ marginTop: 5, fontSize: 10, color: "var(--green-soft)" }}>特效：{effectText}</div>
+          <div style={{ marginTop: 5, fontSize: "var(--fs-2xs)", color: "var(--green-soft)" }}>特效：{effectText}</div>
         )
       )}
 
       {sixDim.length > 0 && (
-        <div style={{ marginTop: 4, fontSize: 10, color: "var(--green-soft)" }}>加成：{sixDim.map(([k, v]) => `${k}+${v}`).join("、")}</div>
+        <div style={{ marginTop: 4, fontSize: "var(--fs-2xs)", color: "var(--green-soft)" }}>加成：{sixDim.map(([k, v]) => `${k}+${v}`).join("、")}</div>
       )}
     </div>
   );

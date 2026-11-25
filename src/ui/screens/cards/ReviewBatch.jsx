@@ -57,7 +57,7 @@ export function PlanEquipButtons({ npcCount, planBusy, planAll, equipBusy, equip
         title={`让 AI 按人设判断每个人该驻场还是游走。${npcCount} 人分 ${Math.ceil(npcCount / PLAN_BATCH)} 批，${districtNote}规划完你还能自己改`}
         style={{
           cursor: planBusy ? "wait" : "pointer", userSelect: "none",
-          fontSize: 12, padding: "6px 14px", borderRadius: 0, whiteSpace: "nowrap",
+          fontSize: "var(--fs-sm)", padding: "6px 14px", borderRadius: 0, whiteSpace: "nowrap",
           display: "inline-flex", alignItems: "center", gap: 6,
           color: planBusy ? "var(--quest-success-text)" : "var(--ci-pick)", textShadow: "0 1px 2px rgba(0,0,0,.85)",
           border: `1px solid ${planBusy ? "var(--music-idle-icon)" : "var(--ink-good)"}`,
@@ -71,7 +71,7 @@ export function PlanEquipButtons({ npcCount, planBusy, planAll, equipBusy, equip
         title={`让 AI 按每个人的身份与品阶配 2-4 件随身物。${npcCount} 人分 ${Math.ceil(npcCount / PLAN_BATCH)} 批，配完你还能自己改`}
         style={{
           cursor: equipBusy ? "wait" : "pointer", userSelect: "none",
-          fontSize: 12, padding: "6px 14px", borderRadius: 0, whiteSpace: "nowrap",
+          fontSize: "var(--fs-sm)", padding: "6px 14px", borderRadius: 0, whiteSpace: "nowrap",
           display: "inline-flex", alignItems: "center", gap: 6,
           color: equipBusy ? "var(--ink-sage)" : "var(--ci-pick)", textShadow: "0 1px 2px rgba(0,0,0,.85)",
           border: `1px solid ${equipBusy ? "var(--music-idle-icon)" : "var(--inject-note)"}`,

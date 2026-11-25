@@ -44,11 +44,11 @@ export default function ApiGenerationFields({
         提取调用可指定更小/更快的模型——空则沿用主模型。
       </div>
       <div style={{ borderTop: "1px solid var(--ink-divider-blue)", paddingTop: 12, marginTop: 12 }}>
-        <label htmlFor="bookkeepEnabled" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, fontSize: "12px", color: "var(--accent)", cursor: "pointer", userSelect: "none" }}><input type="checkbox" id="bookkeepEnabled" checked={cfg.bookkeepEnabled !== false} onChange={e => patch({ bookkeepEnabled: e.target.checked })} style={{ cursor: "pointer" }} />回合记账（人物旧账）</label>
+        <label htmlFor="bookkeepEnabled" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, fontSize: "var(--fs-sm)", color: "var(--accent)", cursor: "pointer", userSelect: "none" }}><input type="checkbox" id="bookkeepEnabled" checked={cfg.bookkeepEnabled !== false} onChange={e => patch({ bookkeepEnabled: e.target.checked })} style={{ cursor: "pointer" }} />回合记账（人物旧账）</label>
         <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 8, lineHeight: 1.5 }}>每回合结束后台用提取模型记一笔人物旧账，多一次小调用</div>
       </div>
       <div style={{ borderTop: "1px solid var(--ink-divider-blue)", paddingTop: 12, marginTop: 12 }}>
-        <label htmlFor="softSettleEnabled" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, fontSize: "12px", color: "var(--accent)", cursor: "pointer", userSelect: "none" }}><input type="checkbox" id="softSettleEnabled" checked={cfg.softSettleEnabled !== false} onChange={e => patch({ softSettleEnabled: e.target.checked })} style={{ cursor: "pointer" }} />结算软判定（平息怒气）</label>
+        <label htmlFor="softSettleEnabled" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, fontSize: "var(--fs-sm)", color: "var(--accent)", cursor: "pointer", userSelect: "none" }}><input type="checkbox" id="softSettleEnabled" checked={cfg.softSettleEnabled !== false} onChange={e => patch({ softSettleEnabled: e.target.checked })} style={{ cursor: "pointer" }} />结算软判定（平息怒气）</label>
         <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 8, lineHeight: 1.5 }}>赔罪是否奏效先由小模型判一道选择题，系统定数值，叙事照写</div>
       </div>
       {cfg.extractionEnabled && (
@@ -80,7 +80,7 @@ export default function ApiGenerationFields({
               return (
                 <div key={key}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ width: 120, fontSize: "11px", color: "var(--text-dim)", flexShrink: 0 }}>{label}</span>
+                    <span style={{ width: 120, fontSize: "var(--fs-xs)", color: "var(--text-dim)", flexShrink: 0 }}>{label}</span>
                     <input
                       style={{ ...inputStyle, flex: 1, borderColor: cur ? "var(--ink-edge-active)" : "var(--border)" }}
                       value={cur}
@@ -90,7 +90,7 @@ export default function ApiGenerationFields({
                       placeholder={placeholder}
                     />
                     <span
-                      style={{ ...btnStyle, whiteSpace: "nowrap", fontSize: "10px", padding: "4px 8px", flexShrink: 0, opacity: modelStatus === "loading" ? 0.5 : 1 }}
+                      style={{ ...btnStyle, whiteSpace: "nowrap", fontSize: "var(--fs-2xs)", padding: "4px 8px", flexShrink: 0, opacity: modelStatus === "loading" ? 0.5 : 1 }}
                       onClick={modelStatus === "loading" ? undefined : () => handleDetectModels(key)}
                     >
                       {modelStatus === "loading" && modelPickerTarget === key ? "检测中…" : "检测"}
@@ -120,7 +120,7 @@ export default function ApiGenerationFields({
           onClick={() => patch({ questTriggerMode: opt.key })}
           style={{
             padding: "4px 10px", borderRadius: 0, border: "1px solid var(--ink-edge-quest)",
-            cursor: "pointer", fontSize: "11px",
+            cursor: "pointer", fontSize: "var(--fs-xs)",
             color: (cfg.questTriggerMode || "prompt") === opt.key ? "var(--bg-panel)" : "var(--accent)",
             background: (cfg.questTriggerMode || "prompt") === opt.key ? "var(--accent)" : "var(--bg-panel)",
           }}
@@ -152,7 +152,7 @@ export default function ApiGenerationFields({
         <button key={m}
           onClick={() => patch({ thinkingMode: m })}
           style={{
-            padding: "4px 10px", borderRadius: 0, fontSize: "11px", cursor: "pointer",
+            padding: "4px 10px", borderRadius: 0, fontSize: "var(--fs-xs)", cursor: "pointer",
             border: "1px solid var(--ink-edge-think)",
             color: (cfg.thinkingMode || "off") === m ? "var(--bg-panel)" : "var(--accent)",
             background: (cfg.thinkingMode || "off") === m ? "var(--accent)" : "var(--bg-panel)",
@@ -188,7 +188,7 @@ export default function ApiGenerationFields({
           <input style={inputStyle} type="password" value={cfg.embeddingKey} onChange={e => patch({ embeddingKey: e.target.value })} placeholder="sk-..." />
           <div style={labelStyle}>Embedding 模型</div>
           <input style={inputStyle} value={cfg.embeddingModel} onChange={e => patch({ embeddingModel: e.target.value })} placeholder="例如 BAAI/bge-m3" />
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8, fontSize: "10.5px", color: "var(--text-dim)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8, fontSize: "var(--fs-xs)", color: "var(--text-dim)" }}>
             <span>本地记忆库：{memCount == null ? "…" : `${memCount} 条`}</span>
             <span style={{ ...btnStyle, padding: "3px 10px", color: "var(--ink-danger)", borderColor: "var(--ink-danger-edge)" }} onClick={handleClearMemory}>清空记忆库</span>
           </div>

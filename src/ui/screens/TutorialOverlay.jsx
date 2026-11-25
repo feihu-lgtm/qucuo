@@ -5,10 +5,10 @@ import React from "react";
 export default function TutorialOverlay({ onClose }) {
   const note = {
     background: "rgba(14,18,26,0.96)", border: "1px solid var(--ink-brass)", borderRadius: 0,
-    padding: "12px 16px", color: "var(--paper)", fontSize: "12.5px", lineHeight: 1.7,
+    padding: "12px 16px", color: "var(--paper)", fontSize: "var(--fs-md)", lineHeight: 1.7,
     boxShadow: "0 6px 24px rgba(0,0,0,0.6)", maxWidth: 260,
   };
-  const title = { color: "var(--ember)", fontWeight: "bold", fontSize: "13px", marginBottom: 6, display: "block" };
+  const title = { color: "var(--ember)", fontWeight: "bold", fontSize: "var(--fs-md)", marginBottom: 6, display: "block" };
   return (
     <div
       className="tutorial-overlay"
@@ -17,9 +17,9 @@ export default function TutorialOverlay({ onClose }) {
         display: "flex", flexDirection: "column", fontFamily: "'Songti SC','STSong','SimSun',serif" }}
     >
       {/* 顶部提示条 */}
-      <div style={{ textAlign: "center", padding: "14px 0 8px", color: "var(--tutorial-title)", fontSize: "15px", fontWeight: "bold", letterSpacing: "1px" }}>
+      <div style={{ textAlign: "center", padding: "14px 0 8px", color: "var(--tutorial-title)", fontSize: "var(--fs-lg)", fontWeight: "bold", letterSpacing: "1px" }}>
         📖 新手教程 · 界面导览
-        <span style={{ display: "block", fontSize: "11px", color: "var(--tutorial-dim)", fontWeight: "normal", marginTop: 4 }}>点顶部收起，向下滚动查看全部内容</span>
+        <span style={{ display: "block", fontSize: "var(--fs-xs)", color: "var(--tutorial-dim)", fontWeight: "normal", marginTop: 4 }}>点顶部收起，向下滚动查看全部内容</span>
       </div>
 
       {/* 三栏说明便签，按 flex 25/55/30 的实际位置横向铺开 */}

@@ -16,7 +16,7 @@ export const styles = {
   sectionLabel: (t) => ({ fontSize: "var(--fs-sm)", color: t.accent, letterSpacing: "1px" }),
   moveGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, maxHeight: "26vh", overflowY: "auto" },
   targetRow: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" },
-  warnLine: { textAlign: "center", color: "var(--red-soft)", fontSize: "11px", padding: "4px 0" },
+  warnLine: { textAlign: "center", color: "var(--red-soft)", fontSize: "var(--fs-xs)", padding: "4px 0" },
   hintLine: (t) => ({ fontSize: "var(--fs-xs)", color: t.textDim, textAlign: "center", marginBottom: 6 }),
   enemyStripLabel: (t) => ({ fontSize: "var(--fs-xs)", color: t.textDim, marginTop: 4 }),
   enemyStrip: { display: "flex", flexWrap: "wrap", gap: 6 },
@@ -33,6 +33,6 @@ export const styles = {
   continueRow: { textAlign: "center", marginTop: 6 },
   continueBtn: (t) => ({
     cursor: "pointer", display: "inline-block", padding: "8px 24px",
-    color: t.accent, border: `1px solid ${t.accent}`, borderRadius: 0, fontSize: "12px",
+    color: t.accent, border: `1px solid ${t.accent}`, borderRadius: 0, fontSize: "var(--fs-sm)",
   }),
 };

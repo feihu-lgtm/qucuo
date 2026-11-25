@@ -92,7 +92,7 @@ export default function TeamModule({ zoneTheme, companionState, varTree, onSwitc
               onClick={() => setActiveNpcMenu({ ...data, brief: BRIEF[slot.key] || slot.label })}
               title="细看/切磋/送礼等"
               style={{
-                cursor: "pointer", fontSize: "10px", color: zoneTheme.accentDim,
+                cursor: "pointer", fontSize: "var(--fs-2xs)", color: zoneTheme.accentDim,
                 padding: "5px 7px", borderRadius: 0, border: `1px solid ${zoneTheme.border}`,
               }}
             >◈</span>

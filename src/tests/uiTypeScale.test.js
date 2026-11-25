@@ -1,6 +1,6 @@
 // 字号护栏：UI 里的 font-size 只能取 tokens.css 的 --fs-* 阶梯，不许再写裸 px。
-// 历史代码里还留着一批未迁移的字面量（非首位属性，ast 批量改写覆盖不到），
-// 这里用「只许变少」的账本把它们记下来：新写的代码一旦又写裸 px，数量超线就报错。
+// em/vh 这类相对单位是有意随容器缩放的（赌石牌面、日志里的房间标题），不算在内。
+// 用「只许变少」的账本记数：新写的代码一旦又写裸 px，数量超线就报错。
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
@@ -8,8 +8,9 @@ import path from "node:path";
 const ROOT = path.resolve(__dirname, "..");
 const SCAN_DIRS = ["ui", "utils/theme.js"];
 
-// 迁移基线：只许下调。改完一批字面量就把它改小，别让它涨回去。
-const KNOWN_FONT_LITERALS = 383;
+// 迁移基线：只许下调。剩下 5 处在 LocationModule / VersionHistoryPanel，
+// 工作区里另一批未提交改动正改写这几行，跟着那批改动一起清零。
+const KNOWN_FONT_LITERALS = 5;
 
 function walk(entry, out = []) {
   const abs = path.join(ROOT, entry);
@@ -27,7 +28,7 @@ describe("UI 字号统一调度", () => {
     const offenders = [];
     for (const file of SCAN_DIRS.flatMap((dir) => walk(dir))) {
       const text = fs.readFileSync(file, "utf8");
-      const hits = text.match(/fontSize:\s*(\d|"\d)/g) || [];
+      const hits = text.match(/fontSize:\s*(\d|"\d[\d.]*(px)?")/g) || [];
       if (hits.length) offenders.push([path.relative(ROOT, file), hits.length]);
     }
     const total = offenders.reduce((sum, [, n]) => sum + n, 0);

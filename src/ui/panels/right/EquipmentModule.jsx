@@ -29,7 +29,7 @@ export default function EquipmentModule({ zoneTheme, inv, setInv }) {
                   wordBreak: "break-word", }}
                 >
                   <div>
-                    {item.equipped ? "▶" : "○"} {item.name} <span style={{ fontSize: "9.5px" }}>({item.quality}{stat ? `·${stat}` : ""})</span>
+                    {item.equipped ? "▶" : "○"} {item.name} <span style={{ fontSize: "var(--fs-2xs)" }}>({item.quality}{stat ? `·${stat}` : ""})</span>
                   </div>
                   {eff && (
                     <div style={{ fontSize: "var(--fs-2xs)", paddingLeft: 14, color: item.equipped ? "var(--clay)" : "var(--building-desc)" }}>{eff}</div>

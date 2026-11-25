@@ -31,7 +31,7 @@ export function Terminal({ lines, height = 132, onExpand }) {
     <div style={{ borderTop: "1px solid var(--ink-border)", background: "var(--bg-ink)" }}>
       <div style={{
         display: "flex", alignItems: "center", gap: 6, padding: "3px 8px",
-        borderBottom: "1px solid var(--bg-slate)", fontFamily: TERM_MONO, fontSize: 9,
+        borderBottom: "1px solid var(--bg-slate)", fontFamily: TERM_MONO, fontSize: "var(--fs-2xs)",
         color: "var(--inject-kind-fallback)", letterSpacing: 1,
       }}>
         <span style={{ color: "var(--ink-info)" }}>●</span>
@@ -42,7 +42,7 @@ export function Terminal({ lines, height = 132, onExpand }) {
       </div>
       <div ref={boxRef} style={{
         height, overflowY: "auto", padding: "5px 8px",
-        fontFamily: TERM_MONO, fontSize: 9.5, lineHeight: 1.55,
+        fontFamily: TERM_MONO, fontSize: "var(--fs-2xs)", lineHeight: 1.55,
         whiteSpace: "pre-wrap", wordBreak: "break-word",
       }}>
         {!lines.length && <span style={{ color: "var(--music-idle-icon)" }}>（尚无动作）</span>}

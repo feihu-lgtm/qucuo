@@ -116,8 +116,8 @@ export const SLASH_ROT = { top: "rotate(-24deg)", mid: "rotate(4deg)", bot: "rot
 
 export const topBtn = { background: "none", border: "1px solid var(--gamble-button-edge)", color: "var(--gamble-button-text)", borderRadius: 0, padding: "4px 12px", cursor: "pointer", fontSize: "var(--fs-sm)" };
 export const carArrow = { flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "1px solid var(--ink-brass)",
-  background: "rgba(20,16,11,.9)", color: "var(--gold-light)", fontSize: 22, lineHeight: 1, cursor: "pointer", userSelect: "none" };
-export const carBtn = { width: "100%", padding: "10px 0", border: "none", borderRadius: 0, fontSize: 14, fontWeight: "bold", cursor: "pointer" };
+  background: "rgba(20,16,11,.9)", color: "var(--gold-light)", fontSize: "var(--fs-xl)", lineHeight: 1, cursor: "pointer", userSelect: "none" };
+export const carBtn = { width: "100%", padding: "10px 0", border: "none", borderRadius: 0, fontSize: "var(--fs-base)", fontWeight: "bold", cursor: "pointer" };
 export const actBtn = { position: "relative", height: "6.4vh", minWidth: "24vh", border: "none", cursor: "pointer",
   background: "transparent", display: "flex", alignItems: "center", justifyContent: "center",
   fontSize: "1.9vh", fontWeight: "bold", fontFamily: "inherit", letterSpacing: 2,

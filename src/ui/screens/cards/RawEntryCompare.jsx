@@ -14,7 +14,7 @@ export default function RawEntryCompare({ raw }) {
       <div onClick={() => setOpen(o => !o)}
         style={{
           cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
-          fontSize: 10.5, color: "var(--ink-muted)", userSelect: "none",
+          fontSize: "var(--fs-xs)", color: "var(--ink-muted)", userSelect: "none",
           padding: "3px 0", borderTop: "1px solid var(--bg-card)",
         }}>
         <span style={{ color: "var(--ink-text-dim)", width: 10 }}>{open ? "▾" : "▸"}</span>
@@ -28,7 +28,7 @@ export default function RawEntryCompare({ raw }) {
           maxHeight: "min(26vh, 280px)", overflowY: "auto",
           padding: "7px 10px", marginTop: 4,
           background: "rgba(0,0,0,.3)", border: "1px solid var(--bg-card)", borderRadius: 0,
-          fontSize: 10.5, lineHeight: 1.75, color: "var(--tutorial-note)",
+          fontSize: "var(--fs-xs)", lineHeight: 1.75, color: "var(--tutorial-note)",
           whiteSpace: "pre-wrap", wordBreak: "break-word",
           userSelect: "text",
         }}>{raw}</div>

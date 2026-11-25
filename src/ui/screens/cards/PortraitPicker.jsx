@@ -56,7 +56,7 @@ export default function PortraitPicker({ value, onChange, cardImage, npcName }) 
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 7, flexWrap: "wrap" }}>
         <span onClick={() => { onChange(""); setInfo(null); setErr(""); }}
           style={{
-            cursor: "pointer", fontSize: 10.5, padding: "4px 10px", borderRadius: 0,
+            cursor: "pointer", fontSize: "var(--fs-xs)", padding: "4px 10px", borderRadius: 0,
             border: `1px solid ${!value ? "var(--ink-warn)" : "var(--border-deep)"}`,
             color: !value ? "var(--ink-warn)" : "var(--ink-muted)",
           }}>不设</span>
@@ -68,7 +68,7 @@ export default function PortraitPicker({ value, onChange, cardImage, npcName }) 
             : "这张卡不是 PNG（裸 JSON 卡没有图），只能上传或用内置的"}
           style={{
             cursor: cardImage && !busy ? "pointer" : "not-allowed",
-            fontSize: 10.5, padding: "4px 10px", borderRadius: 0,
+            fontSize: "var(--fs-xs)", padding: "4px 10px", borderRadius: 0,
             border: `1px solid ${cardImage ? "var(--temple-full)" : "var(--bg-card)"}`,
             color: cardImage ? "var(--tutorial-move)" : "var(--gamble-button-edge)",
             opacity: cardImage ? 1 : .55,
@@ -79,7 +79,7 @@ export default function PortraitPicker({ value, onChange, cardImage, npcName }) 
         <span onClick={() => !busy && fileRef.current?.click()}
           title="选一张本地图片，压成 webp 存下来"
           style={{
-            cursor: busy ? "wait" : "pointer", fontSize: 10.5, padding: "4px 10px", borderRadius: 0,
+            cursor: busy ? "wait" : "pointer", fontSize: "var(--fs-xs)", padding: "4px 10px", borderRadius: 0,
             border: "1px solid var(--border-deep)", color: "var(--ink-muted)",
           }}>
           {busy === "上传" ? "压缩中…" : "上传一张"}

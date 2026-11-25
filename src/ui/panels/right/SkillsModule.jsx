@@ -15,14 +15,14 @@ export default function SkillsModule({ zoneTheme, skills, setSkills, inspectItem
           收起来的仍可一键展开，不是隐藏功能。 */}
       <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accentDim, marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
         <span>武学</span>
-        <span style={{ color: zoneTheme.textDim, fontSize: "10px", flex: 1 }}>点名字看介绍 · 点圈运功上阵（每类只运一门，▶已上阵）</span>
+        <span style={{ color: zoneTheme.textDim, fontSize: "var(--fs-2xs)", flex: 1 }}>点名字看介绍 · 点圈运功上阵（每类只运一门，▶已上阵）</span>
         {(() => {
           const idle = skills.filter(s => !s.active).length;
           if (!idle) return null;
           return (
             <span
               onClick={() => setShowIdleSkills(v => !v)}
-              style={{ cursor: "pointer", fontSize: "9.5px", color: zoneTheme.accent, border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: "0 4px", flexShrink: 0 }}
+              style={{ cursor: "pointer", fontSize: "var(--fs-2xs)", color: zoneTheme.accent, border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: "0 4px", flexShrink: 0 }}
             >{showIdleSkills ? `收起未上阵 ${idle}` : `未上阵 ${idle} ▾`}</span>
           );
         })()}
@@ -77,12 +77,12 @@ export default function SkillsModule({ zoneTheme, skills, setSkills, inspectItem
             </div>
             {(() => {
               const eff = moveEffectBrief(mv);
-              return eff ? <div style={{ paddingLeft: 18, fontSize: "9.5px", color: s.active ? "var(--clay)" : "var(--building-desc)" }}>{eff}</div> : null;
+              return eff ? <div style={{ paddingLeft: 18, fontSize: "var(--fs-2xs)", color: s.active ? "var(--clay)" : "var(--building-desc)" }}>{eff}</div> : null;
             })()}
             {openSkill === detailKey && (() => {
               const d = skillDetail(s, mv);
               return (
-                <div style={{ margin: "3px 0 4px 18px", padding: "5px 7px", border: `1px solid ${zoneTheme.border}`, background: zoneTheme.bgPanel, fontSize: "10px", lineHeight: 1.7 }}>
+                <div style={{ margin: "3px 0 4px 18px", padding: "5px 7px", border: `1px solid ${zoneTheme.border}`, background: zoneTheme.bgPanel, fontSize: "var(--fs-2xs)", lineHeight: 1.7 }}>
                   {d.desc && <div style={{ color: zoneTheme.textDim, marginBottom: 4 }}>{d.desc}</div>}
                   {d.rows.map((r) => (
                     <div key={r.label}><span style={{ color: qc }}>{r.label}</span>　{r.value}</div>
@@ -114,7 +114,7 @@ export default function SkillsModule({ zoneTheme, skills, setSkills, inspectItem
                             onClick={() => afford && breakthroughSkill(s.id ?? s.name)}
                             title={afford ? `潜心修炼：花${cost}潜能，${s.stage}→${nextStage}（现有潜能${pot}）` : `潜能不足，突破${nextStage}需${cost}点（现有${pot}）`}
                             style={{
-                              cursor: afford ? "pointer" : "not-allowed", fontSize: "10px", padding: "1px 7px", borderRadius: 0,
+                              cursor: afford ? "pointer" : "not-allowed", fontSize: "var(--fs-2xs)", padding: "1px 7px", borderRadius: 0,
                               color: afford ? "var(--violet)" : "var(--ink-text-dim)",
                               background: afford ? zoneTheme.bgPanel : "transparent",
                               border: `1px solid ${afford ? "var(--building-desc)" : zoneTheme.border}`, userSelect: "none",

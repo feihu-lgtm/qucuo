@@ -114,7 +114,7 @@ export default function ReviewNpc({ npc, onPatch, accent, dropped, apiCfg, cardI
             <textarea rows={2} value={(m.text || []).join("\n")}
               placeholder="领取这段剧情时玩家会读到的正文，一行一句。留空则领取后无内容"
               onChange={e => onPatch({ milestones: n.milestones.map((x, j) => j === mi ? { ...x, text: e.target.value.split("\n").map(t => t.trim()).filter(Boolean) } : x) })}
-              style={{ ...selStyle, textAlign: "left", fontSize: 10.5, lineHeight: 1.7, color: "var(--ink-text)", resize: "vertical" }} />
+              style={{ ...selStyle, textAlign: "left", fontSize: "var(--fs-xs)", lineHeight: 1.7, color: "var(--ink-text)", resize: "vertical" }} />
           </div>
         ))}
         <Note tone="info">这两段是玩家在「人物关系」页手动领取时读到的固定剧情，本作原有角色全是手写的。AI 给的是草稿，值得你自己润一遍。</Note>

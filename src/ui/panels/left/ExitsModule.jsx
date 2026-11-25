@@ -16,7 +16,7 @@ export default function ExitsModule({ zoneTheme, room, inSeaOfMind, seaGate, ent
           style={{
             marginBottom: 14, padding: "7px 10px", borderRadius: 0, cursor: "pointer", userSelect: "none",
             ...chromeBtn(zoneTheme, { active: inSeaOfMind }),
-            color: zoneTheme.accent, fontSize: "11.5px", textAlign: "center",
+            color: zoneTheme.accent, fontSize: "var(--fs-sm)", textAlign: "center",
           }}
         >
           {inSeaOfMind ? "⟡ 睁开眼，回去" : "⟡ 闭上眼，进心灵之海"}

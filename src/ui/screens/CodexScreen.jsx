@@ -116,12 +116,12 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], sk
   const paperAccent = "var(--codex-accent)";
 
   const chipStyle = (on) => ({
-    cursor: "pointer", padding: "3px 12px", fontSize: "12px", userSelect: "none",
+    cursor: "pointer", padding: "3px 12px", fontSize: "var(--fs-sm)", userSelect: "none",
     backgroundImage: `url(${S("ui/bar_paper.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
     color: on ? "var(--codex-chip-on)" : "var(--codex-chip-off)", fontWeight: on ? "bold" : "normal", opacity: on ? 1 : 0.6,
   });
   const tabStyle = (on) => ({
-    cursor: "pointer", padding: "7px 26px", fontSize: "15px", border: "none",
+    cursor: "pointer", padding: "7px 26px", fontSize: "var(--fs-lg)", border: "none",
     backgroundImage: `url(${S("ui/bar_wood.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
     color: on ? "var(--ink-cream)" : "var(--codex-tab-off)", textShadow: on ? "0 1px 2px var(--black)" : "none", opacity: on ? 1 : 0.55,
   });
@@ -144,7 +144,7 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], sk
       >
         {/* 关闭 */}
         <span className="mobile-overlay-close" onClick={onClose} title="合上（也可按 ESC）"
-          style={{ position: "absolute", top: 30, right: 34, cursor: "pointer", fontSize: 18, color: paperAccent, zIndex: 2 }}>✕</span>
+          style={{ position: "absolute", top: 30, right: 34, cursor: "pointer", fontSize: "var(--fs-xl)", color: paperAccent, zIndex: 2 }}>✕</span>
 
         <div className="mobile-overlay-header" style={{ textAlign: "center", flexShrink: 0 }}>
           <div style={{ fontSize: "var(--fs-xl)", color: paperAccent, fontWeight: "bold", letterSpacing: 3 }}>百物 · 武学总览</div>
@@ -164,7 +164,7 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], sk
             onChange={e => setSearch(e.target.value)}
             placeholder="搜名字或介绍…"
             style={{
-              flex: 1, minWidth: 140, padding: "5px 10px", fontSize: 12, fontFamily: "inherit",
+              flex: 1, minWidth: 140, padding: "5px 10px", fontSize: "var(--fs-sm)", fontFamily: "inherit",
               background: "rgba(255,250,235,0.6)", border: "1px solid var(--codex-search-edge)", borderRadius: 0, color: "var(--codex-ink)",
             }}
           />
@@ -247,7 +247,7 @@ function ItemRow({ it, owned, paperText, paperDim, paperAccent }) {
     <div style={{ display: "flex", gap: 12, padding: "11px 8px", alignItems: "center", borderBottom: "1px solid rgba(120,90,50,0.22)", opacity: owned ? 1 : 0.92 }}>
       <div style={{ position: "relative", flexShrink: 0 }}>
         {jade && <img src={jade} alt={it.quality} style={{ width: 42, height: 42, objectFit: "contain", filter: owned ? "drop-shadow(0 2px 3px rgba(0,0,0,0.3))" : "grayscale(0.55) opacity(0.7)" }} />}
-        {owned && <span style={{ position: "absolute", right: -3, bottom: -2, fontSize: 13, color: "var(--codex-owned)", textShadow: "0 0 2px var(--white)" }}>✓</span>}
+        {owned && <span style={{ position: "absolute", right: -3, bottom: -2, fontSize: "var(--fs-md)", color: "var(--codex-owned)", textShadow: "0 0 2px var(--white)" }}>✓</span>}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
@@ -258,7 +258,7 @@ function ItemRow({ it, owned, paperText, paperDim, paperAccent }) {
           {effectName && <span style={{ fontSize: "var(--fs-xs)", color: "var(--codex-stat)" }}>· {effectName}</span>}
           {owned && <span style={{ fontSize: "var(--fs-2xs)", color: "var(--codex-owned)" }}>· 已获得</span>}
         </div>
-        {it.desc && <div style={{ color: "var(--codex-desc)", fontSize: 12, marginTop: 3, lineHeight: 1.7 }}>{it.desc}</div>}
+        {it.desc && <div style={{ color: "var(--codex-desc)", fontSize: "var(--fs-sm)", marginTop: 3, lineHeight: 1.7 }}>{it.desc}</div>}
         <div style={{ fontSize: "var(--fs-xs)", marginTop: 4, color: dist.kind === "special" ? "var(--codex-special)" : "var(--codex-brown)" }}>
           📍 <span style={{ color: dist.kind === "special" ? "var(--codex-special)" : "var(--codex-bonus)" }}>{dist.text}</span>
         </div>
@@ -285,7 +285,7 @@ function SkillRow({ sk, owned, paperText, paperDim, paperAccent }) {
     <div style={{ display: "flex", gap: 12, padding: "11px 8px", alignItems: "center", borderBottom: "1px solid rgba(120,90,50,0.22)", opacity: owned ? 1 : 0.92 }}>
       <div style={{ position: "relative", flexShrink: 0 }}>
         {jade && <img src={jade} alt={sk.quality} style={{ width: 42, height: 42, objectFit: "contain", filter: owned ? "drop-shadow(0 2px 3px rgba(0,0,0,0.3))" : "grayscale(0.55) opacity(0.7)" }} />}
-        {owned && <span style={{ position: "absolute", right: -3, bottom: -2, fontSize: 13, color: "var(--codex-owned)", textShadow: "0 0 2px var(--white)" }}>✓</span>}
+        {owned && <span style={{ position: "absolute", right: -3, bottom: -2, fontSize: "var(--fs-md)", color: "var(--codex-owned)", textShadow: "0 0 2px var(--white)" }}>✓</span>}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
@@ -302,7 +302,7 @@ function SkillRow({ sk, owned, paperText, paperDim, paperAccent }) {
         {bonusBits.length > 0 && (
           <div style={{ fontSize: "var(--fs-xs)", marginTop: 3, color: "var(--codex-brown)" }}>✦ 效果：<span style={{ color: "var(--codex-bonus)" }}>{bonusBits.join(" · ")}</span></div>
         )}
-        {sk.desc && <div style={{ color: "var(--codex-desc)", fontSize: 12, marginTop: 3, lineHeight: 1.7 }}>{sk.desc}</div>}
+        {sk.desc && <div style={{ color: "var(--codex-desc)", fontSize: "var(--fs-sm)", marginTop: 3, lineHeight: 1.7 }}>{sk.desc}</div>}
       </div>
     </div>
   );

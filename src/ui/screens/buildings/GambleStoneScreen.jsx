@@ -163,7 +163,7 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
       <div className="mobile-gamble-minimized" onClick={restoreTable}
         style={{ position: "fixed", bottom: 16, right: 16, zIndex: 200, cursor: "pointer",
           background: "var(--gamble-toast-bg)", border: "1px solid var(--ink-brass)", borderRadius: 0, padding: "8px 14px",
-          color: "var(--gold-light)", fontSize: 13, boxShadow: "0 4px 16px rgba(0,0,0,.5)" }}>
+          color: "var(--gold-light)", fontSize: "var(--fs-md)", boxShadow: "0 4px 16px rgba(0,0,0,.5)" }}>
         ⬒ 赌桌（{SKINS[stone.skin].label}）· 点击展开
       </div>
     );
@@ -182,10 +182,10 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "0 18px", background: "linear-gradient(180deg,var(--gamble-top) 60%,transparent)" }}>
         <div style={{ color: "var(--gold-light)", fontSize: "var(--fs-lg)" }}>玉石料场 · 赌桌
-          <span style={{ color: "var(--ink-brass)", fontSize: 12, marginLeft: 8 }}>
+          <span style={{ color: "var(--ink-brass)", fontSize: "var(--fs-sm)", marginLeft: 8 }}>
             {changKouLabel} · {skinLabel} · 已开{opened}刀{opened >= 1 ? "（悬停卡牌看行情，点卡成交或谈价）" : (bought ? "（点石头或下方按钮开刀）" : `（此料买价 ${stone?.price || 0} 两，落第一刀即买下切开）`)}
           </span>
-          {buyWarn && <span style={{ color: "var(--ink-rose)", fontSize: 12, marginLeft: 10 }}>{buyWarn}</span>}
+          {buyWarn && <span style={{ color: "var(--ink-rose)", fontSize: "var(--fs-sm)", marginLeft: 10 }}>{buyWarn}</span>}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={minimizeTable} style={topBtn}>最小化 ▬</button>

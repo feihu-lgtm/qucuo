@@ -22,12 +22,12 @@ ensureAllPromptsRegistered();
 
 const preStyle = {
   background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0,
-  padding: "8px 10px", marginTop: 6, fontSize: 11, lineHeight: 1.75,
+  padding: "8px 10px", marginTop: 6, fontSize: "var(--fs-xs)", lineHeight: 1.75,
   color: "var(--inject-body)", whiteSpace: "pre-wrap", wordBreak: "break-word",
   maxHeight: 240, overflowY: "auto", fontFamily: "inherit",
 };
 const pill = (active) => ({
-  cursor: "pointer", padding: "3px 10px", borderRadius: 0, fontSize: 11,
+  cursor: "pointer", padding: "3px 10px", borderRadius: 0, fontSize: "var(--fs-xs)",
   background: active ? "var(--inject-tab-on)" : "transparent",
   color: active ? "var(--text)" : "var(--text-dim)",
   border: `1px solid ${active ? "var(--accent)" : "var(--border)"}`,
@@ -130,7 +130,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
                 {matrix.litCount}/{matrix.totalCount} 块点亮 · 约 {matrix.tokenEstimate} tokens
               </span>
               {(call.group === "main" || call.group === "whisper") && (
-                <span onClick={() => pullLive(liveView)} style={{ cursor: "pointer", fontSize: 10.5, padding: "1px 8px", color: "var(--bg-panel)", background: "var(--accent)" }}>
+                <span onClick={() => pullLive(liveView)} style={{ cursor: "pointer", fontSize: "var(--fs-xs)", padding: "1px 8px", color: "var(--bg-panel)", background: "var(--accent)" }}>
                   ⟳ 拉取目前真值
                 </span>
               )}
@@ -166,14 +166,14 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
                     <div onClick={() => setOpenBlock(open ? null : item.id)} style={{ cursor: "pointer", padding: "5px 8px", display: "flex", alignItems: "center", gap: 6 }}>
                       <span style={{ color: "var(--inject-faint)", fontSize: "var(--fs-2xs)" }}>{open ? "▼" : "▶"}</span>
                       <span style={{ width: 8, height: 8, background: item.effectiveLit ? (KIND_META[item.kind]?.color || "var(--ink-good)") : "var(--inject-unlit)" }} />
-                      <span style={{ flex: 1, fontSize: 11.5, color: item.effectiveLit ? "var(--text)" : "var(--text-dim)" }}>
+                      <span style={{ flex: 1, fontSize: "var(--fs-sm)", color: item.effectiveLit ? "var(--text)" : "var(--text-dim)" }}>
                         {item.name} <span style={{ fontSize: "var(--fs-2xs)", color: "var(--inject-faint)" }}>#{item.slot}</span>
                       </span>
                       {item.canToggleOff ? (
                         <span style={{ display: "inline-flex", gap: 3 }} onClick={(e) => e.stopPropagation()}>
                           {(item.canForceBlue === false ? MODE_BTNS.filter(([m]) => m !== "blue") : MODE_BTNS).map(([m, label]) => (
                             <span key={m} onClick={() => handleModeChange(item.id, m, item.overrideMode)}
-                              style={{ ...pill(activeMode === m), padding: "1px 6px", fontSize: 9.5 }}>{label}</span>
+                              style={{ ...pill(activeMode === m), padding: "1px 6px", fontSize: "var(--fs-2xs)" }}>{label}</span>
                           ))}
                         </span>
                       ) : (
@@ -197,7 +197,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
                               placeholder={item.isSupplement ? "追加补充指令（保留当前好感档位、阶段与字数设置，不覆盖动态模板）" : undefined}
                               onChange={(e) => setDrafts((p) => ({ ...p, [item.id]: e.target.value }))}
                               rows={5}
-                              style={{ width: "100%", boxSizing: "border-box", background: "var(--bg-panel)", color: "var(--inject-body)", border: "1px solid var(--border)", padding: 6, fontSize: 10.5, fontFamily: "inherit" }}
+                              style={{ width: "100%", boxSizing: "border-box", background: "var(--bg-panel)", color: "var(--inject-body)", border: "1px solid var(--border)", padding: 6, fontSize: "var(--fs-xs)", fontFamily: "inherit" }}
                             />
                             <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
                               <span style={pill(true)} onClick={() => {
@@ -284,7 +284,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
                 <div onClick={() => setOpenBlock(open ? null : b.id)} style={{ cursor: "pointer", padding: "6px 9px", display: "flex", alignItems: "center", gap: 7 }}>
                   <span style={{ color: "var(--inject-faint)", fontSize: "var(--fs-2xs)" }}>{open ? "▼" : "▶"}</span>
                   <span style={{ width: 8, height: 8, background: b.lit ? meta.color : "var(--inject-unlit)" }} />
-                  <span style={{ flex: 1, fontSize: 12, color: b.lit ? "var(--text)" : "var(--text-dim)" }}>{b.name}{!b.lit && " ⚫灭"}</span>
+                  <span style={{ flex: 1, fontSize: "var(--fs-sm)", color: b.lit ? "var(--text)" : "var(--text-dim)" }}>{b.name}{!b.lit && " ⚫灭"}</span>
                   <span style={{ fontSize: "var(--fs-2xs)", color: "var(--inject-faint)" }}>{meta.label} #{b.depth}</span>
                 </div>
                 {open && (

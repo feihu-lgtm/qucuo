@@ -83,10 +83,10 @@ export default function PortraitBodyStep({
           onClick={() => { if (!hidden) setEditingKey(isEditing ? null : field.key); }}
           style={{ display: "flex", alignItems: "baseline", gap: 8, cursor: hidden ? "default" : "pointer" }}
         >
-          <span style={{ width: 56, flexShrink: 0, fontSize: "11px", color: val ? accent : "var(--muted)" }}>
+          <span style={{ width: 56, flexShrink: 0, fontSize: "var(--fs-xs)", color: val ? accent : "var(--muted)" }}>
             {field.label}
           </span>
-          <span style={{ flex: 1, fontSize: "11.5px", color: val ? "var(--create-input-text)" : "var(--muted)", minWidth: 0 }}>
+          <span style={{ flex: 1, fontSize: "var(--fs-sm)", color: val ? "var(--create-input-text)" : "var(--muted)", minWidth: 0 }}>
             {hidden ? (val ? maskText(val) : "未填") : isEditing ? "" : (previewText(val, 22) || "未填")}
           </span>
           {!hidden && (
@@ -105,7 +105,7 @@ export default function PortraitBodyStep({
               style={{
                 width: "100%", boxSizing: "border-box", minHeight: 52, resize: "vertical",
                 background: "rgba(0,0,0,0.45)", border: `1px solid ${border}`, borderRadius: 0,
-                color: "var(--create-input-text)", padding: "6px 8px", fontSize: "12px",
+                color: "var(--create-input-text)", padding: "6px 8px", fontSize: "var(--fs-sm)",
                 lineHeight: 1.55, fontFamily: "inherit",
               }}
             />
@@ -118,7 +118,7 @@ export default function PortraitBodyStep({
                   style={{
                     background: "rgba(0,0,0,0.35)",
                     border: `1px solid color-mix(in srgb, ${border} 55%, transparent)`,
-                    borderRadius: 0, color: "var(--ink-tan)", fontSize: "10px",
+                    borderRadius: 0, color: "var(--ink-tan)", fontSize: "var(--fs-2xs)",
                     padding: "3px 6px", cursor: "pointer", fontFamily: "inherit",
                   }}
                 >
@@ -138,7 +138,7 @@ export default function PortraitBodyStep({
         {/* 左 / 上：8 张开局立绘 */}
         <div className="character-create-portrait-col">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-            <span style={{ color: "var(--ink-tan)", fontSize: "12px", letterSpacing: "1px" }}>
+            <span style={{ color: "var(--ink-tan)", fontSize: "var(--fs-sm)", letterSpacing: "1px" }}>
               选定立绘（8 选 1）
             </span>
             <span style={{ color: accent, fontSize: "var(--fs-xs)" }}>{selectedPortrait.name}</span>
@@ -166,7 +166,7 @@ export default function PortraitBodyStep({
                   />
                   <span style={{
                     position: "absolute", left: 0, right: 0, bottom: 0,
-                    padding: "2px 3px", fontSize: "10px", lineHeight: 1.25,
+                    padding: "2px 3px", fontSize: "var(--fs-2xs)", lineHeight: 1.25,
                     background: "rgba(10,8,6,0.78)", color: active ? accent : "var(--create-input-text)",
                     textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                   }}>
@@ -190,7 +190,7 @@ export default function PortraitBodyStep({
                   aria-pressed={active}
                   onClick={() => setMode(item.id)}
                   style={{
-                    flex: 1, padding: "6px 4px", fontSize: "11.5px", fontFamily: "inherit",
+                    flex: 1, padding: "6px 4px", fontSize: "var(--fs-sm)", fontFamily: "inherit",
                     borderRadius: 0, cursor: "pointer",
                     border: `1px solid ${active ? accent : border}`,
                     background: active ? "rgba(212,168,83,0.16)" : "rgba(0,0,0,0.35)",
@@ -211,7 +211,7 @@ export default function PortraitBodyStep({
             onClick={toggleIncludeIntimate}
             style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",
-              fontSize: "10.5px", color: includeIntimate ? "var(--body-nsfw)" : "var(--muted)",
+              fontSize: "var(--fs-xs)", color: includeIntimate ? "var(--body-nsfw)" : "var(--muted)",
               marginBottom: 8, cursor: "pointer", userSelect: "none",
             }}
           >
@@ -222,7 +222,7 @@ export default function PortraitBodyStep({
           <div className="character-create-body-scroll" style={{ maxHeight: 220, overflowY: "auto", paddingRight: 2 }}>
             {mode === "matched" && (
               <div style={{ fontSize: "var(--fs-sm)", lineHeight: 1.65, color: "var(--create-input-text)" }}>
-                <div style={{ color: accent, fontSize: "11px", marginBottom: 4 }}>
+                <div style={{ color: accent, fontSize: "var(--fs-xs)", marginBottom: 4 }}>
                   当前体貌：{activePresetName}（{selectedPortrait.tag}）
                 </div>
                 {PUBLIC_FIELDS.map((field) => (
@@ -261,7 +261,7 @@ export default function PortraitBodyStep({
                         type="button"
                         onClick={() => applyFromLibrary(preset)}
                         style={{
-                          flexShrink: 0, padding: "4px 8px", fontSize: "10.5px", fontFamily: "inherit",
+                          flexShrink: 0, padding: "4px 8px", fontSize: "var(--fs-xs)", fontFamily: "inherit",
                           border: `1px solid ${accent}`, borderRadius: 0,
                           background: "rgba(0,0,0,0.4)", color: accent, cursor: "pointer",
                         }}
@@ -285,7 +285,7 @@ export default function PortraitBodyStep({
                     onClick={() => setShowIntimateEdit((v) => !v)}
                     style={{
                       background: "transparent", border: "none", color: accent,
-                      fontSize: "10.5px", cursor: "pointer", fontFamily: "inherit", padding: 0,
+                      fontSize: "var(--fs-xs)", cursor: "pointer", fontFamily: "inherit", padding: 0,
                     }}
                   >
                     {showIntimateEdit ? "◉ 隐藏" : "○ 显示并编辑"}
@@ -305,7 +305,7 @@ export default function PortraitBodyStep({
           style={{
             flex: "0 0 auto", padding: "11px 14px", borderRadius: 0,
             border: `1px solid ${border}`, background: "rgba(0,0,0,0.38)",
-            color: "var(--ink-tan)", fontSize: "13px", fontFamily: "inherit", cursor: "pointer",
+            color: "var(--ink-tan)", fontSize: "var(--fs-md)", fontFamily: "inherit", cursor: "pointer",
           }}
         >
           ← 上一步
@@ -316,7 +316,7 @@ export default function PortraitBodyStep({
           style={{
             flex: 1, border: "none", textAlign: "center", borderRadius: 0,
             background: `linear-gradient(180deg, ${accent}, var(--create-button-bottom))`,
-            color: "var(--create-dark)", fontSize: "15px", fontWeight: "bold",
+            color: "var(--create-dark)", fontSize: "var(--fs-lg)", fontWeight: "bold",
             letterSpacing: "2px", padding: "11px 0", fontFamily: "inherit", cursor: "pointer",
           }}
         >

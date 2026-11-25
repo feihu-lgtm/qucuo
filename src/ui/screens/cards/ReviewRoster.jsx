@@ -44,14 +44,14 @@ export default function ReviewRoster({
                     title={picked.has(i) ? "点掉就不加入" : "点上加入"}
                     style={{
                       cursor: "pointer", flexShrink: 0, width: 14, textAlign: "center",
-                      fontSize: 12, color: picked.has(i) ? accent : "var(--border)",
+                      fontSize: "var(--fs-sm)", color: picked.has(i) ? accent : "var(--border)",
                     }}>{picked.has(i) ? "◉" : "○"}</span>
                   <JadeTier value={n.levelCap} size={22} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ color: "var(--paper)", fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div style={{ color: "var(--paper)", fontSize: "var(--fs-sm)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {n.name}
                     </div>
-                    <div style={{ color: "var(--text-dim)", fontSize: 9.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.brief}</div>
+                    <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.brief}</div>
                   </div>
                   {(() => {
                     const pl = normalizePlacement(n.placement);
@@ -100,7 +100,7 @@ export default function ReviewRoster({
                 <Btn onClick={onBack} tone="dim">← 回名单</Btn>
                 <span onClick={toggleAll} title="一次勾上或取消全部"
                   style={{
-                    cursor: "pointer", userSelect: "none", fontSize: 11.5,
+                    cursor: "pointer", userSelect: "none", fontSize: "var(--fs-sm)",
                     padding: "6px 12px", borderRadius: 0, whiteSpace: "nowrap",
                     border: `1px solid ${allOn ? accent : "var(--ink-wood-edge)"}`,
                     background: "rgba(0,0,0,.3)",

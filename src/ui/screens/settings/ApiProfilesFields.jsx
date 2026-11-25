@@ -69,7 +69,7 @@ export default function ApiProfilesFields({
           <span onClick={handleImportCfg} style={{ ...btnStyle, flex: 1, textAlign: "center" }}>从文件导入配置</span>
         </div>
       </div>
-      <div style={{ ...sectionStyle, background: "var(--bg-panel)", border: "1px solid var(--border)", padding: 10, fontSize: "10.5px", color: "var(--text-dim)" }}>
+      <div style={{ ...sectionStyle, background: "var(--bg-panel)", border: "1px solid var(--border)", padding: 10, fontSize: "var(--fs-xs)", color: "var(--text-dim)" }}>
         凭证保存在当前浏览器中，请勿在公共设备上导入。Vertex AI 直接连接 Google，不使用代理。
       </div>
     </>

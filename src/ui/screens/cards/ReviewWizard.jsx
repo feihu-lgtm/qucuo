@@ -38,7 +38,7 @@ export default function ReviewWizard({
                 }}>
                 <span style={{
                   width: 18, height: 18, borderRadius: "50%", display: "flex", alignItems: "center",
-                  justifyContent: "center", fontSize: 10.5, flexShrink: 0,
+                  justifyContent: "center", fontSize: "var(--fs-xs)", flexShrink: 0,
                   background: wizardStep === idx ? "rgba(212,168,83,.2)" : "rgba(0,0,0,.3)",
                   border: `1px solid ${wizardStep === idx ? accent : "var(--border-deep)"}`,
                 }}>{idx + 1}</span>
@@ -86,7 +86,7 @@ export default function ReviewWizard({
                         }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
                           <JadeTier value={n.levelCap} size={22} />
-                          <span style={{ color: on ? accent : "var(--paper)", fontSize: 13, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          <span style={{ color: on ? accent : "var(--paper)", fontSize: "var(--fs-md)", flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                             {n.name}
                           </span>
                           {on && <span style={{ color: accent, fontSize: "var(--fs-xs)" }}>◉</span>}
@@ -99,7 +99,7 @@ export default function ReviewWizard({
                   })}
                 </div>
                 {bodyBusy && (
-                  <div style={{ marginTop: 12, fontSize: 11, color: "var(--quest-success-text)" }}>⏳ 正在让 AI 从外貌拆出体貌 7 项…</div>
+                  <div style={{ marginTop: 12, fontSize: "var(--fs-xs)", color: "var(--quest-success-text)" }}>⏳ 正在让 AI 从外貌拆出体貌 7 项…</div>
                 )}
               </div>
             )}
@@ -118,7 +118,7 @@ export default function ReviewWizard({
                   cardMesExample={parsed?.card?.fields?.mesExample || ""}
                 />
                 {bodyBusy && (
-                  <div style={{ marginTop: 10, fontSize: 11, color: "var(--quest-success-text)" }}>⏳ 正在让 AI 从外貌拆出体貌（公开＋私密）…</div>
+                  <div style={{ marginTop: 10, fontSize: "var(--fs-xs)", color: "var(--quest-success-text)" }}>⏳ 正在让 AI 从外貌拆出体貌（公开＋私密）…</div>
                 )}
               </div>
             )}
@@ -157,21 +157,21 @@ export default function ReviewWizard({
                           }}>
                           {isPlayerSrc ? (
                             <span title="已作主角"
-                              style={{ flexShrink: 0, width: 14, textAlign: "center", fontSize: 11, color: accent }}>主</span>
+                              style={{ flexShrink: 0, width: 14, textAlign: "center", fontSize: "var(--fs-xs)", color: accent }}>主</span>
                           ) : (
                             <span onClick={e => { e.stopPropagation(); toggleOne(i); }}
                               title={on ? "点掉就不加入" : "点上加入"}
                               style={{
                                 cursor: "pointer", flexShrink: 0, width: 14, textAlign: "center",
-                                fontSize: 12, color: on ? accent : "var(--border)",
+                                fontSize: "var(--fs-sm)", color: on ? accent : "var(--border)",
                               }}>{on ? "◉" : "○"}</span>
                           )}
                           <JadeTier value={n.levelCap} size={22} />
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ color: "var(--paper)", fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                              {n.name}{isPlayerSrc && <span style={{ color: accent, fontSize: 9.5, marginLeft: 5 }}>· 主角</span>}
+                            <div style={{ color: "var(--paper)", fontSize: "var(--fs-sm)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              {n.name}{isPlayerSrc && <span style={{ color: accent, fontSize: "var(--fs-2xs)", marginLeft: 5 }}>· 主角</span>}
                             </div>
-                            <div style={{ color: "var(--text-dim)", fontSize: 9.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.brief}</div>
+                            <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.brief}</div>
                           </div>
                           {!isPlayerSrc && pl.mode !== "mention" && (
                             <span title={pl.mode === "resident" ? `驻场于${pl.district}` : "按权重游走"}
@@ -227,7 +227,7 @@ export default function ReviewWizard({
                           <span key={i} onClick={() => setStarterCompanion(isStarter ? null : n.name)}
                             title={isStarter ? "点掉就不随队" : "让他开局就随队"}
                             style={{
-                              cursor: "pointer", userSelect: "none", fontSize: 11.5, padding: "4px 11px", borderRadius: 0,
+                              cursor: "pointer", userSelect: "none", fontSize: "var(--fs-sm)", padding: "4px 11px", borderRadius: 0,
                               border: `1px solid ${isStarter ? "var(--green-soft)" : "var(--music-idle-icon)"}`,
                               color: isStarter ? "var(--ci-pick)" : "var(--tutorial-move)",
                               background: isStarter ? "rgba(138,176,112,.15)" : "rgba(0,0,0,.2)",

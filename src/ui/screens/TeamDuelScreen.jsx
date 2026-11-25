@@ -232,7 +232,7 @@ export default function TeamDuelScreen({ enemies, companions = [], playerChar, p
               <span
                 onClick={() => { setLeopardAuto(v => !v); setLeopardIntent(null); if (stage === "leopard") setStage(firstStage()); }}
                 title={`托管=${partnerName}按自己的路数自行出招选目标；手动=你替${partnerName}选招选目标`}
-                style={{ float: "right", cursor: "pointer", fontSize: "10px", color: leopardAuto ? zoneTheme.textDim : "var(--violet)", border: `1px solid ${leopardAuto ? zoneTheme.border : "var(--violet)"}`, borderRadius: 0, padding: "1px 7px" }}
+                style={{ float: "right", cursor: "pointer", fontSize: "var(--fs-2xs)", color: leopardAuto ? zoneTheme.textDim : "var(--violet)", border: `1px solid ${leopardAuto ? zoneTheme.border : "var(--violet)"}`, borderRadius: 0, padding: "1px 7px" }}
               >{partnerName}：{leopardAuto ? "托管中" : "手动"}</span>
             )}
           </div>
@@ -278,7 +278,7 @@ export default function TeamDuelScreen({ enemies, companions = [], playerChar, p
                     <span key={e.id} className="mobile-duel-control"
                       onClick={() => pickTargetForUnit(stage, e.id)}
                       style={{
-                        cursor: "pointer", fontSize: "11px", padding: "3px 10px", borderRadius: 0, userSelect: "none",
+                        cursor: "pointer", fontSize: "var(--fs-xs)", padding: "3px 10px", borderRadius: 0, userSelect: "none",
                         color: pickingIntent?.targetId === e.id ? zoneTheme.bg : "var(--red-soft)",
                         background: pickingIntent?.targetId === e.id ? "var(--red-soft)" : "transparent",
                         border: "1px solid var(--red-soft)",
@@ -300,7 +300,7 @@ export default function TeamDuelScreen({ enemies, companions = [], playerChar, p
                     {leopardReady
                       ? <span onClick={() => setStage("ready")} style={styles.continueBtn(zoneTheme)}>就绪 ▸</span>
                       : <span style={{ fontSize: "var(--fs-xs)", color: zoneTheme.textDim }}>替{partnerName}选好招式{pickingNeedTarget ? "与目标" : ""}后继续</span>}
-                    <span onClick={() => setStage("player")} style={{ marginLeft: 12, fontSize: "10.5px", color: zoneTheme.textDim, cursor: "pointer" }}>◂ 回改你的招</span>
+                    <span onClick={() => setStage("player")} style={{ marginLeft: 12, fontSize: "var(--fs-xs)", color: zoneTheme.textDim, cursor: "pointer" }}>◂ 回改你的招</span>
                   </>
                 )}
               </div>
@@ -318,7 +318,7 @@ export default function TeamDuelScreen({ enemies, companions = [], playerChar, p
               <div style={styles.continueRow}>
                 <span onClick={handleResolve} style={styles.continueBtn(zoneTheme)}>出击 ▸</span>
                 {(needPlayerPick || needLeopardPick) && (
-                  <span onClick={() => setStage(firstStage())} style={{ marginLeft: 12, fontSize: "10.5px", color: zoneTheme.textDim, cursor: "pointer" }}>◂ 回改</span>
+                  <span onClick={() => setStage(firstStage())} style={{ marginLeft: 12, fontSize: "var(--fs-xs)", color: zoneTheme.textDim, cursor: "pointer" }}>◂ 回改</span>
                 )}
               </div>
             </div>

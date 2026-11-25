@@ -70,7 +70,7 @@ export default function Placement({ value, onChange, accent, npc, apiCfg, why, r
         <span onClick={askAiPlace} title="让 AI 按人设判断该驻场还是游走，据点只能从本作地图里选"
           style={{
             cursor: busy ? "wait" : "pointer", userSelect: "none",
-            fontSize: 11, padding: "4px 11px", borderRadius: 0, whiteSpace: "nowrap",
+            fontSize: "var(--fs-xs)", padding: "4px 11px", borderRadius: 0, whiteSpace: "nowrap",
             display: "inline-flex", alignItems: "center", gap: 5,
             color: busy ? "var(--ink-sage)" : "var(--tutorial-move)",
             border: `1px solid ${busy ? "var(--music-idle-icon)" : "var(--temple-full)"}`,
@@ -85,14 +85,14 @@ export default function Placement({ value, onChange, accent, npc, apiCfg, why, r
       {pl.mode === "resident" && (
         <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
           <label style={{ flex: 1 }}>
-            <span style={{ display: "block", fontSize: 10.5, color: "var(--ink-muted)", marginBottom: 3 }}>据点</span>
+            <span style={{ display: "block", fontSize: "var(--fs-xs)", color: "var(--ink-muted)", marginBottom: 3 }}>据点</span>
             <select value={pl.district || ""} onChange={e => set({ district: e.target.value || null, innerRoom: null })} style={selStyle}>
               <option value="" style={{ background: "var(--bg-deep)" }}>（未选，等同不落地）</option>
               {DISTRICTS.map(d => <option key={d} value={d} style={{ background: "var(--bg-deep)" }}>{d}</option>)}
             </select>
           </label>
           <label style={{ flex: 1 }}>
-            <span style={{ display: "block", fontSize: 10.5, color: "var(--ink-muted)", marginBottom: 3 }}>
+            <span style={{ display: "block", fontSize: "var(--fs-xs)", color: "var(--ink-muted)", marginBottom: 3 }}>
               常在哪间{rooms.length ? "" : "（无内层）"}
             </span>
             <select value={pl.innerRoom || ""} disabled={!rooms.length}
@@ -117,7 +117,7 @@ export default function Placement({ value, onChange, accent, npc, apiCfg, why, r
                   set({ weights: next });
                 }}
                   style={{
-                    cursor: "pointer", fontSize: 10.5, padding: "3px 8px", borderRadius: 0,
+                    cursor: "pointer", fontSize: "var(--fs-xs)", padding: "3px 8px", borderRadius: 0,
                     border: `1px solid ${w > 0 ? accent : "var(--bg-card)"}`,
                     background: w > 0 ? `rgba(212,168,83,${0.06 + w / 500})` : "transparent",
                     color: w > 0 ? "var(--paper)" : "var(--ink-text-dim)",
@@ -125,7 +125,7 @@ export default function Placement({ value, onChange, accent, npc, apiCfg, why, r
               );
             })}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--ink-muted)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "var(--fs-xs)", color: "var(--ink-muted)" }}>
             <span>时辰</span>
             <input type="number" min={0} max={23} value={pl.timeSlot[0]}
               onChange={e => set({ timeSlot: [Number(e.target.value), pl.timeSlot[1]] })}

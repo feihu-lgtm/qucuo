@@ -11,7 +11,7 @@ export default function AttributesModule({ zoneTheme, char, trainNeigong, trainW
             onClick={trainNeigong}
             title={`运气打坐：消耗${trainCost(char.neigong ?? 0)}点潜能，内功+1（现有潜能${pot}）`}
             style={{
-              cursor: "pointer", fontSize: "10px", padding: "1px 5px", borderRadius: 0,
+              cursor: "pointer", fontSize: "var(--fs-2xs)", padding: "1px 5px", borderRadius: 0,
               color: "var(--attr-neigong-tag)", background: zoneTheme.bgPanel, border: "1px solid var(--attr-neigong-edge)", whiteSpace: "nowrap",
             }}
           >+1（{trainCost(char.neigong ?? 0)}潜能）</span>
@@ -22,7 +22,7 @@ export default function AttributesModule({ zoneTheme, char, trainNeigong, trainW
             onClick={trainWaigong}
             title={`拆招练武：消耗${trainCost(char.waigong ?? 0)}点潜能，外功+1（现有潜能${pot}）`}
             style={{
-              cursor: "pointer", fontSize: "10px", padding: "1px 5px", borderRadius: 0,
+              cursor: "pointer", fontSize: "var(--fs-2xs)", padding: "1px 5px", borderRadius: 0,
               color: "var(--attr-waigong-tag)", background: zoneTheme.bgPanel, border: "1px solid var(--attr-waigong-edge)", whiteSpace: "nowrap",
             }}
           >+1（{trainCost(char.waigong ?? 0)}潜能）</span>
@@ -44,7 +44,7 @@ export default function AttributesModule({ zoneTheme, char, trainNeigong, trainW
           })}
         </div>
         {activeBuffs.length > 0 && (
-          <div style={{ marginTop: 4, fontSize: "9.5px", color: "var(--clay)", lineHeight: 1.5 }}>
+          <div style={{ marginTop: 4, fontSize: "var(--fs-2xs)", color: "var(--clay)", lineHeight: 1.5 }}>
             {activeBuffs.map((b, i) => (
               <div key={i}>药力·{b.attr}+{b.val}（余{b.remaining}）</div>
             ))}

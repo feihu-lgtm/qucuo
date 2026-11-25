@@ -28,11 +28,11 @@ export default function DungeonMapPanel({ room, runState, onMove, onAction, onTe
   const label = { fontSize: "var(--fs-xs)", letterSpacing: "1px", color: theme.accentDim, marginBottom: 5 };
   const chip = {
     display: "inline-flex", alignItems: "center", padding: "1px 7px", marginRight: 6,
-    fontSize: "10.5px", border: `1px solid ${theme.border}`, color: theme.text, whiteSpace: "nowrap",
+    fontSize: "var(--fs-xs)", border: `1px solid ${theme.border}`, color: theme.text, whiteSpace: "nowrap",
   };
 
   return (
-    <div style={{ padding: "10px 12px", background: theme.bgPanel, border: `1px solid ${theme.border}`, color: theme.text, fontSize: "12px", lineHeight: 1.6 }}>
+    <div style={{ padding: "10px 12px", background: theme.bgPanel, border: `1px solid ${theme.border}`, color: theme.text, fontSize: "var(--fs-sm)", lineHeight: 1.6 }}>
       {/* 1. 房名 */}
       <div data-part="room-name" style={{ fontSize: "var(--fs-md)", color: theme.accent, letterSpacing: "2px", marginBottom: 6 }}>
         {room?.name || "无名之室"}
@@ -114,7 +114,7 @@ export default function DungeonMapPanel({ room, runState, onMove, onAction, onTe
           onKeyDown={e => { if (e.key === "Enter") submit(); }}
           placeholder="输入动作（如：推开石门 / 查看角落）"
           style={{
-            flex: 1, height: 24, padding: "0 8px", fontSize: "11px", boxSizing: "border-box",
+            flex: 1, height: 24, padding: "0 8px", fontSize: "var(--fs-xs)", boxSizing: "border-box",
             background: "transparent", border: `1px solid ${theme.border}`, color: theme.text, outline: "none",
           }}
         />
@@ -123,7 +123,7 @@ export default function DungeonMapPanel({ room, runState, onMove, onAction, onTe
 
       {/* 底栏：runState 摘要（可选） */}
       {runState && (
-        <div data-part="run-state" style={{ marginTop: 10, fontSize: "9.5px", color: theme.textDim }}>
+        <div data-part="run-state" style={{ marginTop: 10, fontSize: "var(--fs-2xs)", color: theme.textDim }}>
           {`第 ${runState.step ?? 0} 步`}{runState.hp != null && ` · 气血 ${runState.hp}`}
           {Array.isArray(runState.loot) && runState.loot.length > 0 && ` · 得物 ${runState.loot.length} 件`}
         </div>

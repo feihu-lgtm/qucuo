@@ -18,7 +18,7 @@ export function StatRow({ label, value, min = 0, max = 10, step = 1, onChange, w
   const pct = ((value - min) / (max - min)) * 100;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-      <span style={{ width, fontSize: 11, color: "var(--quest-stage-desc)", flexShrink: 0 }}>{label}</span>
+      <span style={{ width, fontSize: "var(--fs-xs)", color: "var(--quest-stage-desc)", flexShrink: 0 }}>{label}</span>
       <div
         onClick={e => {
           if (!onChange) return;
@@ -47,13 +47,13 @@ export function StatRow({ label, value, min = 0, max = 10, step = 1, onChange, w
             style={{
               width: max > 10 ? 32 : 26, textAlign: "center", background: "rgba(0,0,0,.4)",
               border: "1px solid var(--border-deep)", borderRadius: 0, padding: "2px 0",
-              color: "var(--ink-warn)", fontSize: 11.5, outline: "none", fontFamily: "inherit",
+              color: "var(--ink-warn)", fontSize: "var(--fs-sm)", outline: "none", fontFamily: "inherit",
             }} />
           <Step onClick={() => set(value + step)} disabled={value >= max}>＋</Step>
           {unit ? <span style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-text-dim)" }}>{unit}</span> : null}
         </span>
       ) : (
-        <span style={{ width: 26, textAlign: "right", fontSize: 11, color: "var(--ink-warn)", flexShrink: 0 }}>{value}</span>
+        <span style={{ width: 26, textAlign: "right", fontSize: "var(--fs-xs)", color: "var(--ink-warn)", flexShrink: 0 }}>{value}</span>
       )}
     </div>
   );
@@ -102,14 +102,14 @@ export function TextField({ label, value, onChange, placeholder, rows = 1, max, 
   const common = {
     width: "100%", boxSizing: "border-box", background: "rgba(0,0,0,.35)",
     border: "1px solid var(--border-deep)", borderRadius: 0, padding: "5px 8px",
-    color: "var(--paper)", fontSize: 11.5, outline: "none", resize: "vertical",
+    color: "var(--paper)", fontSize: "var(--fs-sm)", outline: "none", resize: "vertical",
     textAlign: centered,
     fontFamily: mono ? "ui-monospace,Menlo,Consolas,monospace" : "inherit",
   };
   return (
     <label style={{ display: "block", marginBottom: 7 }}>
       {label != null && (
-        <span style={{ display: "block", fontSize: 10.5, color: "var(--ink-muted)", marginBottom: 3, textAlign: centered === "center" ? "center" : "left" }}>
+        <span style={{ display: "block", fontSize: "var(--fs-xs)", color: "var(--ink-muted)", marginBottom: 3, textAlign: centered === "center" ? "center" : "left" }}>
           {label}{max ? <span style={{ color: "var(--muted)" }}> ≤{max}字</span> : null}
         </span>
       )}
@@ -126,7 +126,7 @@ export function TextField({ label, value, onChange, placeholder, rows = 1, max, 
 
 export function Stat({ label, v }) {
   return (
-    <div style={{ display: "flex", fontSize: 11, marginBottom: 4, color: "var(--ink-muted)" }}>
+    <div style={{ display: "flex", fontSize: "var(--fs-xs)", marginBottom: 4, color: "var(--ink-muted)" }}>
       <span style={{ width: 84, flexShrink: 0 }}>{label}</span>
       <span style={{ color: "var(--ink-text)" }}>{v}</span>
     </div>
@@ -158,7 +158,7 @@ export function Btn({ children, onClick, tone = "dim", disabled, title }) {
     <span onClick={disabled ? undefined : onClick} title={title}
       style={{
         cursor: disabled ? "not-allowed" : "pointer", userSelect: "none",
-        fontSize: 12, padding: "6px 16px", borderRadius: 0, whiteSpace: "nowrap",
+        fontSize: "var(--fs-sm)", padding: "6px 16px", borderRadius: 0, whiteSpace: "nowrap",
         color: main ? "var(--bg-deep)" : warn ? "var(--tutorial-time)" : "var(--quest-stage-desc)",
         background: main ? "linear-gradient(180deg,var(--service-item-name),var(--mind-button-edge))" : "rgba(0,0,0,.3)",
         border: `1px solid ${main ? "var(--service-item-name)" : warn ? "var(--ink-wood-edge)" : "var(--border-deep)"}`,
@@ -180,7 +180,7 @@ function Pill({ label, on, onClick, title, accent }) {
     <span onClick={onClick} title={title}
       onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{
-        cursor: "pointer", userSelect: "none", fontSize: 11.5, padding: "4px 14px", borderRadius: 0,
+        cursor: "pointer", userSelect: "none", fontSize: "var(--fs-sm)", padding: "4px 14px", borderRadius: 0,
         transition: "all .14s ease",
         border: `1px solid ${on || hov ? accent : "var(--ink-brass)"}`,
         background: on ? "rgba(212,168,83,.16)" : hov ? "rgba(212,168,83,.07)" : "rgba(0,0,0,.18)",

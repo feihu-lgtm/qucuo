@@ -17,14 +17,14 @@ export function Btn({ label, onClick, disabled, zoneTheme, secondary }) {
 }
 
 export function SectionTitle({ children, zoneTheme }) {
-  return <div style={{ color: zoneTheme.accentDim, fontSize: 11, margin: "12px 0 6px", borderBottom: `1px solid ${zoneTheme.border}`, paddingBottom: 3 }}>{children}</div>;
+  return <div style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-xs)", margin: "12px 0 6px", borderBottom: `1px solid ${zoneTheme.border}`, paddingBottom: 3 }}>{children}</div>;
 }
 
 // ── 样式 ─────────────────────────────────────────────────────────────
 export const S = {
   page: (t) => ({ height: "100vh", display: "flex", flexDirection: "column", background: t.bg || "var(--tavern-page-bg)", fontFamily: "inherit" }),
   topbar: (t) => ({ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderBottom: `1px solid ${t.border}`, flexWrap: "wrap" }),
-  chip: (t) => ({ color: "var(--ink-text)", fontSize: 12, border: `1px solid ${t.border}`, borderRadius: 0, padding: "3px 8px", background: "rgba(255,255,255,0.02)" }),
+  chip: (t) => ({ color: "var(--ink-text)", fontSize: "var(--fs-sm)", border: `1px solid ${t.border}`, borderRadius: 0, padding: "3px 8px", background: "rgba(255,255,255,0.02)" }),
   mainRow: { flex: 1, display: "flex", minHeight: 0, flexWrap: "wrap" },
   sceneWrap: (t) => ({ flex: "1 1 58%", minWidth: 320, padding: 12, borderRight: `1px solid ${t.border}` }),
   scene: (night) => ({
@@ -38,7 +38,7 @@ export const S = {
   side: (t) => ({ flex: "1 1 38%", minWidth: 280, display: "flex", flexDirection: "column", minHeight: 0 }),
   tabRow: (t) => ({ display: "flex", borderBottom: `1px solid ${t.border}` }),
   tab: (t, active) => ({
-    flex: 1, textAlign: "center", padding: "8px 0", fontSize: 12, cursor: "pointer", userSelect: "none",
+    flex: 1, textAlign: "center", padding: "8px 0", fontSize: "var(--fs-sm)", cursor: "pointer", userSelect: "none",
     color: active ? t.accent : "var(--ink-moss)", borderBottom: active ? `2px solid ${t.accent}` : "2px solid transparent",
   }),
   row: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" },

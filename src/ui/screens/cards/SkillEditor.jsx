@@ -39,25 +39,25 @@ export default function SkillEditor({ skills, onChange, tierCap, accent, aiBusy,
             </select>
             <span onClick={() => setOne(i, { active: !s.active })}
               title={s.active ? "这门当前会出手（同路数只第一门生效）" : "点亮才会用它出招"}
-              style={{ cursor: "pointer", fontSize: 10, color: s.active ? accent : "var(--muted)", flexShrink: 0, whiteSpace: "nowrap" }}>
+              style={{ cursor: "pointer", fontSize: "var(--fs-2xs)", color: s.active ? accent : "var(--muted)", flexShrink: 0, whiteSpace: "nowrap" }}>
               {s.active ? "◉ 用" : "○ 备"}
             </span>
             <span onClick={() => del(i)} title="删掉这门"
-              style={{ cursor: "pointer", color: "var(--lore-amber)", fontSize: 11, flexShrink: 0 }}>✕</span>
+              style={{ cursor: "pointer", color: "var(--lore-amber)", fontSize: "var(--fs-xs)", flexShrink: 0 }}>✕</span>
           </div>
           <input value={s.desc || ""} placeholder="一句话写这门功夫使出来什么样（注入给说书人）"
             onChange={e => setOne(i, { desc: e.target.value.slice(0, 30) })}
-            style={{ ...selStyle, textAlign: "left", fontSize: 10.5, color: "var(--ink-text)" }} />
+            style={{ ...selStyle, textAlign: "left", fontSize: "var(--fs-xs)", color: "var(--ink-text)" }} />
         </div>
       ))}
       <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 4 }}>
-        <span onClick={add} style={{ cursor: "pointer", fontSize: 10.5, color: "var(--ink-muted)" }}>＋ 加一门</span>
+        <span onClick={add} style={{ cursor: "pointer", fontSize: "var(--fs-xs)", color: "var(--ink-muted)" }}>＋ 加一门</span>
         <span style={{ flex: 1 }} />
         <span onClick={aiBusy ? undefined : onAiScan}
           title="让 AI 照卡里主角的招式/战斗描写现编武学"
           style={{
             cursor: aiBusy ? "wait" : "pointer", userSelect: "none",
-            fontSize: 11.5, padding: "5px 12px", borderRadius: 0, whiteSpace: "nowrap",
+            fontSize: "var(--fs-sm)", padding: "5px 12px", borderRadius: 0, whiteSpace: "nowrap",
             display: "inline-flex", alignItems: "center", gap: 5,
             color: aiBusy ? "var(--quest-success-text)" : "var(--ci-pick)", textShadow: "0 1px 2px rgba(0,0,0,.85)",
             border: `1px solid ${aiBusy ? "var(--music-idle-icon)" : "var(--ink-good)"}`,

@@ -39,7 +39,7 @@ export default function NarratorTab({ cfg, patch, narrator, setNarrator }) {
             <span key={key}
               onClick={() => setNarrator?.(n => ({ ...n, affection: v }))}
               style={{
-                cursor: "pointer", textAlign: "center", padding: "4px 2px", borderRadius: 0, fontSize: "10px",
+                cursor: "pointer", textAlign: "center", padding: "4px 2px", borderRadius: 0, fontSize: "var(--fs-2xs)",
                 color: active ? "var(--bg-panel)" : "var(--ink-sage)",
                 background: active ? "var(--accent)" : "var(--bg-panel)",
                 border: "1px solid var(--border)",
@@ -73,7 +73,7 @@ export default function NarratorTab({ cfg, patch, narrator, setNarrator }) {
                   confessed: stage === "cheat" ? true : stage === "flirting" ? false : n.confessed,
                 }))}
                 style={{
-                  ...btnStyle, fontSize: "11px",
+                  ...btnStyle, fontSize: "var(--fs-xs)",
                   color: on ? "var(--bg-panel)" : "var(--accent)",
                   background: on ? "var(--accent)" : "var(--bg-panel)",
                 }}>
@@ -117,7 +117,7 @@ export default function NarratorTab({ cfg, patch, narrator, setNarrator }) {
                 border: `1px solid ${cur ? "var(--accent)" : "transparent"}`,
               }}>
                 <span style={{ width: 16, color: cur ? "var(--accent)" : "var(--ink-faint)", fontSize: "var(--fs-2xs)" }}>{cur ? "▶" : ""}</span>
-                <span style={{ flex: 1, fontSize: "11px", color: cur ? "var(--ink-tier-text)" : "var(--text-dim)" }}>
+                <span style={{ flex: 1, fontSize: "var(--fs-xs)", color: cur ? "var(--ink-tier-text)" : "var(--text-dim)" }}>
                   {t.label}
                   <span style={{ color: "var(--text-dim)", marginLeft: 6 }}>
                     {t.key === "awake" ? "≥90" : `${t.min}–${AFFECTION_TIERS[AFFECTION_TIERS.indexOf(t) + 1].min}`}

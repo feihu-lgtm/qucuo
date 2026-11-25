@@ -91,7 +91,7 @@ export default function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = 
         <span className="map-zoom-btn" role="button" tabIndex={0} aria-label="重置地图视图" title="重置地图视图"
           onClick={resetView} onKeyDown={event => {
             if (event.key === "Enter" || event.key === " ") { event.preventDefault(); resetView(); }
-          }} style={{ ...cmZoomBtn, fontSize: "10px" }}>⤢</span>
+          }} style={{ ...cmZoomBtn, fontSize: "var(--fs-2xs)" }}>⤢</span>
       </div>
       <svg viewBox={`0 0 ${w} ${h}`}
         style={{ width: "100%", maxHeight, display: "block", cursor: dragging ? "grabbing" : "grab", touchAction: "none" }}
@@ -179,6 +179,6 @@ export default function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = 
 
 const cmZoomBtn = {
   cursor: "pointer", width: 22, height: 22, lineHeight: "20px", textAlign: "center",
-  fontSize: "15px", color: "var(--map-title-text)", background: "rgba(240,232,210,0.85)",
+  fontSize: "var(--fs-lg)", color: "var(--map-title-text)", background: "rgba(240,232,210,0.85)",
   border: "1px solid var(--map-locked)", borderRadius: 0, userSelect: "none", display: "block", fontWeight: "bold",
 };

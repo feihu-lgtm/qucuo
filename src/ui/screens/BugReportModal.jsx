@@ -110,7 +110,7 @@ export default function BugReportModal({
   };
 
   const inputStyle = {
-    width: "100%", boxSizing: "border-box", padding: "6px 9px", fontSize: 12.5,
+    width: "100%", boxSizing: "border-box", padding: "6px 9px", fontSize: "var(--fs-md)",
     fontFamily: "inherit", background: C.inputBg, border: `1px solid ${C.border}`,
     borderRadius: 0, color: C.text, resize: "vertical", marginTop: 4,
   };
@@ -125,7 +125,7 @@ export default function BugReportModal({
       <div className="mobile-overlay-panel mobile-report-panel" style={{ position: "relative", width: 440, maxWidth: "94vw", maxHeight: "88vh", overflowY: "auto", background: C.panel, border: `1px solid ${C.border}`, borderRadius: 0, padding: "22px 24px", color: C.text }}>
         <div className="mobile-overlay-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, background: C.panel }}>
           <div style={{ fontSize: "var(--fs-lg)", fontWeight: "bold", color: C.accent, marginBottom: 4 }}>🐞 上报 Bug · 意见信箱</div>
-          <span className="mobile-overlay-close" onClick={onClose} aria-label="关闭上报窗口" style={{ cursor: "pointer", fontSize: 18, color: C.dim }}>✕</span>
+          <span className="mobile-overlay-close" onClick={onClose} aria-label="关闭上报窗口" style={{ cursor: "pointer", fontSize: "var(--fs-xl)", color: C.dim }}>✕</span>
         </div>
         <div style={{ fontSize: "var(--fs-sm)", color: C.dim, marginBottom: 16, lineHeight: 1.7 }}>
           遇到问题、想要的功能、任何想说的，都可以留在这里。
@@ -160,7 +160,7 @@ export default function BugReportModal({
               <div style={{ marginBottom: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
                   <span style={labelStyle}>附带聊天记录（选要发的回合）</span>
-                  <span onClick={toggleAll} style={{ cursor: "pointer", fontSize: 11, color: C.accent }}>
+                  <span onClick={toggleAll} style={{ cursor: "pointer", fontSize: "var(--fs-xs)", color: C.accent }}>
                     {allSelected ? "全不选" : "全选"}（已选 {selectedTurns.size}/{turns.length}）
                   </span>
                 </div>
@@ -169,13 +169,13 @@ export default function BugReportModal({
                     <div key={i} style={{ borderBottom: i < turns.length - 1 ? `1px solid color-mix(in srgb, ${C.border} 33%, transparent)` : "none", padding: "3px 2px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         <input type="checkbox" checked={selectedTurns.has(i)} onChange={() => toggleTurn(i)} style={{ flexShrink: 0 }} />
-                        <span onClick={() => toggleTurn(i)} style={{ flex: 1, cursor: "pointer", fontSize: 11.5, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.label}</span>
-                        <span onClick={() => setExpandedTurn(expandedTurn === i ? null : i)} style={{ cursor: "pointer", fontSize: 10.5, color: C.dim, flexShrink: 0 }}>
+                        <span onClick={() => toggleTurn(i)} style={{ flex: 1, cursor: "pointer", fontSize: "var(--fs-sm)", color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.label}</span>
+                        <span onClick={() => setExpandedTurn(expandedTurn === i ? null : i)} style={{ cursor: "pointer", fontSize: "var(--fs-xs)", color: C.dim, flexShrink: 0 }}>
                           {expandedTurn === i ? "收起" : "查看"}
                         </span>
                       </div>
                       {expandedTurn === i && (
-                        <div style={{ marginLeft: 22, marginTop: 4, marginBottom: 4, padding: "6px 8px", background: C.inputBg, borderRadius: 0, fontSize: 11, color: C.dim, lineHeight: 1.7, whiteSpace: "pre-wrap", maxHeight: 160, overflowY: "auto" }}>
+                        <div style={{ marginLeft: 22, marginTop: 4, marginBottom: 4, padding: "6px 8px", background: C.inputBg, borderRadius: 0, fontSize: "var(--fs-xs)", color: C.dim, lineHeight: 1.7, whiteSpace: "pre-wrap", maxHeight: 160, overflowY: "auto" }}>
                           {t.preview || "（无文本内容）"}
                         </div>
                       )}
@@ -186,17 +186,17 @@ export default function BugReportModal({
             )}
 
             <div style={{ marginBottom: 14, padding: "8px 10px", border: `1px solid ${C.border}` }}>
-              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 11.5, color: C.text }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: "var(--fs-sm)", color: C.text }}>
                 <input type="checkbox" checked={includeDebugBundle} onChange={e => setIncludeDebugBundle(e.target.checked)} />
                 <span>附带调试包（存档、游戏日志、错误；对话和行动记录按勾选附带）</span>
               </label>
               {actionTrees.length > 0 && (
-                <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, fontSize: 11.5, color: C.dim }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, fontSize: "var(--fs-sm)", color: C.dim }}>
                   <input type="checkbox" disabled={!includeDebugBundle} checked={includeActionTrees} onChange={e => setIncludeActionTrees(e.target.checked)} />
                   <span>附带全流程行动记录（{actionTrees.length} 条，含 AI 输入和回复）</span>
                 </label>
               )}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginTop: 7, fontSize: 10.5, color: C.dim }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginTop: 7, fontSize: "var(--fs-xs)", color: C.dim }}>
                 <span>调试包大小：{formattedBundleSize}</span>
                 <button type="button" onClick={() => downloadDebugBundle(debugBundle)} style={{ cursor: "pointer", padding: "4px 8px", color: C.text, background: C.inputBg, border: `1px solid ${C.border}` }}>
                   仅下载调试包
@@ -228,12 +228,12 @@ export default function BugReportModal({
             )}
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, alignItems: "center" }}>
-              <span onClick={onClose} style={{ cursor: "pointer", fontSize: 12, color: C.dim, padding: "6px 14px" }}>取消</span>
+              <span onClick={onClose} style={{ cursor: "pointer", fontSize: "var(--fs-sm)", color: C.dim, padding: "6px 14px" }}>取消</span>
               <span
                 onClick={submit}
                 style={{
                   cursor: agreed && !sending ? "pointer" : "not-allowed",
-                  padding: "6px 20px", borderRadius: 0, fontSize: 13, fontWeight: "bold",
+                  padding: "6px 20px", borderRadius: 0, fontSize: "var(--fs-md)", fontWeight: "bold",
                   background: agreed && !sending ? C.accent : (dark ? "var(--border)" : "var(--bug-button-off-light)"),
                   color: agreed && !sending ? (dark ? "var(--bug-button-text-dark)" : "var(--white)") : C.dim,
                   border: "none",

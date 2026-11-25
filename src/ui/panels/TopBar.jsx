@@ -91,7 +91,7 @@ export default function TopBar({
         {isMobile && (
           <>
             <span className="mobile-touch-target mobile-menu-toggle" onClick={() => setMobileTopMenu(v => !v)}
-              style={{ ...topBtn(mobileTopMenu), fontSize: "13px" }}>☰ 菜单</span>
+              style={{ ...topBtn(mobileTopMenu), fontSize: "var(--fs-md)" }}>☰ 菜单</span>
             <span style={{ flex: 1 }} />
             {!mobileTopMenu && turnControls && <><TurnControls theme={zoneTheme} {...turnControls} /><TurnStatusPill theme={zoneTheme} mobile /></>}
             {mobileTopMenu && <span className="mobile-touch-target" onClick={() => setMobileTopMenu(false)} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "var(--fs-xs)" }}>收起 ✕</span>}

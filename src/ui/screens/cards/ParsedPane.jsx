@@ -51,7 +51,7 @@ function ParsedPane({
               ["meta", metaEntries.length], ["unknown", unclassified.length]].map(([k, n]) => {
               const m = KIND_META[k] || KIND_META.unknown;
               return (
-                <div key={k} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, marginBottom: 3, color: "var(--quest-stage-desc)" }}>
+                <div key={k} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "var(--fs-xs)", marginBottom: 3, color: "var(--quest-stage-desc)" }}>
                   <span style={{ color: m.color }}>{m.icon}</span>
                   <span style={{ flex: 1 }}>{k === "faction/place/rule" ? "世界观" : m.label}</span>
                   <span style={{ color: n ? accent : "var(--muted)" }}>{n}</span>
@@ -73,7 +73,7 @@ function ParsedPane({
               padding: "8px 10px", borderRadius: 0,
               background: "rgba(122,154,112,.08)", border: "1px solid var(--music-idle-icon)",
             }}>
-              <div style={{ flex: 1, fontSize: 10.5, color: "var(--tavern-steam)", lineHeight: 1.7 }}>
+              <div style={{ flex: 1, fontSize: "var(--fs-xs)", color: "var(--tavern-steam)", lineHeight: 1.7 }}>
                 下面这份名单是按标签与关键词猜的，标「待定」的机器分不出是人是概念。
                 让 AI 通读一遍正文能认得准得多。
               </div>
@@ -83,7 +83,7 @@ function ParsedPane({
             </div>
           )}
           {classified && !scanning && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 9, fontSize: 10.5, color: "var(--quest-success-text)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 9, fontSize: "var(--fs-xs)", color: "var(--quest-success-text)" }}>
               <span>AI 通读正文后认出 {classified.people.length} 人</span>
               {!!classified.multiPerson.length && (
                 <span style={{ color: "var(--tutorial-time)" }}>
@@ -114,7 +114,7 @@ function ParsedPane({
             </div>
           )}
           {!cands.length && (
-            <div style={{ color: "var(--text-dim)", fontSize: 11.5, padding: "20px 0", textAlign: "center" }}>
+            <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-sm)", padding: "20px 0", textAlign: "center" }}>
               这张卡里没找到可以单独成人的条目。<br />
               {report.stats.usableFields.length
                 ? "人设写在卡的经典字段里，勾上「这张卡也当我自己」就能用。"
@@ -134,7 +134,7 @@ function ParsedPane({
                   }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <span style={{ color: on ? accent : "var(--border)", fontSize: "var(--fs-sm)" }}>{on ? "◉" : "○"}</span>
-                    <span style={{ color: "var(--paper)", fontSize: 12.5, flex: 1 }}>{c.name}</span>
+                    <span style={{ color: "var(--paper)", fontSize: "var(--fs-md)", flex: 1 }}>{c.name}</span>
                     {!c.sure && <span title="机器拿不准这是人还是概念，勾选前请自己看一眼"
                       style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-muted)", border: "1px solid var(--border-deep)", borderRadius: 0, padding: "0 3px" }}>待定</span>}
                     {c.grouped && <span title="AI 认出这几条写的是同一个人，已合并"
@@ -156,7 +156,7 @@ function ParsedPane({
                 {card.openings.map((o, i) => (
                   <span key={i} onClick={() => setOpeningIdx(i)} title={o.slice(0, 80)}
                     style={{
-                      cursor: "pointer", fontSize: 10.5, padding: "3px 9px", borderRadius: 0,
+                      cursor: "pointer", fontSize: "var(--fs-xs)", padding: "3px 9px", borderRadius: 0,
                       border: `1px solid ${openingIdx === i ? accent : "var(--bg-card)"}`,
                       color: openingIdx === i ? accent : "var(--muted)",
                     }}>开局{i + 1}·{o.length}字</span>

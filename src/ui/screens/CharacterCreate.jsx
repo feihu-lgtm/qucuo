@@ -126,14 +126,14 @@ export default function CharacterCreate({ onConfirm }) {
         {pending && (
           <div style={styles.cardBox}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-              <span style={{ fontSize: 15 }}>🧾</span>
-              <span style={{ color: "var(--create-title)", fontSize: 13, flex: 1 }}>
+              <span style={{ fontSize: "var(--fs-lg)" }}>🧾</span>
+              <span style={{ color: "var(--create-title)", fontSize: "var(--fs-md)", flex: 1 }}>
                 有一张入册待用的角色卡
               </span>
               <span
                 onClick={() => { clearPendingPlayerCard(); clearPendingStarterCompanion(); setPending(null); setUseCard(false); }}
                 title="弃用这张卡，从头自己填"
-                style={{ cursor: "pointer", fontSize: 11, color: "var(--muted)" }}
+                style={{ cursor: "pointer", fontSize: "var(--fs-xs)", color: "var(--muted)" }}
               >弃用</span>
             </div>
             <div style={{ fontSize: "var(--fs-sm)", color: "var(--text)", lineHeight: 1.8 }}>
@@ -147,7 +147,7 @@ export default function CharacterCreate({ onConfirm }) {
                 if (next && pending.name) setName(pending.name);
               }}
               style={{
-                marginTop: 8, cursor: "pointer", fontSize: 12,
+                marginTop: 8, cursor: "pointer", fontSize: "var(--fs-sm)",
                 color: useCard ? theme.accent : "var(--muted)",
               }}
             >
@@ -269,12 +269,12 @@ const styles = {
     padding: "24px 28px",
   },
   title: {
-    color: "var(--create-title)", fontSize: "26px", fontWeight: "bold",
+    color: "var(--create-title)", fontSize: "var(--fs-2xl)", fontWeight: "bold",
     textAlign: "center", letterSpacing: "6px", marginBottom: 8,
     textShadow: "0 2px 10px rgba(0,0,0,0.7)",
   },
   sub: {
-    color: theme.accent, fontSize: "12px", textAlign: "center",
+    color: theme.accent, fontSize: "var(--fs-sm)", textAlign: "center",
     letterSpacing: "2px", opacity: 0.85, marginBottom: 30,
   },
   cardBox: {
@@ -284,27 +284,27 @@ const styles = {
   },
   field: { display: "block", marginBottom: 20 },
   fieldLabel: {
-    display: "block", color: "var(--ink-tan)", fontSize: "13px",
+    display: "block", color: "var(--ink-tan)", fontSize: "var(--fs-md)",
     letterSpacing: "2px", marginBottom: 8,
   },
   input: {
     width: "100%", boxSizing: "border-box",
     background: "rgba(0,0,0,0.4)", border: `1px solid ${theme.border || "var(--gold-deep)"}`,
     borderRadius: 0, padding: "10px 14px",
-    color: "var(--create-input-text)", fontSize: "15px", outline: "none",
+    color: "var(--create-input-text)", fontSize: "var(--fs-lg)", outline: "none",
     fontFamily: "inherit",
   },
   select: {
     width: "100%", boxSizing: "border-box",
     background: "rgba(0,0,0,0.4)", border: `1px solid ${theme.border || "var(--gold-deep)"}`,
     borderRadius: 0, padding: "10px 14px",
-    color: "var(--create-input-text)", fontSize: "15px", outline: "none",
+    color: "var(--create-input-text)", fontSize: "var(--fs-lg)", outline: "none",
     fontFamily: "inherit", cursor: "pointer",
   },
   confirm: {
     width: "100%", border: "none", marginTop: 14, textAlign: "center",
     background: `linear-gradient(180deg, ${theme.accent}, var(--create-button-bottom))`,
-    color: "var(--create-dark)", fontSize: "16px", fontWeight: "bold",
+    color: "var(--create-dark)", fontSize: "var(--fs-lg)", fontWeight: "bold",
     letterSpacing: "3px", padding: "13px 0", borderRadius: 0,
     userSelect: "none", transition: "opacity 0.2s",
   },

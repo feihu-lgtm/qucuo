@@ -294,13 +294,13 @@ export default function CardImportScreen({
           padding: "0 12px", minHeight: 52,
         }}>
           <img src={S("ui/scroll_ic.webp")} alt="" style={{ width: 22, height: 22, opacity: .9 }} />
-          <span style={{ color: "var(--tutorial-title)", fontSize: 16, letterSpacing: 5, textShadow: "0 1px 4px var(--black)" }}>{playerMode ? "导入角色卡当自己" : "角色入册"}</span>
+          <span style={{ color: "var(--tutorial-title)", fontSize: "var(--fs-lg)", letterSpacing: 5, textShadow: "0 1px 4px var(--black)" }}>{playerMode ? "导入角色卡当自己" : "角色入册"}</span>
           {fileName && <span style={{ fontSize: "var(--fs-xs)", color: "var(--muted)" }}>{fileName}</span>}
           <span style={{ flex: 1 }} />
           {playerMode && (
             <span onClick={() => setShowTutorial(true)} title="重看这条流程的教程"
               style={{
-                cursor: "pointer", userSelect: "none", fontSize: 11, color: accent,
+                cursor: "pointer", userSelect: "none", fontSize: "var(--fs-xs)", color: accent,
                 border: `1px solid color-mix(in srgb, ${accent} 40%, transparent)`, borderRadius: 0, padding: "3px 10px", marginRight: 8,
               }}>教程</span>
           )}
@@ -362,7 +362,7 @@ export default function CardImportScreen({
               <Terminal lines={term} height={440} />
               <div style={{ padding: "6px 10px", textAlign: "right", borderTop: "1px solid var(--border)" }}>
                 <span onClick={() => setTermBig(false)}
-                  style={{ cursor: "pointer", fontFamily: TERM_MONO, fontSize: 10, color: "var(--info)" }}>关闭 ✕</span>
+                  style={{ cursor: "pointer", fontFamily: TERM_MONO, fontSize: "var(--fs-2xs)", color: "var(--info)" }}>关闭 ✕</span>
               </div>
             </div>
           </div>

@@ -92,7 +92,7 @@ function TeamBar({ label, ids, candidates, active, onClick, onRemove, accent }) 
               title="点击移出"
               style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px",
                 background: "rgba(0,0,0,.35)", border: `1px solid ${tierColor(c.levelCap)}`,
-                borderRadius: 0, fontSize: 12, color: "var(--qb-text)", cursor: "pointer" }}>
+                borderRadius: 0, fontSize: "var(--fs-sm)", color: "var(--qb-text)", cursor: "pointer" }}>
               {c.name} <span style={{ color: "var(--qb-border)" }}>✕</span>
             </div>
           );
@@ -141,7 +141,7 @@ function CandidateCard({ c, picked, disabled, accent, onClick }) {
         </div>
       </div>
       {picked && <div style={{ position: "absolute", top: 4, right: 4, width: 20, height: 20, borderRadius: "50%",
-        background: accent, color: "var(--white)", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}>✓</div>}
+        background: accent, color: "var(--white)", fontSize: "var(--fs-md)", display: "flex", alignItems: "center", justifyContent: "center" }}>✓</div>}
     </button>
   );
 }

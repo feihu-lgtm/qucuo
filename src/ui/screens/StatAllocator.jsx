@@ -4,7 +4,7 @@ import { SPECIAL_KEYS } from "../../domain/rules/character/starterBuild.js";
 export default function StatAllocator({ special, remaining, onAdjust, onRandomize, onContinue, theme }) {
   const buttonStyle = {
     width: 36, height: 36, border: `1px solid ${theme.border}`, background: theme.bgPanel,
-    color: theme.text, fontSize: 18, cursor: "pointer",
+    color: theme.text, fontSize: "var(--fs-xl)", cursor: "pointer",
   };
   return (
     <>

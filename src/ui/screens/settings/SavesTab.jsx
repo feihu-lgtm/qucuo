@@ -94,7 +94,7 @@ export default function SavesTab({ cfg, patch, dispatchCommand, currentSnapshot,
         ))}
       </div>
 
-      <div style={{ ...sectionStyle, fontSize: "10.5px", color: "var(--text-dim)" }}>
+      <div style={{ ...sectionStyle, fontSize: "var(--fs-xs)", color: "var(--text-dim)" }}>
         自动存档按上面设定的回合间隔写入，刷新页面后会自动读取。
         进入游戏时如果看到"已从上次自动存档恢复进度"的提示，说明这次是接着上次玩的。
       </div>

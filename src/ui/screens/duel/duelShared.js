@@ -62,7 +62,7 @@ export const styles = {
   opSection: { display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 10 },
   sectionLabel: (t) => ({ fontSize: "var(--fs-sm)", color: t.accent, letterSpacing: "1px" }),
   moveGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, maxHeight: "30vh", overflowY: "auto" },
-  warnLine: { textAlign: "center", color: "var(--red-soft)", fontSize: "11px", padding: "4px 0" },
+  warnLine: { textAlign: "center", color: "var(--red-soft)", fontSize: "var(--fs-xs)", padding: "4px 0" },
   hintLine: (t) => ({ fontSize: "var(--fs-xs)", color: t.textDim, textAlign: "center" }),
   // 战斗内道具栏
   itemBarRow: { marginTop: 6 },
@@ -96,7 +96,7 @@ export const styles = {
   continueRow: { textAlign: "center", marginTop: 6 },
   continueBtn: (t) => ({
     cursor: "pointer", display: "inline-block", padding: "8px 24px",
-    color: t.accent, border: `1px solid ${t.accent}`, borderRadius: 0, fontSize: "12px",
+    color: t.accent, border: `1px solid ${t.accent}`, borderRadius: 0, fontSize: "var(--fs-sm)",
   }),
   // 详细察看弹层
   inspectOverlay: {

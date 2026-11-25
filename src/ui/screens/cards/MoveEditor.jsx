@@ -58,7 +58,7 @@ export default function MoveEditor({ moves, levelCap, onChange, why, source }) {
             </div>
             <input value={m.desc || ""} placeholder="一句话写这招看起来什么样（会注入给说书人）"
               onChange={e => setSlot(slot, { desc: e.target.value.slice(0, 60) })}
-              style={{ ...selStyle, textAlign: "left", fontSize: 10.5, color: "var(--ink-text)" }} />
+              style={{ ...selStyle, textAlign: "left", fontSize: "var(--fs-xs)", color: "var(--ink-text)" }} />
             {isOpen && (
               <div style={{ marginTop: 6, padding: "6px 8px", background: "var(--bg-ink)", border: "1px solid var(--ink-border)", borderRadius: 0 }}>
                 <div style={{ fontSize: "var(--fs-2xs)", color: "var(--inject-kind-fallback)", marginBottom: 4, fontFamily: "ui-monospace,Menlo,Consolas,monospace" }}>

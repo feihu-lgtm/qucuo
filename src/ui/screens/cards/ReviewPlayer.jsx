@@ -127,7 +127,7 @@ export default function ReviewPlayer({
             style={{
               width: "100%", boxSizing: "border-box", background: "rgba(0,0,0,.35)",
               border: "1px solid var(--border-deep)", borderRadius: 0, padding: "5px 8px",
-              color: "var(--paper)", fontSize: 11.5, outline: "none", resize: "vertical",
+              color: "var(--paper)", fontSize: "var(--fs-sm)", outline: "none", resize: "vertical",
               fontFamily: "inherit",
             }}
           />
@@ -136,13 +136,13 @@ export default function ReviewPlayer({
               title="让 AI 把这段描写拆成体貌字段"
               style={{
                 cursor: bodyBusy ? "wait" : "pointer", userSelect: "none",
-                fontSize: 11.5, padding: "5px 12px", borderRadius: 0, whiteSpace: "nowrap",
+                fontSize: "var(--fs-sm)", padding: "5px 12px", borderRadius: 0, whiteSpace: "nowrap",
                 display: "inline-flex", alignItems: "center", gap: 5,
                 color: bodyBusy ? "var(--quest-success-text)" : "var(--ci-pick)", textShadow: "0 1px 2px rgba(0,0,0,.85)",
                 border: `1px solid ${bodyBusy ? "var(--music-idle-icon)" : "var(--ink-good)"}`,
                 background: bodyBusy ? "rgba(0,0,0,.3)" : "linear-gradient(180deg,rgba(74,120,64,.5),rgba(0,0,0,.45))",
               }}>✨ {bodyBusy ? "拆解中…" : "AI 拆解补全"}</span>
-            <span style={{ flex: 1, fontSize: 9.5, color: "var(--muted)" }}>
+            <span style={{ flex: 1, fontSize: "var(--fs-2xs)", color: "var(--muted)" }}>
               私密项原文没写到的 AI 不会编。
             </span>
           </div>
@@ -192,7 +192,7 @@ export default function ReviewPlayer({
             onChange={v => onPatchOpening({ ...opening, rewritten: v })} />
           {opening.source === "ai" && opening.original !== opening.rewritten && (
             <details>
-              <summary style={{ cursor: "pointer", fontSize: 10.5, color: "var(--ink-text-dim)" }}>看原文对照</summary>
+              <summary style={{ cursor: "pointer", fontSize: "var(--fs-xs)", color: "var(--ink-text-dim)" }}>看原文对照</summary>
               <div style={{ fontSize: "var(--fs-xs)", lineHeight: 1.7, color: "var(--ink-text-dim)", whiteSpace: "pre-wrap", marginTop: 6 }}>
                 {opening.original}
               </div>
@@ -218,7 +218,7 @@ export default function ReviewPlayer({
                 <span style={{ color: w.on === false ? "var(--gamble-button-edge)" : accent, fontSize: "var(--fs-xs)" }}>
                   {w.on === false ? "○" : "◉"}
                 </span>
-                <span style={{ color: "var(--ink-text)", fontSize: 11, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                <span style={{ color: "var(--ink-text)", fontSize: "var(--fs-xs)", flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {w.label}
                 </span>
                 <span style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-2xs)" }}>{w.kind} · {(w.content || "").length}字</span>
@@ -264,14 +264,14 @@ export default function ReviewPlayer({
         <CarryPicker apiCfg={apiCfg} carry={p.carry || []} levelCap={tier}
           onChange={c => onPatch({ carry: c })} />
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8 }}>
-          <span style={{ flex: 1, fontSize: 10, color: "var(--ink-text-dim)", lineHeight: 1.6 }}>
+          <span style={{ flex: 1, fontSize: "var(--fs-2xs)", color: "var(--ink-text-dim)", lineHeight: 1.6 }}>
             兵器/护具/饰物导入后各自动装备一件，其余进背包。点上面的物件名可展开看它的词条（攻击力/特效/加成）。
           </span>
           <span onClick={equipBusy ? undefined : aiScanEquip}
             title="让 AI 按主角身份与品阶配 2-4 件随身物"
             style={{
               cursor: equipBusy ? "wait" : "pointer", userSelect: "none",
-              fontSize: 11.5, padding: "5px 12px", borderRadius: 0, whiteSpace: "nowrap",
+              fontSize: "var(--fs-sm)", padding: "5px 12px", borderRadius: 0, whiteSpace: "nowrap",
               display: "inline-flex", alignItems: "center", gap: 5,
               color: equipBusy ? "var(--ink-sage)" : "var(--ci-pick)", textShadow: "0 1px 2px rgba(0,0,0,.85)",
               border: `1px solid ${equipBusy ? "var(--music-idle-icon)" : "var(--inject-note)"}`,

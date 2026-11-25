@@ -146,7 +146,7 @@ export default function BattleScreen({ battle, setBattle, mode, onFinish, onQuit
 
       {/* 战报流 */}
       <div ref={logRef} style={sx.logStream}>
-        {battle.logs.length === 0 && <div style={{ color: "var(--qb-border)", fontSize: 13, textAlign: "center", padding: 20 }}>选一招，切磋开始。</div>}
+        {battle.logs.length === 0 && <div style={{ color: "var(--qb-border)", fontSize: "var(--fs-md)", textAlign: "center", padding: 20 }}>选一招，切磋开始。</div>}
         {battle.logs.map((l, i) => (
           <div key={i} style={{ marginBottom: 12, paddingBottom: 10, borderBottom: "1px solid rgba(255,255,255,.06)" }}>
             <div style={{ fontSize: "var(--fs-xs)", color: "var(--parchment)", marginBottom: 3, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -164,7 +164,7 @@ export default function BattleScreen({ battle, setBattle, mode, onFinish, onQuit
             {l.narration && (
               <div style={{ fontSize: "var(--fs-md)", color: "var(--qb-narrative)", lineHeight: 1.9, marginTop: 6, paddingLeft: 10,
                 borderLeft: "2px solid var(--ink-brass)", fontStyle: "italic" }}>
-                <span style={{ fontStyle: "normal", fontSize: 10, color: "var(--qb-border)", marginRight: 6 }}>说书</span>
+                <span style={{ fontStyle: "normal", fontSize: "var(--fs-2xs)", color: "var(--qb-border)", marginRight: 6 }}>说书</span>
                 {l.narration}
               </div>
             )}
@@ -177,7 +177,7 @@ export default function BattleScreen({ battle, setBattle, mode, onFinish, onQuit
         <div style={sx.controlBar}>
           {battle.awaitingSwitch ? (
             <div style={{ width: "100%", textAlign: "center", margin: "auto" }}>
-              <div style={{ color: "var(--qb-foe)", fontSize: 14, marginBottom: 10 }}>{ally?.name || "上场者"}已倒下，选谁接替上场</div>
+              <div style={{ color: "var(--qb-foe)", fontSize: "var(--fs-base)", marginBottom: 10 }}>{ally?.name || "上场者"}已倒下，选谁接替上场</div>
               <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
                 {battle.allyTeam.map((f, i) => f.combatState.hp[0] > 0 && (
                   <button key={i} onClick={() => switchTo(i)} style={sx.switchBtn}>
@@ -246,7 +246,7 @@ function FighterPanel({ fighter, side, team, curIdx, hit }) {
             {fighter.portrait ? (
               <img src={PORTRAIT(fighter.portrait)} alt={fighter.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center" }} />
             ) : (
-              <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: tierColor(fighter.levelCap), fontWeight: "bold" }}>
+              <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "var(--fs-xl)", color: tierColor(fighter.levelCap), fontWeight: "bold" }}>
                 {fighter.name.slice(0, 2)}
               </div>
             )}
@@ -255,7 +255,7 @@ function FighterPanel({ fighter, side, team, curIdx, hit }) {
           {showDmg && (
             <div key={hit.key} className="qb-dmg" style={{
               position: "absolute", top: 4, left: "50%", transform: "translateX(-50%)",
-              fontSize: 24, fontWeight: "bold", color: "var(--qb-damage)",
+              fontSize: "var(--fs-2xl)", fontWeight: "bold", color: "var(--qb-damage)",
               textShadow: "0 2px 6px var(--black), 0 0 12px rgba(255,60,50,.7)", pointerEvents: "none", zIndex: 5,
             }}>−{hit.dmg}</div>
           )}
@@ -298,7 +298,7 @@ function Bar({ ratio, color, bg, label, rtl, thin }) {
     <div style={{ position: "relative", height: thin ? 8 : 14, background: bg, borderRadius: 0, overflow: "hidden", marginTop: 3 }}>
       <div style={{ position: "absolute", top: 0, bottom: 0, [rtl ? "right" : "left"]: 0,
         width: `${Math.max(0, Math.min(1, ratio)) * 100}%`, background: color, transition: "width .4s ease" }} />
-      {!thin && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "var(--white)", textShadow: "0 1px 2px var(--black)" }}>{label}</div>}
+      {!thin && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "var(--fs-2xs)", color: "var(--white)", textShadow: "0 1px 2px var(--black)" }}>{label}</div>}
     </div>
   );
 }
@@ -350,13 +350,13 @@ function MoveButton({ move, usable, reason, onClick }) {
           ))}
           <div style={{ display: "flex", gap: 6, marginTop: 6, position: "sticky", bottom: 0 }}>
             <button onClick={() => usable && onClick()} disabled={!usable}
-              style={{ flex: 1, padding: "5px 0", fontSize: 11, fontWeight: "bold", borderRadius: 0,
+              style={{ flex: 1, padding: "5px 0", fontSize: "var(--fs-xs)", fontWeight: "bold", borderRadius: 0,
                 border: "none", cursor: usable ? "pointer" : "not-allowed",
                 background: usable ? qc : "var(--qb-move-disabled-bg)", color: usable ? "var(--qb-move-button-text)" : "var(--qb-move-disabled-text)" }}>
               {usable ? "⚔ 出招" : (reason || "不可用")}
             </button>
             <button onClick={() => setFlipped(false)}
-              style={{ padding: "5px 10px", fontSize: 11, borderRadius: 0, border: `1px solid ${qc}`,
+              style={{ padding: "5px 10px", fontSize: "var(--fs-xs)", borderRadius: 0, border: `1px solid ${qc}`,
                 background: "transparent", color: qc, cursor: "pointer" }}>返回</button>
           </div>
         </div>}
