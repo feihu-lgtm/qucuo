@@ -15,8 +15,6 @@ const ROUTE_KIND = {
   take: ACTION_KINDS.PICKUP,
 };
 
-export const JUDGE_ROUTE_KINDS = new Set(Object.keys(ROUTE_KIND));
-
 // 单条路由结算：复用 stepEffect 对应分支，不造第二套账。
 // 成功判定统一为「result.changes 非空」——consumeItem/pickGroundItem/equip 三路的
 // 失败形状都是只有 logs 没有 changes（pickup 找不到物件甚至返回 {}）。
