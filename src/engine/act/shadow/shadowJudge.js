@@ -228,7 +228,7 @@ export async function runShadowJudge({
     const diffOut = diffSnapshots(preState, postState, { moved });
     const proj = projectFacts(verdict?.facts || []);
     // S5：feature 路由 kind 对应类目不参与比较（equip/use_item/take/invite）
-    const result = compareCategories(diffOut, proj, { featureRoutedCats: featureRoutedCats(intakeResult?.actions) });
+    const result = compareCategories(diffOut, proj, { featureRoutedCats: featureRoutedCats(intakeResult?.actions, { npcs }) });
     if (isStale?.() || epochGuard?.()) return null;
     recordAggregate(epoch, result, cmd);
     // 结构化 trace：verdicts 原样进 fields，TraceViewer 按类目渲染含 excluded 盲区；

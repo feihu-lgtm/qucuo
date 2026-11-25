@@ -46,13 +46,33 @@ export function compareCategories(diffOut, proj, { featureRoutedCats = [] } = {}
         verdicts[cat] = { verdict: "match" };
       } else {
         const allKeys = new Set([...dKeys, ...pKeys]);
-        let same = true;
+        // S7 裁决：好感度纳入数值类两级判定——同方向即覆盖（数额差 ≤50% match、
+        // 超 50% 记 caliber_diff 口径差不计缺口），反号才 both_diff 真冲突。
+        // give/appease 判官定量表签发 vs 模型随写整数本就会差，不是净矛盾。
+        const sub = {}; let anySingle = false, anyJudge = false, anyDiff = false, anyCaliber = false;
         for (const k of allKeys) {
-          if ((d.affection?.[k] || 0) !== (proj.affection?.[k] || 0)) { same = false; break; }
+          const dv = d.affection?.[k] || 0, pv = proj.affection?.[k] || 0;
+          if (dv === pv) continue;
+          let sv;
+          if (pv === 0) sv = "single_only";
+          else if (dv === 0) sv = "judge_only";
+          else if ((dv > 0) === (pv > 0)) {
+            const rel = Math.abs(dv - pv) / Math.max(Math.abs(dv), Math.abs(pv));
+            sv = rel > 0.5 ? "caliber_diff" : "match";
+          } else sv = "both_diff";
+          if (sv === "single_only") anySingle = true;
+          else if (sv === "judge_only") anyJudge = true;
+          else if (sv === "both_diff") anyDiff = true;
+          else if (sv === "caliber_diff") anyCaliber = true;
+          if (sv !== "match") sub[k] = { single: dv, judge: pv, verdict: sv };
         }
-        verdicts[cat] = same
+        const anyMismatch = anySingle || anyJudge || anyDiff || anyCaliber;
+        verdicts[cat] = !anyMismatch
           ? { verdict: "match" }
-          : { verdict: !pKeys.length ? "single_only" : !dKeys.length ? "judge_only" : "both_diff", single: d.affection, judge: proj.affection };
+          : {
+            verdict: anySingle ? "single_only" : anyDiff ? "both_diff" : anyJudge ? "judge_only" : "caliber_diff",
+            single: d.affection, judge: proj.affection, sub,
+          };
       }
       continue;
     }

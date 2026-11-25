@@ -121,3 +121,55 @@ describe("S5 Review 三修", () => {
     expect(diffSnapshots(pre, post2).categories.world).toEqual({ 威望: 10 }); // +5 实际 +5违约抵消 → 判官净 +10
   });
 });
+
+describe("S7 计量口径两小修", () => {
+  it("affection 两级判定：同向小额差 match、同向大额差 caliber_diff、反号 both_diff", () => {
+    // +2 vs +3：rel 33% ≤50% → match（give/appease 判官定量 vs 模型随写不再计缺口）
+    const m1 = compareCategories({ categories: { affection: { 掌柜: 2 } } }, { affection: { 掌柜: 3 } });
+    expect(m1.verdicts.affection.verdict).toBe("match");
+    // +1 vs +4：rel 75% >50% 同向 → caliber_diff 不计缺口
+    const m2 = compareCategories({ categories: { affection: { 掌柜: 1 } } }, { affection: { 掌柜: 4 } });
+    expect(m2.verdicts.affection.verdict).toBe("caliber_diff");
+    expect(m2.hasGap).toBe(false);
+    // +2 vs -1：反号 → both_diff 真冲突
+    const m3 = compareCategories({ categories: { affection: { 掌柜: 2 } } }, { affection: { 掌柜: -1 } });
+    expect(m3.verdicts.affection.verdict).toBe("both_diff");
+    expect(m3.hasGap).toBe(true);
+    // 单边仍 single_only/judge_only 不变
+    const m4 = compareCategories({ categories: { affection: { 掌柜: 2 } } }, { affection: {} });
+    expect(m4.verdicts.affection.verdict).toBe("single_only");
+  });
+  it("trade 进 feature 路由豁免：inv+vitals 直写记 excluded", () => {
+    const cats = featureRoutedCats([{ kind: "trade", target: "掌柜", condition: "无" }], { npcs: [{ name: "掌柜" }] });
+    expect(cats.sort()).toEqual(["inv", "vitals"]);
+    const diff = { categories: { inv: { add: ["烧刀子"], rm: [] }, vitals: { money: -8 } }, excluded: [] };
+    const proj = {};
+    const r = compareCategories(diff, proj, { featureRoutedCats: cats });
+    expect(r.verdicts.inv.verdict).toBe("excluded");
+    expect(r.verdicts.vitals.verdict).toBe("excluded");
+    expect(r.hasGap).toBe(false);
+    // 带条件的 trade（condition≠无）live router 跳过不执行——不豁免（S5 Review 修口径保持）
+    const cats2 = featureRoutedCats([{ kind: "trade", target: "掌柜", condition: "被拒" }]);
+    expect(cats2).toEqual([]);
+  });
+});
+
+describe("S7 Review 修：trade 豁免只对真被路由的意向生效", () => {
+  it("target 不在场/为无 → 不豁免；排在已受理 duel 后 → 不豁免", () => {
+    // 不在场：collectDeferredIntents 拒收，无 feature 前路，豁免会洗盲区
+    expect(featureRoutedCats([{ kind: "trade", target: "掌柜", condition: "无" }], { npcs: [{ name: "伙计" }] })).toEqual([]);
+    expect(featureRoutedCats([{ kind: "trade", target: "无", condition: "无" }], { npcs: [{ name: "掌柜" }] })).toEqual([]);
+    // 先受理 duel 占位（一回合只接一场），后排 trade「一场方休」不路由 → 不豁免
+    const cats = featureRoutedCats([
+      { kind: "duel", target: "伙计", condition: "无" },
+      { kind: "trade", target: "掌柜", condition: "无" },
+    ], { npcs: [{ name: "掌柜" }, { name: "伙计" }] });
+    expect(cats).toEqual([]);
+    // duel 在前但被拒（target 不在场）→ 不占位，trade 正常豁免
+    const cats2 = featureRoutedCats([
+      { kind: "duel", target: "路人", condition: "无" },
+      { kind: "trade", target: "掌柜", condition: "无" },
+    ], { npcs: [{ name: "掌柜" }] });
+    expect(cats2.sort()).toEqual(["inv", "vitals"]);
+  });
+});
