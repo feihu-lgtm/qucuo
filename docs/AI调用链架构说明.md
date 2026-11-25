@@ -42,7 +42,7 @@ flowchart TD
 | 天工铸物/原型创招 | 已落地 | `compileEmergentItem`、`compileEmergentSkill` 把授信额度编译成可进战斗/背包的真实物品与武学；越界词条物理驳回。 |
 | 首字超时兜底 | 基础已落地/未接主链 | `streamWithFirstTokenFallback` 支持插入过渡行、首字抵达原位替换、超时静默降级；主循环接线属于后续工单。 |
 | 十二律落盘引擎 | 基础已落地/未接主链 | `materializeFacts` 已把十二类事实码编译成 `changes/patches/receipts/logs`；尚未进入主回路，接线属于后续主循环工单。 |
-| 前哨 intake + 判官 | 施工中 | 契约 B 与 `judgeTurn` 已开工；合并后仍是判官模块，主回路切换在后续工单。 |
+| 前哨 intake + 判官 | 基础已落地/未接主链 | 契约 B、`turn.intake` 与 `judgeTurn` 已落地；尚未接入主回路，切换属于后续主循环工单。 |
 
 ## 4. 目标链路分层
 
