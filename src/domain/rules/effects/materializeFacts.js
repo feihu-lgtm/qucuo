@@ -59,12 +59,20 @@ function locateItem(state, itemId, itemName) {
     return e && typeof e === "object" && !e.dropped && !e.sold && !e.stolen
       && ((itemId && e.id === itemId) || (!itemId && itemName && e.name === itemName) || (itemId && itemName && e.name === itemName && !e.id));
   };
-  const invIdx = (state.inv || []).findIndex(match);
+  // WO-16F-F4a 复审：池内两段查找——itemId 精确命中（对象 id）优先于名字面量命中，
+  // 否则混合背包 [字符串「青稞」, {id:it_x, name:'青稞'}] 按 id 转移时会被靠前的同名字符串
+  // 串位抢占：选中的对象还在背包，NPC 收到的却是另一件。
+  const exactId = (e) => itemId && e && typeof e === "object" && !e.dropped && !e.sold && !e.stolen && e.id === itemId;
+  const locateIn = (pool) => {
+    const exact = pool.findIndex(exactId);
+    return exact !== -1 ? exact : pool.findIndex(match);
+  };
+  const invIdx = locateIn(state.inv || []);
   if (invIdx !== -1) return { pool: "inv", index: invIdx, item: state.inv[invIdx] };
-  const groundIdx = (state.room?.items || []).findIndex(match);
+  const groundIdx = locateIn(state.room?.items || []);
   if (groundIdx !== -1) return { pool: "ground", index: groundIdx, item: state.room.items[groundIdx] };
   for (let n = 0; n < (state.room?.npcs || []).length; n += 1) {
-    const idx = (state.room.npcs[n].carriedItems || []).findIndex(match);
+    const idx = locateIn(state.room.npcs[n].carriedItems || []);
     if (idx !== -1) return { pool: "npc", npcIndex: n, index: idx, item: state.room.npcs[n].carriedItems[idx] };
   }
   return null;

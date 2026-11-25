@@ -180,6 +180,26 @@ describe("字符串背包条目端到端转移（blocker 返修钉测试）", ()
     const npc = out.changes.room.npcs.find((n) => n.name === "温掌柜");
     expect((npc.carriedItems || []).filter((e) => e?.name === "半袋青稞").length).toBe(1);
   });
+
+  it("混合背包按 id 寻址不被靠前同名字符串串位抢占（复审 finding 钉测试）", async () => {
+    const { materializeFacts } = await import("../../domain/rules/effects/materializeFacts.js");
+    const obj = { id: "it_x", name: "半袋青稞", category: "food", quality: "白" };
+    const state = {
+      inv: ["半袋青稞", obj], // 字符串在前——若按序匹配会先中字符串
+      room: { name: "曲措乡", npcs: [{ name: "温掌柜", carriedItems: [] }], items: [] },
+      varTree: { 角色: {}, 世界: {} },
+      flags: [],
+    };
+    const out = materializeFacts(state, [{
+      id: "f1", op: "TRANSFER_ITEM", itemId: "it_x", itemName: "半袋青稞",
+      from: "player", to: "温掌柜", witnesses: ["主角", "温掌柜"],
+    }]);
+    // id 精确优先：移走的是对象 it_x，字符串条目原样留在背包
+    expect(out.changes.inv).toEqual(["半袋青稞"]);
+    const npc = out.changes.room.npcs.find((n) => n.name === "温掌柜");
+    const got = (npc.carriedItems || []).find((e) => e?.name === "半袋青稞");
+    expect(got.id).toBe("it_x"); // NPC 收到的是被选中的那件对象
+  });
 });
 
 describe("materializeFacts TRANSFER_ITEM 玩家→NPC", () => {
