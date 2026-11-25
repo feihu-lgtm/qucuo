@@ -667,3 +667,55 @@ it("ALLOW_INSECURE_LOCAL_ONLY + 非 loopback HOST 拒绝启动", async () => {
     if (oldToken === undefined) delete process.env.MEMORY_HUB_TOKEN; else process.env.MEMORY_HUB_TOKEN = oldToken;
   }
 });
+
+// ── WO-20D hasProseAfter 跨设备恢复探测 ─────────────────────────────
+describe("hasProseAfter 探测端点口径", () => {
+  const seedBranch = (store) => {
+    store.appendProseChunks("sp", "batch_ha", [
+      { chunkId: "b1_5_1", turn: 5, seq: 1, branchId: "b1", witnesses: ["*"], entities: [], rawText: "五回合一段。" },
+      { chunkId: "b1_5_3", turn: 5, seq: 3, branchId: "b1", witnesses: ["*"], entities: [], rawText: "五回合三段。" },
+      { chunkId: "b1_8_1", turn: 8, seq: 1, branchId: "b1", witnesses: ["*"], entities: [], rawText: "八回合未来段。" },
+      { chunkId: "b2_9_1", turn: 9, seq: 1, branchId: "b2", witnesses: ["*"], entities: [], rawText: "别分支未来段。" },
+      { chunkId: "b1_10x", turn: 10, branchId: "b1", witnesses: ["*"], entities: [], rawText: "无 seq 老数据段。" },
+    ]);
+  };
+
+  it("turn>afterTurn 命中 true；afterTurn 之后无段 false", () => {
+    const store = createHubStore(":memory:");
+    seedBranch(store);
+    assert.equal(store.hasProseAfter("sp", { branchId: "b1", afterTurn: 5, afterSeq: 3 }).hasFuture, true); // turn 8/10 在未来
+    assert.equal(store.hasProseAfter("sp", { branchId: "b1", afterTurn: 10, afterSeq: 99 }).hasFuture, false);
+    store.close();
+  });
+
+  it("同 turn seq 边界：seq>afterSeq 才算未来，seq NULL 老数据不算", () => {
+    const store = createHubStore(":memory:");
+    seedBranch(store);
+    // afterSeq=2：seq3 同回合为未来
+    assert.equal(store.hasProseAfter("sp", { branchId: "b1", afterTurn: 5, afterSeq: 2 }).hasFuture, true);
+    // 排除 turn8/10 影响单独验证 seq 口径：afterTurn=5 afterSeq=3 时 seq1/seq3 都不算，
+    // 但 turn8 段在——用只含同回合段的孤立库验 seq 边界
+    const s2 = createHubStore(":memory:");
+    s2.appendProseChunks("sp", "b_seq", [
+      { chunkId: "x5_1", turn: 5, seq: 1, branchId: "bx", witnesses: ["*"], entities: [], rawText: "a" },
+      { chunkId: "x5_3", turn: 5, seq: 3, branchId: "bx", witnesses: ["*"], entities: [], rawText: "b" },
+      { chunkId: "x5_noseq", turn: 5, branchId: "bx", witnesses: ["*"], entities: [], rawText: "c" },
+    ]);
+    assert.equal(s2.hasProseAfter("sp", { branchId: "bx", afterTurn: 5, afterSeq: 3 }).hasFuture, false); // seq3 不超 3、无 seq 不算
+    assert.equal(s2.hasProseAfter("sp", { branchId: "bx", afterTurn: 5, afterSeq: 2 }).hasFuture, true);  // seq3>2
+    assert.equal(s2.hasProseAfter("sp", { branchId: "bx", afterTurn: 5, afterSeq: 1 }).hasFuture, true);
+    s2.close();
+    store.close();
+  });
+
+  it("别 branch 段不算；无 branchId/空串直接 false", () => {
+    const store = createHubStore(":memory:");
+    seedBranch(store);
+    assert.equal(store.hasProseAfter("sp", { branchId: "b3", afterTurn: 1, afterSeq: 0 }).hasFuture, false); // b3 不存在
+    assert.equal(store.hasProseAfter("sp", { branchId: "", afterTurn: 1, afterSeq: 0 }).hasFuture, false);
+    assert.equal(store.hasProseAfter("sp", { branchId: null, afterTurn: 1, afterSeq: 0 }).hasFuture, false);
+    // b2 自身 turn9 是未来——确认分支隔离不是误判
+    assert.equal(store.hasProseAfter("sp", { branchId: "b2", afterTurn: 5, afterSeq: 0 }).hasFuture, true);
+    store.close();
+  });
+});

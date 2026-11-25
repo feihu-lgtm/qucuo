@@ -11,7 +11,7 @@
 //      任何一步失败按不分叉降级（宁可不分叉也不可错分叉）。
 import { gameStore, isGameEpochStale, ensureProseLineageInStore, allocProseSeq, mergeProseSeqFloor, applyProseLineageFork } from "../../store/gameStore.js";
 import { headBranch } from "../../domain/rules/memory/lineage.js";
-import { migrateLegacyConvoAndNotes, addProseChunks, getProseChunksByBranch, setProseReconcilePending, clearProseReconcilePending } from "../../engine/ports/recallBlock.js";
+import { migrateLegacyConvoAndNotes, addProseChunks, getProseChunksByBranch, setProseReconcilePending, clearProseReconcilePending, probeCloudProseHasAfter } from "../../engine/ports/recallBlock.js";
 import { getAllMemories } from "../../engine/ports/recallWithVisibility.js";
 
 export async function reconcileProseLineageAfterLoad(snap, { epoch } = {}) {
@@ -70,8 +70,26 @@ export async function reconcileProseLineageAfterLoad(snap, { epoch } = {}) {
       if (c.turn === saveTime && Number.isFinite(c?.seq) && c.seq > saveSeq) return true;
       return false;
     });
-    if (!hasFuture) return;
+    if (hasFuture) {
+      if (stale()) return;
+      applyProseLineageFork(saveTime, saveSeq);
+      return;
+    }
+    // ── WO-20D 跨设备恢复云探测（本地无未来 ≠ 云端无未来）─────────────────
+    // 场景：v1/裸包导入或本设备从没有过该 branch 的本地段落（prose 段只存设备本地
+    // IndexedDB/上行云端，不随存档走）——本地判无未来不可信。若原设备之后在同分支
+    // 继续玩并上行，云召回会把弃坑时间线串进正文。
+    // 佐证口径：norm.created（老档/裸包首读建谱系）或头分支本地零段 → 模糊场景才探测；
+    // 有完整本地段落库佐证且本地无未来 → 不分叉不探测（本地库全则未来必已在本地）。
+    const ambiguous = norm.created || branchChunks.length === 0;
+    if (!ambiguous) return;
     if (stale()) return;
+    const probe = await probeCloudProseHasAfter({ branchId: head.b, afterTurn: saveTime, afterSeq: saveSeq });
+    if (stale()) return;
+    if (probe === "skip") return; // 非 cloud/未绑定：无云污染源，沿原口径不分叉
+    // 保守取舍（docs 钉死）：模糊场景下探测失败/超时/非 2xx 一律分叉——
+    // 宁可产生空分支，不可串弃坑时间线。探测明确 false 才不分叉。
+    if (probe === false) return;
     applyProseLineageFork(saveTime, saveSeq);
   } catch (_) {
     /* 失败按不分叉降级 */

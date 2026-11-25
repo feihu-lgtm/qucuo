@@ -148,3 +148,117 @@ describe("gate token 清理", () => {
     clearProseReconcilePending(null);
   });
 });
+
+// ── WO-20D 跨设备恢复云探测 ────────────────────────────────────────
+import { vi } from "vitest";
+import { configureCloudFetch, _resetCloudProtocolForTest } from "../../infra/cloudProtocol.js";
+import { saveStorageConfig } from "../../infra/storageConfig.js";
+
+describe("WO-20D 云谱系探测分叉", () => {
+  function mockLocalStorage() {
+    const data = new Map();
+    vi.stubGlobal("localStorage", {
+      getItem: (k) => (data.has(k) ? data.get(k) : null),
+      setItem: (k, v) => { data.set(k, String(v)); },
+      removeItem: (k) => { data.delete(k); },
+      clear: () => data.clear(),
+    });
+  }
+  const okJson = (body) => ({ ok: true, status: 200, json: async () => body });
+  function boundCloud() {
+    saveStorageConfig({ driver: "cloud", cloudUrl: "https://hub.example.com", spaceId: "sp1", hubToken: "tok" });
+  }
+  function seedLineageOnly() {
+    // 谱系已在（非首读），但本设备该 branch 零本地段——模糊场景
+    gameActions.setProseLineage([{ b: "bCloud1", upTo: null }]);
+    gameActions.setProseSeq(4);
+  }
+
+  beforeEach(() => {
+    globalThis.indexedDB = new IDBFactory();
+    _resetMemoryDbForTest();
+    _resetCloudProtocolForTest();
+    mockLocalStorage();
+    gameActions.setProseLineage(undefined);
+    gameActions.setProseSeq(undefined);
+  });
+
+  it("模糊场景+云探测 true→按 saveTime/saveSeq 分叉", async () => {
+    seedLineageOnly();
+    boundCloud();
+    const fetchSpy = vi.fn(async () => okJson({ hasFuture: true }));
+    configureCloudFetch(fetchSpy);
+    await reconcileProseLineageAfterLoad({ time: 5, proseSeq: 4, convo: [] }, { epoch: getGameEpoch() });
+    expect(fetchSpy).toHaveBeenCalled();
+    const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
+    expect(body).toEqual({ branchId: "bCloud1", afterTurn: 5, afterSeq: 4 });
+    const lin = gameStore.getState().proseLineage;
+    expect(lin).toHaveLength(2);
+    expect(lin[0].upTo).toBe(5);
+    expect(lin[1].upTo).toBeNull();
+  });
+
+  it("模糊场景+云探测 false→不分叉", async () => {
+    seedLineageOnly();
+    boundCloud();
+    configureCloudFetch(vi.fn(async () => okJson({ hasFuture: false })));
+    await reconcileProseLineageAfterLoad({ time: 5, proseSeq: 4, convo: [] }, { epoch: getGameEpoch() });
+    expect(gameStore.getState().proseLineage).toHaveLength(1);
+  });
+
+  it("模糊场景+探测失败（异常/非2xx）→保守分叉", async () => {
+    seedLineageOnly();
+    boundCloud();
+    configureCloudFetch(vi.fn(async () => { throw new Error("down"); }));
+    await reconcileProseLineageAfterLoad({ time: 5, proseSeq: 4, convo: [] }, { epoch: getGameEpoch() });
+    expect(gameStore.getState().proseLineage).toHaveLength(2);
+    // 复位再验非 2xx
+    gameActions.setProseLineage([{ b: "bCloud1", upTo: null }]);
+    configureCloudFetch(vi.fn(async () => ({ ok: false, status: 500, json: async () => ({}) })));
+    await reconcileProseLineageAfterLoad({ time: 5, proseSeq: 4, convo: [] }, { epoch: getGameEpoch() });
+    expect(gameStore.getState().proseLineage).toHaveLength(2);
+  });
+
+  it("完整本地佐证（branch 有本地段且无未来）+探测失败→不分叉零请求", async () => {
+    gameActions.setProseLineage([{ b: "bLocal1", upTo: null }]);
+    gameActions.setProseSeq(3);
+    await addProseChunks([{ id: "bLocal1_3_1", branchId: "bLocal1", seq: 1, turn: 3, kind: "raw_memory", location: "", witnesses: ["*"], entities: [], publicText: "x", rawText: "x", importance: 1, anchorFactIds: [] }]);
+    boundCloud();
+    const fetchSpy = vi.fn(async () => { throw new Error("down"); });
+    configureCloudFetch(fetchSpy);
+    await reconcileProseLineageAfterLoad({ time: 5, convo: [] }, { epoch: getGameEpoch() });
+    expect(fetchSpy).not.toHaveBeenCalled(); // 有佐证不探测
+    expect(gameStore.getState().proseLineage).toHaveLength(1);
+  });
+
+  it("local driver 零请求不分叉", async () => {
+    seedLineageOnly();
+    saveStorageConfig({ driver: "local" });
+    const fetchSpy = vi.fn(async () => okJson({ hasFuture: true }));
+    configureCloudFetch(fetchSpy);
+    await reconcileProseLineageAfterLoad({ time: 5, proseSeq: 4, convo: [] }, { epoch: getGameEpoch() });
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(gameStore.getState().proseLineage).toHaveLength(1);
+  });
+
+  it("探测超时（挂起）→保守分叉不阻断", async () => {
+    seedLineageOnly();
+    boundCloud();
+    vi.useFakeTimers();
+    configureCloudFetch(vi.fn(() => new Promise(() => {})));
+    const p = reconcileProseLineageAfterLoad({ time: 5, proseSeq: 4, convo: [] }, { epoch: getGameEpoch() });
+    await vi.advanceTimersByTimeAsync(2000);
+    await p;
+    vi.useRealTimers();
+    expect(gameStore.getState().proseLineage).toHaveLength(2);
+  });
+
+  it("stale 代次：探测 true 也不写分叉", async () => {
+    seedLineageOnly();
+    boundCloud();
+    configureCloudFetch(vi.fn(async () => okJson({ hasFuture: true })));
+    await reconcileProseLineageAfterLoad({ time: 5, proseSeq: 4, convo: [] }, { epoch: -999 });
+    expect(gameStore.getState().proseLineage).toHaveLength(1);
+    expect(gameStore.getState().proseLineage[0].upTo).toBeNull();
+  });
+});

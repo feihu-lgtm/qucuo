@@ -560,6 +560,24 @@ export function createHubStore(dbOrPath = ":memory:") {
     return { ok: true, spaceId, deletedSaves, deletedChunks, vacuumed: true };
   }
 
+  // WO-20D 跨设备恢复探测：某分支是否存在 afterTurn/afterSeq 之后的段落。
+  // 口径与客户端 proseReconcile 完全一致：turn>afterTurn 恒为未来；
+  // turn===afterTurn 只认显式 seq>afterSeq（seq NULL 老数据不算，与客户端
+  // Number.isFinite(c.seq) 判断一致）；无 branchId/空串直接 false。
+  const stmtHasAfter = db.prepare(
+    `SELECT 1 AS x FROM prose_chunks
+     WHERE space_id = ? AND branch_id = ?
+       AND (turn > ? OR (turn = ? AND seq IS NOT NULL AND seq > ?))
+     LIMIT 1`,
+  );
+  function hasProseAfter(spaceId, { branchId = "", afterTurn = 0, afterSeq = 0 } = {}) {
+    if (!branchId || typeof branchId !== "string") return { hasFuture: false };
+    const turn = Number.isFinite(afterTurn) ? Math.floor(afterTurn) : 0;
+    const seq = Number.isFinite(afterSeq) ? Math.floor(afterSeq) : 0;
+    const row = stmtHasAfter.get(spaceId, branchId, turn, turn, seq);
+    return { hasFuture: !!row };
+  }
+
   function close() {
     db.close();
   }
@@ -571,6 +589,7 @@ export function createHubStore(dbOrPath = ":memory:") {
     listSaves,
     appendProseChunks,
     queryProseChunks,
+    hasProseAfter,
     deleteSave,
     deleteSpace,
     close,

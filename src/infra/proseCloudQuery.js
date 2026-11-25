@@ -8,7 +8,7 @@
 // 隐私口径：查询文本与明文段落会发往 hub——与上行同一致意（FTS 索引必需明文），
 // 密钥/存档密文绝不混入本路径；绝不发送 embedding/queryEmbedding 字段。
 
-import { hubBinding, hubQueryProse } from "./cloudProtocol.js";
+import { hubBinding, hubQueryProse, hubProseHasAfter } from "./cloudProtocol.js";
 import { loadStorageConfig } from "./storageConfig.js";
 
 export const CLOUD_PROSE_TIMEOUT_MS = 1500;
@@ -36,5 +36,23 @@ export async function queryCloudProseHits({ query = "", viewer = "", lineage = n
     return Array.isArray(res.hits) ? res.hits : [];
   } catch (_) {
     return [];
+  }
+}
+
+// WO-20D 恢复探测编排：返回值三态——
+//   "skip"：driver 非 cloud/未绑定，根本没发请求（调用方按无云处理，不分叉）；
+//   "error"：发了但失败/超时/非 2xx/坏形状（调用方按保守口径裁决）；
+//   true/false：探测成功的事实答案。
+export async function probeCloudProseHasAfter({ branchId = "", afterTurn = 0, afterSeq = 0, timeoutMs = CLOUD_PROSE_TIMEOUT_MS } = {}) {
+  try {
+    if (!branchId) return "skip";
+    const binding = cloudProseQueryBinding();
+    if (!binding) return "skip";
+    const race = new Promise((resolve) => setTimeout(() => resolve({ timeout: true }), timeoutMs));
+    const res = await Promise.race([hubProseHasAfter(binding, { branchId, afterTurn, afterSeq }), race]);
+    if (!res || res.timeout || !res.ok) return "error";
+    return res.hasFuture === true;
+  } catch (_) {
+    return "error";
   }
 }

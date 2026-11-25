@@ -154,6 +154,16 @@ export function createHubServer({
         return;
       }
 
+      const proseHasAfterMatch = path.match(/^\/api\/spaces\/([^/]+)\/prose\/has-after$/);
+      if (proseHasAfterMatch && method === "POST") {
+        const spaceId = decodeURIComponent(proseHasAfterMatch[1]);
+        const body = await readJsonBody(req);
+        assertNoApiKeyPayload(body);
+        const result = store.hasProseAfter(spaceId, body);
+        sendJson(res, 200, result);
+        return;
+      }
+
       const proseQueryMatch = path.match(/^\/api\/spaces\/([^/]+)\/prose\/query$/);
       if (proseQueryMatch && method === "POST") {
         const spaceId = decodeURIComponent(proseQueryMatch[1]);

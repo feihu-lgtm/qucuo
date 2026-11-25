@@ -4,7 +4,7 @@
 // 小纸条向量召回维持原样作补充，两者在此混排成一块场记板。
 import { embeddingReady } from "./embeddingService.js";
 import { recallWithVisibility } from "./recallWithVisibility.js";
-import { getAllProseChunks, addProseChunks, getProseChunksByTurn, getProseChunksByBranch, migrateLegacyConvoAndNotes, isProseReconcilePending, waitProseReconcile, setProseReconcilePending, clearProseReconcilePending, queryCloudProseHits } from "../../infra/proseStore.js";
+import { getAllProseChunks, addProseChunks, getProseChunksByTurn, getProseChunksByBranch, migrateLegacyConvoAndNotes, isProseReconcilePending, waitProseReconcile, setProseReconcilePending, clearProseReconcilePending, queryCloudProseHits, probeCloudProseHasAfter } from "../../infra/proseStore.js";
 import { mergeCloudProseEntries } from "../../domain/rules/memory/cloudRecallMerge.js";
 import { rankProseChunks, expandWithNeighbors } from "../../domain/rules/memory/proseRecall.js";
 
@@ -17,7 +17,7 @@ const WEAK_LINE_CHARS = 40;
 
 // 段落库写入口的 ports 出口：engine 层不许直连 infra（棘轮只减不增），
 // runTurn 的写挂经此转手拿 addProseChunks——与上方读取共用同一条 import，不新增跨层计数。
-export { addProseChunks, getProseChunksByTurn, getProseChunksByBranch, migrateLegacyConvoAndNotes, waitProseReconcile, setProseReconcilePending, clearProseReconcilePending };
+export { addProseChunks, getProseChunksByTurn, getProseChunksByBranch, migrateLegacyConvoAndNotes, waitProseReconcile, setProseReconcilePending, clearProseReconcilePending, probeCloudProseHasAfter }; // WO-20D 探测同出口中转：app/hooks 跨层直连 infra 存量已封顶
 
 // 原文段落召回（ports 层编排：infra 读库 + domain 纯函数打分/连带）。
 // viewer 是查询视角人物名——witnesses 硬过滤以它为准；不传只看公共段。

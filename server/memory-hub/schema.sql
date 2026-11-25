@@ -39,6 +39,9 @@ CREATE TABLE IF NOT EXISTS prose_chunks (
   UNIQUE (space_id, chunk_id)
 );
 
+-- WO-20D：has-after 探测与谱系查询的分支+回合索引
+CREATE INDEX IF NOT EXISTS idx_prose_branch_turn ON prose_chunks(space_id, branch_id, turn);
+
 CREATE INDEX IF NOT EXISTS idx_prose_space_turn ON prose_chunks (space_id, turn, id);
 CREATE INDEX IF NOT EXISTS idx_prose_space_chunk ON prose_chunks (space_id, chunk_id);
 
