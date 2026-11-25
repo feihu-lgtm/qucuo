@@ -79,7 +79,10 @@ describe("judgeTurn 第二步：赠礼/赔罪/求教收拒", () => {
       proposals: [],
     }, { rng: seqRng([0.05]) });
     // 无涉险无代价 → 恒 T0 → 降级点拨
-    expect(low.facts.some((f) => f.op === "PROGRESS_CULTIVATION")).toBe(true);
+    const tipoff = low.facts.find((f) => f.op === "PROGRESS_CULTIVATION");
+    expect(tipoff).toBeTruthy();
+    // WO-11 落盘可消费：potDelta/expDelta/neigongDelta/stageDelta 至少一项非空
+    expect(tipoff.potDelta).toBeGreaterThan(0);
     expect(low.warrants).toHaveLength(0);
     expect(low.notes.join()).toContain("降为点拨");
 
@@ -137,7 +140,12 @@ describe("judgeTurn 第三步：inspect_container 三关", () => {
       proposals: [{ claim: "箱底藏着屠龙刀", kind: "find_item", fit: "absurd" }],
     }, { rng: seqRng([0.9]) });
     expect(verdict.warrants.filter((w) => w.op === "GRANT_ITEM")).toHaveLength(0);
-    expect(verdict.facts.some((f) => f.op === "ALTER_WORLD_SCENE" && f.detail.includes("残页"))).toBe(true);
+    const scene = verdict.facts.find((f) => f.op === "ALTER_WORLD_SCENE");
+    expect(scene.detail).toContain("残页");
+    // WO-11 可消费形状：sceneKey + key/value（materializeFacts 只认 updates/key-value/note）
+    expect(scene.sceneKey).toBeTruthy();
+    expect(scene.key).toBe("clue");
+    expect(scene.value).toContain("残页");
     expect(verdict.notes.join()).toContain("降级为残页线索");
   });
 

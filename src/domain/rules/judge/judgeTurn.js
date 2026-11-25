@@ -169,7 +169,7 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
         } else {
           facts.push({
             id: nextFactId(), op: "PROGRESS_CULTIVATION", npc: npc.name,
-            reason: "指点一二", witnesses: ["主角", npc.name],
+            potDelta: 2, reason: "指点一二", witnesses: ["主角", npc.name],
           });
           notes.push(`因果 tier ${budget.tier} 不足授技，降为点拨`);
         }
@@ -247,9 +247,11 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
     }
     if (!granted) {
       // 不达标降级：残页线索——不给实物，只给一条往后的线头
+      const clue = `${action.target}里只翻出一角残页，字迹模糊，似乎指向别处`;
       facts.push({
         id: nextFactId(), op: "ALTER_WORLD_SCENE", place,
-        detail: `${action.target}里只翻出一角残页，字迹模糊，似乎指向别处`,
+        sceneKey: place, key: "clue", value: clue,
+        detail: clue,
         witnesses: ["主角"],
       });
       notes.push(`${action.target}无所获，降级为残页线索`);
