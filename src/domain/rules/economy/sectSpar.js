@@ -5,7 +5,7 @@ import { factionRepOf } from "./factionRep.js";
 export const SPAR_POISON = new Set(["淬毒", "剧毒"]);
 const POISON = SPAR_POISON;
 
-const SECT_SPARS = [
+export const SECT_SPARS = [
   {
     faction: "青城派",
     npcs: [{ id: "resident_qingxuan", name: "青玄" }, { id: "resident_songhe", name: "松鹤道长" }],

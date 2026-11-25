@@ -15,8 +15,9 @@ import { snowQuestActive } from "../../domain/rules/quests/snowLeopardQuest.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
 import { add, applyWrite, set, updateField } from "../../domain/rules/state/applyWrite.js";
 import { forceAdvanceQuest } from "../quest/logic.js";
-import { sectSparRepGain } from "../../domain/rules/economy/sectSpar.js";
+import { sectSparRepGain, SECT_SPARS } from "../../domain/rules/economy/sectSpar.js";
 import { factionRepDeltas } from "../../domain/rules/economy/factionRep.js";
+import { recordNemesisDuel, scarFromBattleLog, nemesisFactionOf } from "../../domain/rules/nemesis/nemesisEngine.js";
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 // 一场切磋占用的游戏时间（time 一格 = 一小时），由系统直接加，不经过 AI
@@ -164,6 +165,30 @@ export function settleNpcDuel(state, npc, {
       { varTree: markNpcKnown(prev || {}, npc.name) }, add(["角色", npc.name, "好感度"], affGain),
     ).state.varTree);
     logs.push({ t: "affection", text: `  💗 与${npc.name}切磋一场，交情 +${affGain}` });
+  }
+
+  // WO-23A 宿敌谱结算钩子（系统账本直写，无 AI）：五势力门人切磋——
+  // 玩家落败入谱/晋升 cap4（同场幂等不连升），敌方落败且 battleLog 能明确推出
+  // 最后有效伤害招式属性才追加持久伤痕（看不出不记）。友好师父（门派试剑榜）
+  // 与非五势力/无 outcome 绝不入谱。
+  if ((outcome === "lose" || outcome === "win") && npc.name) {
+    const sparMaster = SECT_SPARS.some((entry) => entry.npcs.some((who) => who.id === npc.id || who.name === npc.name));
+    if (!sparMaster) {
+      const scar = outcome === "win" ? scarFromBattleLog(battleLog) : null;
+      const rosterNow = working.varTree?.世界?.宿敌谱 || {};
+      const rosterNext = recordNemesisDuel(rosterNow, npc, outcome, { turn: state.time || 0, scar, place: state.room?.name || "" });
+      if (rosterNext) {
+        addChange(changes, working, "varTree", (prev) => ({
+          ...(prev || {}),
+          世界: { ...(prev?.世界 || {}), 宿敌谱: rosterNext },
+        }));
+        if (outcome === "lose") {
+          logs.push({ t: "sys", text: `  ${npc.name}赢了你——${nemesisFactionOf(npc) || ""}上下，有人记住你这张脸了。` });
+        } else if (scar) {
+          logs.push({ t: "sys", text: `  ${npc.name}身上添了道${scar.kind}伤——这账，江湖记着。` });
+        }
+      }
+    }
   }
 
   // 任务带动的切磋战不算日常切磋档：战报只有文本不带毒伤，也不该吃掉当日刷声誉额度。
