@@ -13,6 +13,7 @@ const ROUTE_KIND = {
   equip: ACTION_KINDS.EQUIP,
   use_item: ACTION_KINDS.USE_ITEM,
   take: ACTION_KINDS.PICKUP,
+  invite: ACTION_KINDS.INVITE,
 };
 
 // 单条路由结算：复用 stepEffect 对应分支，不造第二套账。
@@ -21,13 +22,17 @@ const ROUTE_KIND = {
 // 返回 receipt 供主叙事注入：成功照系统日志原句，失败绝不静默签成功。
 function runOne(action) {
   const kind = ROUTE_KIND[action?.kind];
-  const itemLabel = action?.item && action.item !== "无" ? action.item : "";
+  // invite 按人寻址（target），其余按物寻址（item）
+  const isInvite = action?.kind === "invite";
+  const itemLabel = isInvite
+    ? (action?.target && action.target !== "无" ? action.target : "")
+    : (action?.item && action.item !== "无" ? action.item : "");
   if (!kind || !itemLabel) {
-    return { kind: action?.kind, ok: false, text: `「${itemLabel || "未名之物"}」未能如愿：行动缺少明确的物件，系统未结算。` };
+    return { kind: action?.kind, ok: false, text: `「${itemLabel || (isInvite ? "未名之人" : "未名之物")}」未能如愿：行动缺少明确的${isInvite ? "对象" : "物件"}，系统未结算。` };
   }
   const state = gameStore.getState();
   // itemId 随步骤传递——stepEffect 按 id 优先寻址，同名两件不错副本
-  const step = { kind, item: itemLabel, itemId: action.itemId || "", target: action.target, text: action.text || "" };
+  const step = { kind, item: isInvite ? "" : itemLabel, itemId: action.itemId || "", target: isInvite ? itemLabel : action.target, text: action.text || "" };
   const result = stepEffect(state, step);
   const ok = !!(result && result.changes && Object.keys(result.changes).length > 0);
   if (result && (result.changes || result.logs?.length)) {
