@@ -2,10 +2,13 @@
 // buildCausalBudgetInput(state, intakeResult, opts) 纯函数——同一输入同一输出，
 // runTurn 与 WO-16D 影子必须共用此入口，否则对账失真。
 // 八参映射（computeCausalBudget 输入）：
-//   tension         敌对遇敌加成——读 encounter 实际返回字段 factionKey
+//   tension         路遇紧张度——读 encounter 实际返回字段 factionKey
 //                   （审计：domain/rules/map/encounter.js rollEncounter 返回
 //                   { factionKey, faction, passer }，经 turnContext.encounter 透传），
-//                   按该势力与散人的张力 getTension 定加成，无遇敌为 0。
+//                   factionTensionProxy 取该势力在势力冲突表（动态覆盖+BASE，按 pair
+//                   key 合并动态优先）里与任意势力的最强张力原值 0-100 直传。
+//                   这是势力冲突烈度代理，不是玩家-势力关系账，待有玩家关系账再换源；
+//                   无冲突记录/散人=0，不用人工兜底定档。
 //   riskLevel       前哨 risk 字段（WO-16G 才加）优先：给了「中/高」取前哨值与规则值较大者；
 //                   现在一律走规则兜底——按动作种类定档（偷/决斗 2、翻容器/取物/用物/装备 1、其余 0）。
 //   costPaid        v1 保守口径：赠出/交易出去每件记 5，使用消耗品记 3，其余 0

@@ -120,3 +120,23 @@ describe("与 computeCausalBudget 端到端", () => {
     expect(["T1", "T2", "T3"]).toContain(tier); // risk2×10=20 +luck7.5+aff0 → ≥20 → T1
   });
 });
+
+describe("factionTensionProxy 动态覆盖语义", () => {
+  it("同键 BASE 60 动态 20 → 20（缓和不被顶回）", async () => {
+    const { factionTensionProxy } = await import("../conflict/tension.js");
+    const { BASE_TENSION, tensionKey } = await import("../../data/factions/npcFactions.js");
+    // 找一个在 BASE 只有单条对子的势力（多条时其余对子 60 会主导 max）
+    const count = {};
+    for (const k of Object.keys(BASE_TENSION)) for (const f of k.split("|")) count[f] = (count[f] || 0) + 1;
+    const solo = Object.keys(count).find((f) => count[f] === 1);
+    const pairKey = Object.keys(BASE_TENSION).find((k) => k.split("|").includes(solo));
+    const other = pairKey.split("|").find((x) => x !== solo);
+    const dynamic = { [tensionKey(solo, other)]: 20 };
+    expect(BASE_TENSION[pairKey]).toBeGreaterThan(20); // 前提：BASE 原值比 20 高才有区分度
+    expect(factionTensionProxy(dynamic, solo)).toBe(20);
+  });
+  it("动态新增 BASE 没有的 key 也计入", async () => {
+    const { factionTensionProxy } = await import("../conflict/tension.js");
+    expect(factionTensionProxy({ "雪山派|虚构势力": 80 }, "雪山派")).toBe(80);
+  });
+});
