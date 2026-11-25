@@ -77,6 +77,8 @@ export function buildInitialGameState(restored, seed) {
     dungeonRun: restored?.snap.dungeonRun || null,
     // NPC 随身交易账随档还原（老档无此字段按空集兜底）
     npcState: restored?.snap.npcState || {},
+    // 备料缓存随档还原（WO-24A）：缓存非事实，老档无字段按空数组兜底
+    prepSeeds: Array.isArray(restored?.snap.prepSeeds) ? restored.snap.prepSeeds : [],
     inv: backfillInventoryFromCatalog(restored?.snap.inv || [...DEFAULT_PRESETS[0].inv]),
     log: restored
       ? [...stampLogEntries([{ t: "sys", text: `── 已从上次自动存档恢复进度（${new Date(restored.snap.savedAt || Date.now()).toLocaleString()}） ──` }], restored?.snap.time ?? 6), ...restored.snap.log]

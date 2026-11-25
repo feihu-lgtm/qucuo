@@ -57,19 +57,29 @@ export function prepStateVersion(state) {
   const day = dayOf(state.time);
   const npcs = npcKeyMaterial(room);
   // 容器：当前地点容器视图键计数（容器开合/出现掀版本）
-  const 容器数 = varTree容器计数(state.varTree, place);
+  const 容器数 = varTree容器计数(state.varTree);
   const nemesis = nemesisActiveCount(state.varTree);
   const material = [place, inner, day, npcs, 容器数, nemesis].join("|");
   return fnv1a(material).toString(16).padStart(8, "0");
 }
 
-function varTree容器计数(varTree, place) {
+// 真实契约（WO-22A materializeFacts）：varTree.世界.容器[containerPlace][containerName]
+//   = { collapsed:true, turn }——两层嵌套，顶层键是地点不是容器。
+// Review/WO-24A-fix 修：两层计数——全域容器条目总数*1000+collapsed 数。
+// 同一 containerPlace 内任一容器 collapsed false→true 必掀版本；新容器出现也掀。
+function varTree容器计数(varTree) {
   const c = varTree?.世界?.容器;
   if (!c || typeof c !== "object") return 0;
-  // 计数口径与地点无关化：全域容器总数+本地点坍缩键数——任一变化掀版本
-  const keys = Object.keys(c);
-  const collapsed = keys.filter((k) => c[k]?.collapsed === true || c[k]?.state === "collapsed").length;
-  return keys.length * 1000 + collapsed;
+  let total = 0, collapsed = 0;
+  for (const placeKey of Object.keys(c)) {
+    const byName = c[placeKey];
+    if (!byName || typeof byName !== "object") continue;
+    for (const name of Object.keys(byName)) {
+      total += 1;
+      if (byName[name]?.collapsed === true) collapsed += 1;
+    }
+  }
+  return total * 1000 + collapsed;
 }
 
 // 有效性：形状合规 + kind 在枚举 + 版本一致 + 地点一致（内层房并进 location 串）。

@@ -55,6 +55,29 @@ describe("prepStateVersion", () => {
   });
 });
 
+describe("容器计数两层契约（WO-24A-fix）", () => {
+  const withContainers = (containers) => mkState({ varTree: { 世界: { 宿敌谱: {}, 容器: containers } } });
+  it("同一 containerPlace 内任一容器 collapsed false→true 掀版本", () => {
+    const before = withContainers({ 曲措客栈: { 木箱: { turn: 10 } } });
+    const after = withContainers({ 曲措客栈: { 木箱: { collapsed: true, turn: 12 } } });
+    expect(prepStateVersion(before)).not.toBe(prepStateVersion(after));
+  });
+  it("同地点第二个容器坍缩也掀版本（Review finding）", () => {
+    const one = withContainers({ 曲措客栈: { 木箱: { collapsed: true, turn: 10 } } });
+    const two = withContainers({ 曲措客栈: { 木箱: { collapsed: true, turn: 10 }, 暗格: { collapsed: true, turn: 11 } } });
+    expect(prepStateVersion(one)).not.toBe(prepStateVersion(two));
+  });
+  it("同地点新增未坍缩容器键也掀版本", () => {
+    const one = withContainers({ 曲措客栈: { 木箱: { collapsed: true, turn: 10 } } });
+    const two = withContainers({ 曲措客栈: { 木箱: { collapsed: true, turn: 10 }, 暗格: { turn: 11 } } });
+    expect(prepStateVersion(one)).not.toBe(prepStateVersion(two));
+  });
+  it("容器坏形状（非对象/空层）不炸", () => {
+    expect(() => prepStateVersion(withContainers({ 曲措客栈: null }))).not.toThrow();
+    expect(() => prepStateVersion(withContainers("bad"))).not.toThrow();
+  });
+});
+
 describe("createPrepSeed/isPrepSeedValid", () => {
   it("id 复用场记板 prep_<stateVersion>_<seq> 口径", () => {
     const state = mkState();

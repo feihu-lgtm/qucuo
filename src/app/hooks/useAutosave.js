@@ -174,6 +174,8 @@ export function useAutosave({
       setCompanionState(snap.companionState || initCompanionState());
       setDungeonRun(snap.dungeonRun || null); // 地宫 checkpoint 随档还原
       setNpcState(snap.npcState || {}); // NPC 随身交易账随档还原
+      // 备料缓存随档还原（WO-24A）：老档/坏形状一律空数组——缓存宁可重备不可错植
+      gameActions.setPrepSeeds(Array.isArray(snap.prepSeeds) ? snap.prepSeeds : []);
       // 原文段落谱系随档还原：逐字段 set 不经 GAME_KEYS 自动恢复，必须显式拷回；
       // 老档无字段时置 undefined/0，交给 reconcile 建根。
       gameActions.setProseLineage(snap.proseLineage ?? undefined);
