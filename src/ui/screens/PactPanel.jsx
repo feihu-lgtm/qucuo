@@ -2,8 +2,9 @@ import React from "react";
 import { Overlay, Header } from "./buildings/common.jsx";
 import { useGameStore } from "../../store/gameStore.js";
 import { flattenPacts, pactDeadlineLine } from "../../domain/rules/judge/pactLines.js";
+import { flattenNemeses, nemesisGrudgeLine, nemesisStatusLine } from "../../domain/rules/nemesis/nemesisLines.js";
 
-// 「江湖契约」面板（WO-22B-P4b）——纯读 varTree.世界.契约，不写任何状态。
+// 「契约与宿敌」面板（WO-22B-P4b/WO-23B）——纯读 varTree.世界.契约/宿敌谱，不写任何状态。
 // 列表按人分组：NPC、约定、期限（剩余/已逾时辰）、状态（未了/已了/违约）、酬谢提示。
 // 旧档兼容：无 place/deadlineHours/breachTurn 字段不炸。
 
@@ -33,16 +34,44 @@ function PactRow({ pact, now, zoneTheme }) {
   );
 }
 
+function NemesisRow({ entry, zoneTheme }) {
+  const scars = (entry.scars || []).slice(-3);
+  const grudgeLine = nemesisGrudgeLine(entry.grudge);
+  return (
+    <div style={{
+      padding: "8px 10px", border: `1px solid ${zoneTheme.border}`,
+      display: "flex", flexDirection: "column", gap: 3,
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ color: "var(--text)", fontSize: "var(--fs-sm)" }}>{entry.name}</span>
+        <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)" }}>{entry.faction}·tier{entry.tier}</span>
+        {nemesisStatusLine(entry) && <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)" }}>{nemesisStatusLine(entry)}</span>}
+        {grudgeLine && <span style={{ color: "var(--red-soft)", fontSize: "var(--fs-2xs)", marginLeft: "auto" }}>{grudgeLine}</span>}
+      </div>
+      <div style={{ color: "var(--text)", fontSize: "var(--fs-xs)" }}>{String(entry.epithet || "").trim() || "尚无绰号"}</div>
+      {scars.length > 0 && (
+        <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)" }}>
+          旧伤：{scars.map((s) => `${s.kind}${s.note ? `（${String(s.note).slice(0, 12)}）` : ""}`).join("、")}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function PactPanel({ zoneTheme, onClose, inline }) {
   const varTree = useGameStore((s) => s.varTree);
   const now = useGameStore((s) => s.time);
   const pacts = flattenPacts(varTree).sort((a, b) => (a.bindTurn || 0) - (b.bindTurn || 0));
   const open = pacts.filter((p) => p.status !== "settled");
   const closed = pacts.filter((p) => p.status === "settled");
+  // WO-23B 宿敌谱半区：按势力分组纯读展示；旧档无宿敌谱只显空态，不炸不写。
+  const nemeses = flattenNemeses(varTree).sort((a, b) => (b.grudge - a.grudge) || (b.tier - a.tier));
+  const nemesisByFaction = {};
+  for (const e of nemeses) (nemesisByFaction[e.faction] ||= []).push(e);
 
   return (
     <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name={`江湖契约${open.length ? `（未了 ${open.length}）` : ""}`} zoneTheme={zoneTheme} onClose={onClose} />
+      <Header name={`契约与宿敌${open.length ? `（未了 ${open.length}）` : ""}`} zoneTheme={zoneTheme} onClose={onClose} />
       <div className="mobile-overlay-content" style={{ padding: 16 }}>
         {!pacts.length && (
           <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)" }}>
@@ -62,6 +91,22 @@ export default function PactPanel({ zoneTheme, onClose, inline }) {
             </div>
           </div>
         )}
+        <div style={{ marginTop: 16 }}>
+          <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)", marginBottom: 4 }}>宿敌谱</div>
+          {!nemeses.length && (
+            <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)" }}>
+              江湖上还没有与你结仇留名之人。
+            </div>
+          )}
+          {Object.entries(nemesisByFaction).map(([faction, entries]) => (
+            <div key={faction} style={{ marginBottom: 8 }}>
+              <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)", marginBottom: 3 }}>{faction}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {entries.map((e) => <NemesisRow key={e.entryKey} entry={e} zoneTheme={zoneTheme} />)}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </Overlay>
   );

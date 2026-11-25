@@ -8,6 +8,7 @@ import { gateBodyProfile } from "../../domain/rules/character/bodyProfile.js";
 import { labelMessage, makeBlock } from "../../domain/rules/prompt/tavernMapping.js";
 import { buildDistantViewBlock } from "../../domain/rules/memory/daySummary.js";
 import { buildPactInjectBlock } from "../../domain/rules/judge/pactLines.js";
+import { buildNemesisInjectBlock } from "../../domain/rules/nemesis/nemesisLines.js";
 import { targetLedger } from "../../domain/rules/prompt/materials/index.js";
 import { embeddingReady } from "../ports/embeddingService.js";
 import { buildExtractionCfg } from "../../domain/rules/prompt/structuredCallCfg.js";
@@ -205,7 +206,11 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
     ? d.visibleNpcNames
     : (d.room?.npcs || []).map((n) => n?.name);
   const pactBlock = buildPactInjectBlock(d.varTree, pactPresentNames, d.time);
-  const pactNemesisPart = pactBlock ? `\n\n${pactBlock}` : "";
+  // WO-23B ⑨宿敌谱半块：确定性文本行，只列在场且 active 的谱中人物（最多 3 条，
+  // 含势力/tier/绰号/显著旧伤≤2/结仇强度），fakeDead/settled 不入；无谱中人物零注入。
+  // 与契约半块共用同一名册口径；两块各自独立为空，互不影响形状。
+  const nemesisBlock = buildNemesisInjectBlock(d.varTree, pactPresentNames);
+  const pactNemesisPart = [pactBlock, nemesisBlock].filter(Boolean).map((b) => `\n\n${b}`).join("");
   // WO-16F-F3：判官激活的 appease settle 也必须接定案单——否则判官落了账、
   // 正文却自由判成相反结果（本单要消灭的穿帮）。普通非判官 settle 仍不收尾章税。
   const inChatContent = d.isSettle
