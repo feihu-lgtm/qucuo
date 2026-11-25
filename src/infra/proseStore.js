@@ -77,9 +77,10 @@ export async function countProseChunks() {
 // 为一回合」从快照当前 time 倒推——粗但够检索用；记录全部打 migrated:true
 // 以便将来区分精度的差别。location 用快照当前房名（老 convo 无位置信息，
 // 拿不准就留空字符串——不编造）。
+// 幂等口径：不设 proseMigrated 状态旗——同一存档再迁一遍产出完全相同的
+// 确定性 chunk id，put 自然覆盖，不重复增生；少一个状态源就不会半死。
 export function migrateLegacyConvoAndNotes(saveSnapshot, { notes = [] } = {}) {
   if (!saveSnapshot || typeof saveSnapshot !== "object") return [];
-  if (saveSnapshot.proseMigrated) return [];
   const chunks = [];
   const timeNow = Number(saveSnapshot.time) || 0;
   const convo = Array.isArray(saveSnapshot.convo) ? saveSnapshot.convo : [];

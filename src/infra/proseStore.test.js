@@ -49,8 +49,9 @@ describe("migrateLegacyConvoAndNotes", () => {
     expect(chunks[0].migrated).toBe(true);
     expect(chunks.every((c) => c.kind === "raw_memory")).toBe(true);
     expect(chunks.every((c) => c.witnesses.includes("*"))).toBe(true); // 老档无在场名单不编造
-    // 幂等：打过标记的档不再迁
-    expect(migrateLegacyConvoAndNotes({ ...snapshot, proseMigrated: true })).toEqual([]);
+    // 幂等靠确定性 id：同一存档再迁一遍产出完全相同的 id 集合（put 覆盖不增生）
+    const again = migrateLegacyConvoAndNotes(snapshot);
+    expect(again.map((c) => c.id)).toEqual(chunks.map((c) => c.id));
   });
 
   it("小纸条一条一 chunk，owner 映射 witnesses", () => {

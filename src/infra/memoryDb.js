@@ -34,8 +34,21 @@ export function openMemoryDb() {
       }
       void event;
     };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    req.onsuccess = () => {
+      const db = req.result;
+      // 别的标签页要升级库时主动关掉本连接——不挡别人的升级事务
+      db.onversionchange = () => db.close();
+      resolve(db);
+    };
+    const fail = (err) => {
+      // 失败不缓存 promise——否则一次被挡永久失忆；下次调用重试开库
+      _dbPromise = null;
+      reject(err);
+    };
+    req.onerror = () => fail(req.error);
+    // 老标签页占着 v1 连接不放时 upgrade 会无限等待——读写内存降级好过整回合卡死：
+    // 拒绝后 memoryStore/proseStore 的既有降级口径（按空记忆处理）接管。
+    req.onblocked = () => fail(new Error("qucuo_memory 升级被其他标签页占用（onblocked）"));
   });
   return _dbPromise;
 }
