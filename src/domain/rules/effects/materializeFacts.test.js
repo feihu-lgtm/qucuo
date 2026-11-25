@@ -270,6 +270,40 @@ describe("materializeFacts 十二律覆盖矩阵", () => {
     expect(paths).toContain("varTree.世界.契约.才旦.F37");
   });
 
+  it("GRANT_ITEM 兜底：合法 it_ 前缀 id 原样保留（后续 transfer/reforge 可寻址）", () => {
+    const state = baseState();
+    state.inv = [];
+    const out = materializeFacts(state, [
+      { id: "F40", op: "GRANT_ITEM", itemId: "it_whistle", itemName: "骨哨" },
+    ], {});
+    expect(out.changes.inv[0].id).toBe("it_whistle");
+  });
+
+  it("GRANT_ITEM 兜底：同轮两件同名 fallback 物不撞 id、不丢第二件", () => {
+    const state = baseState();
+    state.inv = [];
+    const out = materializeFacts(state, [
+      { id: "F41", op: "GRANT_ITEM", itemName: "馒头" },
+      { id: "F42", op: "GRANT_ITEM", itemName: "馒头" },
+    ], {});
+    const buns = out.changes.inv.filter((e) => e.name === "馒头");
+    expect(buns).toHaveLength(2);
+    expect(buns[0].id).not.toBe(buns[1].id);
+    expect(out.receipts).toHaveLength(2);
+  });
+
+  it("BIND_OR_SETTLE_PACT 无键了结：现存未结旧约全部落 settled 标记", () => {
+    const state = baseState();
+    state.varTree = { 角色: {}, 世界: { 契约: { 才旦: { F_old1: { promise: "旧约一" }, F_old2: { promise: "旧约二", settled: { turn: 1 } } } } } };
+    const out = materializeFacts(state, [
+      { id: "F43", op: "BIND_OR_SETTLE_PACT", npc: "才旦", settle: true },
+    ], {});
+    const paths = out.patches.map((p) => p.path.join("."));
+    expect(paths).toContain("varTree.世界.契约.才旦.F_old1.settled");
+    expect(paths).not.toContain("varTree.世界.契约.才旦.F_old2.settled"); // 已结的跳过
+    expect(paths).not.toContain("varTree.世界.契约.才旦.F43.settled"); // 不写到自己名下
+  });
+
   it("未知事实码不静默：进 logs 记异", () => {
     const out = materializeFacts(baseState(), [{ id: "F99", op: "SUMMON_DRAGON" }], {});
     expect(out.logs.some((l) => l.text.includes("SUMMON_DRAGON"))).toBe(true);

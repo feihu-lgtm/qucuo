@@ -85,7 +85,9 @@ export function materializeFacts(state, facts, compiledWarrants) {
 
   const syncWorkState = () => ({ ...state, inv, room, char, skills, flags, exp, pot, dao });
 
+  let factIndex = -1;
   for (const fact of facts || []) {
+    factIndex += 1;
     if (!fact || !fact.op) continue;
     switch (fact.op) {
       // ── 1. GRANT_ITEM：入 inv + 装备/丹药回执 ──
@@ -94,7 +96,7 @@ export function materializeFacts(state, facts, compiledWarrants) {
         if (!item) {
           // 保守不丢事实：编译缺失时按事实字段拼白档兜底物
           if (!fact.itemName) { logs.push({ t: "err", text: `  ⛔ 事实 ${fact.id} 无物可授（缺编译产物与物名）` }); break; }
-          item = { id: (typeof fact.itemId === "string" && /^it_[0-9a-f]+/.test(fact.itemId)) ? fact.itemId : mintItemId(fact.itemName, turn, 0), name: fact.itemName, category: fact.category || "misc", quality: fact.quality || "白", desc: "来历成谜的物件（编译缺失兜底）" };
+          item = { id: (typeof fact.itemId === "string" && fact.itemId.startsWith("it_")) ? fact.itemId : mintItemId(fact.itemName, turn, factIndex), name: fact.itemName, category: fact.category || "misc", quality: fact.quality || "白", desc: "来历成谜的物件（编译缺失兜底）" };
         }
         if (inv.some((e) => e && e.id && e.id === item.id)) break; // 幂等：同 id 不重复入袋
         inv.push({ ...item });
@@ -308,14 +310,20 @@ export function materializeFacts(state, facts, compiledWarrants) {
         // 多份约定互不覆盖，旧约原文永不丢（手册未定字段，保守取舍）
         const pactKey = fact.pactId || fact.id || `pact_${turn}`;
         if (fact.settle === true || fact.settleKey) {
-          // 了结：在指定旧约上打 settled 标记（settleKey 可点名旧约），不删原文
-          const key = fact.settleKey || pactKey;
-          patches.push({
-            op: "merge",
-            path: ["varTree", "世界", "契约", fact.npc, key, "settled"],
-            value: { turn, note: fact.note || "" },
-            factId: fact.id,
-          });
+          // 了结：在旧约上打 settled 标记，不删原文。settleKey/pactId 可点名；
+          // 都没点名时按 state 里该 NPC 现存的全部未结旧约落标——否则 settled 会
+          // 写成本条事实自己名下的新条目，旧约依然悬着（手册未定，保守全结取舍）
+          const existing = Object.keys(state.varTree?.世界?.契约?.[fact.npc] || {})
+            .filter((k) => k !== "settled" && !(state.varTree?.世界?.契约?.[fact.npc]?.[k]?.settled));
+          const keys = fact.settleKey ? [fact.settleKey] : fact.pactId ? [fact.pactId] : (existing.length ? existing : [pactKey]);
+          for (const key of keys) {
+            patches.push({
+              op: "merge",
+              path: ["varTree", "世界", "契约", fact.npc, key, "settled"],
+              value: { turn, note: fact.note || "" },
+              factId: fact.id,
+            });
+          }
         } else {
           patches.push({
             op: "merge",
