@@ -410,6 +410,12 @@ async function runTurnSteps(ctx, cmd, opts) {
       trace("尾章校对", "warn", warning);
       addLog([{ t: "sys", text: `  ⚠ ${warning}` }]);
     }
+    // SEAL respondedNpcs 兜底接线：系统推导（intake talk target）优先——推导非空时
+    // SEAL 不覆盖；推导为空（intake 失败/未列 actions）时模型自证作为低可信兜底进 p，
+    // 在场过滤仍由 talkKnow 统一执行，不得用于 pact 自证（见 docs）。
+    if (!(deps.derivedRespondedNpcs || []).length && Array.isArray(verified.sealData?.respondedNpcs) && verified.sealData.respondedNpcs.length) {
+      p = { ...p, respondedNpcs: verified.sealData.respondedNpcs };
+    }
     judgeEffects = { verdict: judgeVerdict, sealReport: verified, materialized: verified.materialized };
     trace("尾章校对", "pass", `锚点齐 ${judgeVerdict.facts.length - verified.missingAnchors.length}/${judgeVerdict.facts.length}，编译券 ${Object.keys(verified.materialized?.receipts || {}).length}，facts 落盘 ${verified.facts.length} 条`);
   }

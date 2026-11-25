@@ -26,6 +26,12 @@ describe("registerMemoryFact", () => {
     expect(factsA).toBeTruthy();
   });
 
+  it("memory 为数组时归一成字符串不抛错", () => {
+    const out = registerMemoryFact(base(["片段一", "片段二"]));
+    expect(out).toBeTruthy();
+    expect(() => out.changes.varTree({ 世界: {} })).not.toThrow();
+  });
+
   it("无 memory 返回 null", () => {
     expect(registerMemoryFact({ ...base(""), p: {} })).toBeNull();
   });
