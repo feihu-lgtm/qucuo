@@ -232,7 +232,9 @@ export function resolveTurn(sideA, sideB) {
       result[`damageTo${loserTag}`] += damage;
     }
     if (winnerMove.doubleReflectDamage) {
-      const wouldBlock = calcBaseDamage(loserMove, loserSide, winnerSide);
+      // WO-23C5 Review 修：反弹基数同样剥掉旧伤加成——只放大其受创，不壮其反弹
+      const reflectSide = winnerSide?.scarKinds?.length ? { ...winnerSide, scarKinds: undefined } : winnerSide;
+      const wouldBlock = calcBaseDamage(loserMove, loserSide, reflectSide);
       result[`damageTo${loserTag}`] += Math.round(wouldBlock * 2);
       result.notes.push(`${winnerMove.name}二倍反弹，力道尽数奉还`);
     }

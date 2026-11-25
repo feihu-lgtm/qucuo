@@ -34,6 +34,27 @@ describe("scarKindsOfNemesis 纯函数", () => {
   });
 });
 
+describe("nemesisFactionOf 权威势力接线（返修①）", () => {
+  it("resident 无显式 faction 但按 id 映射入谱：旧伤生效", async () => {
+    const { nemesisFactionOf } = await import("./nemesisEngine.js");
+    // resident_huyanxue 在 NPC_FACTION 映射里属雪山派，无裸 faction 字段
+    const npc = { id: "resident_huyanxue", name: "呼延雪" };
+    const faction = nemesisFactionOf(npc);
+    expect(faction).toBe("雪山派");
+    const r2 = {
+      雪山派: { entries: { x: { id: "x", name: "呼延雪", status: "active", scars: [{ kind: "利刃", turn: 1 }] } } },
+    };
+    const kinds = scarKindsOfNemesis(r2, faction, npc.name);
+    expect(kinds).toEqual(["利刃"]);
+    expect(scarVulnerabilityMultiplier({ roster: r2, faction, npcName: npc.name, move: bladeMove })).toBe(SCAR_VULN_MULTIPLIER);
+  });
+  it("散人/非五势力 null 不生效", async () => {
+    const { nemesisFactionOf } = await import("./nemesisEngine.js");
+    expect(nemesisFactionOf({ id: "resident_caidan", name: "才旦" })).toBeNull(); // 鱼定村非五势力
+    expect(scarKindsOfNemesis(roster, nemesisFactionOf({ name: "路人" }), "路人")).toEqual([]);
+  });
+});
+
 describe("moveScarKindHit / scarVulnerabilityMultiplier", () => {
   it("利刃/火毒代表命中；钝击不同类不命中；不可辨认零效果", () => {
     expect(moveScarKindHit(bladeMove, ["利刃"])).toBe(true);
@@ -45,6 +66,33 @@ describe("moveScarKindHit / scarVulnerabilityMultiplier", () => {
   it("一站式倍率：命中 1.1 否则 1", () => {
     expect(scarVulnerabilityMultiplier({ roster, faction: "黑风寨", npcName: "甲", move: bladeMove })).toBe(SCAR_VULN_MULTIPLIER);
     expect(scarVulnerabilityMultiplier({ roster, faction: "黑风寨", npcName: "甲", move: fistMove })).toBe(1);
+  });
+});
+
+describe("反击/反弹不吃旧伤加成（Review 修）", () => {
+  function mkSide(move, scarKinds) {
+    return {
+      move, special: { 体魄: 5, 身法: 5 }, baseAtk: 20, equipAtk: 0, equipDef: 0,
+      hp: [100, 100], energy: [10, 10], statusSlots: {}, scarKinds,
+    };
+  }
+  it("宿敌架住反击时 damageToA 不因宿敌自己的旧伤变大", () => {
+    // 玩家使剑（利刃），宿敌带利刃疤+反击防御招——宿敌架住后反击玩家
+    const counterMove = { name: "铁壁反击", type: "防御", baseDamageMultiplier: 0.3, onCounterSuccessDamageRatio: 0.5 };
+    const playerAtk = { name: "青钢剑法", type: "攻击", baseDamageMultiplier: 1, desc: "剑刺" };
+    const run = (scarKinds) => {
+      let max = 0;
+      for (let i = 0; i < 30; i++) {
+        const r = resolveTurn(mkSide(playerAtk, undefined), mkSide(counterMove, scarKinds));
+        // 宿敌防御胜时 damageToA 含反击；玩家被反击的伤害不因疤变大
+        if (r.damageToA > max) max = r.damageToA;
+      }
+      return max;
+    };
+    const withScar = run(["利刃"]);
+    const without = run(undefined);
+    // 有疤时玩家被打中的「受」伤更大（damageToB）但反击回玩家的 damageToA 不更大
+    expect(withScar).toBeLessThanOrEqual(without + 1); // 舍入容差 1
   });
 });
 
@@ -143,5 +191,19 @@ describe("团战链入口覆盖（runTeamTurn）", () => {
       without = Math.max(without, fistOnce(undefined));
     }
     expect(withScar).toBe(without);
+  });
+});
+
+// autoFight 野战入口覆盖：combatChoice 注入路径纯函数级验证（state 直取）
+describe("autoFight 野战链注入形状", () => {
+  it("buildEnemyUnit 副本可携 scarKinds 且 runTeamTurn 生效", async () => {
+    const { buildEnemyUnit } = await import("../combat/teamUnits.js");
+    const npc = { id: "questfoe_x", name: "甲", faction: "黑风寨", special: { 体魄: 5, 身法: 5 }, moveset: [{ id: "d", name: "守", type: "防御", baseDamageMultiplier: 0.5 }] };
+    const unit = {
+      ...buildEnemyUnit(npc),
+      scarKinds: scarKindsOfNemesis(roster, "黑风寨", "甲"),
+    };
+    expect(unit.scarKinds.sort()).toEqual(["利刃", "火毒"].sort());
+    // 与主链同一 resolveTurn 底：此处只钉装配形状，数值生效已由 runTeamTurn 测试覆盖
   });
 });

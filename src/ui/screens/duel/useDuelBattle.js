@@ -12,6 +12,7 @@ import { createEmptyStatusSlots, applyStatus, applyMark, dispelControlDrain } fr
 import { rollBattleLoot, atkFromWaigong } from "../../../domain/rules/npc/npcGeneration.js";
 import { gameStore } from "../../../store/gameStore.js";
 import { scarKindsOfNemesis } from "../../../domain/rules/nemesis/nemesisScarVuln.js";
+import { nemesisFactionOf } from "../../../domain/rules/nemesis/nemesisEngine.js";
 import { mergeMoveWithEquip, tickCostPenalty } from "../../../domain/rules/combat/teamBattleEngine.js";
 import { resolveCombatBuff } from "../../../utils/buffSystem.js";
 import { effectiveMaxHp } from "../../../domain/data/kungfu/qucuoKungfu.js";
@@ -165,7 +166,7 @@ export function useDuelBattle({ npc, playerChar, pendingCombatBuff, playerInv, p
         lastCounterSuccess: npcLastCounter, pendingAtkBonus: npcPendingAtk, costPenalty: npcCostPenalty?.value ?? 0,
         lastStatusApplied: npcLastStatusApplied, counterStacks: npcCounterStacks,
         // WO-23C5：宿敌谱 active entry 旧伤属性（谱只读，战斗中不变，逐回合照账查）
-        scarKinds: scarKindsOfNemesis(gameStore.getState().varTree?.世界?.宿敌谱, npc.faction, npc.name),
+        scarKinds: scarKindsOfNemesis(gameStore.getState().varTree?.世界?.宿敌谱, nemesisFactionOf(npc), npc.name),
       };
 
       const result = resolveTurn(sideA, sideB);
