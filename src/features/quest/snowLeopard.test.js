@@ -77,6 +77,11 @@ describe("resolveSnowInteraction 触发面", () => {
     const r = resolveSnowInteraction(st, "喂雪豹吃牛肉干");
     expect(r.changes.inv(st.inv).map((e) => e.name)).toEqual(["羊肉"]);
   });
+  it("名字前缀重叠时优先更长名称", () => {
+    const st = base({ inv: [{ id: "m1", name: "羊肉" }, { id: "m2", name: "羊肉干" }] });
+    const r = resolveSnowInteraction(st, "把羊肉干喂雪豹");
+    expect(r.changes.inv(st.inv).map((e) => e.name)).toEqual(["羊肉"]); // 扣羊肉干不扣羊肉
+  });
   it("未点名时取背包第一块肉", () => {
     const st = base({ inv: [{ id: "b1", name: "青稞饼" }, { id: "m1", name: "羊肉" }, { id: "m2", name: "牛肉干" }] });
     const r = resolveSnowInteraction(st, "喂雪豹吃肉");

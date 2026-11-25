@@ -105,7 +105,7 @@ export function resolveSnowInteraction(state, cmd) {
       const named = inv
         .map((entry, index) => ({ entry, index, at: itemName(entry).length >= 2 ? cmd.indexOf(itemName(entry)) : -1 }))
         .filter((hit) => hit.at !== -1)
-        .sort((a, b) => a.at - b.at)[0];
+        .sort((a, b) => a.at - b.at || itemName(b.entry).length - itemName(a.entry).length)[0]; // 同位置优先更长名称（羊肉干 vs 羊肉）
       const meat = named ? named.entry : inv.find((entry) => isSnowMeatItem(entry));
       if (!meat || !isSnowMeatItem(meat)) return null; // 点名物非肉 / 无肉——不触发，叙事自由发挥
       const meatName = itemName(meat) || "肉";
