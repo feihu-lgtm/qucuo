@@ -10,6 +10,7 @@ import { formatShadowVerdicts, formatAggregate } from "../../engine/act/shadow/s
 import { summarizeShadowCoverage, evaluateShadowThresholds } from "../../engine/act/shadow/shadowCoverage.js";
 import {
   releaseMetricAggregates,
+  releaseMetricsExport,
   formatReleaseMetricLines,
   formatReleaseGateMarkdown,
   resolveReleaseMetricsEnabled,
@@ -132,6 +133,13 @@ export default function TraceViewer({ theme, onClose, onReport }) {
                     setReportCopied("已复制报告");
                   } catch { setReportCopied("复制失败"); }
                 }}>{reportCopied || "复制报告"}</button>
+                {/* WO-16D-4：跨 epoch 全量聚合导出，shape 供 npm run release:report 离线消费 */}
+                <button type="button" style={{ ...button, marginLeft: 4 }} onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(JSON.stringify(releaseMetricsExport()));
+                    setReportCopied("指标JSON已复制");
+                  } catch { setReportCopied("复制失败"); }
+                }}>复制放行指标JSON</button>
               </div>
             </div>
           </details>
