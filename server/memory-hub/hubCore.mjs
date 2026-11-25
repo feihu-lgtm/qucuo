@@ -125,13 +125,21 @@ export function buildLineageSql(lineage, currentTurn, col = "c") {
         parts.push(`(${col}.branch_id = ?)`);
         params.push(e.b);
       }
-    } else if (Number.isFinite(e.upTo)) {
-      if (Number.isFinite(e.upToSeq)) {
+    } else {
+      // 数字字符串容错（复审）：JS branchVisibleServer 的 turn<branch.upTo 比较会
+      // 隐式 coercion 把 "6" 当 6 用——SQL 若按 Number.isFinite 严格判定会把整支
+      // 丢弃，向量召回仍进、关键词召回消失，两路口径裂开。此处对齐 coercion 语义。
+      const upToNum = Number.isFinite(e.upTo) ? e.upTo
+        : (typeof e.upTo === "string" && e.upTo.trim() !== "" && Number.isFinite(Number(e.upTo)) ? Number(e.upTo) : null);
+      const upToSeqNum = Number.isFinite(e.upToSeq) ? e.upToSeq
+        : (typeof e.upToSeq === "string" && e.upToSeq.trim() !== "" && Number.isFinite(Number(e.upToSeq)) ? Number(e.upToSeq) : null);
+      if (upToNum === null) continue; // 既非数字也非数字字符串也非 null——畸形条目不认
+      if (upToSeqNum !== null) {
         parts.push(`(${col}.branch_id = ? AND (${col}.turn < ? OR (${col}.turn = ? AND (${col}.seq IS NULL OR ${col}.seq <= ?))))`);
-        params.push(e.b, e.upTo, e.upTo, e.upToSeq);
+        params.push(e.b, upToNum, upToNum, upToSeqNum);
       } else {
         parts.push(`(${col}.branch_id = ? AND ${col}.turn <= ?)`);
-        params.push(e.b, e.upTo);
+        params.push(e.b, upToNum);
       }
     }
   }

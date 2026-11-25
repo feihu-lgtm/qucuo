@@ -338,6 +338,20 @@ describe("WO-20B1 谱系条件下推 SQL（cap 不再先截取）", () => {
     store.close();
   });
 
+  it("upTo 数字字符串容错：与 JS coercion 同口径不丢分支", () => {
+    const store = createHubStore(":memory:");
+    store.appendProseChunks("sp", "batch_str", [
+      { chunkId: "str_in", turn: 5, seq: 1, branchId: "b_old", witnesses: ["*"], entities: [], rawText: "数字字符串分支提到青铜印。" },
+    ]);
+    const res = store.queryProseChunks("sp", {
+      query: "青铜印", viewer: "主角",
+      lineage: [{ b: "b_old", upTo: "6", upToSeq: "3" }, { b: "b_head", upTo: null }],
+      currentTurn: 6, topK: 5, neighborRadius: 0,
+    });
+    assert.deepEqual(res.results.map((r) => r.chunkId), ["str_in"]);
+    store.close();
+  });
+
   it("纯 FTS/向量 RRF/邻段不回归：lineage 下推后 RRF 排序与邻段扩展照常", () => {
     const store = createHubStore(":memory:");
     store.appendProseChunks("sp", "batch_rrf", [
