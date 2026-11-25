@@ -6,6 +6,7 @@
 import { withAI } from "../../ports/withAI.js";
 import { buildIntakeUserContent, normalizeIntakeResult } from "../../turn/intakeTurn.js";
 import { judgeTurn } from "../../../domain/rules/judge/judgeTurn.js";
+import { buildCausalBudgetInput } from "../../../domain/rules/judge/budgetInput.js";
 import { getInnerRoom } from "../../../domain/rules/map/innerMap.js";
 import { resolveContainerContext } from "../../../domain/rules/world/containers.js";
 import { questAdvanceCandidates } from "../../../domain/rules/quests/questAdvanceCandidates.js";
@@ -63,7 +64,7 @@ function recordAggregate(epoch, result) {
 export async function runShadowJudge({
   cmd, preState, postState, deps, ai, apiCfg, epoch = "default",
   isStale, epochGuard, trace, convo = [], isTalk = false, moved = false,
-  visibleNpcs = null,
+  visibleNpcs = null, gm = false,
 }) {
   try {
     if (!resolveShadowJudgeEnabled(apiCfg)) return null;
@@ -103,7 +104,9 @@ export async function runShadowJudge({
     if (isStale?.() || epochGuard?.()) return null;
     const intakeResult = normalizeIntakeResult(intakeRes?.data);
     const verdict = judgeTurn({
-      turn: postState?.turn || 1, day: Math.floor((postState?.turn || 1) / 24) + 1,
+      // WO-16E 二审修：真实判官吃 commit 前 timeNow——影子统一用回合前 turn，
+      // 否则非搭话回合差 +1，day/跨日配额/warrantId/rng seed/origin 全错位。
+      turn: preState?.turn ?? postState?.turn ?? 1, day: Math.floor((preState?.turn ?? postState?.turn ?? 1) / 24) + 1,
       place: preState?.room?.name || "",
       npcs, varTree: preState?.varTree || {},
       inv: preState?.inv || [], entries: [], talkOnly: isTalk,
@@ -111,10 +114,19 @@ export async function runShadowJudge({
       containerPlace,
       questCandidates,
       pickupJudgment: null,
-      budget: { riskLevel: 0, luck: preState?.char?.special?.气运 ?? 0 },
+      // WO-16E：与 runTurn 同一 budgetInput 入口——影子判官的授信口径必须
+      // 与真实判官逐字一致，否则对账数据失真。
+      budget: buildCausalBudgetInput({
+        varTree: preState?.varTree || {},
+        char: preState?.char || {},
+        room: preState?.room || {}, inv: preState?.inv || [],
+        turn: preState?.turn ?? postState?.turn ?? 1, day: Math.floor((preState?.turn ?? postState?.turn ?? 1) / 24) + 1,
+        encounter: preState?.encounter || null,
+        questCandidates,
+      }, intakeResult, { gm }),
     // 影子用隔离 rng 实例——绝不能用全局 random，否则影子抽数会推进游戏共享
     // 随机流，污染后续掷骰/赌博等玩法结果（影子必须零行为变化）。
-    }, intakeResult, { rng: createRng((((postState?.turn || 1) * 2654435761) >>> 0) || 1).random });
+    }, intakeResult, { rng: createRng((((preState?.turn ?? postState?.turn ?? 1) * 2654435761) >>> 0) || 1).random });
     if (isStale?.() || epochGuard?.()) return null;
 
     const diffOut = diffSnapshots(preState, postState, { moved });

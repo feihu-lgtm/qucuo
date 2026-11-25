@@ -69,6 +69,7 @@ export async function playTurn(ctx, cmd, opts = {}) {
         room: snapshot.state.room, questProgress: getGameState?.()?.questProgress,
         char: snapshot.state.char, turn: snapshot.state.time,
         innerRoomName: turnCtx.innerRoomName ?? null,
+        encounter: turnCtx.encounter || null,
       }
       : null;
     const finalized = await finalizeTurn({
@@ -99,7 +100,7 @@ export async function playTurn(ctx, cmd, opts = {}) {
         cmd, preState: shadowPre, postState: shadowPost,
         ai: turnCtx.ai, apiCfg: turnCtx.apiCfg,
         convo: turnCtx.convo || [], isTalk,
-        visibleNpcs: presence.visibleNpcsForAI,
+        visibleNpcs: presence.visibleNpcsForAI, gm: !!turnCtx.gm,
         epoch: String(turnCtx.proseEpoch ?? "default"),
         isStale: turnCtx.isStale, epochGuard: turnCtx.proseEpochGuard,
         trace: (layer, label, fields) => turnMonitor.add(trace, layer, label, fields),
