@@ -24,6 +24,9 @@ export { allowedAffixesForBudget, compileAffix, affixCost } from "../../domain/r
 export { compileEmergentItem } from "../../domain/rules/effects/compileEmergentItem.js";
 export { compileEmergentSkill } from "../../domain/rules/effects/compileEmergentSkill.js";
 
+// WO-11 零入度接线：十二律落盘引擎经此挂入依赖图（消费方在 WO-13 主链路）。
+export { materializeFacts } from "../../domain/rules/effects/materializeFacts.js";
+
 // 由 plan（resolveIntent 的裁决结果）+ env（hook 注入的状态/引用/胶水）组装 playTurn 的 ctx。
 export function createTurnContext({ plan, env }) {
   const { state, refs, io, opts } = env;
