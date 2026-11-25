@@ -139,6 +139,13 @@ describe("WO-16D 影子对账接线", () => {
     expect(runShadowJudge).not.toHaveBeenCalled();
   });
 
+  it("settle 回合不跑影子（turnCtx.isSettle 信号）", async () => {
+    runTurn.mockResolvedValue({ narrativeText: "test" });
+    const ctxSettle = { ...shadowCtx(), isSettle: true };
+    await playTurn(ctxSettle, "test");
+    expect(runShadowJudge).not.toHaveBeenCalled();
+  });
+
   it("stale 回合不跑影子", async () => {
     runTurn.mockResolvedValue({ narrativeText: "test" });
     await playTurn(shadowCtx(), "test", { isStale: undefined });

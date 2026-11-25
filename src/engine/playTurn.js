@@ -6,6 +6,7 @@ import { createPhaseSetter } from "./turn/phaseSetter.js";
 import { narrateTurn } from "./turn/narrateTurn.js";
 import { finalizeTurn } from "./turn/finalizeTurn.js";
 import { runShadowJudge, resolveShadowJudgeEnabled } from "./act/shadow/shadowJudge.js";
+import { buildPresence } from "./prompt/index.js";
 
 export const ROLLBACK_KEYS = [
   "room", "char", "dao", "skills", "inv", "exp", "pot", "flags",
@@ -67,6 +68,7 @@ export async function playTurn(ctx, cmd, opts = {}) {
         inv: snapshot.state.inv, flags: snapshot.state.flags, varTree: snapshot.state.varTree,
         room: snapshot.state.room, questProgress: getGameState?.()?.questProgress,
         char: snapshot.state.char, turn: snapshot.state.time,
+        innerRoomName: turnCtx.innerRoomName ?? null,
       }
       : null;
     const finalized = await finalizeTurn({
@@ -74,16 +76,25 @@ export async function playTurn(ctx, cmd, opts = {}) {
     });
     // commit 成功且未 stale 才 fire-and-forget；影子吃回合前快照、对比 commit 后现状，
     // 结果只进 trace/内存聚合，异常静默，绝不阻塞回合。
-    if (shadowPre && finalized?.ok && !finalized?.stale && !turnCtx.isStale?.() && !opts.settle && !opts.isSettle) {
+    if (shadowPre && finalized?.ok && !finalized?.stale && !turnCtx.isStale?.() && !turnCtx.isSettle) {
       const liveAfter = getGameState?.() || {};
       const shadowPost = {
         inv: liveAfter.inv, flags: liveAfter.flags, varTree: liveAfter.varTree,
         room: liveAfter.room, turn: liveAfter.time,
       };
+      // 同源喂料：在场名单用与 preparedPrompt 完全相同的 buildPresence 口径
+      // （内层过滤+同伴出战位并入），吃回合前房间快照——影子输入才与真实判官一致。
+      const presence = buildPresence({
+        isTalk: !!opts.isTalk, lockedDestName: turnCtx.lockedDestName,
+        room: shadowPre.room || {}, innerRoomName: turnCtx.innerRoomName,
+        companionState: getGameState?.()?.companionState,
+      });
       void runShadowJudge({
         cmd, preState: shadowPre, postState: shadowPost,
         ai: turnCtx.ai, apiCfg: turnCtx.apiCfg,
         convo: turnCtx.convo || [], isTalk: !!opts.isTalk,
+        visibleNpcs: presence.visibleNpcsForAI,
+        epoch: String(turnCtx.proseEpoch ?? "default"),
         isStale: turnCtx.isStale, epochGuard: turnCtx.proseEpochGuard,
         trace: (layer, status, detail) => turnMonitor.add(trace, layer, status, typeof detail === "string" ? { detail } : detail),
       }).catch(() => { /* 影子异常静默 */ });

@@ -44,8 +44,13 @@ function recordAggregate(epoch, result) {
   if (!result.hasGap && !result.judgeExtra) agg.match += 1;
   if (result.hasGap) agg.gaps += 1;
   if (result.judgeExtra) agg.judgeExtra += 1;
+  agg.excluded = agg.excluded || {};
   for (const [cat, v] of Object.entries(result.verdicts)) {
-    if (v.verdict === "excluded" || v.verdict === "match") continue;
+    if (v.verdict === "excluded") {
+      agg.excluded[cat] = (agg.excluded[cat] || 0) + 1; // 盲区显式计数，不计入覆盖率
+      continue;
+    }
+    if (v.verdict === "match") continue;
     agg.byCategory[cat] = agg.byCategory[cat] || { single_only: 0, judge_only: 0, both_diff: 0 };
     agg.byCategory[cat][v.verdict] = (agg.byCategory[cat][v.verdict] || 0) + 1;
   }
@@ -56,11 +61,15 @@ function recordAggregate(epoch, result) {
 export async function runShadowJudge({
   cmd, preState, postState, deps, ai, apiCfg, epoch = "default",
   isStale, epochGuard, trace, convo = [], isTalk = false, moved = false,
+  visibleNpcs = null,
 }) {
   try {
     if (!resolveShadowJudgeEnabled(apiCfg)) return null;
     if (apiCfg?.extractionEnabled) return null; // 只在单调用模式跑影子
-    const visibleNpcs = preState?.room?.npcs || [];
+    // 同源喂料：在场名单必须由调用方按 preparedPrompt 同口径（buildPresence：
+    // 内层过滤+同伴出战位并入）算好传入——直接用 room.npcs 会让影子与真实判官
+    // 输入不同，覆盖率数据失真。
+    const npcs = visibleNpcs || preState?.room?.npcs || [];
     const questCandidates = questAdvanceCandidates({
       questProgress: preState?.questProgress || {},
       flags: preState?.flags || [],
@@ -70,10 +79,13 @@ export async function runShadowJudge({
       innerRoomName: preState?.innerRoomName ?? null,
       questTriggerMode: apiCfg?.questTriggerMode || "prompt",
     });
+    // recentTurns 与 runTurn 同口径：convo 尾四条 user/engine 配对折叠。
+    const recentTurns = convo.slice(-4).map((m) => (m.role === "user" ? { user: m.content } : { engine: m.content }))
+      .reduce((acc, cur) => { if (cur.user) acc.push({ user: cur.user, engine: "" }); else if (acc.length) acc[acc.length - 1].engine = cur.engine; return acc; }, []);
     const intakeContent = buildIntakeUserContent({
       playerInput: cmd,
-      recentTurns: [],
-      npcs: visibleNpcs,
+      recentTurns,
+      npcs,
       entries: [],
       questCandidates,
     });
@@ -83,7 +95,7 @@ export async function runShadowJudge({
     const verdict = judgeTurn({
       turn: postState?.turn || 1, day: Math.floor((postState?.turn || 1) / 24) + 1,
       place: preState?.room?.name || "",
-      npcs: visibleNpcs, varTree: preState?.varTree || {},
+      npcs, varTree: preState?.varTree || {},
       inv: preState?.inv || [], entries: [], talkOnly: isTalk,
       questCandidates,
       pickupJudgment: null,
@@ -98,8 +110,8 @@ export async function runShadowJudge({
     recordAggregate(epoch, result);
     trace?.("shadow", result.hasGap ? "block" : "pass",
       Object.entries(result.verdicts)
-        .filter(([, v]) => v.verdict !== "match" && v.verdict !== "excluded")
-        .map(([cat, v]) => `${cat}:${v.verdict}`).join("；") || "五类目一致");
+        .filter(([, v]) => v.verdict !== "match")
+        .map(([cat, v]) => `${cat}:${v.verdict}`).join("；") || "各类目一致");
     return result;
   } catch (_) {
     return null; // 静默——影子绝不能影响主链
