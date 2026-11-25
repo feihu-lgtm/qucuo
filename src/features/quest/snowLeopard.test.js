@@ -128,6 +128,13 @@ describe("resolveSnowInteraction 触发面", () => {
   it("冒号后陈述不误伤", () => {
     expect(resolveSnowInteraction(base(), "我知道怎么做了：我给雪豹挠痒")?.kind).toBe("scratch");
   });
+  it("我没把肉喂给雪豹是过去否定不触发", () => {
+    const st = base({ inv: [{ id: "m1", name: "风干牦牛肉" }] });
+    expect(resolveSnowInteraction(st, "我没把风干牦牛肉喂给雪豹")).toBeNull();
+  });
+  it("请告诉我怎么做是求助不触发", () => {
+    expect(resolveSnowInteraction(base(), "请告诉我怎么做：喂雪豹吃肉")).toBeNull();
+  });
   it("未点名时取背包第一块肉", () => {
     const st = base({ inv: [{ id: "b1", name: "青稞饼" }, { id: "m1", name: "羊肉" }, { id: "m2", name: "牛肉干" }] });
     const r = resolveSnowInteraction(st, "喂雪豹吃肉");

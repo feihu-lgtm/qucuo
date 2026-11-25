@@ -59,7 +59,7 @@ export function snowMeatGift(state, npc, item) {
 // 系统在叙事前确定性落定，不靠模型自证。保守识别：否定/假设/询问一律不触发。
 
 // 询问/假设/条件句整句豁免——宁可漏判不可误触发
-const SNOW_UNCERTAIN_RE = /[吗呢嘛？?]|要不要|如果|假如|若是|要不|是不是|能不能|可不可以|该不该/;
+const SNOW_UNCERTAIN_RE = /[吗呢嘛？?]|要不要|如果|假如|若是|要不|是不是|能不能|可不可以|该不该|请?告诉我|请教|我问|问你/;
 // 「怎么/如何」仅当紧邻动作动词才视为询问方法；「我知道怎么做了」这类陈述不豁免
 const SNOW_HOW_RE = /(怎么|如何|怎样|为啥|为什么)[^，。！？,.!?：:；;]{0,6}(喂|给|挠|搔|吃|递|丢|抛)/;
 // 否定词紧贴动作（4 字内）视为否定
@@ -88,7 +88,8 @@ export function resolveSnowInteraction(state, cmd) {
   if (!cmd || typeof cmd !== "string") return null;
   if (!snowQuestActive(state) || !snowLeopardPresent(state)) return null;
   if (SNOW_UNCERTAIN_RE.test(cmd) || SNOW_HOW_RE.test(cmd)) return null;
-  if (/[不别莫勿]把/.test(cmd)) return null; // 「别把X喂给雪豹」整句禁止式（没把/未把是过去陈述非禁止）
+  if (/[不别莫勿]把/.test(cmd)) return null; // 「别把X喂给雪豹」整句禁止式
+  if (/[没未]把[^，。！？,.!?：:；;]{0,12}喂/.test(cmd)) return null; // 「我没把肉喂给雪豹」过去否定（有标点隔断的「没把肉烤熟，直接喂」不在此列）
   if (!cmd.includes("雪豹") && !/挠|搔|喂/.test(cmd)) return null;
   const flags = state.flags || [];
 
