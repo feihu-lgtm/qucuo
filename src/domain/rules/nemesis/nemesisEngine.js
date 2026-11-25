@@ -7,6 +7,8 @@
 //   nemesis.epithet AI 起号工单；晋升/伤痕/grudge 全是确定性系统账，不许 AI 自证。
 // 本单不做：假死重逢/每日争位/茶馆传闻/收服/UI/prompt 注入。
 
+import { getNpcFaction } from "../../data/factions/npcFactions.js";
+
 export const NEMESIS_FACTIONS = Object.freeze(["鱼定土司府", "黑风寨", "雪山派", "唐门", "五仙教"]);
 export const NEMESIS_TIER_CAP = 4;
 
@@ -47,12 +49,17 @@ export function scarAttrOfMove(move) {
 
 // 从 battleLog 逆序找玩家最后一次有效伤害（damageToB>0）的招式推伤痕属性；
 // 找不到/不可辨认返回 null。
-export function scarAttrFromBattleLog(battleLog) {
+// 读侧硬契约形状 scars:[{kind,note,turn}]——kind=五类属性，note deterministic 拼
+// 「最后一击：招式名」（无招式名空串但字段存在），不用 move 字段替代 kind。
+export function scarFromBattleLog(battleLog) {
   if (!Array.isArray(battleLog)) return null;
   for (let i = battleLog.length - 1; i >= 0; i--) {
     const row = battleLog[i];
     if (!row || !(row.result?.damageToB > 0)) continue;
-    return scarAttrOfMove(row.playerMove);
+    const attr = scarAttrOfMove(row.playerMove);
+    if (!attr) return null;
+    const moveName = row.playerMove?.name || "";
+    return { kind: attr, note: moveName ? `最后一击：${moveName}` : "" };
   }
   return null;
 }
@@ -62,12 +69,14 @@ export function scarAttrFromBattleLog(battleLog) {
 //   幂等：entry.lastTurn === turn 视为同一场重复结算，不连升不重复记。
 // outcome "win"（敌方落败）：scarAttr 非空才追加持久伤痕（同 turn 去重）。
 // 五势力外/无 outcome 返回 null——调用方零账。
-export function recordNemesisDuel(roster, npc, outcome, { turn = 0, scarAttr = null, place = "" } = {}) {
-  if (!npc?.name || !npc?.faction || !NEMESIS_FACTIONS.includes(npc.faction)) return null;
+export function recordNemesisDuel(roster, npc, outcome, { turn = 0, scar = null, place = "" } = {}) {
+  // 势力归属权威：getNpcFaction（覆盖驻地 NPC id 映射+random passer 特判），不裸读 npc.faction
+  const faction = getNpcFaction(npc) || (typeof npc?.faction === "string" ? npc.faction : null);
+  if (!npc?.name || !faction || !NEMESIS_FACTIONS.includes(faction)) return null;
   if (outcome !== "lose" && outcome !== "win") return null;
-  const factionBook = roster?.[npc.faction] || { entries: {} };
+  const factionBook = roster?.[faction] || { entries: {} };
   const entries = { ...(factionBook.entries || {}) };
-  const existing = findNemesisEntry(roster, npc.faction, npc.name);
+  const existing = findNemesisEntry(roster, faction, npc.name);
   let changed = false;
 
   if (existing) {
@@ -77,10 +86,10 @@ export function recordNemesisDuel(roster, npc, outcome, { turn = 0, scarAttr = n
       next.tier = Math.min(NEMESIS_TIER_CAP, (existing.tier || 1) + 1);
       next.grudge = (existing.grudge || 0) + 1;
       changed = true;
-    } else if (scarAttr) {
+    } else if (scar) {
       const scars = Array.isArray(existing.scars) ? existing.scars : [];
       if (!scars.some((s) => s && s.turn === turn)) {
-        next.scars = [...scars, { attr: scarAttr, turn, move: "" }];
+        next.scars = [...scars, { kind: scar.kind, note: scar.note || "", turn }];
         changed = true;
       }
     }
@@ -89,11 +98,11 @@ export function recordNemesisDuel(roster, npc, outcome, { turn = 0, scarAttr = n
   } else {
     if (outcome !== "lose") {
       // win 对未入谱者：五势力结仇起点——首胜不留 tier 晋升，但留册建档+伤痕（如有）
-      if (!scarAttr) return null; // 无可辨认伤痕不入谱（宁可 false negative）
+      if (!scar) return null; // 无可辨认伤痕不入谱（宁可 false negative）
     }
-    const id = nemesisEntryId(npc.faction, npc.name, turn);
+    const id = nemesisEntryId(faction, npc.name, turn);
     const entry = {
-      id, name: npc.name, faction: npc.faction,
+      id, name: npc.name, faction,
       tier: outcome === "lose" ? 1 : 1,
       baseRole: npc.baseRole || npc.role || npc.tag || "",
       epithet: null, tauntLine: null, rumorSnippet: null,
@@ -103,11 +112,11 @@ export function recordNemesisDuel(roster, npc, outcome, { turn = 0, scarAttr = n
         turn, place,
         summary: `在${place || "江湖"}切磋${outcome === "lose" ? "落败" : "取胜"}结怨`,
       },
-      scars: outcome === "win" && scarAttr ? [{ attr: scarAttr, turn, move: "" }] : [],
+      scars: outcome === "win" && scar ? [{ kind: scar.kind, note: scar.note || "", turn }] : [],
       grudge: outcome === "lose" ? 1 : 0,
       status: "active", firstTurn: turn, lastTurn: turn,
     };
     entries[id] = entry;
   }
-  return { ...(roster || {}), [npc.faction]: { ...factionBook, entries } };
+  return { ...(roster || {}), [faction]: { ...factionBook, entries } };
 }

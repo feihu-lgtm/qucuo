@@ -23,7 +23,7 @@ const F = FACTION;
 const MEMBERS = {
   [F.TUSI]: ["resident_meiduo", "resident_sangjieduojie", "resident_luofusheng", "resident_gesangdunzhu", "resident_luosangpingcuo", "resident_baimaciren"],
   [F.YUDING]: ["resident_caidan", "resident_laosun", "resident_yudingdaniang", "pool_da_niang", "pool_bidder_caidan"],
-  [F.XUESHAN]: ["resident_huyanxue", "resident_xuannu", "resident_heyuxie", "pool_bidder_xueshan"],
+  [F.XUESHAN]: ["resident_huyanxue", "resident_xuannu", "resident_heyuxie", "resident_luhanzhi", "resident_shenjibai", "pool_bidder_xueshan"],
   [F.LAMA]: ["resident_lama_abbot", "resident_yaotang_shifu", "pool_you_seng"],
   [F.HEIFENG]: ["resident_basang", "resident_zhuoyang", "resident_gaze", "resident_pengcuo", "resident_ayishen", "pool_bidder_heifeng"],
   [F.YUQUAN]: ["resident_danzeng", "resident_liruoyou", "resident_zhaxi", "resident_zhuoma", "resident_aso", "resident_badeng", "resident_suolang", "pool_mu_tong", "pool_bidder_liruoyou"],
@@ -32,7 +32,8 @@ const MEMBERS = {
   [F.GUAN]: ["resident_liuqingyuan", "resident_hougan", "pool_bidder_chaiyi", "pool_lao_bing"],
   [F.QINGCHENG]: ["resident_yiqing", "resident_qingxiazi", "resident_chitang", "resident_qingxuan", "resident_songhe", "resident_yuzhenzi", "resident_laodaoshi", "resident_huguidizi"],
   [F.EMEI]: ["resident_xuanchen", "resident_zhaowei", "resident_xubai", "resident_liaoyin", "resident_tielian", "resident_situying", "resident_jinglian", "resident_zanniang", "resident_chenjiu"],
-  [F.TANGMEN]: ["resident_tanglaotai", "resident_tangsanshao"],
+  [F.TANGMEN]: ["resident_tanglaotai", "resident_tangsanshao", "resident_tangtingzhu", "resident_tangzhongheng"],
+  [F.WUXIAN]: ["resident_longxiyue", "resident_sangqi"],
   [F.TIANLONG]: ["resident_litianxing", "resident_xuedao_chuqi", "resident_xuedao_shisan", "resident_xuedao_niansan", "resident_licanglong", "resident_licangtian", "resident_helanzhao",
     "resident_jiwushuang", "resident_fanweili", "resident_rentianxiang", "resident_lingxianger", "resident_luona", "resident_luoshejun"],
   [F.SANXING]: ["resident_zongmuzhe", "resident_qingtong_jia", "resident_qingtong_yi", "resident_qingtong_bing"],
