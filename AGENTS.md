@@ -17,7 +17,7 @@ Read this file first before modifying any code. Source code and CI gates are the
    Extend existing `companion`, `npcTrade`, and unified prompt/context helpers instead of creating parallel subsystems or hand-rolling separate NPC context snippets per screen or hook.
 
 5. **AI 调用链说明同步**
-   `docs/AI调用链架构说明.md` 是 AI 调用线的活文档。改动 AI 调用入口、回合管线、事实落盘、状态写入口、提示词冰山、结构化输出契约、判官/场记板/十二律时，必须在同一 PR 更新该文档。
+   `docs/AI调用链架构说明.md` 是 AI 调用线的活文档。改动 AI 调用入口、回合管线、事实落盘、状态写入口、提示词冰山、结构化输出契约、判官/场记板/十二律时，必须在同一 PR 更新该文档。CI 的 `npm run docs-gate` 是硬门禁：触碰调用链关键文件而未同 PR 更新文档会失败。
 
 ## 2. Layer Boundaries
 

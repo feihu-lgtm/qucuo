@@ -167,6 +167,8 @@ flowchart LR
 
 ## 7. 维护钩子
 
+CI 有硬门禁：`npm run docs-gate` 会读取 PR 相对 base 的文件清单；只要改到下列 AI 调用链关键文件而没有同 PR 更新本文，`verify` 直接失败。门禁只看文件触碰，不能判断设计是否真的变化；若行为确实没变，也要在本文补一句「本次行为不变/仍按现有契约」。
+
 改以下内容时，必须在同一 PR 更新本文：
 
 - `src/engine/ports/withAI.js`、`src/infra/providers.js`、`src/infra/apiTransport.js`

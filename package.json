@@ -11,6 +11,7 @@
     "verify:fast": "eslint \"src/**/*.{js,jsx}\" \"cli/**/*.{js,jsx,mjs,cjs}\" \"e2e/**/*.mjs\" && vitest run",
     "verify": "eslint \"src/**/*.{js,jsx}\" \"cli/**/*.{js,jsx,mjs,cjs}\" \"e2e/**/*.mjs\" && vitest run && vite build --config vite.config.pages.js",
     "ratchet": "node scripts/ratchet.mjs",
+    "docs-gate": "node scripts/checkAiChainDocs.mjs",
     "stats": "node scripts/ratchet.mjs --stats",
     "tree": "node scripts/tree.mjs",
     "cli": "node cli/qucuo.mjs",
