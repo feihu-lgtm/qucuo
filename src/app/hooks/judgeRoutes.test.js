@@ -211,4 +211,34 @@ describe("WO-16F-F2a 判官路由集成", () => {
     gameActions.setInv([]);
   });
 
+  it("pickup/equip 名/号矛盾状态不变（抽核 blocker 修）", async () => {
+    // pickup：地上两件同名不同号？不——矛盾是名配别物之号。地上放铁剑(it_gnd_sword)与皮靴(it_gnd_boot)，
+    // 请求「捡起遗落的皮靴」却配 it_gnd_sword——绝不可捡起任何一件。
+    gameActions.setRoom({ name: "鱼定村", npcs: [], exits: [], items: [
+      { id: "it_gnd_sword", name: "铁剑" },
+      { id: "it_gnd_boot", name: "遗落的皮靴" },
+    ] });
+    gameActions.setInv([]);
+    const out1 = executeJudgeRoutes([{ kind: "take", item: "遗落的皮靴", itemId: "it_gnd_sword", target: "无", text: "捡起遗落的皮靴" }]);
+    expect(out1.receipts[0].ok).toBe(false);
+    expect(gameStore.getState().inv).toHaveLength(0);
+    expect((gameStore.getState().room?.items || [])).toHaveLength(2);
+
+    // equip：铁剑之名配酒之号——不得穿上任何装备
+    gameActions.setInv([
+      { id: "it_sword", name: "铁剑", category: "weapon" },
+      { id: "it_wine", name: "青稞酒", category: "misc" },
+    ]);
+    const out2 = executeJudgeRoutes([{ kind: "equip", item: "铁剑", itemId: "it_wine", target: "无", text: "装备铁剑" }]);
+    expect(out2.receipts[0].ok).toBe(false);
+    expect((gameStore.getState().inv || []).every((it) => !it?.equipped)).toBe(true);
+
+    // 对照：id 不存在按名兜底仍可用——请求皮靴配一个查无的号
+    const out3 = executeJudgeRoutes([{ kind: "take", item: "遗落的皮靴", itemId: "it_ghost", target: "无", text: "捡起遗落的皮靴" }]);
+    expect(out3.receipts[0].ok).toBe(true);
+    expect((gameStore.getState().inv || []).some((it) => it?.id === "it_gnd_boot")).toBe(true);
+    gameActions.setInv([]);
+    gameActions.setRoom({ name: "鱼定村", npcs: [], exits: [], items: [] });
+  });
+
 });
