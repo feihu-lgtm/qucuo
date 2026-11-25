@@ -236,7 +236,7 @@ describe("13 号位只留形状", () => {
 
   it("phi 里也不再有送礼/拜师的世界观铁律", () => {
     const gift = build(false, "settle", { settleNpc: "才旦", settleKind: "gift", giftInfo: { itemName: "剑" } });
-    expect(gift.phiBlock.content).not.toContain("送礼世界观铁律");
+    expect(gift.phiBlock.content).not.toContain("送礼反应铁律");
     const learn = build(false, "settle", { settleNpc: "雪豹", settleKind: "learn_skill", learnInfo: {} });
     expect(learn.phiBlock.content).not.toContain("授业传艺铁律");
   });
@@ -264,7 +264,7 @@ describe("11 号位收下全部约束", () => {
       settleNpc: "才旦", settleKind: "gift",
       giftInfo: { itemName: "青锋剑", quality: "绿", range: [4, 6], suggestedDelta: 5 },
     });
-    expect(phiRules).toContain("送礼世界观铁律");
+    expect(phiRules).toContain("送礼反应铁律");
     expect(phiRules).toContain("+4~+6");
     expect(phiRules).toContain("<mvu>...</mvu>");
     expect(phiRules).toContain("本轮必须输出 <mvu> 且为正向增量");
@@ -280,7 +280,7 @@ describe("11 号位收下全部约束", () => {
     const { phiRules } = build(true, "settle", {
       settleNpc: "才旦", settleKind: "gift", giftInfo: { itemName: "剑" },
     });
-    expect(phiRules).toContain("送礼世界观铁律");
+    expect(phiRules).toContain("送礼反应铁律");
     expect(phiRules).not.toContain("<mvu>");
   });
 
