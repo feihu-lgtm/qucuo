@@ -163,10 +163,10 @@ it("WO-16F-F2c：deferredIntents 在 playTurn resolve 后映射 runDeferred 消�
   const { hooks, waitTimerRef } = useDeferredTurnHarness({ intentRouterRef });
   try {
     await hooks.act("跟铁匠切磋再问问掌柜", [], {});
-    expect(runDeferred).toHaveBeenCalledTimes(2);
+    // 一回合只发起一场交互（单例 UI 防顶掉）：只接输入序第一场切磋，交易留待下回
+    expect(runDeferred).toHaveBeenCalledTimes(1);
     expect(runDeferred.mock.calls[0][0]).toMatchObject({ kind: "切磋", target: "铁匠" });
     expect(runDeferred.mock.calls[0][1]).toBe(true);
-    expect(runDeferred.mock.calls[1][0]).toMatchObject({ kind: "购买", target: "掌柜" });
   } finally {
     clearInterval(waitTimerRef.current);
     turnMonitor.clear();

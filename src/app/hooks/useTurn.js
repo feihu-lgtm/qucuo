@@ -234,15 +234,21 @@ export function useTurn({
       const deferredIntents = result.turn?.deferredIntents;
       if (Array.isArray(deferredIntents) && deferredIntents.length) {
         const KIND_MAP = { duel: ACTION_KINDS.DUEL, trade: ACTION_KINDS.BUY };
-        for (const intent of deferredIntents) {
-          if (isStale()) break;
-          const kind = KIND_MAP[intent.kind];
-          if (!kind) continue;
+        // 一回合只发起一场交互：切磋确认/商店货架都是单例 UI——同 tick 连开两场
+        // 后开的顶掉先开的，先受理的那场从此够不着。按输入顺序只接第一场，
+        // 其余系统句明示「一场方休」，正文意向口径不受影响。
+        const [first, ...rest] = deferredIntents;
+        const kind = KIND_MAP[first.kind];
+        if (kind && !isStale()) {
           try {
-            intentRouterRef.current?.runDeferred?.({ kind, target: intent.target, text: intent.text || "" }, true);
+            intentRouterRef.current?.runDeferred?.({ kind, target: first.target, text: first.text || "" }, true);
           } catch (deferredError) {
-            traceStep(_trace, "交互意向", "fail", `${intent.kind}→${intent.target} 接入口异常：${deferredError?.message || deferredError}`);
+            traceStep(_trace, "交互意向", "fail", `${first.kind}→${first.target} 接入口异常：${deferredError?.message || deferredError}`);
           }
+        }
+        for (const skipped of rest) {
+          addLog([{ t: "sys", text: `  一场方休——与${skipped.target}的${skipped.kind === "duel" ? "切磋" : "交易"}且等下回。` }]);
+          traceStep(_trace, "交互意向", "skip", `${skipped.kind}→${skipped.target} 同回合已有交互，留待下回`);
         }
       }
     }
