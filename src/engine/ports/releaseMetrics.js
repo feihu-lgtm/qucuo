@@ -38,9 +38,13 @@ function resolveProviderModel(cfg) {
 const epochStore = new Map(); // epoch -> { intake: Map, seal: Map }
 
 // ── WO-16D-4 持久层（localStorage 独立键，容量受控）─────────────────────
+// 复审裁决：gameEpoch 每次页面加载归零（gameStore.js gameEpoch 计数器），
+// 跨会话/persistence 语义里 epoch 键毫无区分度——同号不同存档会混账、
+// 插入序 eviction 会把新样本当旧的丢。故持久层只按 provider::model 累计
+// （放行阈值本来就是按 provider 统计），epoch 维度只保留在内存供本存档
+// TraceViewer 展示，绝不进持久层。
 export const RELEASE_METRICS_STORAGE_KEY = "qc_release_metrics_v1";
-const KEEP_EPOCHS = 10; // 最多保留最近写入的 epoch 数——超限逐最旧
-const BYTE_CAP = 180 * 1024; // 硬顶 ~180KB，远小于 localStorage 常规 5MB 配额
+const BYTE_CAP = 180 * 1024; // 硬顶 ~180KB（实际累计桶极少，远用不到）
 
 let storageOverrideForTest = null;
 export function _setReleaseMetricsStorageForTest(storage) {
@@ -57,78 +61,122 @@ function resolveStorage() {
   }
 }
 
-let loadedFromStorage = false;
-
-// 水合：启动后首次访问把持久层并入内存（内存优先——同 epoch 同桶计数取大者无意义，
-// 因为写穿保证持久层恒为内存超集或同等；这里只做「持久层 → 内存」单向灌入）。
-function hydrate() {
-  if (loadedFromStorage) return;
-  loadedFromStorage = true;
-  const storage = resolveStorage();
-  if (!storage) return;
-  try {
-    const raw = storage.getItem(RELEASE_METRICS_STORAGE_KEY);
-    if (!raw) return;
-    const parsed = JSON.parse(raw);
-    for (const [epoch, entry] of Object.entries(parsed?.epochs || {})) {
-      if (!epochStore.has(epoch)) epochStore.set(epoch, { intake: new Map(), seal: new Map() });
-      const target = epochStore.get(epoch);
-      for (const [key, row] of Object.entries(entry?.intake || {})) if (!target.intake.has(key)) target.intake.set(key, row);
-      for (const [key, row] of Object.entries(entry?.seal || {})) if (!target.seal.has(key)) target.seal.set(key, row);
-    }
-  } catch { /* 持久层损坏静默放弃——dev 观测绝不阻塞游戏 */ }
-}
-
-// 容量截断统一在这里：epoch 数上限（插入序最旧先丢）+字节硬顶兜底——
-// persist 与 export 共用同一棵树，导出即持久层口径。
-function cappedEpochsList() {
-  const epochs = {};
-  for (const [epoch, entry] of epochStore.entries()) {
-    epochs[epoch] = {
-      intake: Object.fromEntries(entry.intake),
-      seal: Object.fromEntries(entry.seal),
-    };
-  }
-  const keys = Object.keys(epochs);
-  if (keys.length > KEEP_EPOCHS) {
-    for (const old of keys.slice(0, keys.length - KEEP_EPOCHS)) delete epochs[old];
-  }
-  let payload = JSON.stringify({ version: 1, epochs });
-  while (payload.length > BYTE_CAP && Object.keys(epochs).length > 1) {
-    delete epochs[Object.keys(epochs)[0]];
-    payload = JSON.stringify({ version: 1, epochs });
-  }
-  return epochs;
-}
-
-function persist() {
-  const storage = resolveStorage();
-  if (!storage) return;
-  try {
-    storage.setItem(RELEASE_METRICS_STORAGE_KEY, JSON.stringify({ version: 1, epochs: cappedEpochsList() }));
-  } catch { /* 配额满/隐私模式静默——观测绝不阻塞 */ }
-}
-
-// 导出全量聚合（跨 epoch），shape 供 scripts/releaseReport.mjs 离线消费。
-export function releaseMetricsExport() {
-  hydrate();
-  const capped = cappedEpochsList();
-  const epochs = {};
-  for (const [epoch, entry] of Object.entries(capped)) {
-    epochs[epoch] = {
-      intake: Object.values(entry.intake || {}).map((r) => ({ ...r })),
-      seal: Object.values(entry.seal || {}).map((r) => ({ ...r })),
-    };
-  }
-  return { version: 1, epochs };
-}
-
 function getBucketMap(epoch, section) {
   const key = String(epoch ?? "default");
   if (!epochStore.has(key)) {
     epochStore.set(key, { intake: new Map(), seal: new Map() });
   }
   return epochStore.get(key)[section];
+}
+
+let loadedFromStorage = false;
+// 本页会话自己录的增量（跨标签合并写的基底——每个标签只把自己的增量加回去，
+// 绝不整树覆盖，别的标签样本不丢）。
+const ownDeltas = { intake: new Map(), seal: new Map() };
+
+function bumpOwn(section, key, row) {
+  if (!ownDeltas[section].has(key)) ownDeltas[section].set(key, { ...row, ...Object.fromEntries(Object.keys(row).filter((k) => typeof row[k] === "number").map((k) => [k, 0])) });
+  const acc = ownDeltas[section].get(key);
+  for (const [k, v] of Object.entries(row)) {
+    if (typeof v === "number") acc[k] = (acc[k] || 0) + v;
+  }
+}
+
+// 行合并：数值字段求和，provider/model 取入参（同 key 必同值）。
+function mergeRowInto(target, delta) {
+  for (const [k, v] of Object.entries(delta)) {
+    if (typeof v === "number") target[k] = (target[k] || 0) + v;
+    else if (target[k] === undefined) target[k] = v;
+  }
+}
+
+function blankIntakeRow(provider, model) {
+  return { provider, model, calls: 0, schemaOk: 0, parseFailed: 0, validateFailed: 0, otherFailed: 0 };
+}
+function blankSealRow(provider, model) {
+  return { provider, model, total: 0, withSeal: 0, missingSeal: 0, jsonOk: 0, jsonFailed: 0, passed: 0, failed: 0 };
+}
+
+function readCumulative(storage) {
+  try {
+    const raw = storage?.getItem(RELEASE_METRICS_STORAGE_KEY);
+    if (!raw) return { intake: {}, seal: {} };
+    const parsed = JSON.parse(raw);
+    // v1（epoch 分桶）旧数据直接放弃——epoch 无跨会话语义，混进来反而失真
+    if (parsed?.version !== 2) return { intake: {}, seal: {} };
+    return { intake: parsed.cumulative?.intake || {}, seal: parsed.cumulative?.seal || {} };
+  } catch {
+    return { intake: {}, seal: {} };
+  }
+}
+
+// 水合：启动后首次访问把持久层累计桶并入内存「跨会话累计」视图
+// （进 epochStore 的 "__cumulative__" 虚拟 epoch——仅供 export/报告，不进 UI 本存档口径）。
+export const CUMULATIVE_EPOCH = "__cumulative__";
+
+function hydrate() {
+  if (loadedFromStorage) return;
+  loadedFromStorage = true;
+  const storage = resolveStorage();
+  if (!storage) return;
+  const cumulative = readCumulative(storage);
+  if (!Object.keys(cumulative.intake).length && !Object.keys(cumulative.seal).length) return;
+  if (!epochStore.has(CUMULATIVE_EPOCH)) epochStore.set(CUMULATIVE_EPOCH, { intake: new Map(), seal: new Map() });
+  const target = epochStore.get(CUMULATIVE_EPOCH);
+  for (const [key, row] of Object.entries(cumulative.intake)) if (!target.intake.has(key)) target.intake.set(key, row);
+  for (const [key, row] of Object.entries(cumulative.seal)) if (!target.seal.has(key)) target.seal.set(key, row);
+}
+
+// 写穿：读-合-写——每个标签只把自己的增量加进最新存储值，多标签互不覆盖。
+function persist() {
+  const storage = resolveStorage();
+  if (!storage) return;
+  try {
+    const cumulative = readCumulative(storage);
+    for (const [key, delta] of ownDeltas.intake) {
+      if (!cumulative.intake[key]) cumulative.intake[key] = blankIntakeRow(delta.provider, delta.model);
+      mergeRowInto(cumulative.intake[key], delta);
+    }
+    for (const [key, delta] of ownDeltas.seal) {
+      if (!cumulative.seal[key]) cumulative.seal[key] = blankSealRow(delta.provider, delta.model);
+      mergeRowInto(cumulative.seal[key], delta);
+    }
+    // 增量已入存储即清零——下次 persist 不重复加
+    ownDeltas.intake.clear();
+    ownDeltas.seal.clear();
+    let payload = JSON.stringify({ version: 2, cumulative });
+    // 字节硬顶兜底：超限则放弃本次写入（累计桶正常远小于此，真超了说明异常）
+    if (payload.length > BYTE_CAP) return;
+    storage.setItem(RELEASE_METRICS_STORAGE_KEY, payload);
+  } catch { /* 配额满/隐私模式静默——观测绝不阻塞 */ }
+}
+
+// 导出跨会话累计聚合，shape 供 scripts/releaseReport.mjs 离线消费。
+// 无 epoch 维——epoch 无跨会话语义；report 脚本兼容旧 v1 epochs shape。
+export function releaseMetricsExport() {
+  hydrate();
+  const storage = resolveStorage();
+  const stored = readCumulative(storage);
+  // 内存里尚未写穿的增量也并入导出（导出即最新口径）
+  const intake = {};
+  const seal = {};
+  for (const [key, row] of Object.entries(stored.intake)) intake[key] = { ...row };
+  for (const [key, row] of Object.entries(stored.seal)) seal[key] = { ...row };
+  for (const [key, delta] of ownDeltas.intake) {
+    if (!intake[key]) intake[key] = blankIntakeRow(delta.provider, delta.model);
+    mergeRowInto(intake[key], delta);
+  }
+  for (const [key, delta] of ownDeltas.seal) {
+    if (!seal[key]) seal[key] = blankSealRow(delta.provider, delta.model);
+    mergeRowInto(seal[key], delta);
+  }
+  return {
+    version: 2,
+    cumulative: {
+      intake: Object.values(intake).map((r) => ({ ...r })),
+      seal: Object.values(seal).map((r) => ({ ...r })),
+    },
+  };
 }
 
 export function _resetReleaseMetrics() {
@@ -151,6 +199,7 @@ export function recordIntakeMetric({ epoch = "default", cfg, outcome } = {}) {
   else if (outcome === "parseFailed") row.parseFailed += 1;
   else if (outcome === "validateFailed") row.validateFailed += 1;
   else row.otherFailed += 1;
+  bumpOwn("intake", key, { provider, model, calls: 1, schemaOk: outcome === "schemaOk" ? 1 : 0, parseFailed: outcome === "parseFailed" ? 1 : 0, validateFailed: outcome === "validateFailed" ? 1 : 0, otherFailed: ["schemaOk", "parseFailed", "validateFailed"].includes(outcome) ? 0 : 1 });
   persist();
 }
 
@@ -191,6 +240,7 @@ export function recordSealMetric({
     && (!emergenceRejections || emergenceRejections.length === 0);
   if (passed) row.passed += 1;
   else row.failed += 1;
+  bumpOwn("seal", key, { provider, model, total: 1, withSeal: hasSeal ? 1 : 0, missingSeal: hasSeal ? 0 : 1, jsonOk: hasSeal && sealData ? 1 : 0, jsonFailed: hasSeal && !sealData ? 1 : 0, passed: passed ? 1 : 0, failed: passed ? 0 : 1 });
   persist();
 }
 

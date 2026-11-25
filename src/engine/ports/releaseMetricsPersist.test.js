@@ -1,4 +1,4 @@
-// WO-16D-4 放行指标持久化契约测试
+// WO-16D-4 放行指标持久化契约测试（v2 跨会话累计口径）
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   _resetReleaseMetrics,
@@ -21,55 +21,62 @@ function fakeStorage() {
 }
 const cfg = { provider: "openai", model: "gpt-x", apiKey: "sk-secret-should-never-persist" };
 
-describe("放行指标持久化", () => {
+describe("放行指标持久化 v2", () => {
   beforeEach(() => {
     _resetReleaseMetrics();
     _setReleaseMetricsEnabledForTest(true);
     _setReleaseMetricsStorageForTest(fakeStorage());
   });
 
-  it("跨刷新恢复：record 写穿持久层，水合后内存恢复聚合", () => {
+  it("跨会话累计：写穿持久层，export 直读存储+未写穿增量", () => {
     recordIntakeMetric({ epoch: "e1", cfg, outcome: "schemaOk" });
-    recordIntakeMetric({ epoch: "e1", cfg, outcome: "parseFailed" });
-    // 模拟刷新：内存清空但持久层保留——换 storage 不换实例不行，
-    // 直接验证持久层 JSON 含计数，再水合进空内存
-    const storage = fakeStorage();
-    // 用同一 storage 实例续写（等价刷新后同浏览器）
-    expect(_resetReleaseMetrics).toBeTruthy(); // shape check
-    // 重新水合：先清内存但保留 storage——_reset 会连 storage 一起清，故手动只清内存路径：
-    // 换一个全新 storage 灌入旧 payload 模拟同浏览器
-    // ——简化为：export 直接读到水合结果
+    recordIntakeMetric({ epoch: "e2", cfg, outcome: "parseFailed" });
     const exported = releaseMetricsExport();
-    const row = exported.epochs.e1.intake[0];
+    expect(exported.version).toBe(2);
+    const row = exported.cumulative.intake[0];
+    // epoch 不同也合入同一 provider::model 桶——epoch 无跨会话语义
     expect(row.calls).toBe(2);
     expect(row.schemaOk).toBe(1);
     expect(row.parseFailed).toBe(1);
-    expect(storage).toBeTruthy();
+    expect(row.epoch).toBeUndefined(); // 持久层无 epoch 维
   });
 
-  it("epoch/provider/model 分桶隔离", () => {
+  it("provider/model 分桶隔离", () => {
     recordIntakeMetric({ epoch: "e1", cfg, outcome: "schemaOk" });
-    recordIntakeMetric({ epoch: "e2", cfg, outcome: "schemaOk" });
     recordIntakeMetric({ epoch: "e1", cfg: { provider: "vertex", model: "gemini-x" }, outcome: "validateFailed" });
     const exported = releaseMetricsExport();
-    expect(exported.epochs.e1.intake).toHaveLength(2);
-    expect(exported.epochs.e2.intake).toHaveLength(1);
-    const vertex = exported.epochs.e1.intake.find((r) => r.provider === "vertex");
+    expect(exported.cumulative.intake).toHaveLength(2);
+    const vertex = exported.cumulative.intake.find((r) => r.provider === "vertex");
     expect(vertex.validateFailed).toBe(1);
-    expect(vertex.schemaOk).toBe(0);
   });
 
-  it("容量受控：epoch 数截断最旧", async () => {
-    for (let i = 0; i < 15; i++) {
-      recordIntakeMetric({ epoch: `ep${i}`, cfg, outcome: "schemaOk" });
-    }
+  it("多标签不互抹：读-合-写只加自己增量（模拟另一标签已写存储）", () => {
+    const storage = fakeStorage();
+    _setReleaseMetricsStorageForTest(storage);
+    // 另一标签的既有样本
+    storage.setItem(RELEASE_METRICS_STORAGE_KEY, JSON.stringify({
+      version: 2,
+      cumulative: { intake: { "openai::gpt-x": { provider: "openai", model: "gpt-x", calls: 50, schemaOk: 48, parseFailed: 1, validateFailed: 1, otherFailed: 0 } }, seal: {} },
+    }));
+    recordIntakeMetric({ epoch: "e1", cfg, outcome: "schemaOk" });
+    const persisted = JSON.parse(storage.getItem(RELEASE_METRICS_STORAGE_KEY));
+    // 50 旧样本没丢，新增 1 加上
+    expect(persisted.cumulative.intake["openai::gpt-x"].calls).toBe(51);
+    expect(persisted.cumulative.intake["openai::gpt-x"].schemaOk).toBe(49);
+  });
+
+  it("增量不重复加：连续两次 record 后持久层精确计数", () => {
+    recordIntakeMetric({ epoch: "e1", cfg, outcome: "schemaOk" });
+    recordIntakeMetric({ epoch: "e1", cfg, outcome: "schemaOk" });
+    recordIntakeMetric({ epoch: "e1", cfg, outcome: "parseFailed" });
     const exported = releaseMetricsExport();
-    expect(Object.keys(exported.epochs).length).toBeLessThanOrEqual(10);
-    // 最新的在
-    expect(exported.epochs.ep14).toBeTruthy();
+    const row = exported.cumulative.intake[0];
+    expect(row.calls).toBe(3);
+    expect(row.schemaOk).toBe(2);
+    expect(row.parseFailed).toBe(1);
   });
 
-  it("无敏感字段：持久层 JSON 不含 apiKey/正文/地址", () => {
+  it("无敏感字段：持久层 JSON 不含 apiKey/正文/地址/epoch 噪音", () => {
     recordIntakeMetric({ epoch: "e1", cfg, outcome: "schemaOk" });
     recordSealMetric({ epoch: "e1", cfg, sealText: "---SEAL---正文内容", sealData: { secret: "x" } });
     const exported = JSON.stringify(releaseMetricsExport());
@@ -83,16 +90,24 @@ describe("放行指标持久化", () => {
   it("生产默认零写入：未启用时 record 不落持久层", () => {
     _setReleaseMetricsEnabledForTest(false);
     recordIntakeMetric({ epoch: "e1", cfg, outcome: "schemaOk" });
-    expect(releaseMetricsExport().epochs.e1).toBeUndefined();
+    expect(releaseMetricsExport().cumulative.intake).toHaveLength(0);
   });
 
   it("seal 计数持久化且 shape 可脚本消费", () => {
     recordSealMetric({ epoch: "e1", cfg, sealText: "x", sealData: {}, warnings: [] });
     const exported = releaseMetricsExport();
-    const row = exported.epochs.e1.seal[0];
+    const row = exported.cumulative.seal[0];
     expect(row.total).toBe(1);
     expect(row.passed).toBe(1);
     expect(row.provider).toBe("openai");
-    expect(row.model).toBe("gpt-x");
+  });
+
+  it("v1 epoch shape 旧数据不混入（放弃而非失真）", () => {
+    const storage = fakeStorage();
+    storage.setItem(RELEASE_METRICS_STORAGE_KEY, JSON.stringify({ version: 1, epochs: { e1: { intake: { x: { provider: "openai", model: "gpt-x", calls: 99 } }, seal: {} } } }));
+    _setReleaseMetricsStorageForTest(storage);
+    recordIntakeMetric({ epoch: "e1", cfg, outcome: "schemaOk" });
+    const exported = releaseMetricsExport();
+    expect(exported.cumulative.intake[0].calls).toBe(1); // 不是 100
   });
 });

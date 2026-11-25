@@ -24,10 +24,13 @@ try {
 const MIN_SAMPLE = 30; // 起步提示线（非放行阈值，只标「样本不足」）
 const pct = (num, den) => (den ? `${((num / den) * 100).toFixed(1)}%` : "0.0%");
 
-// 跨 epoch 合并同 provider::model 桶
+// v2：cumulative 跨会话累计桶直读；v1（旧）：跨 epoch 合并同 provider::model 桶
 const intake = new Map();
 const seal = new Map();
-for (const entry of Object.values(data?.epochs || {})) {
+const sources = data?.version === 2
+  ? [{ intake: data.cumulative?.intake || [], seal: data.cumulative?.seal || [] }]
+  : Object.values(data?.epochs || {});
+for (const entry of sources) {
   for (const row of entry?.intake || []) {
     const key = `${row.provider}::${row.model}`;
     if (!intake.has(key)) intake.set(key, { provider: row.provider, model: row.model, calls: 0, schemaOk: 0, parseFailed: 0, validateFailed: 0, otherFailed: 0 });
