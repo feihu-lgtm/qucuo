@@ -56,9 +56,20 @@ function persistQueue(queue) {
 // （branchVisibleServer 无 branchId 一律 false）仍照传——未来口径变更由服务端定。
 export function toCanonicalProseChunk(chunk) {
   if (!chunk || typeof chunk !== "object") return null;
-  const chunkId = String(chunk.id || chunk.chunkId || "");
+  let chunkId = String(chunk.id || chunk.chunkId || "");
   const turn = Number(chunk.turn);
   if (!chunkId || !Number.isFinite(turn)) return null;
+  // 云端 chunkId 命名空间化（裁决）：legacy 迁移段本地 id 是 P<turn>_<seq> 无分支前缀——
+  // 同一 legacy 档重读再迁移会换 branchId 但 id 不变，服务端 INSERT OR IGNORE 保留首插
+  // 旧分支，新分支谱系查询永久不可见。branchId 非空且本地 id 不以 `${branchId}_` 开头时
+  // 云端 chunkId 用 `${branchId}::${id}`：同 branch 重推稳定幂等，不同 branch 重迁互不吞。
+  // 新格式段 id 本来就是 `${branchId}_${turn}_${seq}`，不受影响不加 `::`。
+  // 注意：云端 chunkId 是上行身份，不保证等于本地 IndexedDB id——未来查询消费方必须
+  // 按 branchId/turn/seq/原文对照，不得拿本地 id 直查云端（服务端无原文映射列不传）。
+  const branchId = typeof chunk.branchId === "string" && chunk.branchId ? chunk.branchId : "";
+  if (branchId && !chunkId.startsWith(`${branchId}_`)) {
+    chunkId = `${branchId}::${chunkId}`;
+  }
   return {
     chunkId,
     turn,

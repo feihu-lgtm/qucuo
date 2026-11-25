@@ -65,6 +65,22 @@ describe("toCanonicalProseChunk 元数据映射", () => {
   });
 });
 
+  it("legacy 段云端 chunkId 命名空间化：两 root 产出两个 id，同 root 重推稳定，新格式不加 ::", () => {
+    // 同一 legacy 内容在两个 branch 下重迁——云端两个 chunkId 互不吞
+    const legacy = mkChunk({ id: "P12_3", branchId: "", seq: undefined });
+    const c1 = toCanonicalProseChunk({ ...legacy, branchId: "rootA" });
+    const c2 = toCanonicalProseChunk({ ...legacy, branchId: "rootB" });
+    expect(c1.chunkId).toBe("rootA::P12_3");
+    expect(c2.chunkId).toBe("rootB::P12_3");
+    expect(c1.chunkId).not.toBe(c2.chunkId);
+    // 同 root 重推稳定幂等
+    expect(toCanonicalProseChunk({ ...legacy, branchId: "rootA" }).chunkId).toBe("rootA::P12_3");
+    // 新格式段（id 已含 branchId 前缀）不加 ::
+    expect(toCanonicalProseChunk(mkChunk()).chunkId).toBe("b1_12_3");
+    // 无 branchId 的裸段不加 ::
+    expect(toCanonicalProseChunk({ ...legacy, branchId: "" }).chunkId).toBe("P12_3");
+  });
+
 describe("幂等与队列", () => {
   it("同 chunkId 重推不重复（队列内去重）", () => {
     enqueueProseUplink([mkChunk()]);
