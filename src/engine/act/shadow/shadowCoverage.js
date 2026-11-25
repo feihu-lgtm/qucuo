@@ -18,10 +18,15 @@ export function summarizeShadowCoverage(agg) {
   const turns = agg.turns;
   const categories = {};
   let totalGaps = 0, totalNoise = 0, totalSignals = 0;
+  // Review 修（S5）：按聚合时的计量类目戳计 comparable——旧导出（无戳=pre-S5
+  // 八类目，无 world）里未测类目按「不可测」处理，不得按全 match 伪造 100% 覆盖。
+  const measured = Array.isArray(agg.measuredCats)
+    ? agg.measuredCats
+    : SHADOW_CATEGORIES.filter((cat) => cat !== "world"); // pre-S5 导出无 world 计量
   for (const cat of SHADOW_CATEGORIES) {
     const c = agg.byCategory?.[cat] || {};
     const excluded = agg.excluded?.[cat] || 0;
-    const comparable = Math.max(0, turns - excluded);
+    const comparable = measured.includes(cat) ? Math.max(0, turns - excluded) : 0;
     const so = c.single_only || 0, jo = c.judge_only || 0, bd = c.both_diff || 0;
     // S5 口径差：方向一致但数额差超 50%——单独统计，不计缺口不计噪声
     // （判官定量 vs 模型随写本来就不同额，方向对就算覆盖）。

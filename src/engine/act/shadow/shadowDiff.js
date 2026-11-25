@@ -106,6 +106,27 @@ export function diffSnapshots(pre, post, { moved = false } = {}) {
     const after = Number.isFinite(av) ? av : 0;
     if (after !== before) out.world[key] = after - before;
   }
+  // Review 修（S5）：契约违约系统的威望扣减是 deterministic 值守扫描（pactWatch
+  // breachTurn 幂等标记，每桩 -5），不经判官也不该算判官漏判——按窗口内新增
+  // breachTurn 标记数归因剔除。模型/判官真写威望的差额部分照常保留。
+  if (out.world.威望) {
+    const countBreaches = (tree) => {
+      let n = 0;
+      for (const pacts of Object.values(tree || {})) {
+        for (const pact of Object.values(pacts || {})) {
+          if (Number.isFinite(pact?.breachTurn)) n += 1;
+        }
+      }
+      return n;
+    };
+    const newBreaches = countBreaches(postWorld.契约) - countBreaches(preWorld.契约);
+    if (newBreaches > 0) {
+      const explained = -5 * newBreaches; // PACT_BREACH_PRESTIGE_COST=5（pigeon/pactWatch）
+      const residual = out.world.威望 - explained;
+      if (residual === 0) delete out.world.威望;
+      else out.world.威望 = residual;
+    }
+  }
 
   // 审计结论：room.npcs 在窗口内有整链系统改写（幽灵过滤/驻场剔除/战斗固化/
   // 移动落房/涌现实体化/焚卡烙印），纯 diff 无法归因——v1 恒 excluded，

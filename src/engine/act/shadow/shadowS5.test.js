@@ -94,3 +94,20 @@ describe("S5 修为 single_only 根因复现（结论：签发侧）", () => {
     }
   });
 });
+
+describe("S5 Review 三修", () => {
+  it("带前提的条件动作不按 feature 路由豁免（live router 跳过不执行）", () => {
+    expect(featureRoutedCats([{ kind: "use_item", condition: "遇敌" }])).toEqual([]);
+    expect(featureRoutedCats([{ kind: "use_item", condition: "无" }])).toEqual(["inv", "vitals"]);
+    expect(featureRoutedCats([{ kind: "use_item" }])).toEqual(["inv", "vitals"]);
+  });
+  it("契约违约系统扣威望按 breachTurn 归因剔除，不算判官漏判", () => {
+    const pre = { inv: [], flags: [], varTree: { 世界: { 威望: 10, 契约: { 掌柜: { p1: { promise: "x" } } } } }, room: { npcs: [] } };
+    const post = { inv: [], flags: [], varTree: { 世界: { 威望: 5, 契约: { 掌柜: { p1: { promise: "x", breachTurn: 51 } } } } }, room: { npcs: [] } };
+    const diff = diffSnapshots(pre, post);
+    expect(diff.categories.world).toEqual({}); // -5 全部由违约系统归因，无残差
+    // 违约 -5 + 模型写 -2 并存时残差保留
+    const post2 = { inv: [], flags: [], varTree: { 世界: { 威望: 3, 契约: { 掌柜: { p1: { promise: "x", breachTurn: 51 } } } } }, room: { npcs: [] } };
+    expect(diffSnapshots(pre, post2).categories.world).toEqual({ 威望: -2 });
+  });
+});

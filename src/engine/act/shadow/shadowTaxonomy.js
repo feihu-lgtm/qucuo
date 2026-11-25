@@ -45,6 +45,9 @@ export const FEATURE_ROUTED_KIND_CATS = {
 export function featureRoutedCats(actions = []) {
   const out = new Set();
   for (const a of actions || []) {
+    // Review 修（S5）：带前提的条件动作（「要是/如果……就」）在 live router 里
+    // 跳过不执行——并未真走 feature 路由，豁免会把判官漏判洗成盲区。
+    if (a?.condition && a.condition !== "无") continue;
     for (const cat of FEATURE_ROUTED_KIND_CATS[a?.kind] || []) out.add(cat);
   }
   return [...out];
