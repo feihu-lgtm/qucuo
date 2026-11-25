@@ -158,6 +158,52 @@ describe("绑定与鉴权", () => {
   });
 });
 
+describe("安全闸门（Review SEC 修）", () => {
+  it("非 cloud 驱动绝不发——凭证留档也不流向 hub", async () => {
+    saveStorageConfig({ ...BASE_CFG, driver: "local" });
+    let calls = 0;
+    configureCloudFetch(async () => { calls += 1; return okJson({ inserted: 1 }); });
+    enqueueProseUplink([mkChunk()]);
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(calls).toBe(0);
+    expect(getProseUplinkQueue()).toHaveLength(1);
+  });
+  it("换绑后旧空间段跨绑不发送，空戳段随当前空间排空", async () => {
+    boundCfg(); // sp1 时入队
+    enqueueProseUplink([mkChunk({ id: "b1_12_3" })]);
+    // 未绑定时期入队的段（空戳）
+    saveStorageConfig({ driver: "cloud", cloudUrl: "", spaceId: "", hubToken: "" });
+    enqueueProseUplink([mkChunk({ id: "b1_12_9", seq: 9 })]);
+    // 换绑到 sp2
+    saveStorageConfig({ ...BASE_CFG, spaceId: "sp2" });
+    const bodies = [];
+    configureCloudFetch(async (url, init) => { bodies.push({ url, body: JSON.parse(init.body) }); return okJson({ inserted: 1 }); });
+    await vi.advanceTimersByTimeAsync(1600);
+    // sp1 戳的段被丢弃，空戳段随 sp2 发
+    const sent = bodies.flatMap((b) => b.body.chunks.map((c) => c.chunkId));
+    expect(sent).toContain("b1_12_9");
+    expect(sent).not.toContain("b1_12_3");
+    expect(bodies[0].url).toContain("/api/spaces/sp2/prose");
+    expect(getProseUplinkQueue()).toHaveLength(0);
+  });
+  it("wipeCloudAll 后上行队列清空，wipe 前未推段不再上行", async () => {
+    boundCfg();
+    const { wipeCloudAll } = await import("./storageDriver.js");
+    // 入队但暂不发（flush 前 wipe）
+    enqueueProseUplink([mkChunk()]);
+    expect(getProseUplinkQueue()).toHaveLength(1);
+    const urls = [];
+    configureCloudFetch(async (url, init) => { urls.push(url); return okJson({ rev: 1, inserted: 1 }); });
+    const res = await wipeCloudAll();
+    expect(res.ok).toBe(true);
+    expect(getProseUplinkQueue()).toHaveLength(0);
+    // 之后再无 prose 上行
+    const proseCallsBefore = urls.filter((u) => u.includes("/prose")).length;
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(urls.filter((u) => u.includes("/prose")).length).toBe(proseCallsBefore);
+  });
+});
+
 describe("查询客户端（纯 FTS）", () => {
   it("谱系过滤参数形状正确：lineage+currentTurn 直通，无任何 embedding 字段", async () => {
     const binding = hubBinding(BASE_CFG);

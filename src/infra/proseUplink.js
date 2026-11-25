@@ -78,11 +78,15 @@ export function enqueueProseUplink(chunks) {
     const queue = getProseUplinkQueue();
     const seen = new Set(queue.map((q) => q.chunkId));
     let added = 0;
+    // 目的地戳（Review SEC 修）：入队记下当时绑定的 spaceId——之后换绑新 hub，
+    // 旧空间段绝不许跨绑发进新空间（新运营方不该收到发给旧 hub 的明文）。
+    // 未绑定时戳空串：无既有目的地意图，配齐后随当前空间排空。
+    const spaceStamp = hubBinding(loadStorageConfig()).spaceId || "";
     for (const raw of chunks) {
       const c = toCanonicalProseChunk(raw);
       if (!c || seen.has(c.chunkId)) continue;
       seen.add(c.chunkId);
-      queue.push(c);
+      queue.push({ ...c, _space: spaceStamp });
       added += 1;
     }
     if (!added) return 0;
@@ -106,13 +110,30 @@ function scheduleFlush(delay = FLUSH_DEBOUNCE_MS) {
 // unbound → 队列原样保留；网络/5xx → 回队首退避；成功/4xx → 移除。
 export async function flushProseUplink() {
   if (_flushing) return;
-  const binding = hubBinding(loadStorageConfig());
+  const cfg = loadStorageConfig();
+  const binding = hubBinding(cfg);
   if (!binding.bound) return; // 静默等待——三件套配齐后自然排空
+  // SEC 修：非 cloud 驱动绝不发——玩家切回 local/file 后凭证虽留档，
+  // 本地游玩产生的明文段落不许再流向 hub（玩家语义已是「本地模式」）。
+  if (cfg.driver !== "cloud") return;
   const queue = getProseUplinkQueue();
   if (!queue.length) return;
   _flushing = true;
   try {
-    const batch = queue.slice(0, BATCH_SIZE);
+    // 跨绑守门：戳与当前空间不符的旧空间段丢弃（本地 IndexedDB 仍是权威副本，
+    // 丢弃不丢数据）；空戳段无既有目的地，随当前空间发。剥 _space 再上送。
+    const fresh = [];
+    const crossBound = [];
+    for (const q of queue) {
+      if (q._space && q._space !== binding.spaceId) crossBound.push(q);
+      else fresh.push(q);
+    }
+    if (crossBound.length) {
+      console.warn(`[prose-uplink] ${crossBound.length} 段落属旧空间，跨绑不发送（本地副本仍在）`);
+      persistQueue(fresh);
+      if (!fresh.length) return;
+    }
+    const batch = fresh.slice(0, BATCH_SIZE).map(({ _space, ...c }) => c);
     const batchId = `b_${Date.now().toString(36)}`;
     let result = null;
     try {
@@ -143,6 +164,13 @@ export async function flushProseUplink() {
   } finally {
     _flushing = false;
   }
+}
+
+// wipe 专用清队（storageDriver.wipeCloudAll 动态调用）：活队列+退避计时全清。
+export function _resetProseUplinkQueueForWipe() {
+  if (_flushTimer) { clearTimeout(_flushTimer); _flushTimer = null; }
+  _retryMs = RETRY_BASE_MS;
+  try { localStorage.removeItem(QUEUE_KEY); } catch { /* */ }
 }
 
 // 测试复位

@@ -266,6 +266,12 @@ export async function wipeCloudAll() {
     _lsWrite(QUEUE_KEY, []);
     clearAllServerRevs(binding.spaceId);
     _lsWrite(CONFLICTS_KEY, []);
+    // prose 上行队列同清（Review SEC 修）：服务端 wipe 连 prose_chunks 一起抹，
+    // 队列里未推的段若留存会在 wipe 后重新上行——「彻底抹除」语义被击穿。
+    try {
+      const { _resetProseUplinkQueueForWipe } = await import("./proseUplink.js");
+      _resetProseUplinkQueueForWipe?.();
+    } catch { /* 动态导入失败不阻断 wipe 主路径 */ }
     return { ok: true };
   } catch (e) {
     return { ok: false, reason: e?.message || "network" };
