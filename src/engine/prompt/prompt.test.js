@@ -127,17 +127,15 @@ describe("pure prompt builders", () => {
     expect(() => buildNpcContext({})).toThrow();
   });
 
-  it("builds active quest and persuasion instructions and handles empty progress", () => {
+  it("builds active quest stage instructions and handles empty progress", () => {
     const state = fixture();
     expect(buildQuestStageNote(state)).toBe("");
     const quest = QUCUO_QUESTS.find(q => q.id !== "snow_leopard_quest" && q.stages?.length && !q.exclusiveGroup && !q.requires);
     const note = buildQuestStageNote({
       ...state, questProgress: { [quest.id]: { status: "active", currentStageIndex: 0 } },
-      pendingQuestBranch: { mode: "talk", goal: "交出旧信", flag: "交信" },
     });
-    expect(note).toContain("[说服判定]");
-    expect(note).toContain("交出旧信");
     expect(note).toContain("[任务阶段]");
+    expect(note).not.toContain("[说服判定]");
     expect(() => buildQuestStageNote({})).toThrow();
   });
 

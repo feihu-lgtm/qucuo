@@ -43,7 +43,7 @@ export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo)
   if (!input) return { cmd, newConvo, mainConvo, hist };
 
   const {
-    room, char, inv, skills, dao, flags, questProgress, pendingQuestBranch,
+    room, char, inv, skills, dao, flags, questProgress,
     varTree, time, preset, companionState, nsfwOn, activeTarget, activeGroundItem, isTalk,
     gm, movingDir, lockedDestName, outerDepart, innerRoomName, apiCfg,
   } = input;
@@ -76,7 +76,7 @@ export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo)
     convo, preset, visibleNpcs: presence.visibleNpcs, room, cmd, isTalk,
     questProgress, varTree, time, companionState, nsfwOn, npcState: input.npcState, lockedDestName,
   }) || {};
-  const questStageNote = input.buildQuestStageNote?.({ questProgress, flags, varTree, char, room, inv, pendingQuestBranch, visibleNpcs: presence.visibleNpcs, convo, settleNpc: opts.settleNpc, cmd, innerRoomName, questTriggerMode: apiCfg.questTriggerMode,
+  const questStageNote = input.buildQuestStageNote?.({ questProgress, flags, varTree, char, room, inv, visibleNpcs: presence.visibleNpcs, convo, settleNpc: opts.settleNpc, cmd, innerRoomName, questTriggerMode: apiCfg.questTriggerMode,
     // 判官双调用模式下模型不再承担任务旗举证——与判官真实激活闸同源：
     // settle 回合（opts.settle/ctx.isSettle，settleNpc 为伴生信号）不走判官，不压下
     suppressModelFlags: shouldSuppressModelFlags(apiCfg, !!(opts.settle || input.isSettle || opts.settleNpc)) }) || "";
