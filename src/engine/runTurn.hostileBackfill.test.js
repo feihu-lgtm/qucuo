@@ -48,6 +48,53 @@ describe("S2 talkTarget 回填：敌意不点名不落空", () => {
     expect(social.anger?.reason).toBe("你这混蛋");
   });
 
+  it("「我看你就是个混蛋」不误判成点名他人：点选/单人在场均落对象", async () => {
+    for (const talkTarget of ["温掌柜", null]) {
+      const intakeJson = JSON.stringify({
+        read: "玩家辱骂掌柜", refIds: [],
+        actions: [{ kind: "talk", target: "无", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "hostile", outcome: "无", risk: "无", confidence: 0.9, text: "我看你就是个混蛋" }],
+        proposals: [],
+      });
+      const ai = createMockAi([intakeJson, "温掌柜拍案而起"]);
+      const deps = makeDeps({ talkTarget });
+      deps.ai = ai;
+      const turn = await runTurn(deps, "我看你就是个混蛋", {});
+      const social = turn.judgeEffects?.verdict?.facts?.find((f) => f.op === "MUTATE_SOCIAL");
+      expect(social?.npc).toBe("温掌柜");
+      expect(social?.affectionDelta).toBe(-3);
+    }
+  });
+
+  it("未点选但单人在场：模型听意 target 无也回填唯一在场者", async () => {
+    const intakeJson = JSON.stringify({
+      read: "玩家辱骂掌柜", refIds: [],
+      actions: [{ kind: "talk", target: "无", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "hostile", outcome: "无", risk: "无", confidence: 0.9, text: "你这蠢货" }],
+      proposals: [],
+    });
+    const ai = createMockAi([intakeJson, "温掌柜拍案而起，怒目而视"]);
+    const deps = makeDeps({ talkTarget: null });
+    deps.ai = ai;
+    const turn = await runTurn(deps, "你这蠢货", {});
+    const social = turn.judgeEffects?.verdict?.facts?.find((f) => f.op === "MUTATE_SOCIAL");
+    expect(social).toBeTruthy();
+    expect(social.npc).toBe("温掌柜");
+    expect(social.affectionDelta).toBe(-3);
+  });
+
+  it("未点选但原话点名不在场者：不误罚唯一在场旁观者", async () => {
+    const intakeJson = JSON.stringify({
+      read: "玩家辱骂王五", refIds: [],
+      actions: [{ kind: "talk", target: "无", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "hostile", outcome: "无", risk: "无", confidence: 0.9, text: "王五你这个畜生" }],
+      proposals: [],
+    });
+    const ai = createMockAi([intakeJson, "……"]);
+    const deps = makeDeps({ talkTarget: null });
+    deps.ai = ai;
+    const turn = await runTurn(deps, "王五你这个畜生", {});
+    const social = turn.judgeEffects?.verdict?.facts?.find((f) => f.op === "MUTATE_SOCIAL");
+    expect(social).toBeFalsy();
+  });
+
   it("模型点了名的不覆盖：骂王五时 target 保持王五不回填", async () => {
     const intakeJson = JSON.stringify({
       read: "玩家辱骂王五", refIds: [],

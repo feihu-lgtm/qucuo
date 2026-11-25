@@ -32,15 +32,25 @@ const sealLine = (arr) => `正文叙事\n---SEAL---\n${JSON.stringify({ fills: {
 
 describe("SEAL respondedNpcs 兜底接线", () => {
   it("系统推导为空时：SEAL respondedNpcs 进 p 作低可信兜底", async () => {
-    // WO-16G-G2：纯搭话跳过前哨，本地合成听意单——talkTarget 缺失时 target=「无」，
-    // 推导为空，叙事 SEAL 自证才旦开口才有兜底意义。前哨不再调 AI，mock 只需主叙事一条。
+    // 兜底接线本身用「场上无人可推导」的孤立场景测——否则单人未点选现在会
+    // 正确回填唯一在场者（见下条），系统推导不再为空。前哨不调 AI，mock 只需主叙事一条。
     const ai = createMockAi([
       sealLine(["才旦"]),
     ]);
-    const deps = makeDeps({ talkTarget: null }); deps.ai = ai;
+    const deps = makeDeps({ talkTarget: null, room: { name: "鱼定村", npcs: [], items: [], exits: [] }, visibleNpcsCount: 0 }); deps.ai = ai;
     const turn = await runTurn(deps, "才旦，最近可好？");
     expect(turn.derivedRespondedNpcs).toEqual([]);
     expect(turn.p?.respondedNpcs).toEqual(["才旦"]);
+  });
+
+  it("单人未点选：唯一在场者回填，好感对象与系统推导不为空", async () => {
+    const ai = createMockAi([
+      sealLine([]),
+    ]);
+    const deps = makeDeps({ talkTarget: null }); deps.ai = ai;
+    const turn = await runTurn(deps, "才旦，最近可好？");
+    expect(turn.derivedRespondedNpcs).toEqual(["才旦"]);
+    expect(turn.judgeEffects?.verdict?.facts?.some((f) => f.op === "MUTATE_SOCIAL" && f.npc === "才旦" && f.affectionDelta > 0)).toBe(true);
   });
 
   it("系统推导非空时：SEAL 不覆盖系统推导", async () => {

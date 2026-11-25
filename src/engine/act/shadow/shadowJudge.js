@@ -4,7 +4,7 @@
 // 硬约束：不写 gameStore/convo/log/prompt/IndexedDB/localStorage；
 // stale/epoch 丢弃；异常静默；不阻塞回合；route 与 intake 同价不声称省钱。
 import { withAI } from "../../ports/withAI.js";
-import { buildIntakeUserContent, normalizeIntakeResult, synthesizeTalkIntake, shouldSkipIntakeForTalk } from "../../turn/intakeTurn.js";
+import { buildIntakeUserContent, normalizeIntakeResult, synthesizeTalkIntake, shouldSkipIntakeForTalk, hasHostileHint, applyTalkTargetFallback } from "../../turn/intakeTurn.js";
 import { buildExtractionCfg } from "../../../domain/rules/prompt/structuredCallCfg.js";
 import { judgeTurn } from "../../../domain/rules/judge/judgeTurn.js";
 import { buildCausalBudgetInput } from "../../../domain/rules/judge/budgetInput.js";
@@ -165,8 +165,9 @@ export async function runShadowJudge({
     // 纯搭话无任务候选时影子也本地合成（不调 withAI），有候选才调 intake；
     // 否则影子与真实判官输入不同源，搭话回合覆盖率数据失真。
     let intakeResult;
-    if (shouldSkipIntakeForTalk(isTalk, questCandidates)) {
-      intakeResult = synthesizeTalkIntake(cmd, talkTarget);
+    if (shouldSkipIntakeForTalk(isTalk, questCandidates) && !hasHostileHint(cmd)) {
+      const soleTalkTarget = talkTarget || (npcs.length === 1 ? npcs[0]?.name || "" : "");
+      intakeResult = synthesizeTalkIntake(cmd, talkTarget, soleTalkTarget);
     } else {
       const intakeContent = buildIntakeUserContent({
         playerInput: cmd,
@@ -193,6 +194,8 @@ export async function runShadowJudge({
       const intakeRes = await withAI("turn.intake", { userContent: intakeContent, cfg: buildExtractionCfg("INTAKE", apiCfg) }, { ai, apiCfg, throwOnError: false, epoch, isStale: shadowStale });
       if (isStale?.() || epochGuard?.()) return null;
       intakeResult = normalizeIntakeResult(intakeRes?.data);
+      const soleTalkTarget = talkTarget || (npcs.length === 1 ? npcs[0]?.name || "" : "");
+      applyTalkTargetFallback(intakeResult, talkTarget, soleTalkTarget);
     }
     const verdict = judgeTurn({
       // WO-16E 二审修：真实判官吃 commit 前 timeNow——影子统一用回合前 turn，
