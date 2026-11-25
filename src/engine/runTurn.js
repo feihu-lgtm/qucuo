@@ -181,8 +181,9 @@ async function runTurnSteps(ctx, cmd, opts) {
   // 闸门：① 单调用 JSON 模式的输出契约是纯 JSON，锚点+SEAL 的散文指令会让模型
   // 丢 JSON 骨架，故只在双调用叙事（extractionEnabled）模式激活；
   // ② settle 回合（赠礼/赔罪/求教等）状态已由系统/软结算裁决落账，
-  // 判官再裁一次会重复加好感——settle 回合不激活。
-  if (deps.apiCfg?.judgePipelineEnabled && deps.apiCfg?.extractionEnabled && !isSettle) {
+  // 判官再裁一次会重复加好感——settle 回合不激活；
+  // ③ 纯搭话回合不发生任何动作（搭话免费、不动状态），判官收礼会越权搬背包。
+  if (deps.apiCfg?.judgePipelineEnabled && deps.apiCfg?.extractionEnabled && !isSettle && !isTalk) {
     try {
       const visibleNpcs = preparedPrompt.visibleNpcsForAI || preparedPrompt.visibleNpcs || deps.room?.npcs || [];
       const intakeContent = buildIntakeUserContent({
