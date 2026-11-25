@@ -110,3 +110,56 @@ describe("verifySealAndMaterialize 铁律三：编译与 pact", () => {
     expect(out2.materialized).toBeTruthy();
   });
 });
+
+describe("WO-16C 条件拾取券双证据", () => {
+  const condVerdict = verdictWith({
+    warrants: [{
+      warrantId: "W42_9", factId: "F42_9", op: "GRANT_ITEM", conditional: true,
+      category: "misc", quality: "蓝", pointBudget: 0, allowedAffixes: [],
+      origin: { turn: 42, day: 2, place: "鱼定村", fromNpc: "" },
+    }],
+  });
+  const seal = JSON.stringify({ fills: { W42_9: { name: "青铜铃", desc: "锈迹斑斑的铃" } } });
+
+  it("锚点+fill 双证据齐备：合成事实入包，品质类别取 warrant 锁定值", () => {
+    const out = verifySealAndMaterialize({
+      sealText: seal, screenText: "路上拾得一枚铃⟦F42_9⟧。", verdict: condVerdict,
+      anchorIds: ["F42_1", "F42_9"], state: STATE, turn: 42,
+    });
+    const inv = out.materialized.changes?.inv || [];
+    const item = inv.find((it) => it.name === "青铜铃");
+    expect(item).toBeTruthy();
+    expect(item.quality).toBe("蓝");
+    expect(item.category).toBe("misc");
+    expect(out.facts.some((f) => f.id === "F42_9" && f.op === "GRANT_ITEM")).toBe(true);
+  });
+
+  it("有锚无 fill：券作废不入包", () => {
+    const out = verifySealAndMaterialize({
+      sealText: '{"fills":{}}', screenText: "拾得⟦F42_9⟧。", verdict: condVerdict,
+      anchorIds: ["F42_1", "F42_9"], state: STATE, turn: 42,
+    });
+    expect((out.materialized.changes?.inv || []).some((it) => it.name === "青铜铃")).toBe(false);
+    expect(out.notes.join()).toContain("未填空");
+  });
+
+  it("有 fill 无锚：券作废不入包、正文不被硬塞", () => {
+    const out = verifySealAndMaterialize({
+      sealText: seal, screenText: "一路无话。", verdict: condVerdict,
+      anchorIds: ["F42_1"], state: STATE, turn: 42,
+    });
+    expect((out.materialized.changes?.inv || []).some((it) => it.name === "青铜铃")).toBe(false);
+    expect(out.notes.join()).toContain("未埋锚");
+    // 条件券事实不进 facts——锚点补写循环不会因缺锚硬塞「少侠得了青铜铃」
+    expect(out.screenText).not.toContain("青铜铃");
+  });
+
+  it("无锚无 fill：叙事拒捡，安静作废零告警", () => {
+    const out = verifySealAndMaterialize({
+      sealText: '{"fills":{}}', screenText: "险境中无暇他顾。", verdict: condVerdict,
+      anchorIds: ["F42_1"], state: STATE, turn: 42,
+    });
+    expect((out.materialized.changes?.inv || []).length).toBe(0);
+    expect(out.facts.some((f) => f.id === "F42_9")).toBe(false);
+  });
+});

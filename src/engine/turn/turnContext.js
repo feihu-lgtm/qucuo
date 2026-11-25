@@ -114,6 +114,7 @@ export function createTurnContext({ plan, env }) {
     commitDeps: (turnResult) => ({
         p: turnResult.p, mvuCommands: turnResult.mvuCommands, dealResult: turnResult.dealResult,
         derivedRespondedNpcs: turnResult.derivedRespondedNpcs || null,
+        judgePipelineActive: turnResult.judgePipelineActive || false,
         intimateTicket,
         pickupExtractionFailed: turnResult.pickupExtractionFailed,
         rawFull: turnResult.rawFull, narrativeText: turnResult.narrativeText,
