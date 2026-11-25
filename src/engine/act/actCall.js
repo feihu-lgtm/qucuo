@@ -158,9 +158,19 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
   const dynPrefix = dynWorld ? dynWorld + "\n\n" : "";
   const steerNote = [dynBlocks.lenNote, _bodyGate.text].filter(Boolean).join("\n");
   const steerSuffix = (steerNote ? steerNote + "\n" : "") + proseRule;
+  // WO-16H-H1 尾章指引三选一：判官激活→判官铁律块；多人群聊→群聊尾章块；
+  // 单人对话/结算回合→留空不收尾章税。
+  const sealRulePart = d.judgeRuleBlock ? "\n\n" + d.judgeRuleBlock
+    : d.groupTalkRuleBlock ? "\n\n" + d.groupTalkRuleBlock
+    : "";
+  // WO-16H-H1 非 settle 拼装固定十二段（roadmap 4.4）：①规则前缀 ②动态前缀（声线/
+  // 场景/人物小传/物件志/谈物规矩/心海）③状态与@体感态势（d.ctx 内含在场活人切片）
+  // ④远方消息 ⑤往事召回 ⑥目标旧账 ⑦久别重逢 ⑧信息域 ⑨@江湖契约与宿敌
+  // （WO-22/23 启用前留空）⑩尾章指引 ⑪篇幅与文体导向。现状即此序，最小重排不重写。
+  const pactNemesisPart = ""; // ⑨占位：WO-22/23 接线点，启用前留空
   const inChatContent = d.isSettle
     ? rulesPrefix + dynPrefix + (d.snowLeopardContext || "") + (d.settleNpc ? reunionPart : "") + ledgerSuffix + angrySettleNote + "\n\n" + steerSuffix
-    : rulesPrefix + dynPrefix + d.ctx + distantBlock + recallPart + ledgerSuffix + reunionPart + infoDomainPart + (d.judgeRuleBlock ? "\n\n" + d.judgeRuleBlock : "") + "\n\n" + steerSuffix;
+    : rulesPrefix + dynPrefix + d.ctx + distantBlock + recallPart + ledgerSuffix + reunionPart + infoDomainPart + pactNemesisPart + sealRulePart + "\n\n" + steerSuffix;
   const latestUserContent = cmdSuffix + (extraNudge || "");
 
   // 10 号位 Chat History / 11 号位 In-Chat Injection / 12 号位 User's Latest Message。
