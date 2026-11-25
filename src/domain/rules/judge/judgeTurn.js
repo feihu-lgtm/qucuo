@@ -546,7 +546,10 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
       if (!floatingInScope && signedElsewhere) {
         notes.push(`${action.target}翻不出真品——「${signedElsewhere.name}」本回合已另有落点，同一落点不可复制`);
       }
-      if (floatingInScope) {
+      // 残页是「差一截」降级——前提是玩家真声称了要找什么（find_item proposal）
+      // 且掷骰未过；无声称的纯翻找不掷骰不掉残页（否则已坍缩容器可无限白刷残页）。
+      const claimedFind = proposals.some((p) => p && p.kind === "find_item");
+      if (floatingInScope && claimedFind) {
         facts.push({
           id: nextFactId(), op: "GRANT_ITEM",
           itemId: `fragment_${floatingInScope.id}`, itemName: "残页",
@@ -555,6 +558,8 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
           from: action.target, to: "player", witnesses: ["主角"],
         });
         notes.push(`${action.target}差一截——只翻出残页，真品「${floatingInScope.name}」去向线头：${floatingInScope.hint || "别处"}`);
+      } else if (floatingInScope && !claimedFind && relicOnly) {
+        notes.push(`${action.target}里翻不出新东西——隐约有股气机未合，似有异物未定`);
       } else {
         // 不达标降级：残页线索——不给实物，只给一条往后的线头
         const clue = `${action.target}里只翻出一角残页，字迹模糊，似乎指向别处`;

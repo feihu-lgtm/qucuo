@@ -145,6 +145,18 @@ describe("judgeTurn 第三关：floating 真品落定与差一截降级", () => 
     expect(verdict.notes.join()).toContain("已坍缩");
   });
 
+
+  it("无 find_item 声称的纯翻找不掷骰不掉残页（坍缩容器不可无限白刷）", () => {
+    const floatingItems = resolveFloatingItems({ place: "贡措海", day: 15, relicState: {} });
+    const verdict = judgeTurn(
+      envelope({ containers: { 石函: { collapsed: true } }, floatingItems }),
+      { read: "", refIds: [], actions: [inspect], proposals: [] }, // 无声称
+      { rng: seqRng([0.01]) },
+    );
+    expect(verdict.facts.filter((f) => f.op === "GRANT_ITEM")).toHaveLength(0);
+    expect(verdict.notes.join()).toContain("气机未合");
+  });
+
   it("day10 前首翻坍缩不锁死：之后带秘宝重翻仍可落定", () => {
     // 首翻：无 floatingItems（模拟 day10 前注入为空）——普通降级+坍缩
     const first = judgeTurn(
