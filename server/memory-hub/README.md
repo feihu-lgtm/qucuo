@@ -105,6 +105,16 @@ prose 路径绝不触碰存档密钥/密文。嵌入向量管线仍不做（后�
 现剥心理，总条数 topK 封顶。**威胁模型补记**：查询文本（含玩家输入与上下文词）与命中的明文段落一样
 会发往 hub，对 hub 运营方可见——与上行明文同一有意口径；查询绝不携带 embedding/queryEmbedding 字段。
 
+## ✅ WO-20D：has-after 恢复探测端点
+
+`POST /api/spaces/<spaceId>/prose/has-after`（auth 同 prose）：body `{branchId, afterTurn, afterSeq}`，
+只答该 branch 是否存在 `turn>afterTurn` 或 `turn=afterTurn && seq>afterSeq` 的 chunk（seq NULL 老数据不算，
+与客户端 reconcile 同口径），返回 `{hasFuture}`；`(space_id, branch_id, turn)` 索引直查参数化 SQL。
+用途：跨设备恢复——prose 段不随存档走，新设备本地无 chunks 时本地 reconcile 判不出原设备
+在同分支的云端后续；客户端 proseReconcile 在模糊场景（v1/裸包导入或头分支本地零段）探测，
+true 分叉、false 不分叉、**失败/超时/非 2xx 保守分叉（宁可产生空分支，不可串弃坑时间线）**；
+有完整本地段落库佐证时不探测不分叉，local driver 零请求。
+
 ## ✅ WO-20B1：谱系/地点过滤已下推 SQL（原 known limitation 消除）
 
 FTS 候选的谱系（branch_id/turn/seq 边界）与 location 条件已下推进 `queryProseChunks` 的动态 SQL——

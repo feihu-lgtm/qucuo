@@ -13,7 +13,7 @@ import { enqueueProseUplink } from "./proseUplink.js";
 // WO-20C：云端原文召回查询经本模块中转 re-export——engine/ports 跨层直连 infra
 // 的存量已封顶（ratchet 只减不增），recallBlock 本就由这里拿段落库接口，
 // 云查询与本地段落库同属 prose 存储关切，随同一出口走，不新增跨层计数。
-export { queryCloudProseHits, cloudProseQueryBinding } from "./proseCloudQuery.js";
+export { queryCloudProseHits, cloudProseQueryBinding, probeCloudProseHasAfter } from "./proseCloudQuery.js";
 
 const STORE = "prose_chunks";
 

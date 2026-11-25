@@ -192,6 +192,18 @@ export async function hubQueryProse(binding, { query = "", viewer = "", location
   return normalizeProseResponse(res);
 }
 
+// WO-20D 跨设备恢复探测：某分支是否存在 afterTurn/afterSeq 之后的云端段落。
+export async function hubProseHasAfter(binding, { branchId = "", afterTurn = 0, afterSeq = 0 } = {}) {
+  const res = await doFetch(`${binding.host}/api/spaces/${encodeURIComponent(binding.spaceId)}/prose/has-after`, {
+    method: "POST",
+    headers: hubHeaders(binding, true),
+    body: JSON.stringify({ branchId, afterTurn, afterSeq }),
+  });
+  let body = null;
+  try { body = typeof res.json === "function" ? await res.json() : null; } catch { /* 无 body */ }
+  return { ok: !!res.ok, status: res.status, hasFuture: body?.hasFuture === true };
+}
+
 async function normalizeProseResponse(res) {
   let body = null;
   try { body = typeof res.json === "function" ? await res.json() : null; } catch { /* 无 body */ }
