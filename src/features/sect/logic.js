@@ -6,7 +6,7 @@ import { markNpcAsKnown } from "../../domain/rules/npc/npcAwareness.js";
 import { factionRepOf, formatRepChanges, grantFactionRep } from "../../domain/rules/economy/factionRep.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
 import { getBuildingIdForInnerRoom } from "../../domain/rules/map/innerMap.js";
-import { systemAffectionDelta, hasNoAffectionTrack } from "../../domain/rules/state/affection.js";
+import { systemAffectionDelta } from "../../domain/rules/state/affection.js";
 import { learnRange } from "../../domain/rules/state/fields.js";
 import { selectEffectiveStats } from "../stats/logic.js";
 
@@ -14,7 +14,8 @@ import { selectEffectiveStats } from "../stats/logic.js";
 // 这里按绝学档（isMaster）deterministic 补账，与 learnNpcSkill 同口径。
 function sectAffectionWrite(state, master) {
   return (prev) => {
-    if (hasNoAffectionTrack({ name: master })) return prev;
+    // 各派掌门当前数据均为人形社交对象（无 beast/forbidden），必有感情轨道；
+    // 若未来出现兽类掌门内容，此处需改传真实 NPC 对象走 hasNoAffectionTrack。
     const [lo, hi, base] = learnRange(true);
     const charm = selectEffectiveStats(state).effectiveSpecialNow?.魅力 ?? 5;
     return systemAffectionDelta(prev, master, base, { charm, time: state.time ?? 0, range: [lo, hi] }).tree;
