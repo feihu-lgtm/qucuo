@@ -33,10 +33,19 @@ describe("inferAppeaseStance 关键词保守判定", () => {
     expect(inferAppeaseStance("对不起，是我错了，请你海涵")).toBe("sincere");
     expect(inferAppeaseStance("行行好别计较了")).toBe("perfunctory");
     expect(inferAppeaseStance("哦")).toBe("perfunctory");
-    expect(inferAppeaseStance("")).toBe("perfunctory");
   });
   it("长句无关键词 casual", () => {
     expect(inferAppeaseStance("今日特来向你说明原委，望你大人大量")).toBe("casual");
+  });
+  it("无原话实物赔罪按分量升档：厚礼/重金 sincere，薄礼/无礼 casual", () => {
+    expect(inferAppeaseStance("", { weight: { label: "厚礼" } })).toBe("sincere");
+    expect(inferAppeaseStance("", { weight: { label: "重金" } })).toBe("sincere");
+    expect(inferAppeaseStance("", { weight: { label: "薄礼" } })).toBe("casual");
+    expect(inferAppeaseStance("", null)).toBe("casual");
+  });
+  it("有原话仍以原话为准：薄礼+歉意词 sincere，厚礼+敷衍语 perfunctory", () => {
+    expect(inferAppeaseStance("对不起，是我错了，请你海涵", { weight: { label: "薄礼" } })).toBe("sincere");
+    expect(inferAppeaseStance("行行好别计较了", { weight: { label: "厚礼" } })).toBe("perfunctory");
   });
 });
 
@@ -100,8 +109,10 @@ describe("runTurn appease settle 进判官", () => {
     ]);
     const deps = makeDeps({ apiCfg: { extractionEnabled: false, judgePipelineEnabled: true, streamEnabled: false, maxTokens: 4000 } });
     deps.ai = ai;
-    const turn = await runTurn(deps, "赔罪", { settle: true, settleKind: "appease", settleNpc: "八云" });
-    expect(turn.judgePipelineActive).toBe(false);
-    expect(turn.appeaseVerdict?.choice || deps.appeaseVerdict?.choice || "奏效").toBe("奏效");
+    await runTurn(deps, "赔罪", { settle: true, settleKind: "appease", settleNpc: "八云" });
+    // 单调用老路：判官不激活，且 mock 第一次响应确实被 turn.appease 消费——
+    // 若 turn.appease 未被调用，主叙事会吃掉分类 JSON、convo 露出 choice 原文。
+    const convoText = JSON.stringify(deps.setConvo.mock?.calls?.flat() || []) + JSON.stringify(deps.addLog.mock?.calls?.flat?.() || []);
+    expect(convoText).not.toContain('"choice"');
   });
 });

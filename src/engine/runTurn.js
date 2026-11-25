@@ -256,7 +256,7 @@ async function runTurnSteps(ctx, cmd, opts) {
           read: "", refIds: [],
           actions: [{
             kind: "appease", target: appeaseNpcName, itemId: "", direction: "none",
-            stance: attemptText ? inferAppeaseStance(attemptText) : "casual",
+            stance: inferAppeaseStance(attemptText, opts.giftInfo || null),
             text: cmd,
           }],
           proposals: [],
