@@ -103,6 +103,12 @@ describe("toGeminiResponseSchema union 转写", () => {
     expect(Array.isArray(out.type)).toBe(false);
   });
 
+  it("不含 null 的 union 不误标 nullable", () => {
+    const out = toGeminiResponseSchema({ type: ["string", "number"] });
+    expect(out.type).toBe("string");
+    expect(out.nullable).toBeUndefined();
+  });
+
   it("普通 type 不受影响", () => {
     const out = toGeminiResponseSchema({ type: "object", properties: { x: { type: "number" } } });
     expect(out.type).toBe("object");

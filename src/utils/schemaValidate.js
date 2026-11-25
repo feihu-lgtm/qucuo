@@ -66,9 +66,10 @@ export function toGeminiResponseSchema(schema) {
   }
   // union type 是 OpenAI strict 方言，Gemini 不吃数组——含 null 转 nullable:true，取首个非 null 类型
   if (Array.isArray(out.type)) {
+    const originalLength = out.type.length;
     const nonNull = out.type.filter((t) => t !== "null");
     out.type = nonNull[0];
-    if (nonNull.length < out.type.length) out.nullable = true;
+    if (nonNull.length < originalLength) out.nullable = true;
     if (out.type === undefined) delete out.type;
   }
   return out;
