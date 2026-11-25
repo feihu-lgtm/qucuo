@@ -11,7 +11,7 @@
 //      任何一步失败按不分叉降级（宁可不分叉也不可错分叉）。
 import { gameStore, isGameEpochStale, ensureProseLineageInStore, allocProseSeq, mergeProseSeqFloor, applyProseLineageFork } from "../../store/gameStore.js";
 import { headBranch } from "../../domain/rules/memory/lineage.js";
-import { migrateLegacyConvoAndNotes, addProseChunks, getProseChunksByBranch, setProseReconcilePending } from "../../engine/ports/recallBlock.js";
+import { migrateLegacyConvoAndNotes, addProseChunks, getProseChunksByBranch, setProseReconcilePending, clearProseReconcilePending } from "../../engine/ports/recallBlock.js";
 import { getAllMemories } from "../../engine/ports/recallWithVisibility.js";
 
 export async function reconcileProseLineageAfterLoad(snap, { epoch } = {}) {
@@ -77,6 +77,6 @@ export async function reconcileProseLineageAfterLoad(snap, { epoch } = {}) {
     /* 失败按不分叉降级 */
   } finally {
     releaseGate();
-    setProseReconcilePending(null);
+    clearProseReconcilePending(gate);
   }
 }

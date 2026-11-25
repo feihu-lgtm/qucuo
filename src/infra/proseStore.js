@@ -20,6 +20,11 @@ let reconcilePendingPromise = null;
 export function setProseReconcilePending(promise) {
   reconcilePendingPromise = promise || null;
 }
+// token 清理：只有当前 pending 仍是同一个 promise 才清——两次读档 reconcile
+// 重叠时，旧 reconcile 的 finally 不得误清新一次读档刚挂上的闸。
+export function clearProseReconcilePending(promise) {
+  if (reconcilePendingPromise === promise) reconcilePendingPromise = null;
+}
 export function isProseReconcilePending() {
   return !!reconcilePendingPromise;
 }

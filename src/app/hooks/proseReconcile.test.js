@@ -133,3 +133,18 @@ describe("reconcile-pending 闸门", () => {
     expect(chunks[0].branchId).toBe("bNew"); // 新头，不是被截断的 bOld
   });
 });
+
+describe("gate token 清理", () => {
+  it("两个 reconcile 重叠：旧 gate 先结束，新 gate 仍保持 pending", async () => {
+    const { setProseReconcilePending, clearProseReconcilePending, isProseReconcilePending } = await import("../../infra/proseStore.js");
+    const gate1 = Promise.resolve();
+    setProseReconcilePending(gate1);
+    const gate2 = Promise.resolve();
+    setProseReconcilePending(gate2); // 第二次读档挂新闸
+    clearProseReconcilePending(gate1); // 旧 reconcile finally——不得误清
+    expect(isProseReconcilePending()).toBe(true);
+    clearProseReconcilePending(gate2); // 新闸 owner 清理才生效
+    expect(isProseReconcilePending()).toBe(false);
+    clearProseReconcilePending(null);
+  });
+});
