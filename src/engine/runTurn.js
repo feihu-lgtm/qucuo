@@ -224,7 +224,7 @@ async function runTurnSteps(ctx, cmd, opts) {
         questCandidates,
         containers: openContainers,
       });
-      const intakeRes = await withAI("turn.intake", { userContent: intakeContent, cfg: deps.apiCfg }, { ai, apiCfg: deps.apiCfg, throwOnError: false, epoch: ctx.proseEpoch ?? "default" });
+      const intakeRes = await withAI("turn.intake", { userContent: intakeContent, cfg: deps.apiCfg }, { ai, apiCfg: deps.apiCfg, throwOnError: false, epoch: String(ctx.proseEpoch ?? "default") });
       if (ctx.isStale?.()) return { stale: true };
       const intakeResult = normalizeIntakeResult(intakeRes?.data);
       const timeNow = getGameStateTime(ctx, deps);
@@ -499,7 +499,7 @@ async function runTurnSteps(ctx, cmd, opts) {
     // 放行指标在涌现校验之后统一记录——锚到了但尾章没填空（unfilledWarrants）、
     // 声明新 NPC 被 emergence 拒绝（rejections）都必须计入 failed，早记会漏。
     recordSealMetric({
-      epoch: ctx.proseEpoch ?? "default",
+      epoch: String(ctx.proseEpoch ?? "default"),
       cfg: deps.apiCfg,
       sealText: sealParts?.sealText || "",
       sealData: verified.sealData,

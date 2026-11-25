@@ -80,8 +80,9 @@ export async function withAI(
   };
 
   if (!ai || apiCfg?.offline) {
+    // offline/无 ai 是用户配置或环境状态，不是模型质量样本——不计入指标，
+    // 否则 dev 离线调试会污染合格率分母。
     const err = new Error(!ai ? "AI port is required" : "offline_mode");
-    recordIntake("otherFailed");
     return failOrFallback(err.message, { error: err });
   }
   if (isStale?.()) {

@@ -128,3 +128,21 @@ describe("releaseMetrics 放行指标观测", () => {
     expect(releaseMetricAggregates("prod")).toEqual({ intake: [], seal: [] });
   });
 });
+
+describe("offline/epoch 口径", () => {
+  it("offline/无 ai 不计入指标——用户配置不是模型质量样本", async () => {
+    _setReleaseMetricsEnabledForTest(true);
+    const cfg = { provider: "anthropic", model: "claude-haiku", offline: true };
+    await withAI("turn.intake", { userContent: "x", cfg }, { ai: createMockAi(["{}"]), apiCfg: cfg, epoch: "9", throwOnError: false });
+    await withAI("turn.intake", { userContent: "x", cfg: { provider: "anthropic", model: "claude-haiku" } }, { ai: null, apiCfg: { provider: "anthropic", model: "claude-haiku" }, epoch: "9", throwOnError: false });
+    expect(releaseMetricAggregates("9").intake).toEqual([]);
+  });
+
+  it("epoch 数字与字符串同桶——String 包裹防分裂", () => {
+    _setReleaseMetricsEnabledForTest(true);
+    recordIntakeMetric({ epoch: 9, cfg: { provider: "p", model: "m" }, outcome: "schemaOk" });
+    recordIntakeMetric({ epoch: "9", cfg: { provider: "p", model: "m" }, outcome: "schemaOk" });
+    const agg = releaseMetricAggregates("9");
+    expect(agg.intake).toEqual([{ provider: "p", model: "m", calls: 2, schemaOk: 2, parseFailed: 0, validateFailed: 0, otherFailed: 0 }]);
+  });
+});

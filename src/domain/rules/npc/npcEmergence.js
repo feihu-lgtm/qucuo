@@ -89,7 +89,8 @@ export function validateEmergenceSeal(sealData, {
   const notes = [];
   const warnings = [];
   // 申报被拒清单（放行指标用）：模型在 SEAL 里声明了传闻/登场但校验没过——
-  // 每一条都是模型申报质量失败的证据，与 notes 同文案但结构化独立成组。
+  // 每一条都是模型申报质量失败的证据。重复传闻剔除不计入：传闻册不进 prompt，
+  // 模型无从知晓在册名单，冗余非失败。
   const rejections = [];
   const excluded = exclusionSet({ roomNpcs, playerName });
   const rumors = varTree?.世界?.[RUMOR_KEY] || {};
@@ -99,8 +100,9 @@ export function validateEmergenceSeal(sealData, {
   for (const name of rawMentioned) {
     const trimmed = typeof name === "string" ? name.trim() : "";
     if (rumors[trimmed]) {
-      const msg = `「${trimmed}」已在传闻册，重复申报剔除`;
-      notes.push(msg); rejections.push(msg); continue;
+      // 重复申报只进 notes 不进 rejections：传闻册不进 prompt，模型无从知晓
+      // 哪些名字已在册——重复是冗余不是质量失败，不能压放行指标 passed 率。
+      notes.push(`「${trimmed}」已在传闻册，重复申报剔除`); continue;
     }
     if (!isValidNewName(trimmed, { screenText, excluded })) {
       const msg = `传闻申报「${trimmed || "?"}」未过校验（未见正文/在册/非法形），丢弃`;
