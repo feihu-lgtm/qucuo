@@ -23,6 +23,11 @@ export default { district: {
         // 点击时判定属性，不够则提示失败。
         unlockCondition: { type: "stat", stat: "neigong", threshold: 100 },
         buildingId: "gongcuo_submerged_vault",
+        // WO-22B-P2：悬空秘宝《寒潭剑谱》的落点容器——前辈剑修遗物的沉水之函。
+        // 不写 presetItems：函中无剧本写死之物，真品由判官第三关悬空秘宝落定签发。
+        containers: [
+          { name: "沉水石函" },
+        ],
       },
     },
   }

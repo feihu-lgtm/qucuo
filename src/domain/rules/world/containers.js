@@ -44,10 +44,12 @@ export function containerViewForRoom(varTree, place, roomDef) {
 
 // 前哨「可翻找容器」名单：只列未坍缩的——已坍缩的翻了也白翻，
 // 列出来只会诱导模型反复写翻箱。无声明/全坍缩返回空数组。
-export function intakeContainerLines(varTree, place, roomDef) {
+// WO-22B-P2 裁决例外：有未定悬空秘宝（hasFloating）时，已坍缩容器仍列为
+// 可翻落点——秘宝是地域级落点事件而非容器普通内容物；无秘宝时维持 WO-22A 原样。
+export function intakeContainerLines(varTree, place, roomDef, { hasFloating = false } = {}) {
   const view = containerViewForRoom(varTree, place, roomDef);
   return Object.entries(view)
-    .filter(([, v]) => !v.collapsed)
+    .filter(([, v]) => !v.collapsed || hasFloating)
     .map(([name]) => name);
 }
 
@@ -55,7 +57,7 @@ export function intakeContainerLines(varTree, place, roomDef) {
 // 同源口径只能靠"只此一处计算"钉死，各算各的迟早漂移）。
 // 入参：districtName（room.name 据点名）、innerRoomName、varTree、roomDefLookup。
 // 输出 { containerPlace, containerView, openContainers }。
-export function resolveContainerContext({ districtName, innerRoomName, varTree, roomDefLookup }) {
+export function resolveContainerContext({ districtName, innerRoomName, varTree, roomDefLookup, hasFloating = false }) {
   const innerDef = innerRoomName != null && typeof roomDefLookup === "function"
     ? roomDefLookup(districtName, innerRoomName)
     : null;
@@ -65,6 +67,6 @@ export function resolveContainerContext({ districtName, innerRoomName, varTree, 
   return {
     containerPlace,
     containerView: containerViewForRoom(varTree, containerPlace, innerDef),
-    openContainers: intakeContainerLines(varTree, containerPlace, innerDef),
+    openContainers: intakeContainerLines(varTree, containerPlace, innerDef, { hasFloating }),
   };
 }
