@@ -1,7 +1,7 @@
 // WO-19/20 PR-B prose 上行/查询客户端测试
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { configureCloudFetch, hubQueryProse, hubBinding, _resetCloudProtocolForTest } from "./cloudProtocol.js";
-import { enqueueProseUplink, flushProseUplink, getProseUplinkQueue, toCanonicalProseChunk, _resetProseUplinkForTest } from "./proseUplink.js";
+import { enqueueProseUplink, flushProseUplink, getProseUplinkQueue, getProseUplinkDeadLetters, toCanonicalProseChunk, _resetProseUplinkForTest } from "./proseUplink.js";
 import { saveStorageConfig } from "./storageDriver.js";
 
 function mockLocalStorage() {
@@ -102,11 +102,36 @@ describe("幂等与队列", () => {
     expect(bodies[0].chunks[0].rawText).toBe("原文段落"); // 明文上行（FTS 需要）
     expect(typeof bodies[0].batchId).toBe("string");
   });
-  it("4xx 拒收丢弃不纠缠", async () => {
+  it("400/422 形状坏移入 dead-letter，活队列清除", async () => {
     boundCfg();
     configureCloudFetch(async () => ({ ok: false, status: 400, json: async () => ({ error: "bad" }) }));
     enqueueProseUplink([mkChunk()]);
     await vi.advanceTimersByTimeAsync(1600);
+    expect(getProseUplinkQueue()).toHaveLength(0);
+    const dead = getProseUplinkDeadLetters();
+    expect(dead).toHaveLength(1);
+    expect(dead[0].chunkId).toBe("b1_12_3");
+    expect(dead[0].deadStatus).toBe(400);
+  });
+  it("401/403/429 环境类 4xx 不退场——条目仍在队列退避重试", async () => {
+    boundCfg();
+    configureCloudFetch(async () => ({ ok: false, status: 401, json: async () => ({ error: "unauthorized" }) }));
+    enqueueProseUplink([mkChunk()]);
+    await vi.advanceTimersByTimeAsync(1600);
+    expect(getProseUplinkQueue()).toHaveLength(1);
+    expect(getProseUplinkDeadLetters()).toHaveLength(0);
+  });
+  it("dead-letter cap 200 防膨胀淘汰最老", async () => {
+    boundCfg();
+    configureCloudFetch(async () => ({ ok: false, status: 422, json: async () => ({}) }));
+    // 直接灌 dead-letter：每批 25 条，9 批 = 225 条
+    for (let round = 0; round < 9; round++) {
+      const chunks = Array.from({ length: 25 }, (_, i) => mkChunk({ id: `b1_12_${round * 25 + i}` }));
+      enqueueProseUplink(chunks);
+      await vi.advanceTimersByTimeAsync(1600);
+    }
+    const dead = getProseUplinkDeadLetters();
+    expect(dead.length).toBe(200);
     expect(getProseUplinkQueue()).toHaveLength(0);
   });
 });

@@ -4,7 +4,8 @@
 // 口径钉死：
 // · 幂等：队列内按 chunkId 去重（同 chunkId 重推不重复）；服务端另有
 //   UNIQUE(space_id, chunk_id) + INSERT OR IGNORE 兜底——成功后丢响应重推也安全。
-// · 断网/5xx/异常 → 条目回队首，退避重发；4xx（形状坏）→ 丢弃不纠缠。
+// · 断网/5xx/异常/环境类 4xx（401/403/404/409/429）→ 条目回队首，退避重发；
+//   确定形状坏 400/422 → 移 dead-letter 队列（cap 200），不无声删除。
 // · 三件套缺一（unbound）→ 队列保留静默等待，绝不半通乱发。
 // · 明文上行：prose 段服务端要建 FTS 索引，密文无法检索——这是与存档密文
 //   相反的有意口径，密钥/存档明文绝不混入本路径。
@@ -14,7 +15,9 @@ import { hubBinding, hubAppendProse } from "./cloudProtocol.js";
 import { loadStorageConfig } from "./storageDriver.js";
 
 const QUEUE_KEY = "wuxia_mud_prose_uplink_queue";
+const DEAD_KEY = "wuxia_mud_prose_uplink_dead";
 const QUEUE_CAP = 500;
+const DEAD_CAP = 200;
 const BATCH_SIZE = 25;
 const FLUSH_DEBOUNCE_MS = 1500;
 const RETRY_BASE_MS = 1000;
@@ -28,6 +31,16 @@ let _retryMs = RETRY_BASE_MS;
 let _flushing = false;
 
 export function getProseUplinkQueue() { return _lsRead(QUEUE_KEY, []); }
+// dead-letter：确定形状坏（400/422）的批次移入此处——不是无声删除，
+// 服务端契约修复/数据矫正后可人工打捞；cap 防膨胀淘汰最老。
+export function getProseUplinkDeadLetters() { return _lsRead(DEAD_KEY, []); }
+
+function pushDeadLetters(batch, status) {
+  const dead = _lsRead(DEAD_KEY, []);
+  for (const chunk of batch) dead.push({ ...chunk, deadStatus: status, deadAt: Date.now() });
+  while (dead.length > DEAD_CAP) dead.shift();
+  _lsWrite(DEAD_KEY, dead);
+}
 
 function persistQueue(queue) {
   while (queue.length > QUEUE_CAP) {
@@ -115,14 +128,16 @@ export async function flushProseUplink() {
       if (cur.length - batch.length > 0) scheduleFlush(0); // 继续排空
       return;
     }
-    if (result && result.status >= 400 && result.status < 500) {
-      // 形状坏/鉴权拒：重推无意义——丢弃本批不纠缠（服务端不会突然变好）。
+    if (result && (result.status === 400 || result.status === 422)) {
+      // 确定形状坏（裁决）：移出活队列但进 dead-letter，非无声删除——
+      // 契约修复后可打捞；401/403/404/409/429 等环境类 4xx 不在此列。
       const done = new Set(batch.map((b) => b.chunkId));
+      pushDeadLetters(batch, result.status);
       persistQueue(cur.filter((q) => !done.has(q.chunkId)));
-      console.warn(`[prose-uplink] 服务端 ${result.status} 拒收，丢弃批次 ${batchId}`);
+      console.warn(`[prose-uplink] 服务端 ${result.status} 拒收，批次 ${batchId} 移入 dead-letter`);
       return;
     }
-    // 网络/5xx：原样保留，退避重试
+    // 网络/5xx/其余 4xx（401/403/404/409/429 等可恢复环境类）：原样保留，退避重试
     _retryMs = Math.min(_retryMs * 2, RETRY_CAP_MS);
     scheduleFlush(_retryMs);
   } finally {
@@ -135,5 +150,5 @@ export function _resetProseUplinkForTest() {
   if (_flushTimer) { clearTimeout(_flushTimer); _flushTimer = null; }
   _retryMs = RETRY_BASE_MS;
   _flushing = false;
-  try { localStorage.removeItem(QUEUE_KEY); } catch { /* */ }
+  try { localStorage.removeItem(QUEUE_KEY); localStorage.removeItem(DEAD_KEY); } catch { /* */ }
 }
