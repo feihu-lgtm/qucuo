@@ -202,7 +202,10 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
   // 在场名册优先用 buildPresence 口径（visibleNpcNames：内层房过滤+随行同伴），
   // 缺席时（部分测试直通）fallback d.room 全名册——复审：整据点花名册当在场会把
   // 别的房的人写进正文背景。
-  const pactPresentNames = (Array.isArray(d.visibleNpcNames) && d.visibleNpcNames.length)
+  // 空数组也是权威在场名册（Review 修）：内层房真无人时 visibleNpcNames=[] 是事实，
+  // 落 fallback 会把据点全名册当在场——别房的宿敌/契约人被写进正文背景。
+  // fallback 只服务完全没传 visibleNpcNames 的直通测试路径。
+  const pactPresentNames = Array.isArray(d.visibleNpcNames)
     ? d.visibleNpcNames
     : (d.room?.npcs || []).map((n) => n?.name);
   const pactBlock = buildPactInjectBlock(d.varTree, pactPresentNames, d.time);
