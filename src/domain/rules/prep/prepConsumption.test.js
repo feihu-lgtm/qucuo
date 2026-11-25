@@ -76,6 +76,35 @@ describe("prepMaterialLines/buildPrepMaterialBlock", () => {
     expect(block).toContain("不是既定事实");
     expect(block).toContain("可用可不用");
   });
+  it("WO-24G：prep_item clue 微痕行进素材块；无 clue/失效 seed 不渲染；npc/rumor 不回归", () => {
+    const state = mkState();
+    const itemSeed = mkSeed(state, "prep_item", ITEM_PAYLOAD);
+    const lines = prepMaterialLines(state, [itemSeed]);
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toContain("【备料·微痕】");
+    expect(lines[0]).toContain("木箱");
+    expect(lines[0]).toContain("箱角露出一线油纸");
+    // 注入块非事实警示钉死——clue 也不是既定事实
+    const block = buildPrepMaterialBlock(state, [itemSeed]);
+    expect(block).toContain("不是既定事实");
+    expect(block).toContain("【备料·微痕】");
+    // 无 clue 不渲染
+    const noClue = mkSeed(state, "prep_item", { ...ITEM_PAYLOAD, clue: "" });
+    expect(prepMaterialLines(state, [noClue])).toHaveLength(0);
+    // 失效 seed（跨日）不渲染
+    expect(prepMaterialLines(mkState({ time: 96 }), [itemSeed])).toHaveLength(0);
+    // npc/rumor 原有行不回归：混合种子各行俱在，cap 3 受控
+    const mixed = [
+      mkSeed(state, "npc_plan", PLAN_PAYLOAD, { subject: "掌柜" }),
+      mkSeed(state, "tavern_rumor", RUMOR_PAYLOAD),
+      itemSeed,
+      mkSeed(state, "prep_item", { ...ITEM_PAYLOAD, name: "第二件" }),
+    ];
+    const lines2 = prepMaterialLines(state, mixed);
+    expect(lines2.length).toBeLessThanOrEqual(3);
+    expect(lines2.some((l) => l.includes("人物盘算"))).toBe(true);
+    expect(lines2.some((l) => l.includes("巷口风声"))).toBe(true);
+  });
   it("只滤当前 state 有效种", () => {
     const state = mkState();
     const seed = mkSeed(state, "tavern_rumor", RUMOR_PAYLOAD);

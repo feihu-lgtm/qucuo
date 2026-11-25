@@ -3,7 +3,7 @@
 // 把 prepSeeds 缓存素材适配成各消费链可用形状——素材绝不变成事实：
 //   adaptPrepItemsForJudge  prep_item → judgeTurn envelope.prepItems 形状
 //                           （真实判官与 shadow 影子必须用这同一个入口，对账同源）
-//   prepMaterialLines       npc_plan/tavern_rumor → deterministic 短文本行
+//   prepMaterialLines       npc_plan/tavern_rumor/prep_item clue → deterministic 短文本行
 //   buildPrepMaterialBlock  主叙事/前哨注入块（带非事实警示，空则零注入）
 // 硬约束：不直接发背包、不写容器内容、不改世界事实、不新增 AI 调用。
 
@@ -46,6 +46,12 @@ export function prepMaterialLines(state, seeds) {
       lines.push(`【备料·人物盘算】${who}${plan ? `心里盘着${plan}` : ""}${next ? `${plan ? "，" : ""}接下来打算${next}` : ""}`);
     } else if (seed.kind === "tavern_rumor" && p.text) {
       lines.push(`【备料·巷口风声】${String(p.text).trim()}`);
+    } else if (seed.kind === "prep_item" && String(p.clue || "").trim()) {
+      // WO-24G：clue 翻找前可见性最小闭环——微痕行进主叙事素材块，
+      // 玩家有机会在翻找前察觉。仍是非事实素材（块头警示钉死），
+      // clue 绝不写成物品已存在、不落账。
+      const where = String(p.containerId || "").trim();
+      lines.push(`【备料·微痕】${where ? `${where}：` : ""}${String(p.clue).trim()}`);
     }
     if (lines.length >= 3) break;
   }
