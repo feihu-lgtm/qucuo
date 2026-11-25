@@ -78,4 +78,14 @@ describe("WO-16D-M1 原话采样与 epoch 隔离", () => {
     const agg2 = shadowAggregates("test_epoch_m1_other");
     expect(agg2.samples).not.toBe(agg.samples); // epoch 隔离：不同 epoch 不同聚合对象
   });
+  it("pre/post 快照字段齐全时无假损（Review 修回归）", () => {
+    // 银两不变时绝不可报损——post.char 缺失曾按 0 算成 -50 假损
+    const same = { inv: [], flags: [], varTree: { 角色: {} }, char: { hp: [80, 100], money: 50 }, skills: [], exp: 10, pot: 3, questProgress: {} };
+    const { categories } = diffSnapshots(same, same);
+    expect(categories.vitals).toEqual({ hp: 0, money: 0 });
+    expect(categories.cultivation).toEqual({ exp: 0, pot: 0 });
+    expect(categories.skills.add).toEqual([]);
+    expect(categories.quest.advance).toEqual([]);
+  });
+
 });

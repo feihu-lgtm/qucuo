@@ -67,7 +67,9 @@ export async function playTurn(ctx, cmd, opts = {}) {
       ? {
         inv: snapshot.state.inv, flags: snapshot.state.flags, varTree: snapshot.state.varTree,
         room: snapshot.state.room, questProgress: getGameState?.()?.questProgress,
-        char: snapshot.state.char, turn: snapshot.state.time,
+        // WO-16D-M1 四类目 diff 吃全字段——缺一则 diff 按零算假损/死度量（Review 修）
+        char: snapshot.state.char, exp: snapshot.state.exp, pot: snapshot.state.pot,
+        skills: snapshot.state.skills, turn: snapshot.state.time,
         innerRoomName: turnCtx.innerRoomName ?? null,
         encounter: turnCtx.encounter || null,
       }
@@ -85,6 +87,8 @@ export async function playTurn(ctx, cmd, opts = {}) {
       const shadowPost = {
         inv: liveAfter.inv, flags: liveAfter.flags, varTree: liveAfter.varTree,
         room: liveAfter.room, turn: liveAfter.time,
+        char: liveAfter.char, exp: liveAfter.exp, pot: liveAfter.pot,
+        skills: liveAfter.skills, questProgress: liveAfter.questProgress,
       };
       // 同源喂料：在场名单用与 preparedPrompt 完全相同的 buildPresence 口径
       // （内层过滤+同伴出战位并入），吃回合前房间快照——影子输入才与真实判官一致。
