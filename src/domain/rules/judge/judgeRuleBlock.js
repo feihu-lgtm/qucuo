@@ -53,7 +53,7 @@ ${guidesText}
 ${whitelistLines}
   武学券：{"name":"招式或功法名","skillType":"招式、内功、轻功三选一","archetype":"硬攻、防守反击、趁虚、致乱、封穴、蓄势、施毒、回气、疗伤九选一","desc":"不超过 40 字，写它的路数"}
 · respondedNpcs：本轮真正开口，或用动作直接回应 ${playerName} 的在场者。只被提到、只在一旁看着的不算；没有就给 []。
-· spontaneousPact：${allowPact ? "本轮允许自发立约。只有双方当面说定了一件有期限的事，才填" : "本轮不允许自发立约，填 null。"}${allowPact ? ' {"npc":"在场者的名字","promise":"不超过 30 字","deadlineHours":24,"rewardHint":"不超过 20 字"}；deadlineHours 是正整数，单位是小时，一个时辰算两小时。没有说定就填 null。' : ""}
+· spontaneousPact：${allowPact ? "本轮允许自发立约。只有双方当面说定了一件有期限的事，才填" : "本轮不允许自发立约，填 null。"}${allowPact ? ' {"npc":"在场者的名字","promise":"不超过 30 字","deadlineHours":24,"rewardHint":"不超过 20 字"}；deadlineHours 是正整数，单位是小时，一个时辰算两小时，至少 4 小时（不足 4 小时的约系统不收）。没有说定就填 null。' : ""}
 · mentionedNewNpcs：正文里新提到、此前没出现过的具名人物，只写名字；没有就给 []。
 · emergedNpc：玩家明确在找的传闻人物，如果在正文里真的现身，填 {"name":"名字","description":"一句话写身份与性情，不带任何数值"}；没有现身就填 null。`;
 }

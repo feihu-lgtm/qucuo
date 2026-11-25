@@ -35,6 +35,11 @@ describe("WO-16H-H1 判官铁律块（roadmap 精确关键句）", () => {
     expect(block).toContain("emergedNpc：玩家明确在找的传闻人物");
   });
 
+  it("WO-22B spontaneousPact 期限下限写进 prompt", () => {
+    const withPact = buildJudgeRuleBlock({ judgeVerdict: { ...verdict, allowSpontaneousPact: true }, playerName: "少侠" });
+    expect(withPact).toContain("至少 4 小时");
+  });
+
   it("渲染定案单/授信/反应导引与玩家名", () => {
     expect(block).toContain("⟦F5_1⟧MOOD_SHIFT");
     expect(block).toContain("本拍授信：品阶上限蓝");
