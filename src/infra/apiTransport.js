@@ -229,7 +229,7 @@ async function requestModel(cfg, systemPrompt, messages, opts) {
       // tool_choice 点名，模型只能以 tool_use.input 的形式吐出合规 JSON。
       // 注意：extended thinking 与强制 tool_choice 互斥（Anthropic 直接拒绝同传），
       // schema 调用本就是结构化抽取小调用，强制工具时不再挂思考。
-      applyThinkingAnthropic(abody, cfg, maxOutputTokens);
+      if (!opts.schema) applyThinkingAnthropic(abody, cfg, maxOutputTokens);
       if (opts.schema) {
         abody.tools = [{ name: opts.schema.name, input_schema: opts.schema.schema }];
         abody.tool_choice = { type: "tool", name: opts.schema.name };
