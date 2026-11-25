@@ -109,7 +109,7 @@ export async function init() {
 }
 
 // state 快照结构
-export function buildSnapshot({ preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit, depositedAt, pledgedItems, persuasionProgress, innerRoomName, companionState, squares, roomMap, roomCache, dungeonRun, npcState, proseLineage, proseSeq, rngState = null }) {
+export function buildSnapshot({ preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit, depositedAt, pledgedItems, persuasionProgress, innerRoomName, companionState, squares, roomMap, roomCache, dungeonRun, npcState, proseLineage, proseSeq, prepSeeds, rngState = null }) {
   return {
     version: 1,
     savedAt: Date.now(),
@@ -136,6 +136,9 @@ export function buildSnapshot({ preset, room, char, dao, skills, inv, log, convo
     // 原文段落谱系（WO-18）：读档按需分叉的根基，必须随快照存取
     proseLineage: proseLineage ?? null,
     proseSeq: proseSeq ?? 0,
+    // 后台备料缓存（WO-24A）：是缓存不是事实，随档持久化省得重备；
+    // 老存档无此字段按空数组兜底，失效种由 upsert/valid 查询自然剔除。
+    prepSeeds: Array.isArray(prepSeeds) ? prepSeeds : [],
     // 地图格子（扫雷式预埋）：各据点当日预跑的到达文本/埋物/路遇。老存档无此字段，
     // 读档时按空表兜底，开局预跑会重新掷骰写文，不影响兼容。
     squares: squares || null,

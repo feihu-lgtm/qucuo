@@ -46,6 +46,15 @@ describe("存档恢复（Issue #3：内层房间/钱庄/里程碑/旧档兼容�
     expect(restore(makeSnap({ room, innerRoomName: "溪边小屋" })).innerRoomName).toBe(null);
   });
 
+  it("备料缓存：prepSeeds 快照往返恢复，老档缺字段兜底空数组", () => {
+    const seeds = [{ id: "prep_abcd_1", kind: "npc_plan", location: "鱼定村", stateVersion: "abcd1234", subject: "掌柜", payload: {}, turn: 6, day: 0, createdAtTurn: 6 }];
+    const state = restore(makeSnap({ prepSeeds: seeds }));
+    expect(state.prepSeeds).toEqual(seeds);
+    const legacy = makeSnap();
+    delete legacy.prepSeeds; // 模拟老档缺字段
+    expect(restore(legacy).prepSeeds).toEqual([]);
+  });
+
   it("钱庄：deposit / depositedAt / pledgedItems 存读一致", () => {
     const pledged = [{ item: { id: "sword1", name: "青锋剑" }, pledgeValue: 30 }];
     const state = restore(makeSnap({ deposit: 120, depositedAt: 48, pledgedItems: pledged }));
