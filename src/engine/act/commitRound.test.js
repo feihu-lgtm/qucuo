@@ -308,3 +308,27 @@ describe("memory / 已知人物 / 收尾契约", () => {
     expect(logs.at(-1).text).toContain("被接口中途截断");
   });
 });
+
+// WO-13 复审必修：materializeFacts 的 companionState patch 不得静默丢弃。
+it("materialized patches 里的 companionState 路径经 commitPatches 落盘不丢", () => {
+  const state = baseState();
+  state.companionState = { snowLeopard: { unlocked: true } };
+  const { deps } = makeDeps(state, {}, {
+    materialized: {
+      changes: {},
+      logs: [],
+      patches: [
+        { op: "merge", path: ["companionState", "snowLeopard", "bond"], value: { level: 2 }, factId: "F1_1" },
+        { op: "add", path: ["varTree", "角色", "才旦", "好感度"], value: 3, factId: "F1_2" },
+      ],
+      receipts: [],
+    },
+  });
+  commitRound(deps);
+  // companionState 切片经 setCompanionState 函数式提交
+  expect(state.companionState?.snowLeopard?.bond).toEqual({ level: 2 });
+  // 原有键不被 merge 覆盖丢失
+  expect(state.companionState?.snowLeopard?.unlocked).toBe(true);
+  // 同批 varTree patch 照常落
+  expect(state.varTree?.角色?.才旦?.好感度).toBe(3);
+});

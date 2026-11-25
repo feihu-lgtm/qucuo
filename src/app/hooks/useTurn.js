@@ -47,7 +47,7 @@ export function useTurn({
   // Store 直读（路线一）：游戏状态字段在回调内 gameStore.getState() 现取进 env.state；
   // 各 setter 写走 gameActions；varTreeRef/timeRef 退化为以 store 为源的读写 shim
   // 透给 env.refs（varTree 真正的写仍走传入的 setVarTree——Worker 4 收口前不动）。
-  const { setLog, setConvo, setTime, setFlags, setInv, setRoom, setChar, setDao, setExp, setPot, setSkills, setMapData } = gameActions;
+  const { setLog, setConvo, setTime, setFlags, setInv, setRoom, setChar, setDao, setExp, setPot, setSkills, setMapData, setCompanionState } = gameActions;
   turnMonitor.setGameClockReader(() => gameStore.getState().time);
   // 缺省走 gameActions（路线一）；测试可直接注入自己的 addLog。
   const addLog = useCallback(addLogProp || ((lines) => setLog((p) => [...p, ...stampLogEntries(lines, gameStore.getState().time)])), [addLogProp]);
@@ -145,7 +145,7 @@ export function useTurn({
       refs: { autoTravelRef, intentRouterRef },
       io: {
         addLog, setInput, setCmdHistory, setHistIdx, setLoading, setWaitSecs,
-        waitTimerRef, setInv, setRoom, setFlags, setVarTree, setGambleNegotiation,
+        waitTimerRef, setInv, setRoom, setFlags, setVarTree, setGambleNegotiation, setCompanionState,
         setChar, setDao, setExp, setPot, setSkills, setMapData, setTime,
         setPendingQuestBranch, setConvo, setLog, jotNote, noteAction,
         changePendingTalks, setCommandPhase, onTurnsInvalidated,

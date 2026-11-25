@@ -162,7 +162,7 @@ export function commitRound(d) {
     });
     if ((d.materialized.patches || []).length) {
       commitPatches({
-        setVarTree: d.setVarTree, setChar: d.setChar, setInv: d.setInv, setFlags: d.setFlags,
+        setVarTree: d.setVarTree, setChar: d.setChar, setInv: d.setInv, setFlags: d.setFlags, setCompanionState: d.setCompanionState,
       }, d.materialized.patches);
     }
   }
