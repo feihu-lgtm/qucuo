@@ -19,6 +19,11 @@ export { ensureItemId, resolveEntityByIdOrName } from "../../domain/rules/clapbo
 export { createClapboardEntry, filterEntriesForViewer, renderClapboardSection } from "../../domain/rules/clapboard/clapboard.js";
 export { computeCausalBudget, DAILY_LOOT_CAP } from "../../domain/rules/judge/causalBudget.js";
 
+// WO-10 零入度接线：天工铸物/原型创招经此挂入依赖图（消费方在 WO-11/12）。
+export { allowedAffixesForBudget, compileAffix, affixCost } from "../../domain/rules/effects/affixPointTable.js";
+export { compileEmergentItem } from "../../domain/rules/effects/compileEmergentItem.js";
+export { compileEmergentSkill } from "../../domain/rules/effects/compileEmergentSkill.js";
+
 // 由 plan（resolveIntent 的裁决结果）+ env（hook 注入的状态/引用/胶水）组装 playTurn 的 ctx。
 export function createTurnContext({ plan, env }) {
   const { state, refs, io, opts } = env;
