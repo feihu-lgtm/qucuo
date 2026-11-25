@@ -83,6 +83,15 @@ describe("涌现复接管线·真实 writeRoom 分支", () => {
     expect((emerged.carriedItems || []).some((i) => i.name === "掌门信物")).toBe(false);
   });
 
+  it("单调用路径 carry 声明并入 fixed（所见即所得初始化随身物）", () => {
+    const p = makeP();
+    p.room.npcs = p.room.npcs.map((n) => ({ ...n, carry: [{ name: "磨坊挎包" }] }));
+    const em = materializeEmergence({ p, luck: 5, innerRoomName: null, npcState: {} });
+    const emerged = em.changes.room(BASE_ROOM).npcs.find((n) => n.name === "磨坊阿福");
+    // carry 是声明不是数值——须原样带到 fixed，由 ensureNpcCombatData 初始化 carriedItems
+    expect(emerged.carry).toEqual([{ name: "磨坊挎包" }]);
+  });
+
   it("非法 emergedNpc（无传闻/命中排除名单）不进 p.room.npcs", () => {
     const noRumor = validateEmergenceSeal({ emergedNpc: { name: "陌生人", description: "货郎" } },
       { screenText: SCREEN, varTree: VT, roomNpcs: [], playerName: "少侠" });
