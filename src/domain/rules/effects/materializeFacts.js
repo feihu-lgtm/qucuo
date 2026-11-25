@@ -665,11 +665,20 @@ export function materializeFacts(state, facts, compiledWarrants) {
   if (expDirty) changes.exp = exp;
   if (potDirty) changes.pot = pot;
 
-  // WO-16E：配额账随统一边界落账——{ day, count } 整写，跨日由读取侧归零语义兜底
-  if (warrantLootCount > 0) {
+  // WO-16E：配额账随统一边界落账——{ day, count } 整写，跨日由读取侧归零语义兜底。
+  // S3：freeActGain 时辰幂等键同账本人另开——得财 fact 带 gainKey 时并入，
+  // 两段合一写（set 整写防 clobber：任一单列更新都会把另一列抹掉）。
+  const gainKeys = [...new Set((facts || []).filter((f) => f?.gainKey && (f.moneyDelta || 0) > 0).map((f) => f.gainKey))];
+  if (warrantLootCount > 0 || gainKeys.length) {
+    // 时辰键内嵌 turn 天然跨日唯一，无需随 day 归零；slice(-20) 防账本淤积
+    const prevGain = state.varTree?.世界?.每日搜刮?.freeActGain || [];
+    const gainList = [...new Set([...prevGain, ...gainKeys])].slice(-20);
+    const value = { day: lootDay, count: lootBase + warrantLootCount };
+    // freeActGain 键只在有幂等键时出现——无得财回合不落空数组，保持账本原形状
+    if (gainList.length) value.freeActGain = gainList;
     patches.push({
       op: "set", path: ["varTree", "世界", "每日搜刮"],
-      value: { day: lootDay, count: lootBase + warrantLootCount }, factId: "",
+      value, factId: "",
     });
   }
 
