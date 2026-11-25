@@ -15,13 +15,6 @@ import { giftPreference, computeGiftWeight } from "../npc/giftWeight.js";
 
 const QUALITY_ORDER = ["白", "绿", "蓝", "紫", "橙", "红"];
 
-function capQuality(quality, maxQuality) {
-  const qi = QUALITY_ORDER.indexOf(quality);
-  const mi = QUALITY_ORDER.indexOf(maxQuality);
-  if (qi < 0) return maxQuality;
-  return QUALITY_ORDER[Math.min(qi, mi < 0 ? QUALITY_ORDER.length - 1 : mi)];
-}
-
 // 性情对收拒的修正：冷傲难动、豪爽易热、精明看价、温善心软、暴烈吃软不吃硬。
 const PERSONA_MOD = [
   [/冷傲|孤傲|清冷/, -0.15],
