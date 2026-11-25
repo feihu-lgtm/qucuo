@@ -132,3 +132,14 @@ export function recordNemesisDuel(roster, npc, outcome, { turn = 0, scar = null,
   }
   return { ...(roster || {}), [faction]: { ...factionBook, entries } };
 }
+
+// WO-23C2d：生死战显式入口的可见性判定（纯函数）——
+// 只有谱中 faction+name 精确命中且 status==="active" 的 NPC 才出现入口；
+// 普通 NPC、recruited/settled/fakeDead/dead 一律没有。
+export function isActiveNemesisNpc(varTree, npc) {
+  if (!npc?.name) return false;
+  const faction = nemesisFactionOf(npc);
+  if (!faction) return false;
+  const entry = findNemesisEntry(varTree?.世界?.宿敌谱 || {}, faction, npc.name);
+  return !!entry && entry.status === "active";
+}

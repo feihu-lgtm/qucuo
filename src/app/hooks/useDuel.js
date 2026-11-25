@@ -93,7 +93,7 @@ export function useDuel({
   const { maybeGrantEpithets } = useNemesisEpithet({ apiCfg });
   // WO-16F-F2c：skipCaptureUndo 可选——判官链叙事后接续的交互是同一玩家回合的
   // 后续，不是新动作，绝不能覆盖本回合开头的撤销检查点；按钮老路默认照旧捕获。
-  const handleNpcDuel = useCallback((npc, { skipCaptureUndo = false } = {}) => applyResult(featureCtx(), async () => {
+  const handleNpcDuel = useCallback((npc, { skipCaptureUndo = false, lethal = false } = {}) => applyResult(featureCtx(), async () => {
     const isStale = createTurnStaleCheck(turnGenerationRef);
     if (!skipCaptureUndo) captureUndo();
     // 没端详过的人不能上来就打——先替他做「细看」这一步，看清楚了
@@ -114,7 +114,9 @@ export function useDuel({
     }
     applyResult(featureCtx(), recognizeNpc(gameStore.getState(), npc));
     setActiveTarget(npc.name);
-    await openDuelAfterNarration({ addLog, setDuelPending, isStale }, npc);
+    // WO-23C2d：生死战 lethal 意图沿 duelPending 对象传递——
+    // 展开复制不污染原 npc 对象，普通切磋 lethal 恒 false 零串场。
+    await openDuelAfterNarration({ addLog, setDuelPending, isStale }, lethal ? { ...npc, lethal: true } : npc);
   }, { feature: "npc.duel" }), [act, addLog, captureUndo, interactMode, setActiveTarget, setDuelPending, turnGenerationRef]);
 
   const confirmDuel = useCallback(() => applyResult(featureCtx(), () => {
@@ -133,6 +135,7 @@ export function useDuel({
     const finishedNpc = duelingNpc;
     const result = settleNpcDuel(gameStore.getState(), finishedNpc, {
       outcome,
+      lethal: !!finishedNpc?.lethal,
       loot,
       battleLog,
       reportFollows: true,
