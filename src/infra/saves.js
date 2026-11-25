@@ -10,6 +10,8 @@
 // 迁移：init 时 IDB 若空，从旧 localStorage 键迁入；旧 localStorage 存档保留不删作安全兜底。
 // 关页兜底：IDB 异步写关页来不及落盘，故 autoSave 顺带尽力同步写一份 LS；init 取 IDB 与 LS 较新者。
 
+import { mirrorSaveWrite, mirrorSaveRemove } from "./storageDriver.js";
+
 const AUTOSAVE_KEY = "wuxia_mud_autosave";       // 旧 localStorage 键（迁移/降级用）
 const SLOTS_INDEX_KEY = "wuxia_mud_save_slots";
 const SLOT_PREFIX = "wuxia_mud_slot_";
@@ -64,8 +66,10 @@ let _initialized = false;
 const _clone = (v) => { try { return structuredClone(v); } catch { return v; } };
 function _lsGet(key) { try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : null; } catch { return null; } }
 function _lsSet(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { return false; } }
-function _idbPutBg(key, value) { if (_idbAvailable) idbPut(key, value).catch(e => console.warn("[saves][IDB] 写入失败 " + key, e?.message || e)); }
-function _idbDelBg(key) { if (_idbAvailable) idbDel(key).catch(() => {}); }
+// WO-19：所有异步落盘写/删同时转发存储驱动镜像（local 档 no-op、cloud 档入队推送）。
+// 内存 _cache 同步读源完全不变——驱动抽象只接管异步落盘这一层。
+function _idbPutBg(key, value) { if (_idbAvailable) idbPut(key, value).catch(e => console.warn("[saves][IDB] 写入失败 " + key, e?.message || e)); mirrorSaveWrite(key, value); }
+function _idbDelBg(key) { if (_idbAvailable) idbDel(key).catch(() => {}); mirrorSaveRemove(key); }
 
 // ── 初始化（启动时 await 一次）───────────────────────────────────────────────
 export async function init() {
@@ -203,14 +207,69 @@ export function exportSave(snapshot, label) {
   }, null, 2);
 }
 
+// WO-19 file 档整包导出：快照 + 原文段落库（prose_chunks 全量）+ 导出版记。
+// 异步是因为段落库在 IndexedDB 里只能异步读；导出文件自包含，换设备可完整还原。
+export async function exportFullSave(snapshot, label) {
+  let prose = [];
+  try {
+    const { getAllProseChunks } = await import("./proseStore.js");
+    prose = await getAllProseChunks().catch(() => []);
+  } catch { prose = []; }
+  return JSON.stringify({
+    kind: "qucuo-save-export",
+    version: 2,
+    exportedAt: Date.now(),
+    label: label || `存档 ${new Date(snapshot?.savedAt || Date.now()).toLocaleString()}`,
+    snapshot,
+    prose: Array.isArray(prose) ? prose : [],
+  }, null, 2);
+}
+
 // 导入：从导出的 JSON 文本读回 snapshot，写进一个新槽位，返回新槽位 id。
 // 兼容两种输入：① 我们导出的 {kind, snapshot} 包裹格式；② 直接是裸 snapshot。
 export function importSave(jsonText) {
   const data = JSON.parse(jsonText);
-  const snap = data && data.kind === "qucuo-save-export" ? data.snapshot : data;
+  let snap = data && data.kind === "qucuo-save-export" ? data.snapshot : data;
   if (!snap || !snap.preset || !snap.char) throw new Error("这个文件不是有效的曲措乡存档。");
   const label = (data && data.label) ? `${data.label}（导入）` : "导入的存档";
-  return saveToSlot(snap, label);
+  // 谱系重映射必须在 saveToSlot 之前——入槽即 structuredClone，事后改不进槽。
+  const stamp0 = `imp${(snap.savedAt || 0).toString(36)}`;
+  // 只带快照不带段落的导入文件（v1/裸包）不重映射谱系（Review）：重映射后分支名
+  // 在库里没有任何段落，同机导出再导入反而看不到本就在浏览器里的原文回忆。
+  // 无段落文件保持原谱系——同机 chunks 在原分支名下仍可见；跨机本来就没段落可丢。
+  const hasProse = Array.isArray(data?.prose) && data.prose.length > 0;
+  if (hasProse && Array.isArray(snap.proseLineage)) {
+    snap = { ...snap, proseLineage: snap.proseLineage.map((e) => (e && e.b ? { ...e, b: `${e.b}_${stamp0}` } : e)) };
+  }
+  const id = saveToSlot(snap, label);
+  // v2 整包：原文段落库一并还原（fire-and-forget 静默降级——段落库是增量层，
+  // 还原失败不阻断存档导入本身；put 按 id 幂等，重复导入不增生）。
+  if (Array.isArray(data?.prose) && data.prose.length) {
+    // 跨设备导入防互覆（Review）：段落 id/branchId 由共享分支+turn+seq 派生，
+    // 两台设备各玩一段后 id 必然撞号——原样 put 会把本机段落覆成别机故事。
+    // 导入一律重挂到独立导入分支、id 加导入戳后缀：不覆盖本机任何现有段落，
+    // 重复导入同一文件仍幂等（后缀确定性）。
+    // 分支一致重映射（Review 四轮根因终审）：导入段落 branchId 与 snapshot.proseLineage
+    // 一起换到导入私域 `<orig>_<stamp>`——
+    //   · 不串本机同分支：本机时间线与导入时间线在谱系层面就是两套，召回绝不混排；
+    //   · 召回仍可见：读入该槽位时其谱系引用的正是重映射后的分支；
+    //   · 绝不覆盖：chunk id 同戳重写，IDB keyPath 不撞本机任何段落；
+    //   · 幂等：同文件再导入产出相同戳/id，put 覆盖自身不增生。
+    const stamp = stamp0;
+    const remapBranch = (b) => (typeof b === "string" && b ? `${b}_${stamp}` : b);
+    void (async () => {
+      try {
+        const { addProseChunks } = await import("./proseStore.js");
+        const out = [];
+        for (const c of data.prose) {
+          if (!c || typeof c.id !== "string") continue;
+          out.push({ ...c, id: `${c.id}_${stamp}`, branchId: remapBranch(c.branchId) });
+        }
+        if (out.length) await addProseChunks(out);
+      } catch { /* 增量层静默降级 */ }
+    })();
+  }
+  return id;
 }
 
 // 尝试从自动存档恢复；找不到时返回 null，调用方 fallback 到 preset 默认值。
