@@ -89,7 +89,7 @@ for _ in 1 2 3 4 5; do
 done
 if [ "$ok" != 1 ]; then
   echo "[qucuo-updater] verification failed; rolling back" >&2
-  echo "$remote" >> "$REJECTED"
+  echo "$remote" >> "$REJECTED" || true
   sudo -n rm -rf "$TARGET.failed.$ts" || true
   sudo -n mv "$TARGET" "$TARGET.failed.$ts" || true
   sudo -n mv "$backup" "$TARGET" || true
@@ -97,7 +97,7 @@ if [ "$ok" != 1 ]; then
 fi
 
 # 只保留最近 5 份成功备份/失败现场，避免每次发版复制整站最终填满磁盘。
-ls -1dt /srv/argonmeow-qucuo.bak.* 2>/dev/null | tail -n +6 | xargs -r -n1 sudo -n rm -rf
-ls -1dt /srv/argonmeow-qucuo.failed.* 2>/dev/null | tail -n +6 | xargs -r -n1 sudo -n rm -rf
+(ls -1dt /srv/argonmeow-qucuo.bak.* 2>/dev/null | tail -n +6 | xargs -r -n1 sudo -n rm -rf) || true
+(ls -1dt /srv/argonmeow-qucuo.failed.* 2>/dev/null | tail -n +6 | xargs -r -n1 sudo -n rm -rf) || true
 
 echo "[qucuo-updater] deployed $remote backup=$backup"
