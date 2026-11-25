@@ -60,6 +60,18 @@ describe("WO-22B-P4a pactLetterView", () => {
     expect(view.severityGuide).toContain("以试探为主");
   });
 
+  it("立约地：契约账有 place 才写，老档无 place 给空串不 fallback 当前房", () => {
+    const state = makeState();
+    state.varTree.世界.契约 = { 烈娘子: { pact_50_1: { bindTurn: 50, promise: "x", deadlineHours: 24, place: "鱼定村" } } };
+    const withPlace = pactLetterView(state, pactLetter(), { name: "烈娘子" });
+    expect(withPlace.place).toBe("鱼定村");
+    // 老档无 place：即使玩家此刻在曲措乡也不许串
+    const legacy = makeState();
+    legacy.varTree.世界.契约 = { 烈娘子: { pact_50_1: { bindTurn: 50, promise: "x", deadlineHours: 24 } } };
+    const noPlace = pactLetterView(legacy, pactLetter(), { name: "烈娘子" });
+    expect(noPlace.place).toBe("");
+  });
+
   it("契约账缺失时期限兜底「期限已过」", () => {
     const state = makeState(); // 契约账为空
     const view = pactLetterView(state, pactLetter(), { name: "烈娘子" });
@@ -151,6 +163,18 @@ describe("WO-22B-P4a pigeon.inbound 块替换", () => {
     const out = await renderInboundSys({ id: "x", npcName: "才旦", pactView: null });
     expect(out).toContain("你心血来潮");
     expect(out).not.toContain("为一桩约定而写");
+  });
+
+  it("老档无 place 时约定句用中性「说定」不带地点", async () => {
+    const view = pactLetterView(
+      { time: 100, room: { name: "曲措乡" }, varTree: { 世界: { 契约: {} }, 角色: {} } },
+      pactLetter(),
+      { name: "烈娘子" },
+    );
+    expect(view.place).toBe("");
+    const out = await renderInboundSys({ ...pactLetter(), pactView: view });
+    expect(out).toContain("约定：说定「三日内送还猎刀」");
+    expect(out).not.toContain("在曲措乡说定");
   });
 
   it("pactMeta 存在但 pactView 缺失时仍走心血来潮（不炸）", async () => {

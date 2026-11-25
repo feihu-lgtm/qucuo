@@ -76,7 +76,7 @@ ${gaveGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一件礼
       const 写信缘起 = pv
         ? `【这封信是为一桩约定而写】
 事由：${pv.reasonLabel}
-约定：在${pv.place}说定「${pv.promise}」，${pv.deadlineText}
+约定：${pv.place ? `在${pv.place}` : ""}说定「${pv.promise}」，${pv.deadlineText}
 允诺的酬谢：${pv.rewardText}
 写信人：${pv.npcName}，${pv.factionName || "散人"}
 口吻取材：${pv.factionToneHint}

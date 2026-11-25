@@ -12,16 +12,13 @@
 import { createHeartLedgerEntry, dedupeHeartLedgerId, capHeartLedgerEntries } from "../../domain/rules/memory/npcLedger.js";
 import { pigeonDelayShichen } from "./logic.js";
 import { findNpcObject } from "./inbound.js";
+import { isFierceNpc as isFierce } from "./pactLetter.js"; // 一处定义两侧共用（裁决顺手去重）
 
 // 起步数额（手册未定，最小起步并在 docs 写明）：每桩违约扣威望 5。
 export const PACT_BREACH_PRESTIGE_COST = 5;
 // 品阶门槛：底稿「品阶 >= 3 或性情刚烈」。品阶即 npc.levelCap（npcGeneration
 // 注释：品阶直接存在 NPC 身上的 levelCap 字段）。
 export const PACT_BREACH_LETTER_TIER = 3;
-
-function isFierce(npc) {
-  return /刚烈|烈性|火暴|暴躁|性烈/.test(`${npc?.personality || ""}${npc?.brief || ""}`);
-}
 
 // 扫一遍契约账，产出 { changes, logs } 或 null。纯函数：不掷骰、不读时钟、不调 AI。
 export function scanPactBreaches(state, { importedRegistry = null } = {}) {

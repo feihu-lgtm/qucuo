@@ -6,7 +6,7 @@ import { getNpcFaction } from "../../domain/data/factions/npcFactions.js";
 
 export const PACT_REASONS = Object.freeze(["立诺留凭", "如约致谢", "逾期催问"]);
 
-function isFierce(npc) {
+export function isFierceNpc(npc) {
   return /刚烈|烈性|火暴|暴躁|性烈/.test(`${npc?.personality || ""}${npc?.brief || ""}`);
 }
 
@@ -17,7 +17,7 @@ export function severityGuideOf(npc) {
   let guide = tier >= 4 ? "可以宣告断交或追究"
     : tier >= 3 ? "冷峻，给出最后期限"
     : "以试探为主，话留三分";
-  if (isFierce(npc)) guide += "；此人刚烈，话说得直，后果写明";
+  if (isFierceNpc(npc)) guide += "；此人刚烈，话说得直，后果写明";
   return guide;
 }
 
@@ -52,7 +52,9 @@ export function pactLetterView(state, letter, npc) {
   const now = Number.isFinite(state?.time) ? state.time : null;
   return {
     reasonLabel: reason,
-    place: pactRecord?.place || state?.room?.name || "曲措乡",
+    // 裁决：只有契约账真记了立约地才写地点——老档无 place 时给空串，
+    // prompt 层用中性「说定」，绝不 fallback 玩家当前房间（人会走动，房会错）。
+    place: pactRecord?.place || "",
     promise: String(meta.promise || "").trim() || "（原话未录）",
     deadlineText: deadlineTextOf(reason, meta, pactRecord, now),
     rewardText: String(meta.rewardHint || "").trim() || "当时未明说",
