@@ -65,6 +65,9 @@ function stageCandidates(quest, stage, { room, inv, innerRoomName, questTriggerM
       flag,
       title: quest.title,
       stageBrief: String(stage.description || "").slice(0, 40),
+      // deliver 元数据供判官去重：交付回合若 intake 同时报 give，
+      // 赠礼转移必须与任务交付通道互斥，否则双扣件+虚假好感
+      ...(stage.deliver ? { deliver: { to: stage.deliver.to, item: stage.deliver.item } } : {}),
     }));
 }
 

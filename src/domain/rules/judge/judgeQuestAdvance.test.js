@@ -62,6 +62,44 @@ describe("judgeTurn quest_advance 白名单", () => {
   });
 });
 
+describe("任务交付去重：quest_advance 命中 deliver 候选时压制同目标同物 give", () => {
+  const DELIVER_CANDIDATES = [
+    { questId: "q_df", flag: "q_df_done", title: "送糌粑", stageBrief: "交付", deliver: { to: "老孙", item: "糌粑" } },
+  ];
+  const deliverEnvelope = {
+    turn: 5, day: 1, place: "鱼定村",
+    npcs: [{ name: "老孙", personality: "温善" }], varTree: {}, inv: [{ id: "it1", name: "糌粑", category: "food" }],
+    questCandidates: DELIVER_CANDIDATES, budget: {},
+  };
+  it("交付意图同发时：无 TRANSFER_ITEM/好感事实，只有 ADVANCE_QUEST", () => {
+    const v = judgeTurn(deliverEnvelope, {
+      read: "", refIds: [],
+      actions: [{ kind: "give", target: "老孙", itemId: "it1", direction: "none", stance: "sincere" }],
+      proposals: [{ claim: "把糌粑交给老孙", kind: "quest_advance", fit: "natural", questId: "q_df", flag: "q_df_done" }],
+    }, { rng: () => 0.1 });
+    expect(v.facts.some((f) => f.op === "TRANSFER_ITEM")).toBe(false);
+    expect(v.facts.some((f) => f.op === "MUTATE_SOCIAL" && f.reason?.includes("赠"))).toBe(false);
+    expect(v.facts.some((f) => f.op === "ADVANCE_QUEST")).toBe(true);
+    expect(v.notes.join()).toContain("交付通道");
+  });
+  it("quest_advance 未过白名单时 give 不压制（正常赠礼裁决）", () => {
+    const v = judgeTurn(deliverEnvelope, {
+      read: "", refIds: [],
+      actions: [{ kind: "give", target: "老孙", itemId: "it1", direction: "none", stance: "sincere" }],
+      proposals: [{ claim: "x", kind: "quest_advance", fit: "natural", questId: "q_df", flag: "q_BOGUS" }],
+    }, { rng: () => 0.1 });
+    expect(v.facts.some((f) => f.op === "TRANSFER_ITEM")).toBe(true);
+  });
+  it("非交付物的 give 不压制", () => {
+    const v = judgeTurn({ ...deliverEnvelope, inv: [{ id: "it1", name: "糌粑" }, { id: "it2", name: "美酒" }] }, {
+      read: "", refIds: [],
+      actions: [{ kind: "give", target: "老孙", itemId: "it2", direction: "none", stance: "sincere" }],
+      proposals: [{ claim: "x", kind: "quest_advance", fit: "natural", questId: "q_df", flag: "q_df_done" }],
+    }, { rng: () => 0.1 });
+    expect(v.facts.some((f) => f.op === "TRANSFER_ITEM" && f.itemName === "美酒")).toBe(true);
+  });
+});
+
 describe("ADVANCE_QUEST → materializeFacts → questFlagRule 接管链", () => {
   const QUEST = {
     id: "q_test", title: "考验", giver: "老孙",

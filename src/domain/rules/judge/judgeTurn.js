@@ -110,6 +110,21 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
 
   // ── 第二步：赠礼/赔罪/求教收拒裁决 ──
   const actions = Array.isArray(intakeResult.actions) ? intakeResult.actions : [];
+  // 任务交付去重预扫：quest_advance 提议命中带 deliver 的合法候选时，同目标同物的
+  // give 动作必须压制——交付件归属由 questFlagRule 任务通道扣件结算，赠礼通道再转
+  // 一次就是双扣件+虚假好感（村2 糌粑→老孙：交差不是送礼）。
+  const questCandidatesPre = Array.isArray(envelope.questCandidates) ? envelope.questCandidates : [];
+  const proposalsPre = Array.isArray(intakeResult.proposals) ? intakeResult.proposals : [];
+  const deliverClaims = proposalsPre
+    .filter((p) => p?.kind === "quest_advance")
+    .map((p) => questCandidatesPre.find((c) => c.questId === p.questId && c.flag === p.flag))
+    .filter((c) => c?.deliver)
+    .map((c) => c.deliver);
+  const isDeliverGive = (action, item) => deliverClaims.some((d) => {
+    if (action.target !== d.to) return false;
+    const iname = item?.name || action.itemId || "";
+    return !!iname && (iname === d.item || iname.includes(d.item) || d.item.includes(iname));
+  });
   let anyAccepted = false;
   // WO-16A 搭话开闸：talkOnly 回合（纯搭话）判官只产小额社交事实——
   // 严禁因搭话误搬物品：give/inspect_container 等硬事实整条拦截，只留 notes 痕迹。
@@ -147,6 +162,10 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
 
     if (action.kind === "give") {
       const item = inv.find((it) => it?.id === action.itemId || it?.name === action.itemId);
+      if (isDeliverGive(action, item)) {
+        notes.push(`${action.target}的${item?.name || "物件"}走任务交付通道结算，赠礼动作去重压制`);
+        continue;
+      }
       const prefer = giftPreference(npc);
       const preferHit = prefer && item?.category === prefer ? 0.15 : 0;
       const weight = item ? computeGiftWeight(npc, item) : null;
