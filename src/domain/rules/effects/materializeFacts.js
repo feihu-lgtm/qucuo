@@ -110,7 +110,7 @@ export function materializeFacts(state, facts, compiledWarrants) {
           // GRANT 是新生一件，必须另 mint，否则后续 transfer/reforge 寻址错配
           const collision = supplied ? locateItem({ ...state, inv, room }, supplied, null) : null;
           const id = (supplied && !collision) ? supplied : mintItemId(fact.itemName, turn, seq);
-          item = { id, name: fact.itemName, category: fact.category || "misc", quality: fact.quality || "白", desc: "来历成谜的物件（编译缺失兜底）" };
+          item = { id, name: fact.itemName, category: fact.category || "misc", quality: fact.quality || "白", desc: fact.desc || "来历成谜的物件（编译缺失兜底）" };
         }
         if (inv.some((e) => e && e.id && e.id === item.id)) break; // 幂等：同 id 不重复入袋
         inv.push({ ...item });

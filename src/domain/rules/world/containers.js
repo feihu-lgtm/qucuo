@@ -50,3 +50,21 @@ export function intakeContainerLines(varTree, place, roomDef) {
     .filter(([, v]) => !v.collapsed)
     .map(([name]) => name);
 }
+
+// 判官容器上下文一站解析（runTurn 真实判官与 shadowJudge 影子共用同一入口——
+// 同源口径只能靠"只此一处计算"钉死，各算各的迟早漂移）。
+// 入参：districtName（room.name 据点名）、innerRoomName、varTree、roomDefLookup。
+// 输出 { containerPlace, containerView, openContainers }。
+export function resolveContainerContext({ districtName, innerRoomName, varTree, roomDefLookup }) {
+  const innerDef = innerRoomName != null && typeof roomDefLookup === "function"
+    ? roomDefLookup(districtName, innerRoomName)
+    : null;
+  const containerPlace = innerRoomName != null
+    ? `${districtName || ""}/${innerRoomName}`
+    : (districtName || "");
+  return {
+    containerPlace,
+    containerView: containerViewForRoom(varTree, containerPlace, innerDef),
+    openContainers: intakeContainerLines(varTree, containerPlace, innerDef),
+  };
+}

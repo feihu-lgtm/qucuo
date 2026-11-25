@@ -13,7 +13,7 @@ import { classifyError } from "../utils/apiErrors.js";
 import { withAI } from "./ports/withAI.js";
 import { judgeTurn } from "../domain/rules/judge/judgeTurn.js";
 import { getInnerRoom } from "../domain/rules/map/innerMap.js";
-import { containerViewForRoom, intakeContainerLines } from "../domain/rules/world/containers.js";
+import { resolveContainerContext } from "../domain/rules/world/containers.js";
 import { renderJudgeVerdict, renderCausalBudget } from "../domain/rules/judge/judgeTurn.js";
 import { buildIntakeUserContent, normalizeIntakeResult } from "./turn/intakeTurn.js";
 import { verifySealAndMaterialize } from "../domain/rules/effects/sealVerifier.js";
@@ -210,10 +210,9 @@ async function runTurnSteps(ctx, cmd, opts) {
       // room.name 是据点名、innerRoomName 是内层房间（外层据点无容器清单）。
       const vtNow = deps.varTree || ctx.memory?.varTreeLatest || {};
       const innerRoomNow = liveNow.innerRoomName ?? deps.innerRoomName ?? null;
-      const innerDef = innerRoomNow != null ? getInnerRoom(deps.room?.name, innerRoomNow) : null;
-      const containerPlace = innerRoomNow != null ? `${deps.room?.name || ""}/${innerRoomNow}` : (deps.room?.name || "");
-      const containerView = containerViewForRoom(vtNow, containerPlace, innerDef);
-      const openContainers = intakeContainerLines(vtNow, containerPlace, innerDef);
+      const { containerPlace, containerView, openContainers } = resolveContainerContext({
+        districtName: deps.room?.name, innerRoomName: innerRoomNow, varTree: vtNow, roomDefLookup: getInnerRoom,
+      });
       const intakeContent = buildIntakeUserContent({
         playerInput: cmd,
         recentTurns: convo.slice(-4).map((m) => (m.role === "user" ? { user: m.content } : { engine: m.content }))

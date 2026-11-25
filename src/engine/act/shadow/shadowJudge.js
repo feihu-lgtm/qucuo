@@ -6,6 +6,8 @@
 import { withAI } from "../../ports/withAI.js";
 import { buildIntakeUserContent, normalizeIntakeResult } from "../../turn/intakeTurn.js";
 import { judgeTurn } from "../../../domain/rules/judge/judgeTurn.js";
+import { getInnerRoom } from "../../../domain/rules/map/innerMap.js";
+import { resolveContainerContext } from "../../../domain/rules/world/containers.js";
 import { questAdvanceCandidates } from "../../../domain/rules/quests/questAdvanceCandidates.js";
 import { createRng } from "../../../utils/rng.js";
 import { diffSnapshots } from "./shadowDiff.js";
@@ -82,12 +84,20 @@ export async function runShadowJudge({
     // recentTurns 与 runTurn 同口径：convo 尾四条 user/engine 配对折叠。
     const recentTurns = convo.slice(-4).map((m) => (m.role === "user" ? { user: m.content } : { engine: m.content }))
       .reduce((acc, cur) => { if (cur.user) acc.push({ user: cur.user, engine: "" }); else if (acc.length) acc[acc.length - 1].engine = cur.engine; return acc; }, []);
+    // WO-22A 同源：容器视图/坍缩键与 runTurn 完全同口径——影子若按
+    // "无容器"判，容器行动覆盖率会假报缺口。
+    const vtPre = preState?.varTree || {};
+    const innerNow = preState?.innerRoomName ?? null;
+    const { containerPlace, containerView, openContainers } = resolveContainerContext({
+      districtName: preState?.room?.name, innerRoomName: innerNow, varTree: vtPre, roomDefLookup: getInnerRoom,
+    });
     const intakeContent = buildIntakeUserContent({
       playerInput: cmd,
       recentTurns,
       npcs,
       entries: [],
       questCandidates,
+      containers: openContainers,
     });
     const intakeRes = await withAI("turn.intake", { userContent: intakeContent, cfg: apiCfg }, { ai, apiCfg, throwOnError: false });
     if (isStale?.() || epochGuard?.()) return null;
@@ -97,6 +107,8 @@ export async function runShadowJudge({
       place: preState?.room?.name || "",
       npcs, varTree: preState?.varTree || {},
       inv: preState?.inv || [], entries: [], talkOnly: isTalk,
+      containers: containerView,
+      containerPlace,
       questCandidates,
       pickupJudgment: null,
       budget: { riskLevel: 0, luck: preState?.char?.special?.气运 ?? 0 },

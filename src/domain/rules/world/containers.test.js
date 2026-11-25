@@ -112,3 +112,55 @@ describe("WO-22A 前哨清单渲染", () => {
     expect(content).not.toContain("可翻找容器");
   });
 });
+
+describe("WO-22A 修包：预设物详情与影子同源", () => {
+  it("预设物 desc/quality/category 随 GRANT_ITEM 事实下传", () => {
+    const env = {
+      turn: 3, day: 1, place: "天都镇", containerPlace: "天都镇/一楼客厅",
+      npcs: [], varTree: {}, inv: [], entries: [],
+      containers: { 铁柜: { collapsed: false, presetItems: [{ name: "冰镇酸梅汤", desc: "凉气沁人。", quality: "蓝", category: "misc" }] } },
+      budget: { riskLevel: 0, luck: 0 },
+    };
+    const v = judgeTurn(env, { actions: [{ kind: "inspect_container", target: "铁柜" }], proposals: [] }, { rng: () => 0.99 });
+    const grant = v.facts.find((f) => f.op === "GRANT_ITEM");
+    expect(grant.desc).toBe("凉气沁人。");
+    expect(grant.quality).toBe("蓝");
+    expect(grant.category).toBe("misc");
+  });
+
+  it("materialize 编译缺失兜底优先用 fact.desc——酸梅汤不丢描述", () => {
+    const state = { inv: [], room: { npcs: [] }, char: {}, skills: [], flags: [], time: 3, varTree: {} };
+    const out = materializeFacts(state, [{
+      id: "F9", op: "GRANT_ITEM", itemId: "", itemName: "冰镇酸梅汤",
+      desc: "铁柜里镇着的一壶酸梅汤，凉气沁人。", quality: "白", category: "misc",
+      from: "铁柜", to: "player", witnesses: ["主角"],
+    }]);
+    const invFn = out.changes?.inv;
+    expect(invFn).toBeTruthy();
+    const nextInv = typeof invFn === "function" ? invFn(state.inv) : invFn;
+    const got = nextInv.find((i) => i && i.name === "冰镇酸梅汤");
+    expect(got?.desc).toBe("铁柜里镇着的一壶酸梅汤，凉气沁人。");
+  });
+});
+
+describe("WO-22A 修包：同回合重复翻去重 + 坍缩顺序", () => {
+  const env = {
+    turn: 3, day: 1, place: "天都镇", containerPlace: "p",
+    npcs: [], varTree: {}, inv: [], entries: [],
+    containers: { 铁柜: { collapsed: false, presetItems: [{ name: "冰镇酸梅汤", desc: "凉" }] } },
+    budget: { riskLevel: 0, luck: 0 },
+  };
+  it("同回合两次翻同一容器：只出一份预设物", () => {
+    const v = judgeTurn(env, { actions: [
+      { kind: "inspect_container", target: "铁柜" },
+      { kind: "inspect_container", target: "铁柜" },
+    ], proposals: [] }, { rng: () => 0.99 });
+    expect(v.facts.filter((f) => f.op === "GRANT_ITEM")).toHaveLength(1);
+    expect(v.facts.filter((f) => f.op === "COLLAPSE_CONTAINER")).toHaveLength(1);
+  });
+  it("坍缩事实排在发现之后（首条事实是 GRANT 不是 COLLAPSE）", () => {
+    const v = judgeTurn(env, { actions: [{ kind: "inspect_container", target: "铁柜" }], proposals: [] }, { rng: () => 0.99 });
+    expect(v.facts[0].op).toBe("GRANT_ITEM");
+    expect(v.facts[v.facts.length - 1].op).toBe("COLLAPSE_CONTAINER");
+  });
+});
