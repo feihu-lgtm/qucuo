@@ -1,5 +1,6 @@
 import React from "react";
 import { random } from "../../../utils/rng.js";
+import { useGameStore } from "../../../store/gameStore.js";
 import { Overlay, Header, Btn } from "./common.jsx";
 
 // 茶馆：花少量银两听掌柜说话，注入随机传闻
@@ -19,6 +20,12 @@ const RUMORS = [
 export default function TeahouseScreen({ building, char, flags, time, zoneTheme, onClose, inline, onListenRumor }) {
   const money = char.money || 0;
   const COST = 5;
+  // WO-23C3：世界传闻账（宿敌争位等 deterministic 传闻）混入静态池——
+  // 新鲜传闻权重翻倍（前挂两份），纯读不写，旧档无传闻账不炸。
+  const worldRumors = useGameStore((s) => s.varTree?.世界?.传闻);
+  const dynamicTexts = (Array.isArray(worldRumors) ? worldRumors : [])
+    .map((r) => String(r?.text || "").trim()).filter(Boolean).slice(-8);
+  const pool = [...dynamicTexts, ...dynamicTexts, ...RUMORS];
 
   return (
     <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
@@ -35,8 +42,8 @@ export default function TeahouseScreen({ building, char, flags, time, zoneTheme,
           disabled={money < COST}
           zoneTheme={zoneTheme}
           onClick={() => {
-            const idx = Math.floor(random() * RUMORS.length);
-            onListenRumor(RUMORS[idx], COST);
+            const idx = Math.floor(random() * pool.length);
+            onListenRumor(pool[idx], COST);
           }}
         />
         <div style={{ color: "var(--building-desc)", fontSize: "var(--fs-2xs)", marginTop: 12 }}>
