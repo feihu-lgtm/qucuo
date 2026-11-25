@@ -42,6 +42,15 @@ export function containerViewForRoom(varTree, place, roomDef) {
   return view;
 }
 
+// 备料候选容器名单（#524 Review：prompt/ingest/runner 三处同源的单一口径）：
+// 未坍缩 且 无预设物——有预设物的容器首翻必中预设+即坍缩（judgeTurn 第一关），
+// 备料物永不兑现，列给模型只会产出被 ingest 丢弃的废草案。
+export function prepEligibleContainerNames(containerView) {
+  return Object.entries(containerView || {})
+    .filter(([, c]) => c && c.collapsed !== true && !(Array.isArray(c.presetItems) && c.presetItems.length))
+    .map(([name]) => name);
+}
+
 // 前哨「可翻找容器」名单：只列未坍缩的——已坍缩的翻了也白翻，
 // 列出来只会诱导模型反复写翻箱。无声明/全坍缩返回空数组。
 // WO-22B-P2 裁决例外：有未定悬空秘宝（hasFloating）时，已坍缩容器仍列为

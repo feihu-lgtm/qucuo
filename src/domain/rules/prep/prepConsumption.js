@@ -8,7 +8,7 @@
 // 硬约束：不直接发背包、不写容器内容、不改世界事实、不新增 AI 调用。
 
 import { validPrepSeeds } from "./prepSeeds.js";
-import { resolveContainerContext } from "../world/containers.js";
+import { prepEligibleContainerNames, resolveContainerContext } from "../world/containers.js";
 import { getInnerRoom } from "../map/innerMap.js";
 
 // judgeTurn envelope.prepItems 形状（与 judgeTurn.js 第二关消费口径一致）：
@@ -50,11 +50,7 @@ export function prepMaterialLines(state, seeds) {
       varTree: state?.varTree,
       roomDefLookup: getInnerRoom,
     });
-    clueEligible = new Set(
-      Object.entries(containerView || {})
-        .filter(([, c]) => c && c.collapsed !== true && !(Array.isArray(c.presetItems) && c.presetItems.length))
-        .map(([name]) => name),
-    );
+    clueEligible = new Set(prepEligibleContainerNames(containerView));
   } catch {
     clueEligible = null; // 解析失败保守不抑制——宁可多渲染一行非事实素材
   }
