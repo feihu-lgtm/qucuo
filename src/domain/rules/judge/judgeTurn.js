@@ -233,6 +233,7 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
   // ── 第三步：inspect_container 三关掷骰 ──
   // WO-16A：纯搭话回合不翻容器——搭话时翻箱倒柜本就不该发生，整段跳过。
   const proposals = Array.isArray(intakeResult.proposals) ? intakeResult.proposals : [];
+  const collapsingThisTurn = new Set(); // WO-22A 本回合内翻过的容器——幂等去重
   for (const action of actions) {
     if (action.kind !== "inspect_container" || talkOnly) continue;
     const container = envelope.containers?.[action.target];
@@ -240,6 +241,21 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
       notes.push(`${action.target}已坍缩，翻不出新东西`);
       continue;
     }
+    // WO-22A：目标是本房未声明的容器——不进入三关（第一关要有容器才能走），
+    // 也不留坍缩记录（没容器可坍），只降级一句。
+    if (!container) {
+      notes.push(`${action.target || "那里"}没什么可翻的`);
+      continue;
+    }
+    // WO-22A 容器坍缩：未定容器首次被翻，无论三关结局如何（预设/备料/券/残页），
+    // 翻完即坍缩记为事实——之后绝不翻脸认账。坍缩事实延到本段末尾统一签发：
+    // ① 同回合两次翻同一容器，第二次按已坍缩处理（防双份预设物）；
+    // ② 回合记忆摘要取首条事实时看到的是「发现」而非「坍缩」。
+    if (collapsingThisTurn.has(action.target)) {
+      notes.push(`${action.target}已坍缩，翻不出新东西`);
+      continue;
+    }
+    collapsingThisTurn.add(action.target);
     // 第一关：预设物（容器剧本里写死的东西，必中）
     const preset = Array.isArray(container?.presetItems) ? container.presetItems.filter((it) => it && !it.taken) : [];
     if (preset.length) {
@@ -247,6 +263,11 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
       const factId = nextFactId();
       facts.push({
         id: factId, op: "GRANT_ITEM", itemId: item.id || "", itemName: item.name || "不明物件",
+        // WO-22A：预设物详情（desc/quality/category/id）随事实下传——materialize
+        // 兜底不再写成「来历成谜的物件」。
+        ...(item.desc ? { desc: item.desc } : {}),
+        ...(item.quality ? { quality: item.quality } : {}),
+        ...(item.category ? { category: item.category } : {}),
         from: action.target, to: "player", witnesses: ["主角"],
       });
       notes.push(`${action.target}里翻出预设物「${item.name}」`);
@@ -313,6 +334,13 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
       });
       notes.push(`${action.target}无所获，降级为残页线索`);
     }
+  }
+  // 坍缩事实统一段尾签发（理由见上）：每个本回合翻过的容器一条。
+  for (const name of collapsingThisTurn) {
+    facts.push({
+      id: nextFactId(), op: "COLLAPSE_CONTAINER", place: envelope.containerPlace || place,
+      containerName: name, witnesses: ["主角"],
+    });
   }
 
   // ── B1 任务推进扩展律：quest_advance 白名单核验 ──

@@ -13,6 +13,8 @@ import { classifyError } from "../utils/apiErrors.js";
 import { withAI } from "./ports/withAI.js";
 import { judgeTurn } from "../domain/rules/judge/judgeTurn.js";
 import { buildCausalBudgetInput } from "../domain/rules/judge/budgetInput.js";
+import { getInnerRoom } from "../domain/rules/map/innerMap.js";
+import { resolveContainerContext } from "../domain/rules/world/containers.js";
 import { renderJudgeVerdict, renderCausalBudget } from "../domain/rules/judge/judgeTurn.js";
 import { buildIntakeUserContent, normalizeIntakeResult } from "./turn/intakeTurn.js";
 import { verifySealAndMaterialize } from "../domain/rules/effects/sealVerifier.js";
@@ -205,6 +207,13 @@ async function runTurnSteps(ctx, cmd, opts) {
         innerRoomName: liveNow.innerRoomName ?? deps.innerRoomName ?? null,
         questTriggerMode: deps.apiCfg?.questTriggerMode || "prompt",
       });
+      // WO-22A 容器视图：房间内容表声明 ∪ varTree 坍缩状态。
+      // room.name 是据点名、innerRoomName 是内层房间（外层据点无容器清单）。
+      const vtNow = deps.varTree || ctx.memory?.varTreeLatest || {};
+      const innerRoomNow = liveNow.innerRoomName ?? deps.innerRoomName ?? null;
+      const { containerPlace, containerView, openContainers } = resolveContainerContext({
+        districtName: deps.room?.name, innerRoomName: innerRoomNow, varTree: vtNow, roomDefLookup: getInnerRoom,
+      });
       const intakeContent = buildIntakeUserContent({
         playerInput: cmd,
         recentTurns: convo.slice(-4).map((m) => (m.role === "user" ? { user: m.content } : { engine: m.content }))
@@ -212,6 +221,7 @@ async function runTurnSteps(ctx, cmd, opts) {
         npcs: visibleNpcs,
         entries: [],
         questCandidates,
+        containers: openContainers,
       });
       const intakeRes = await withAI("turn.intake", { userContent: intakeContent, cfg: deps.apiCfg }, { ai, apiCfg: deps.apiCfg, throwOnError: false });
       if (ctx.isStale?.()) return { stale: true };
@@ -219,8 +229,10 @@ async function runTurnSteps(ctx, cmd, opts) {
       const timeNow = getGameStateTime(ctx, deps);
       judgeVerdict = judgeTurn({
         turn: timeNow, day: Math.floor(timeNow / 24) + 1, place: deps.room?.name || "",
-        npcs: visibleNpcs, varTree: deps.varTree || ctx.memory?.varTreeLatest || {},
+        npcs: visibleNpcs, varTree: vtNow,
         inv: deps.inv || [], entries: [], talkOnly: isTalk,
+        containers: containerView,
+        containerPlace,
         questCandidates,
         pickupJudgment: deps.pickupJudgment || null,
         // WO-16E：授信输入由 buildCausalBudgetInput 装配（runTurn/shadow 同一入口），

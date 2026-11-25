@@ -9,7 +9,7 @@ import { validateJsonSchema } from "../../utils/schemaValidate.js";
 // 组装喂给小模型的现场材料（纯函数）：
 //   最近两轮对话 + 在场角色与随身物 ID + 可引用场记板条目头。
 // 条目头只给【id】+ publicText 前 40 字，小模型只需选 ID 不需读全文。
-export function buildIntakeUserContent({ playerInput, recentTurns = [], npcs = [], entries = [], questCandidates = [] } = {}) {
+export function buildIntakeUserContent({ playerInput, recentTurns = [], npcs = [], entries = [], questCandidates = [], containers = [] } = {}) {
   const lines = [];
   lines.push(`玩家这句话：「${playerInput || ""}」`);
   if (recentTurns.length) {
@@ -25,6 +25,9 @@ export function buildIntakeUserContent({ playerInput, recentTurns = [], npcs = [
         .map((it) => `${it.name}(${it.id || "无ID"})`).join("、");
       lines.push(`· ${npc.name}${carried ? `〔身携:${carried}〕` : ""}`);
     }
+  }
+  if (containers.length) {
+    lines.push("可翻找容器：" + containers.join("、"));
   }
   if (entries.length) {
     lines.push("可引用场记板条目（只需选 ID）：");
