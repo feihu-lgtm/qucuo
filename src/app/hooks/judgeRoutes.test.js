@@ -7,6 +7,16 @@ import { initialNarratorState } from "../../domain/rules/narrator/narrator.js";
 import { emptyBodyProfile } from "../../domain/rules/character/bodyProfile.js";
 import { gameActions, gameStore } from "../../store/gameStore.js";
 import { bindTurnRuntime } from "../../features/turnRuntime.js";
+
+const spySettle = vi.hoisted(() => vi.fn());
+const spyAct = vi.hoisted(() => vi.fn());
+vi.mock("../runtime/gameRuntime.js", async (importOriginal) => {
+  const orig = await importOriginal();
+  return {
+    ...orig,
+    featureCtx: () => ({ ...orig.featureCtx(), settleInBackground: spySettle, act: spyAct }),
+  };
+});
 import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../../infra/turnMonitor.js";
 bindTurnRuntime({ getTurnContext, PHASE, turnMonitor, withTurnContext });
 
@@ -239,6 +249,127 @@ describe("WO-16F-F2a 判官路由集成", () => {
     expect((gameStore.getState().inv || []).some((it) => it?.id === "it_gnd_boot")).toBe(true);
     gameActions.setInv([]);
     gameActions.setRoom({ name: "鱼定村", npcs: [], exits: [], items: [] });
+  });
+
+  it("invite 路由：可邀目标成功/普通 NPC 失败/条件与 talkOnly 不执行/单调用零变化", async () => {
+    const mkDeps = ({ action, isTalk = false, judgeOn = true, npcs = [] }) => {
+      const intakeJson = JSON.stringify({ read: "x", refIds: [], actions: action ? [action] : [], proposals: [] });
+      const calls = [];
+      const ai = {
+        async chat(messages, chatOpts) {
+          const all = String(chatOpts?.systemPrompt || "") + JSON.stringify(messages || []);
+          calls.push(all);
+          if (all.includes("听意员")) return { text: intakeJson };
+          return { text: '叙事。\n---SEAL---\n{"fills":{},"respondedNpcs":[],"spontaneousPact":null}' };
+        },
+      };
+      const varTree = { 角色: {} };
+      return { deps: {
+        convo: [], addLog: vi.fn(), setConvo: vi.fn(),
+        apiCfg: { extractionEnabled: judgeOn, judgePipelineEnabled: judgeOn, streamEnabled: false, maxTokens: 4000 },
+        intent: { code: "UNKNOWN", label: "无法判定" },
+        room: { name: "鱼定村", npcs, items: [], exits: [] },
+        inv: [], char: { hp: [80, 100], special: { 气运: 5 } }, skills: [],
+        varTree, memory: { varTreeLatest: varTree, recall: { lastAiText: "" } },
+        gm: false, flags: [],
+        narrator: initialNarratorState(), narratorStage: initialNarratorState().stage,
+        scenario: "测试剧本", preset: { scenario: "测试剧本" },
+        charBodyProfile: emptyBodyProfile(), charName: "少侠",
+        dao: { karma: 0, jie: 0 }, questProgress: {}, companionState: {},
+        time: 1, getTimeStr: () => "卯时",
+        hasInnerMap: () => false, describeEquipment: () => "", describeTodayForAI: () => "",
+        visibleNpcsCount: npcs.length, npcLoreBlockWithQuest: "",
+        isTalk, talkTarget: isTalk ? "才旦" : null,
+        executeJudgeRoutes,
+        ai,
+      }, calls };
+    };
+    const mk = (patch) => ({
+      kind: "invite", target: "阿岚", item: "无", itemId: "", direction: "none",
+      condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "邀阿岚同行",
+      ...patch,
+    });
+    const prevComp = gameStore.getState().companionState;
+    const prevRoom = gameStore.getState().room;
+    try {
+      const seedImported = () => {
+        const npc = { name: "阿岚", imported: true, companionCandidate: true };
+        gameActions.setRoom({ name: "鱼定村", npcs: [npc], exits: [], items: [] });
+        gameActions.setCompanionState({});
+      };
+      const unlockedKeys = () => Object.keys(gameStore.getState().companionState || {}).filter((k) => gameStore.getState().companionState[k]?.unlocked);
+
+      // ① 成功：可邀 imported 目标 → 同伴解锁 + 叙事输入含回执
+      seedImported();
+      const d1 = mkDeps({ action: mk({}), npcs: [{ name: "阿岚", imported: true, companionCandidate: true }] });
+      await runTurn(d1.deps, "邀阿岚同行");
+      expect(unlockedKeys().length).toBeGreaterThan(0);
+      const narrative1 = d1.calls.find((c) => !c.includes("听意员")) || "";
+      expect(narrative1).toContain("系统已结算·路由回执");
+
+      // ② 失败：普通 NPC 空结果 → 无解锁 + 失败回执入叙事
+      gameActions.setRoom({ name: "鱼定村", npcs: [{ name: "才旦" }], exits: [], items: [] });
+      gameActions.setCompanionState({});
+      const d2 = mkDeps({ action: mk({ target: "才旦" }), npcs: [{ name: "才旦" }] });
+      await runTurn(d2.deps, "邀才旦同行");
+      expect(unlockedKeys().length).toBe(0);
+      const narrative2 = d2.calls.find((c) => !c.includes("听意员")) || "";
+      expect(narrative2).toContain("未能如愿");
+      expect(narrative2).toContain("不得写成成功");
+
+      // ③ 条件 invite 不执行
+      seedImported();
+      const d3 = mkDeps({ action: mk({ condition: "其他", condition_text: "要是她愿意" }), npcs: [{ name: "阿岚" }] });
+      await runTurn(d3.deps, "要是她愿意我就邀阿岚同行");
+      expect(unlockedKeys().length).toBe(0);
+
+      // ④ talkOnly 误产 invite 不执行
+      seedImported();
+      const d4 = mkDeps({ action: mk({}), isTalk: true, npcs: [{ name: "阿岚" }] });
+      await runTurn(d4.deps, "邀阿岚同行");
+      expect(unlockedKeys().length).toBe(0);
+
+      // ⑤ 单调用（判官链关）零变化
+      seedImported();
+      const d5 = mkDeps({ action: mk({}), judgeOn: false, npcs: [{ name: "阿岚" }] });
+      await runTurn(d5.deps, "邀阿岚同行");
+      expect(unlockedKeys().length).toBe(0);
+    } finally {
+      gameActions.setCompanionState(prevComp || {});
+      if (prevRoom) gameActions.setRoom(prevRoom);
+    }
+  });
+
+  it("invite 路由剥 settle 防递归：成功/生气 appease 岔路均不触发二次 settle（返修 blocker）", async () => {
+    const prevComp = gameStore.getState().companionState;
+    const prevRoom = gameStore.getState().room;
+    const prevTree = gameStore.getState().varTree;
+    try {
+      spySettle.mockClear(); spyAct.mockClear();
+      // ① 成功 imported companion：落 companionState 但替身零调用
+      gameActions.setRoom({ name: "鱼定村", npcs: [{ name: "阿岚", imported: true, companionCandidate: true }], exits: [], items: [] });
+      gameActions.setCompanionState({});
+      const ok = executeJudgeRoutes([{ kind: "invite", target: "阿岚", item: "无", text: "邀阿岚同行" }]);
+      expect(ok.receipts[0].ok).toBe(true);
+      expect(ok.receipts[0].text).toContain("已应允同行");
+      expect(Object.keys(gameStore.getState().companionState || {}).some((k) => gameStore.getState().companionState[k]?.unlocked)).toBe(true);
+      expect(spySettle).not.toHaveBeenCalled();
+      expect(spyAct).not.toHaveBeenCalled();
+
+      // ② 生气 NPC：appease 岔路不判成功、递归计数仍为 0
+      gameActions.setVarTree({ 角色: { 才旦: { 生气状态: { active: true } } } });
+      gameActions.setRoom({ name: "鱼定村", npcs: [{ name: "才旦", imported: true, companionCandidate: true }], exits: [], items: [] });
+      gameActions.setCompanionState({});
+      const angry = executeJudgeRoutes([{ kind: "invite", target: "才旦", item: "无", text: "邀才旦同行" }]);
+      expect(angry.receipts[0].ok).toBe(false);
+      expect(Object.keys(gameStore.getState().companionState || {}).some((k) => gameStore.getState().companionState[k]?.unlocked)).toBe(false);
+      expect(spySettle).not.toHaveBeenCalled();
+      expect(spyAct).not.toHaveBeenCalled();
+    } finally {
+      gameActions.setCompanionState(prevComp || {});
+      if (prevRoom) gameActions.setRoom(prevRoom);
+      if (prevTree) gameActions.setVarTree(prevTree);
+    }
   });
 
 });

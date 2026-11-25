@@ -320,7 +320,7 @@ async function runTurnSteps(ctx, cmd, opts) {
       //    立刻捡，前提裁决属 WO-16F 真条件规则，此处 trace/note 留痕不抢跑（G1 interim 口径）；
       // ② isTalk（判官 talkOnly 口径）下三类硬路由一律不执行——纯搭话回合判官白名单
       //    本就禁止硬事实，intake 误产/混产也不能落地。
-      const ROUTEABLE = ["equip", "use_item", "take"];
+      const ROUTEABLE = ["equip", "use_item", "take", "invite"];
       const routeCandidates = (intakeResult.actions || []).filter((a) => ROUTEABLE.includes(a?.kind));
       const conditioned = routeCandidates.filter((a) => a?.condition && a.condition !== "无");
       if (conditioned.length) {

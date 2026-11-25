@@ -13,6 +13,7 @@ const ROUTE_KIND = {
   equip: ACTION_KINDS.EQUIP,
   use_item: ACTION_KINDS.USE_ITEM,
   take: ACTION_KINDS.PICKUP,
+  invite: ACTION_KINDS.INVITE,
 };
 
 // 单条路由结算：复用 stepEffect 对应分支，不造第二套账。
@@ -21,30 +22,47 @@ const ROUTE_KIND = {
 // 返回 receipt 供主叙事注入：成功照系统日志原句，失败绝不静默签成功。
 function runOne(action) {
   const kind = ROUTE_KIND[action?.kind];
-  const itemLabel = action?.item && action.item !== "无" ? action.item : "";
+  // invite 按人寻址（target），其余按物寻址（item）
+  const isInvite = action?.kind === "invite";
+  const itemLabel = isInvite
+    ? (action?.target && action.target !== "无" ? action.target : "")
+    : (action?.item && action.item !== "无" ? action.item : "");
   if (!kind || !itemLabel) {
-    return { kind: action?.kind, ok: false, text: `「${itemLabel || "未名之物"}」未能如愿：行动缺少明确的物件，系统未结算。` };
+    return { kind: action?.kind, ok: false, text: `「${itemLabel || (isInvite ? "未名之人" : "未名之物")}」未能如愿：行动缺少明确的${isInvite ? "对象" : "物件"}，系统未结算。` };
   }
   const state = gameStore.getState();
   // itemId 随步骤传递——stepEffect 按 id 优先寻址，同名两件不错副本
-  const step = { kind, item: itemLabel, itemId: action.itemId || "", target: action.target, text: action.text || "" };
+  const step = { kind, item: isInvite ? "" : itemLabel, itemId: action.itemId || "", target: isInvite ? itemLabel : action.target, text: action.text || "" };
   const result = stepEffect(state, step);
-  const ok = !!(result && result.changes && Object.keys(result.changes).length > 0);
-  if (result && (result.changes || result.logs?.length)) {
-    applyResult(featureCtx(), result, { feature: `judgeRoute.${action.kind}` });
+  // 防递归 settle（返修 blocker）：inviteCompanion 成功结果自带 settle/settleOptions
+  // （companion_invite 结算回合），生气 NPC 的 appeaseAngryNpc 岔路同样带 settle——
+  // 按钮老路需要它们进交互，但判官路由只落地 deterministic changes/logs，
+  // 绝不能在叙事前再派生新 settle 回合/额外叙事。clone 剥离，不改 features 本体。
+  const inviteSettled = isInvite && result?.settleOptions?.settleKind === "companion_invite";
+  const settled = result ? { ...result } : result;
+  if (settled) { delete settled.settle; delete settled.settleOptions; }
+  const hasChanges = !!(settled && settled.changes && Object.keys(settled.changes).length > 0);
+  // invite 成功口径收窄：只有 companion_invite 结算形状且 changes 非空才算邀成；
+  // 生气 appease 岔路即使有 changes（记录尝试）也按未邀成处理。
+  const ok = isInvite ? (inviteSettled && hasChanges) : hasChanges;
+  if (settled && (settled.changes || settled.logs?.length)) {
+    applyResult(featureCtx(), settled, { feature: `judgeRoute.${action.kind}` });
   }
   if (ok) {
     if (action.kind === "equip") {
       const off = UNEQUIP_RE.test(action.text || "");
       return { kind: action.kind, ok, text: `你已${off ? "卸下" : "装备"}「${itemLabel}」——系统已结算，叙事须照此写。` };
     }
-    const logLine = (result.logs || []).map((l) => l.text?.trim()).filter(Boolean)[0];
+    if (isInvite) {
+      return { kind: action.kind, ok, text: `${itemLabel}已应允同行——系统已结算，叙事须照此写。` };
+    }
+    const logLine = (settled.logs || []).map((l) => l.text?.trim()).filter(Boolean)[0];
     return { kind: action.kind, ok, text: `${logLine || `「${itemLabel}」已结算`}——系统已结算，叙事须照此写。` };
   }
-  const errLine = (result?.logs || []).map((l) => l.text?.trim()).filter(Boolean)[0];
+  const errLine = (settled?.logs || []).map((l) => l.text?.trim()).filter(Boolean)[0];
   return {
     kind: action.kind, ok: false,
-    text: `「${itemLabel}」未能如愿（${errLine || "找不到对应物件"}）——系统未结算，叙事不得写成成功。`,
+    text: `「${itemLabel}」未能如愿（${errLine || (isInvite ? "对方未应允" : "找不到对应物件")}）——系统未结算，叙事不得写成成功。`,
   };
 }
 
@@ -56,7 +74,7 @@ export function executeJudgeRoutes(routes) {
     try {
       receipts.push(runOne(action));
     } catch (error) {
-      receipts.push({ kind: action?.kind, ok: false, text: `「${action?.item || "未名之物"}」结算异常（${error?.message || error}）——系统未结算，叙事不得写成成功。` });
+      receipts.push({ kind: action?.kind, ok: false, text: `「${action?.item || action?.target || (action?.kind === "invite" ? "未名之人" : "未名之物")}」结算异常（${error?.message || error}）——系统未结算，叙事不得写成成功。` });
     }
   }
   return { receipts };
