@@ -77,9 +77,13 @@ describe("WO-24B buildWorldPrepInput 输入裁剪", () => {
     expect(out.innerRoom).toBe("一楼客厅");
     expect(out.day).toBe(2);
     expect(out.presentNpcsText).toContain("李掌柜");
-    // 容器按内容表声明+collapsed：铁柜已坍缩不进、书桌未翻进（初审裁决口径）
-    expect(out.unlootedContainersText).toContain("书桌");
+    // 容器按内容表声明+collapsed+scripted：铁柜已坍缩不进；书桌虽有未翻
+    // 但有预设物（scripted 首翻必中+即坍缩，备料永不兑现）——#524 起不作候选
+    expect(out.unlootedContainersText).not.toContain("书桌");
     expect(out.unlootedContainersText).not.toContain("铁柜");
+    // 非 scripted 未翻容器仍是候选（贡措海密室/沉水石函）
+    const out2 = buildWorldPrepInput(state({ room: { name: "贡措海", npcs: [] }, innerRoomName: "贡措海密室" }));
+    expect(out2.unlootedContainersText).toContain("沉水石函");
     expect(out.nemesisSummaryText).toContain("麻三");
     expect(out.recentFactsText).toContain("雪山派");
     expect(out.recentFactsText.startsWith("山茶开了")).toBe(true); // 最新在前

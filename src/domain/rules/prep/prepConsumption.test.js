@@ -77,22 +77,33 @@ describe("prepMaterialLines/buildPrepMaterialBlock", () => {
     expect(block).toContain("可用可不用");
   });
   it("WO-24G：prep_item clue 微痕行进素材块；无 clue/失效 seed 不渲染；npc/rumor 不回归", () => {
-    const state = mkState();
-    const itemSeed = mkSeed(state, "prep_item", ITEM_PAYLOAD);
+    // #523 Review 修后口径：clue 只对「未坍缩且无预设物」的容器渲染——
+    // 用真实声明容器 贡措海/沉水石函（无 presetItems）作正例。
+    const state = mkState({ room: { name: "贡措海", npcs: [] }, innerRoomName: "贡措海密室" });
+    const payload = { ...ITEM_PAYLOAD, containerId: "沉水石函" };
+    const itemSeed = mkSeed(state, "prep_item", payload);
+    // mkSeed 用 state.room.name 定位——itemSeed 位置随 state
+    expect(prepMaterialLines(state, [itemSeed])).toHaveLength(1);
     const lines = prepMaterialLines(state, [itemSeed]);
     expect(lines).toHaveLength(1);
     expect(lines[0]).toContain("【备料·微痕】");
-    expect(lines[0]).toContain("木箱");
+    expect(lines[0]).toContain("沉水石函");
     expect(lines[0]).toContain("箱角露出一线油纸");
     // 注入块非事实警示钉死——clue 也不是既定事实
     const block = buildPrepMaterialBlock(state, [itemSeed]);
     expect(block).toContain("不是既定事实");
     expect(block).toContain("【备料·微痕】");
     // 无 clue 不渲染
-    const noClue = mkSeed(state, "prep_item", { ...ITEM_PAYLOAD, clue: "" });
+    const noClue = mkSeed(state, "prep_item", { ...payload, clue: "" });
     expect(prepMaterialLines(state, [noClue])).toHaveLength(0);
     // 失效 seed（跨日）不渲染
     expect(prepMaterialLines(mkState({ time: 96 }), [itemSeed])).toHaveLength(0);
+    // #523 Review 负例：scripted 容器（天都镇/一楼客厅/铁柜有预设物）clue 抑制
+    const scripted = mkState({ room: { name: "天都镇", npcs: [] }, innerRoomName: "一楼客厅" });
+    const scriptedSeed = mkSeed(scripted, "prep_item", { ...payload, containerId: "铁柜" });
+    expect(prepMaterialLines(scripted, [scriptedSeed])).toHaveLength(0);
+    // 未声明容器 clue 抑制（翻了也什么都没有）
+    expect(prepMaterialLines(scripted, [mkSeed(scripted, "prep_item", { ...payload, containerId: "空气缸" })])).toHaveLength(0);
     // npc/rumor 原有行不回归：混合种子各行俱在，cap 3 受控
     const mixed = [
       mkSeed(state, "npc_plan", PLAN_PAYLOAD, { subject: "掌柜" }),

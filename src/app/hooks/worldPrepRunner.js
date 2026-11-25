@@ -5,7 +5,7 @@ import { decidePrep } from "../../engine/turn/prepScheduler.js";
 import { prepStateVersion, upsertPrepSeeds } from "../../domain/rules/prep/prepSeeds.js";
 import { buildPrepSeedsFromOutput } from "../../domain/rules/prep/prepIngest.js";
 import { buildWorldPrepInput } from "../../domain/rules/prompt/calls/prepCalls.js";
-import { resolveContainerContext } from "../../domain/rules/world/containers.js";
+import { prepEligibleContainerNames, resolveContainerContext } from "../../domain/rules/world/containers.js";
 import { getInnerRoom } from "../../domain/rules/map/innerMap.js";
 
 export const READING_IDLE_MS = 8000;
@@ -17,9 +17,9 @@ export function unlootedContainerNames(state) {
     varTree: state?.varTree,
     roomDefLookup: getInnerRoom,
   });
-  return Object.entries(containerView || {})
-    .filter(([, c]) => c && c.collapsed !== true)
-    .map(([name]) => name);
+  // #523/#524 Review 裁决：scripted（有预设物）容器首翻必中预设+即坍缩，
+  // 备料永不兑现——候选口径与 prompt/ingest 同源（prepEligibleContainerNames）。
+  return prepEligibleContainerNames(containerView);
 }
 
 // createWorldPrepRunner({

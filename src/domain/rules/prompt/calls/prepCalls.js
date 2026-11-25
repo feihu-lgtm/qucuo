@@ -5,7 +5,7 @@
 import { definePrompt } from "../registry.js";
 import { flattenNemeses } from "../../nemesis/nemesisLines.js";
 import { ITEM_CATEGORY } from "../../economy/equipment.js";
-import { resolveContainerContext } from "../../world/containers.js";
+import { prepEligibleContainerNames, resolveContainerContext } from "../../world/containers.js";
 import { getInnerRoom } from "../../map/innerMap.js";
 
 const QUALITY_ENUM = ["白", "绿", "蓝", "紫"]; // 最高紫——不给神兵绝学
@@ -37,10 +37,9 @@ export function buildWorldPrepInput(state, { maxQualityHint = "紫" } = {}) {
     varTree,
     roomDefLookup: getInnerRoom,
   });
-  const unlooted = Object.entries(containerView || {})
-    .filter(([, c]) => c && c.collapsed !== true)
-    .slice(0, 4)
-    .map(([name]) => name);
+  // #524 Review：与 ingest/runner 同源——scripted 容器不给模型当候选，
+  // 免得模型照名单起草又被 ingest 丢弃（提示与兑现口径必须一致）。
+  const unlooted = prepEligibleContainerNames(containerView).slice(0, 4);
 
   const nemesisLines = flattenNemeses(varTree)
     .filter((e) => e.status === "active")

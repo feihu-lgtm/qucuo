@@ -8,6 +8,8 @@
 // 硬约束：不直接发背包、不写容器内容、不改世界事实、不新增 AI 调用。
 
 import { validPrepSeeds } from "./prepSeeds.js";
+import { prepEligibleContainerNames, resolveContainerContext } from "../world/containers.js";
+import { getInnerRoom } from "../map/innerMap.js";
 
 // judgeTurn envelope.prepItems 形状（与 judgeTurn.js 第二关消费口径一致）：
 // {id, containerId, name, category, quality, clue, taken:false}——id 用 seed id
@@ -37,6 +39,21 @@ export function adaptPrepItemsForJudge(state, seeds) {
 // cap 3 行防刷屏；payload 关键字段缺失的跳过。
 export function prepMaterialLines(state, seeds) {
   const lines = [];
+  // #523 Review：scripted（有预设物）容器首翻必中预设+即坍缩，备料 clue 永远
+  // 无法兑现——微痕行按判官同源口径抑制；旧缓存里已存的这类 clue 同样不渲染。
+  // 未声明/不在视图的容器也不渲染（翻了也什么都没有，clue 即误导）。
+  let clueEligible = null;
+  try {
+    const { containerView } = resolveContainerContext({
+      districtName: state?.room?.name,
+      innerRoomName: state?.innerRoomName ?? null,
+      varTree: state?.varTree,
+      roomDefLookup: getInnerRoom,
+    });
+    clueEligible = new Set(prepEligibleContainerNames(containerView));
+  } catch {
+    clueEligible = null; // 解析失败保守不抑制——宁可多渲染一行非事实素材
+  }
   for (const seed of validPrepSeeds(seeds, state)) {
     const p = seed.payload || {};
     if (seed.kind === "npc_plan" && (p.plan || p.nextAction)) {
@@ -46,7 +63,8 @@ export function prepMaterialLines(state, seeds) {
       lines.push(`【备料·人物盘算】${who}${plan ? `心里盘着${plan}` : ""}${next ? `${plan ? "，" : ""}接下来打算${next}` : ""}`);
     } else if (seed.kind === "tavern_rumor" && p.text) {
       lines.push(`【备料·巷口风声】${String(p.text).trim()}`);
-    } else if (seed.kind === "prep_item" && String(p.clue || "").trim()) {
+    } else if (seed.kind === "prep_item" && String(p.clue || "").trim()
+      && (clueEligible === null || clueEligible.has(String(p.containerId || "").trim()))) {
       // WO-24G：clue 翻找前可见性最小闭环——微痕行进主叙事素材块，
       // 玩家有机会在翻找前察觉。仍是非事实素材（块头警示钉死），
       // clue 绝不写成物品已存在、不落账。
