@@ -41,6 +41,7 @@ export const gameStore = createStore(() => ({
   deposit: undefined,
   depositedAt: undefined,
   pledgedItems: undefined,
+  prepSeeds: undefined,
 }));
 
 const createSetter = (key) => (next) => gameStore.setState((state) => ({
@@ -127,6 +128,7 @@ export const gameActions = {
   setDeposit: createSetter("deposit"),
   setDepositedAt: createSetter("depositedAt"),
   setPledgedItems: createSetter("pledgedItems"),
+  setPrepSeeds: createSetter("prepSeeds"),
 };
 
 const replacedListeners = new Set();

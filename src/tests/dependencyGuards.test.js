@@ -57,6 +57,9 @@ const ENTRY_WHITELIST = new Set([
   // 等十宫内层地图接线后从此名单摘掉。
   "domain/rules/dungeon/genMap.js",
   "domain/rules/dungeon/envTags.js",
+  // WO-24A 备料调度决策：纯函数模块先于 AI 生成链落库（工单明确不接 UI 不调 AI），
+  // 后续备料生成工单接线后从此名单摘掉。
+  "engine/turn/prepScheduler.js",
   // 地宫内层地图房间面板：独立 UI 件先落库，等路由接线后从此名单摘掉。
   "ui/components/DungeonMapPanel.jsx",
   // WO-17 原文段落库：增量层先落库不接主链路（调度批准），WO-18 写挂检索接线后摘掉。

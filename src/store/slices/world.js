@@ -10,4 +10,6 @@ export const WORLD_KEYS = [
   // 房间缓存：{[地名]:{items,npcs}}，访问过的房间物件/人物快照，移动回读与存档持久化
   // （对接 saves.js 已有 roomMap 字段——读档时旧键 roomMap 由 useAutosave 迁移落入本键）
   "roomCache",
+  // 后台备料缓存（WO-24A）：是缓存不是事实——世界状态一变即作废，随存档持久化但绝不进 varTree 事实账
+  "prepSeeds",
 ];
