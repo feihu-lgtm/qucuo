@@ -4,8 +4,10 @@ import TraceViewer from "./TraceViewer.jsx";
 vi.mock("../../store/gameStore.js", () => ({
   gameStore: { getState: () => ({ time: 30 }) },
   useGameStore: (selector) => selector({ time: 30 }),
+  getGameEpoch: () => 0,
 }));
 
+let mockTrees = [];
 vi.mock("react", async (importOriginal) => {
   const actual = await importOriginal();
   const mocked = {
@@ -14,7 +16,7 @@ vi.mock("react", async (importOriginal) => {
     useRef: (initial) => ({ current: initial }),
     useCallback: (fn) => fn,
     useEffect: () => {},
-    useSyncExternalStore: () => ({ trees: [] }),
+    useSyncExternalStore: () => ({ trees: mockTrees }),
   };
   return { ...mocked, default: mocked };
 });
@@ -52,5 +54,36 @@ describe("TraceViewer report entry", () => {
     expect(text).toContain("第2日");
     expect(text).toContain("第30回合");
     expect(text).toContain("现实");
+  });
+});
+
+describe("WO-16D PR-D2 影子对账展示", () => {
+  it("shadow 节点渲染逐类目 verdict 折叠段，excluded 明示盲区", () => {
+    mockTrees = [{
+      id: "t1", cmd: "test", ts: 0, nodes: [{
+        id: "n1", turnId: "t1", layer: "shadow", label: "影子对账", atMs: 1, kind: "shadow",
+        status: "block", detail: "inv:single_only",
+        verdicts: {
+          inv: { verdict: "single_only", single: { add: ["羊肉"], rm: [] }, judge: { add: [], rm: [] } },
+          npcs: { verdict: "excluded" },
+        },
+      }],
+    }];
+    const tree = TraceViewer({ theme: {}, onClose: vi.fn(), onReport: vi.fn() });
+    // mocked-react 下自定义组件不会自动展开——找到 ShadowDetails 元素手动调用验证渲染输出
+    const shadowEl = flatten(tree).find((n) => typeof n.type === "function" && n.props?.node?.verdicts);
+    expect(shadowEl).toBeTruthy();
+    const inner = extractText(shadowEl.type(shadowEl.props)).join(" ");
+    expect(inner).toContain("影子对账");
+    expect(inner).toContain("判官漏判");
+    expect(inner).toContain("盲区");
+    mockTrees = [];
+  });
+
+  it("无 shadow 数据时不渲染聚合块（零噪音）", () => {
+    mockTrees = [];
+    const tree = TraceViewer({ theme: {}, onClose: vi.fn(), onReport: vi.fn() });
+    const text = extractText(tree).join(" ");
+    expect(text).not.toContain("影子对账聚合");
   });
 });

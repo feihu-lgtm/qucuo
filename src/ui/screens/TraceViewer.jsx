@@ -4,10 +4,12 @@ import { fmtClock, fmtGameClock, fmtMs, formatTrace, pipelineTabs } from "../../
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 import { getTimeStr } from "../../utils/mudHelpers.js";
 import { chromeBtn } from "../../utils/theme.js";
-import { gameStore, useGameStore } from "../../store/gameStore.js";
+import { gameStore, useGameStore, getGameEpoch } from "../../store/gameStore.js";
+import { shadowAggregates } from "../../engine/act/shadow/shadowJudge.js";
+import { formatShadowVerdicts, formatAggregate } from "../../engine/act/shadow/shadowFormat.js";
 import LiveClockText from "../components/LiveClockText.jsx";
 
-const LAYER = { ui: "入口", app: "应用", feature: "功能", domain: "规则判定", engine: "引擎", rules: "世界规则", result: "结果" };
+const LAYER = { ui: "入口", app: "应用", feature: "功能", domain: "规则判定", engine: "引擎", rules: "世界规则", result: "结果", shadow: "影子" };
 
 function AiDetails({ node, theme }) {
   const tabs = pipelineTabs(node.pipeline);
@@ -24,6 +26,21 @@ function AiDetails({ node, theme }) {
       <pre role="tabpanel" style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", maxHeight: "35dvh", overflow: "auto" }}>
         {tabs[tab] || "（无内容）"}
       </pre>
+    </details>
+  );
+}
+
+// WO-16D PR-D2 影子对账折叠段：逐类目 verdict，excluded 亮明盲区。
+function ShadowDetails({ node, theme }) {
+  const lines = formatShadowVerdicts(node.verdicts || {});
+  return (
+    <details>
+      <summary style={{ cursor: "pointer" }}>
+        {node.label}{node.status === "block" ? " · 有缺口" : ""}
+      </summary>
+      <ul style={{ marginBlock: 4, paddingInlineStart: 20, color: theme.textDim }}>
+        {lines.map((line) => <li key={line}>{line}</li>)}
+      </ul>
     </details>
   );
 }
@@ -58,6 +75,17 @@ export default function TraceViewer({ theme, onClose, onReport }) {
           <button type="button" style={button} onClick={onReport}>报告问题</button>
           <button type="button" style={button} onClick={onClose}>关闭</button>
         </header>
+        {(() => {
+          const aggLines = formatAggregate(shadowAggregates(String(getGameEpoch())));
+          return aggLines ? (
+            <details style={{ border: `1px dashed ${theme.border}`, padding: "4px 8px", marginBottom: 8 }}>
+              <summary style={{ cursor: "pointer", color: theme.textDim }}>影子对账聚合（本存档 epoch {String(getGameEpoch())}）</summary>
+              <div style={{ color: theme.textDim, fontSize: "var(--fs-xs)", marginTop: 4 }}>
+                {aggLines.map((line) => <div key={line}>{line}</div>)}
+              </div>
+            </details>
+          ) : null;
+        })()}
         {trees.length === 0 && <p style={{ color: theme.textDim }}>还没有行动记录。</p>}
         {trees.map((turn) => {
           const gameClock = fmtGameClock(turn);
@@ -72,7 +100,9 @@ export default function TraceViewer({ theme, onClose, onReport }) {
                   <small style={{ color: theme.textDim }}>{LAYER[node.layer]} · +{fmtMs(node.atMs)}</small>
                   {node.pipeline
                     ? <AiDetails node={node} theme={theme} />
-                    : <div>{node.label}{node.detail && `：${node.detail}`}</div>}
+                    : node.kind === "shadow"
+                      ? <ShadowDetails node={node} theme={theme} />
+                      : <div>{node.label}{node.detail && `：${node.detail}`}</div>}
                 </li>
               ))}
             </ol>
