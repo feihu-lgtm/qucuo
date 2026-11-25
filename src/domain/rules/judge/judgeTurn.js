@@ -52,6 +52,10 @@ function affectionMod(aff) {
   return 0;
 }
 
+// 搭话 stance → 好感增量（WO-16A）：覆盖 schema 全部 enum，未知/无法判断按 0。
+// perfunctory=0 不产事实（空事实不进账本）；forceful 负数走负向社交。
+const TALK_STANCE_DELTA = { sincere: 2, clever: 1, casual: 1, perfunctory: 0, forceful: -1 };
+
 // fit 档位的过关门槛：越离谱越难成；气运（luck 0-10）每点降 3% 门槛。
 const FIT_GATE = { natural: 0.25, stretch: 0.55, absurd: 0.85 };
 
@@ -107,12 +111,39 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
   // ── 第二步：赠礼/赔罪/求教收拒裁决 ──
   const actions = Array.isArray(intakeResult.actions) ? intakeResult.actions : [];
   let anyAccepted = false;
+  // WO-16A 搭话开闸：talkOnly 回合（纯搭话）判官只产小额社交事实——
+  // 严禁因搭话误搬物品：give/inspect_container 等硬事实整条拦截，只留 notes 痕迹。
+  const talkOnly = !!envelope.talkOnly;
   for (const action of actions) {
     const npc = findNpc(npcs, action.target);
     if (!npc) continue;
     const aff = affectionOf(varTree, npc.name);
     const stance = action.stance || "casual";
     const stanceMod = stance === "sincere" ? 0.1 : stance === "perfunctory" ? -0.1 : stance === "forceful" ? -0.15 : 0;
+
+    // 搭话：stance 映射确定性小额好感，不掷骰——闲聊不该有随机性社交风险。
+    if (action.kind === "talk") {
+      // 第一道防线：无好感轨道对象（兽类/intimacy.forbidden）判官直接不产社交事实——
+      // findNpc 处本来就有对象，不必等 materialize 再拦。cannotSpeak 不算无轨道。
+      // 注：谓词就地内联而非 import affection.js——affection→applyWrite→fields
+      // 会循环依赖回本模块。口径与 hasNoAffectionTrack 一致：forbidden 或兽类。
+      if (npc?.intimacy?.forbidden || npc?.beast) continue;
+      const delta = TALK_STANCE_DELTA[action.stance] ?? 0;
+      if (!delta) continue; // perfunctory/未知：零事实
+      facts.push({
+        id: nextFactId(), op: "MUTATE_SOCIAL", npc: npc.name,
+        affectionDelta: delta, ledgerKind: delta > 0 ? "谊" : "隙",
+        reason: delta > 0 ? "搭话投机" : "言语冲撞", witnesses: ["主角", npc.name],
+      });
+      continue;
+    }
+
+    // 真白名单：talkOnly 回合只有 talk 进社交结算，其余 action（含 appease——
+    // 不能随机 +3 漏进纯搭话）一律只留 notes，零物品/状态/好感搬动。
+    if (talkOnly) {
+      notes.push(`纯搭话回合不结算${action.kind}（${npc.name}），无物品/状态搬动`);
+      continue;
+    }
 
     if (action.kind === "give") {
       const item = inv.find((it) => it?.id === action.itemId || it?.name === action.itemId);
@@ -180,9 +211,10 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
   }
 
   // ── 第三步：inspect_container 三关掷骰 ──
+  // WO-16A：纯搭话回合不翻容器——搭话时翻箱倒柜本就不该发生，整段跳过。
   const proposals = Array.isArray(intakeResult.proposals) ? intakeResult.proposals : [];
   for (const action of actions) {
-    if (action.kind !== "inspect_container") continue;
+    if (action.kind !== "inspect_container" || talkOnly) continue;
     const container = envelope.containers?.[action.target];
     if (container?.collapsed) {
       notes.push(`${action.target}已坍缩，翻不出新东西`);

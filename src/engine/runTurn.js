@@ -179,8 +179,10 @@ async function runTurnSteps(ctx, cmd, opts) {
   // ② settle 回合（赠礼/赔罪/求教等）状态在进叙事前已由 feature 层硬结算落账
   // （giftNpc/learnNpcSkill/inviteCompanion 先扣先写），判官再裁会双重结算——
   // settle 回合不激活；待后续工单把前置硬写改成「事实请求先裁后落」才可开放。
-  // ③ 纯搭话回合不发生任何动作（搭话免费、不动状态），判官收礼会越权搬背包。
-  if (deps.apiCfg?.judgePipelineEnabled && deps.apiCfg?.extractionEnabled && !isSettle && !isTalk) {
+  // ③ WO-16A 搭话开闸：纯搭话回合也进判官，但 envelope.talkOnly 让判官只产
+  // 小额社交事实（白名单），give/take/inspect 等硬事实在判官内整条拦截——
+  // 不会因为纯搭话误搬物品，同时闲聊好感/熟人登记有了替代通道。
+  if (deps.apiCfg?.judgePipelineEnabled && deps.apiCfg?.extractionEnabled && !isSettle) {
     try {
       const visibleNpcs = preparedPrompt.visibleNpcsForAI || preparedPrompt.visibleNpcs || deps.room?.npcs || [];
       const intakeContent = buildIntakeUserContent({
@@ -191,14 +193,22 @@ async function runTurnSteps(ctx, cmd, opts) {
         entries: [],
       });
       const intakeRes = await withAI("turn.intake", { userContent: intakeContent, cfg: deps.apiCfg }, { ai, apiCfg: deps.apiCfg, throwOnError: false });
+      if (ctx.isStale?.()) return { stale: true };
       const intakeResult = normalizeIntakeResult(intakeRes?.data);
       const timeNow = getGameStateTime(ctx, deps);
       judgeVerdict = judgeTurn({
         turn: timeNow, day: Math.floor(timeNow / 24) + 1, place: deps.room?.name || "",
         npcs: visibleNpcs, varTree: deps.varTree || ctx.memory?.varTreeLatest || {},
-        inv: deps.inv || [], entries: [],
+        inv: deps.inv || [], entries: [], talkOnly: isTalk,
         budget: { riskLevel: 0, luck: deps.char?.special?.气运 ?? 0 },
       }, intakeResult, { rng: random });
+      // WO-16A respondedNpcs 系统推导：intake 听意单里 kind=talk 的 target 即
+      // 本轮玩家对话对象——不再依赖叙事模型在 SEAL/JSON 里自证。SEAL 字段仅在
+      // 推导为空时兜底（低可信过渡，见 docs），不得用于 pact 自证。
+      const derivedTalk = (intakeResult.actions || [])
+        .filter((a) => a?.kind === "talk" && typeof a.target === "string" && a.target)
+        .map((a) => a.target);
+      deps.derivedRespondedNpcs = [...new Set(derivedTalk)];
       deps.judgePipelineActive = true;
       deps.judgeVerdict = judgeVerdict;
       deps.causalBudget = judgeVerdict.budget;
@@ -378,6 +388,7 @@ async function runTurnSteps(ctx, cmd, opts) {
       flags: live.flags || deps.flags || [],
       varTree: live.varTree, companionState: live.companionState,
       claimedMilestones: live.claimedMilestones,
+      effectiveSpecialNow: deps.effectiveSpecialNow,
     };
     const verified = verifySealAndMaterialize({
       sealText: sealParts?.sealText || "",
@@ -399,6 +410,12 @@ async function runTurnSteps(ctx, cmd, opts) {
       trace("尾章校对", "warn", warning);
       addLog([{ t: "sys", text: `  ⚠ ${warning}` }]);
     }
+    // SEAL respondedNpcs 兜底接线：系统推导（intake talk target）优先——推导非空时
+    // SEAL 不覆盖；推导为空（intake 失败/未列 actions）时模型自证作为低可信兜底进 p，
+    // 在场过滤仍由 talkKnow 统一执行，不得用于 pact 自证（见 docs）。
+    if (!(deps.derivedRespondedNpcs || []).length && Array.isArray(verified.sealData?.respondedNpcs) && verified.sealData.respondedNpcs.length) {
+      p = { ...p, respondedNpcs: verified.sealData.respondedNpcs };
+    }
     judgeEffects = { verdict: judgeVerdict, sealReport: verified, materialized: verified.materialized };
     trace("尾章校对", "pass", `锚点齐 ${judgeVerdict.facts.length - verified.missingAnchors.length}/${judgeVerdict.facts.length}，编译券 ${Object.keys(verified.materialized?.receipts || {}).length}，facts 落盘 ${verified.facts.length} 条`);
   }
@@ -409,6 +426,24 @@ async function runTurnSteps(ctx, cmd, opts) {
   if (isSettle && !(p && p.memory)) {
     const memoryText = cmd.split(/[。！？]/).filter(Boolean)[0] || cmd;
     p = { ...p, memory: memoryText };
+  }
+
+  // WO-16A memory 过渡（无 AI 摘要）：双调用判官回合 p.memory 恒空——
+  // 改用系统模板串入账，保证删旧提取后事实账本/日总结不断档。
+  // ① 判官 facts 非空：取首条事实的模板串（op+npc/itemName+reason 拼句）；
+  // ② 纯搭话无 facts：「玩家对X说：原文≤30字截断」；其余自由行动不留账
+  // （无事实本就不该入账）。原文段落记忆库归 WO-17，这里只是过渡。
+  if (!isSettle && !(p && p.memory) && judgeVerdict && deps.judgePipelineActive) {
+    const first = (judgeVerdict.facts || [])[0];
+    let memoryText = "";
+    if (first) {
+      const parts = [first.op, first.npc || first.itemName || "", first.reason || first.detail || ""].filter(Boolean);
+      memoryText = parts.join("·").slice(0, 50);
+    } else if (isTalk) {
+      const target = (deps.derivedRespondedNpcs || [])[0] || ctx.talkTarget || "";
+      memoryText = `${target ? `玩家对${target}说` : "玩家说"}：${String(cmd).slice(0, 30)}`.slice(0, 50);
+    }
+    if (memoryText) p = { ...p, memory: memoryText };
   }
 
   return {
@@ -424,6 +459,7 @@ async function runTurnSteps(ctx, cmd, opts) {
     recallBlock: recall.recallBlock,
     newConvo,
     judgeEffects,
+    derivedRespondedNpcs: deps.derivedRespondedNpcs || null,
   };
 }
 

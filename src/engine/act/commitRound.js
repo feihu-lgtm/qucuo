@@ -14,7 +14,7 @@ import { materializeEmergence } from "./postCommit/emergence.js";
 import { emitRoomHeader, writeRoom } from "./postCommit/roomWrite.js";
 import { emitChoices } from "./postCommit/choices.js";
 import { writeMemoryNote } from "./postCommit/memoryNote.js";
-import { registerMemoryFact } from "./postCommit/memoryFact.js";
+import { registerMemoryFact, normalizeMemoryText } from "./postCommit/memoryFact.js";
 import { markTalkAcquaintance } from "./postCommit/talkKnow.js";
 import { burnIntimateTicket } from "./postCommit/intimateTicket.js";
 import { appendConvo } from "./postCommit/convoAppend.js";
@@ -29,6 +29,12 @@ import { commitPatches } from "../../domain/rules/state/applyPatches.js";
 // 其余每类后置处理按原顺序委托给 postCommit/ 下的一文件一职责模块，
 // 入参/时机/副作用与拆分前逐行等价。
 export function commitRound(d) {
+  // memory 归一须在 postCommit 链之前：writeMemoryNote/appendDayMaterial/
+  // registerMemoryFact 都消费 d.p.memory，数组/对象形态必须在这里统一成字符串，
+  // 不能只藏在 registerMemoryFact 内部（否则先跑的消费口仍拿到数组）。
+  if (d.p?.memory && typeof d.p.memory !== "string") {
+    d.p = { ...d.p, memory: normalizeMemoryText(d.p.memory) };
+  }
   if (d.knowledgeTree) {
     if (d.knowledgeTreeBase) {
       d.setVarTree((latest) => applyKnowledgeTreeDiff(d.knowledgeTreeBase, d.knowledgeTree, latest));
@@ -175,7 +181,7 @@ export function commitRound(d) {
     isTalk: d.isTalk, talkTarget: d.talkTarget, time: d.time,
     appendDayMaterial: d.appendDayMaterial,
   }));
-  applyPostResult(d, markTalkAcquaintance({ isTalk: d.isTalk, talkTarget: d.talkTarget, room: d.room, p: d.p })); // 对话即认识
+  applyPostResult(d, markTalkAcquaintance({ isTalk: d.isTalk, talkTarget: d.talkTarget, room: d.room, p: d.p, derivedRespondedNpcs: d.derivedRespondedNpcs })); // 对话即认识
   applyPostResult(d, appendConvo({ newConvo: d.newConvo, rawFull: d.rawFull, p: d.p, time: d.time })); // convo 条目追加 memory/turn
 
   // 回合完成登记：驱动"每 N 回合自动存档"。出错回滚的轮次不计数——

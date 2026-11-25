@@ -23,6 +23,8 @@ import { hpFromNeigong } from "../npc/npcGeneration.js";
 import { effectiveMaxHp } from "../../data/kungfu/qucuoKungfu.js";
 import { makeBuffFlag, mergeCombatBuff } from "../../../utils/buffSystem.js";
 import { STAGES } from "../../../utils/mudHelpers.js";
+import { systemAffectionDelta, systemAffectionPin, hasNoAffectionTrack } from "../state/affection.js";
+import { INITIAL_FAVORABILITY } from "../npc/npcAwareness.js";
 
 const PLAYER = "player";
 
@@ -86,6 +88,10 @@ export function materializeFacts(state, facts, compiledWarrants) {
   const syncWorkState = () => ({ ...state, inv, room, char, skills, flags, exp, pot, dao });
 
   let factIndex = -1;
+  // 社交事实游标：同一批多条 MUTATE_SOCIAL 必须串行叠加——每条在前一条的
+  // 结果树上结算，否则同 NPC 两次搭话/群聊互相覆盖（都从同一快照起算），
+  // 也会丢掉同回合其他 NPC 已入账的日涨额度。
+  let socialTreeCursor = null;
   for (const fact of facts || []) {
     factIndex += 1;
     if (!fact || !fact.op) continue;
@@ -294,10 +300,45 @@ export function materializeFacts(state, facts, compiledWarrants) {
       }
 
       // ── 9. MUTATE_SOCIAL：好感/人情账 → applyPatches 指令 ──
+      // WO-16A：好感增量不再裸 patch——判官签的社交事实同样走系统好感账本语义
+      // （domain/rules/state/affection.js，与 WO-16B #444 同接口）：魅力修正、
+      // 0-100 clamp、每日 +12 上限、无好感轨道跳过。负向增量（言语冲撞等）不经
+      // 日涨上限但也做 clamp 与轨道跳过；无好感轨道者整条事实跳过（含心账——
+      // 谈不上人情的对象不留人情账）。
       case "MUTATE_SOCIAL": {
         if (!fact.npc) break;
+        const npcObj = (state.room?.npcs || []).find((n) => n?.name === fact.npc) || null;
+        if (hasNoAffectionTrack(npcObj)) {
+          logs.push({ t: "sys", text: `  ${fact.npc}无好感轨道，社交事实跳过` });
+          break;
+        }
         if (fact.affectionDelta) {
-          patches.push({ op: "add", path: ["varTree", "角色", fact.npc, "好感度"], value: fact.affectionDelta, factId: fact.id });
+          // 串行游标：从本批已结算社交事实的结果树继续，而非原始快照
+          let cursor = socialTreeCursor || state.varTree || {};
+          // 首识基线：尚无好感数值的对象按系统初始好感打底再结算增量，
+          // 否则 2-3 点的小额搭话正增量会顶替 INITIAL_FAVORABILITY 基线，
+          // 让首次友好结识反而比旧路更少。pin 只在低于基线时抬升，不覆盖已有高分。
+          if (typeof cursor?.角色?.[fact.npc]?.好感度 !== "number") {
+            cursor = systemAffectionPin(cursor, fact.npc, INITIAL_FAVORABILITY).tree;
+          }
+          // 正增量吃魅力修正与日涨 +12 上限；负增量（言语冲撞）不吃魅力、
+          // 不进日涨账，clamp 到 0——统一走 helper 的同一份系统语义。
+          const result = systemAffectionDelta(cursor, fact.npc, fact.affectionDelta,
+            { charm: state.effectiveSpecialNow?.魅力 ?? state.char?.special?.魅力 ?? 5, time: turn });
+          socialTreeCursor = result.tree;
+          if (result.delta !== 0) {
+            const next = result.tree?.角色?.[fact.npc]?.好感度;
+            if (Number.isFinite(next)) {
+              patches.push({ op: "set", path: ["varTree", "角色", fact.npc, "好感度"], value: next, factId: fact.id });
+            }
+            if (fact.affectionDelta > 0) {
+              const gained = result.tree?.世界?.好感日增;
+              if (gained) {
+                patches.push({ op: "set", path: ["varTree", "世界", "好感日增"], value: gained, factId: fact.id });
+              }
+            }
+          }
+          if (result.note) logs.push({ t: "sys", text: `  ${result.note}` });
         }
         if (fact.ledgerKind) {
           // 人情心账：保守落 varTree.角色.<npc>.心账 数组追加（merge 深写，不丢事实）

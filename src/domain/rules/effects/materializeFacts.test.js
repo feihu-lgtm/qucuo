@@ -161,6 +161,126 @@ describe("materializeFacts 十二律覆盖矩阵", () => {
     expect(parsed.身法).toBe(-1);
   });
 
+  it("MUTATE_SOCIAL 走系统好感账本：魅力修正/日涨上限/无轨道跳过/负向 clamp", () => {
+    const base = baseState();
+    base.varTree = { 角色: { 才旦: { 好感度: 10 }, 哑仆: { 好感度: 30 } }, 世界: {} };
+    base.char = { ...base.char, special: { 魅力: 10 } };
+    base.room = { ...base.room, npcs: [{ name: "才旦" }, { name: "哑仆", intimacy: { forbidden: true } }] };
+    // 魅力 10 → 正向增量 +30% 修正（6→8 区间取整），且写好感日增账
+    const out = materializeFacts(base, [
+      { id: "F30", op: "MUTATE_SOCIAL", npc: "才旦", affectionDelta: 6, ledgerKind: "恩" },
+      { id: "F31", op: "MUTATE_SOCIAL", npc: "哑仆", affectionDelta: 5, ledgerKind: "恩" },
+      { id: "F32", op: "MUTATE_SOCIAL", npc: "才旦", affectionDelta: -4, ledgerKind: "隙" },
+    ], {});
+    const types = out.patches.map((p) => `${p.op}:${p.path.join(".")}`);
+    expect(types).toContain("set:varTree.角色.才旦.好感度");
+    expect(types).toContain("set:varTree.世界.好感日增");
+    // 无好感轨道：整条事实跳过（含心账）
+    expect(out.patches.some((p) => p.factId === "F31")).toBe(false);
+    expect(out.logs.some((l) => l.text.includes("无好感轨道"))).toBe(true);
+    // 负向：clamp 不写日增账
+    const negPatch = out.patches.find((p) => p.factId === "F32" && p.path.join(".") === "varTree.角色.才旦.好感度");
+    expect(negPatch).toBeTruthy();
+  });
+
+  it("MUTATE_SOCIAL 群聊串行叠加：同批多条事实不互相覆盖、日增账按 NPC 分别入账", () => {
+    const base = baseState();
+    base.varTree = { 角色: { 才旦: { 好感度: 10 }, 卓玛: { 好感度: 20 } }, 世界: {} };
+    base.char = { ...base.char, special: { 魅力: 5 } };
+    base.room = { ...base.room, npcs: [{ name: "才旦" }, { name: "卓玛" }] };
+    const out = materializeFacts(base, [
+      { id: "G1", op: "MUTATE_SOCIAL", npc: "才旦", affectionDelta: 2 },
+      { id: "G2", op: "MUTATE_SOCIAL", npc: "才旦", affectionDelta: 3 },
+      { id: "G3", op: "MUTATE_SOCIAL", npc: "卓玛", affectionDelta: 4 },
+    ], {});
+    // 同一 NPC 两条事实串行：最终 patch 必须是 10+2+3=15（若从同一快照起算会写成 13 覆盖 12）
+    const lastCain = out.patches.filter((p) => p.path.join(".") === "varTree.角色.才旦.好感度").at(-1);
+    expect(lastCain.value).toBe(15);
+    // 日增账：两个 NPC 的额度都保留（后一条不冲掉前一条的 gained）
+    const lastGained = out.patches.filter((p) => p.path.join(".") === "varTree.世界.好感日增").at(-1);
+    expect(lastGained.value.gained).toMatchObject({ 才旦: 5, 卓玛: 4 });
+  });
+
+  it("MUTATE_SOCIAL charm 口径：effectiveSpecialNow 优先于裸 char.special", () => {
+    const base = baseState();
+    base.varTree = { 角色: { 才旦: { 好感度: 50 } }, 世界: {} };
+    base.char = { ...base.char, special: { 魅力: 5 } };
+    base.effectiveSpecialNow = { 魅力: 10 };
+    base.room = { ...base.room, npcs: [{ name: "才旦" }] };
+    const out = materializeFacts(base, [
+      { id: "C1", op: "MUTATE_SOCIAL", npc: "才旦", affectionDelta: 10 },
+    ], {});
+    const patch = out.patches.find((p) => p.path.join(".") === "varTree.角色.才旦.好感度");
+    // 魅力 10 修正后增量 >10（裸 char.special 5 则是整 10→60），证明 effective 口径生效
+    expect(patch.value).toBeGreaterThan(60);
+  });
+
+  it("MUTATE_SOCIAL 首识基线：无好感数值的 NPC 按初始好感 10 打底再结算增量", () => {
+    const base = baseState();
+    base.varTree = { 角色: {}, 世界: {} };
+    base.char = { ...base.char, special: { 魅力: 5 } };
+    base.room = { ...base.room, npcs: [{ name: "陌生客" }] };
+    const out = materializeFacts(base, [
+      { id: "H1", op: "MUTATE_SOCIAL", npc: "陌生客", affectionDelta: 2 },
+    ], {});
+    const patch = out.patches.find((p) => p.path.join(".") === "varTree.角色.陌生客.好感度");
+    // 10 基线 + 2 增量 = 12，而不是裸写的 2（否则顶掉 INITIAL_FAVORABILITY 种子）
+    expect(patch.value).toBe(12);
+  });
+
+  it("MUTATE_SOCIAL perfunctory=0 不产事实（judgeTurn 层）", async () => {
+    const { judgeTurn } = await import("../judge/judgeTurn.js");
+    const verdict = judgeTurn(
+      { turn: 5, day: 1, place: "鱼定村", npcs: [{ name: "才旦" }], varTree: { 角色: {} }, inv: [], talkOnly: true },
+      { read: "", refIds: [], actions: [
+        { kind: "talk", target: "才旦", itemId: "", direction: "none", stance: "perfunctory" },
+        { kind: "talk", target: "才旦", itemId: "", direction: "none", stance: "clever" },
+      ], proposals: [] },
+      { rng: () => 0.5 },
+    );
+    // perfunctory 不产事实，clever+1 产一条
+    expect(verdict.facts).toHaveLength(1);
+    expect(verdict.facts[0]).toMatchObject({ op: "MUTATE_SOCIAL", npc: "才旦", affectionDelta: 1 });
+  });
+
+  it("judgeTurn talkOnly 白名单：give/inspect_container 整条拦截不搬物品", async () => {
+    const { judgeTurn } = await import("../judge/judgeTurn.js");
+    const verdict = judgeTurn(
+      { turn: 5, day: 1, place: "鱼定村", npcs: [{ name: "才旦" }], varTree: { 角色: {} }, inv: [{ id: "it_1", name: "酒" }], talkOnly: true },
+      { read: "", refIds: [], actions: [
+        { kind: "give", target: "才旦", itemId: "it_1", direction: "none", stance: "sincere" },
+        { kind: "inspect_container", target: "箱子", itemId: "", direction: "none", stance: "casual" },
+      ], proposals: [{ claim: "桌上有剑谱", kind: "find_item", fit: "natural" }] },
+      { rng: () => 0.0 },
+    );
+    expect(verdict.facts.filter((f) => f.op === "TRANSFER_ITEM" || f.op === "GRANT_ITEM")).toHaveLength(0);
+    expect(verdict.notes.some((n) => n.includes("纯搭话回合不结算"))).toBe(true);
+  });
+
+  it("judgeTurn talk stance 映射覆盖全 enum：sincere+2/clever+1/casual+1/forceful-1/未知 0", async () => {
+    const { judgeTurn } = await import("../judge/judgeTurn.js");
+    for (const [stance, delta] of [["sincere", 2], ["clever", 1], ["casual", 1], ["forceful", -1], ["胡说八道", 0]]) {
+      const verdict = judgeTurn(
+        { turn: 5, day: 1, place: "村", npcs: [{ name: "才旦" }], varTree: { 角色: {} }, inv: [] },
+        { read: "", refIds: [], actions: [{ kind: "talk", target: "才旦", itemId: "", direction: "none", stance }], proposals: [] },
+        { rng: () => 0.5 },
+      );
+      const social = verdict.facts.filter((f) => f.op === "MUTATE_SOCIAL");
+      if (delta === 0) expect(social).toHaveLength(0);
+      else expect(social[0]?.affectionDelta).toBe(delta);
+    }
+  });
+
+  it("judgeTurn take 不产 GRANT_ITEM：地上拾取全在 feature collectGranted 确定性通道，判官不重复入包", async () => {
+    const { judgeTurn } = await import("../judge/judgeTurn.js");
+    const verdict = judgeTurn(
+      { turn: 5, day: 1, place: "村", npcs: [], varTree: { 角色: {} }, inv: [] },
+      { read: "", refIds: [], actions: [{ kind: "take", target: "地上的剑", itemId: "", direction: "none", stance: "casual" }], proposals: [] },
+      { rng: () => 0.0 },
+    );
+    expect(verdict.facts.filter((f) => f.op === "GRANT_ITEM")).toHaveLength(0);
+  });
+
   it("APPLY_CONDITION：combatBuff 合并进 pendingCombatBuff", () => {
     const out = materializeFacts(baseState(), [
       { id: "F15", op: "APPLY_CONDITION", combatBuff: { waigong: 2, moveMul: 0.1 } },
@@ -177,7 +297,7 @@ describe("materializeFacts 十二律覆盖矩阵", () => {
     ], {});
     expect(out.changes.varTree).toBeUndefined(); // 不直写，全走 patches
     const types = out.patches.map((p) => `${p.op}:${p.path.join(".")}`);
-    expect(types).toContain("add:varTree.角色.才旦.好感度");
+    expect(types).toContain("set:varTree.角色.才旦.好感度"); // WO-16A：系统账本语义，非裸 add
     expect(types).toContain("merge:varTree.角色.才旦.心账");
     expect(types).toContain("merge:varTree.世界.契约.才旦.F17");
     expect(types).toContain("merge:companionState.雪豹.loyalty");

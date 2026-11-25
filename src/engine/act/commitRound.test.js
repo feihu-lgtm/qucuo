@@ -236,9 +236,10 @@ describe("memory / 已知人物 / 收尾契约", () => {
     commitRound(deps);
     expect(state._dayMaterial).toEqual([{ turn: 25, text: "少侠在村口救了一只猫" }]);
     const facts = state.varTree.世界.知识领域.事实;
-    expect(facts["turn_25_侠客"]).toBeDefined();
-    expect(facts["turn_25_侠客"].标签).toBe("见闻");
-    expect(facts["turn_25_侠客"].知晓者.侠客.途径).toBe("目击");
+    const key = Object.keys(facts).find((k) => k.startsWith("turn_25_侠客_"));
+    expect(key).toBeDefined();
+    expect(facts[key].标签).toBe("见闻");
+    expect(facts[key].知晓者.侠客.途径).toBe("目击");
     expect(writeNote).toHaveBeenCalledOnce();
     const arg = writeNote.mock.calls[0][0];
     expect(arg).toMatchObject({ text: "少侠在村口救了一只猫", turn: 25, source: NOTE_SOURCE.NARRATIVE, place: "鱼定村", owner: [] });
@@ -249,8 +250,9 @@ describe("memory / 已知人物 / 收尾契约", () => {
     const { deps } = makeDeps(state, { memory: "少侠答应了侠客一件事" }, { isTalk: true, talkTarget: "侠客" });
     commitRound(deps);
     const facts = state.varTree.世界.知识领域.事实;
-    expect(facts["turn_25_侠客"].标签).toBe("私语");
-    expect(facts["turn_25_侠客"].知晓者.侠客.途径).toBe("亲历");
+    const key = Object.keys(facts).find((k) => k.startsWith("turn_25_侠客_"));
+    expect(facts[key].标签).toBe("私语");
+    expect(facts[key].知晓者.侠客.途径).toBe("亲历");
     expect(writeNote.mock.calls[0][0]).toMatchObject({
       owner: [{ name: "侠客", via: VIA.FIRSTHAND }], source: NOTE_SOURCE.TALK,
     });
@@ -270,6 +272,31 @@ describe("memory / 已知人物 / 收尾契约", () => {
     const { deps } = makeDeps(state, { respondedNpcs: ["在场者", "不在场的幻影"] }, { isTalk: true });
     commitRound(deps);
     expect(state.varTree.世界.已认识人物).toEqual(["在场者"]);
+  });
+
+  it("memory 为数组：commitRound 入口统一归一，writeNote/appendDayMaterial/registerFact 拿到的都是字符串", () => {
+    const state = baseState();
+    state.room.npcs = [{ name: "侠客" }];
+    const { deps } = makeDeps(state, { memory: ["片段一", "片段二"] });
+    commitRound(deps);
+    // appendDayMaterial 拿到归一后的字符串
+    expect(state._dayMaterial).toEqual([{ turn: 25, text: "片段一；片段二" }]);
+    // writeNote 拿到的也是字符串而非数组
+    expect(writeNote).toHaveBeenCalledOnce();
+    expect(writeNote.mock.calls[0][0].text).toBe("片段一；片段二");
+    // registerFact 入账不抛错且摘要为字符串
+    const facts = state.varTree.世界.知识领域.事实;
+    const key = Object.keys(facts).find((k) => k.startsWith("turn_25_侠客_"));
+    expect(facts[key].摘要).toBe("片段一；片段二");
+  });
+
+  it("memory 为对象：取文本字段而非 [object Object]，不同对象不撞键", () => {
+    const state = baseState();
+    state.room.npcs = [{ name: "侠客" }];
+    const { deps } = makeDeps(state, { memory: { text: "对象的摘要内容" } });
+    commitRound(deps);
+    expect(state._dayMaterial).toEqual([{ turn: 25, text: "对象的摘要内容" }]);
+    expect(writeNote.mock.calls[0][0].text).toBe("对象的摘要内容");
   });
 
   it("无 memory：不写 dayMaterial / 知识领域 / writeNote", () => {
