@@ -88,3 +88,48 @@ describe("seq 粒度分叉（搭话 time 不递增）", () => {
     expect(branchVisible({ branchId: "bX", turn: 11 }, lin, 12)).toBe(false);
   });
 });
+
+describe("reconcile-pending 闸门", () => {
+  beforeEach(() => {
+    globalThis.indexedDB = new IDBFactory();
+    _resetMemoryDbForTest();
+    gameActions.setProseLineage(undefined);
+    gameActions.setProseSeq(undefined);
+  });
+
+  it("pending 时 recall 保守空；完成后恢复", async () => {
+    const { recallProse } = await import("../../engine/ports/recallBlock.js");
+    const { setProseReconcilePending } = await import("../../infra/proseStore.js");
+    let release;
+    setProseReconcilePending(new Promise((r) => { release = r; }));
+    const during = await recallProse({ queryText: "铸剑", viewer: "主角", unscoped: true });
+    expect(during).toEqual([]);
+    release();
+    setProseReconcilePending(null);
+  });
+
+  it("写挂等闸完成后落到分叉后的新头分支", async () => {
+    const { writeTurnProse } = await import("../../engine/act/proseWrite.js");
+    const { addProseChunks, getAllProseChunks, setProseReconcilePending, waitProseReconcile } = await import("../../infra/proseStore.js");
+    const { allocProseSeq } = await import("../../store/gameStore.js");
+    // 分叉后的谱系就位（模拟 reconcile 已分叉），闸还挂着
+    gameActions.setProseLineage([{ b: "bOld", upTo: 10, upToSeq: 5 }, { b: "bNew", upTo: null }]);
+    gameActions.setProseSeq(0);
+    let release;
+    setProseReconcilePending(new Promise((r) => { release = r; }));
+    writeTurnProse({
+      narrativeText: "新时间线的正文第一段。", turn: 10, location: "新店",
+      playerName: "主角", roomNpcNames: [], seqAlloc: allocProseSeq, addChunks: addProseChunks,
+    });
+    // 闸未开：库里应无写入
+    await new Promise((r) => setTimeout(r, 20));
+    expect((await getAllProseChunks()).length).toBe(0);
+    release();
+    setProseReconcilePending(null);
+    await waitProseReconcile();
+    await new Promise((r) => setTimeout(r, 20));
+    const chunks = await getAllProseChunks();
+    expect(chunks.length).toBe(1);
+    expect(chunks[0].branchId).toBe("bNew"); // 新头，不是被截断的 bOld
+  });
+});

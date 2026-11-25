@@ -12,6 +12,21 @@ import { memoryStoreOf } from "./memoryDb.js";
 
 const STORE = "prose_chunks";
 
+// ── reconcile-pending 最小闸门 ──────────────────────────────
+// 读档/undo 后 reconcile 异步跑谱系分叉。窗口内：recall 保守返回空（防串
+// 未来段），prose 写挂先 await 再分配/落库（防新正文写进将被截断的旧头）。
+// 模块级 promise 非持久状态，刷新自然归零。
+let reconcilePendingPromise = null;
+export function setProseReconcilePending(promise) {
+  reconcilePendingPromise = promise || null;
+}
+export function isProseReconcilePending() {
+  return !!reconcilePendingPromise;
+}
+export function waitProseReconcile() {
+  return reconcilePendingPromise || Promise.resolve();
+}
+
 function tx(mode) {
   return memoryStoreOf(mode, STORE);
 }
@@ -160,7 +175,7 @@ export function migrateLegacyConvoAndNotes(saveSnapshot, { notes = [], branchId 
   // 异内容/异存档/异时间线同 turn 同位置不再撞 id 互覆。branchId 不进 id——
   // 根分支 id 是随机的，进 id 会让旧档重复迁移增生副本。
   for (const c of chunks) {
-    c.id = `P${c.turn}_m${contentHash(c.rawText + "|" + c.turn + "|" + (c.location || ""))}`;
+    c.id = `P${c.turn}_m${contentHash(c.rawText + "|" + c.turn + "|" + (c.location || "") + "|" + (Array.isArray(c.witnesses) ? c.witnesses.join(",") : "") + "|" + (c.kind || "") + "|" + (Array.isArray(c.anchorFactIds) ? c.anchorFactIds.join(",") : ""))}`;
   }
   if (branchId) {
     let seq = seqStart - 1;

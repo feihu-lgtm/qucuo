@@ -9,13 +9,17 @@
 //      所以不需要空分支压缩。
 //   3. 全程 gameEpoch 代次护栏：两次读档串台/迟到 reconcile 直接丢弃；
 //      任何一步失败按不分叉降级（宁可不分叉也不可错分叉）。
-import { gameStore, isGameEpochStale, ensureProseLineageInStore, mergeProseSeqFloor, applyProseLineageFork } from "../../store/gameStore.js";
+import { gameStore, isGameEpochStale, ensureProseLineageInStore, allocProseSeq, mergeProseSeqFloor, applyProseLineageFork } from "../../store/gameStore.js";
 import { headBranch } from "../../domain/rules/memory/lineage.js";
-import { migrateLegacyConvoAndNotes, addProseChunks, getProseChunksByBranch } from "../../engine/ports/recallBlock.js";
+import { migrateLegacyConvoAndNotes, addProseChunks, getProseChunksByBranch, setProseReconcilePending } from "../../engine/ports/recallBlock.js";
 import { getAllMemories } from "../../engine/ports/recallWithVisibility.js";
 
 export async function reconcileProseLineageAfterLoad(snap, { epoch } = {}) {
   const stale = () => (epoch != null ? isGameEpochStale(epoch) : false);
+  // 进门即挂闸：窗口内 recall 保守空、写挂排队等闸，防串味/错支。
+  let releaseGate;
+  const gate = new Promise((resolve) => { releaseGate = resolve; });
+  setProseReconcilePending(gate);
   try {
     if (stale()) return;
     const norm = ensureProseLineageInStore();
@@ -24,16 +28,27 @@ export async function reconcileProseLineageAfterLoad(snap, { epoch } = {}) {
       // 老存档首读迁移：convo + 小纸条 → 根分支初始段落（失败静默，不阻断分叉判断）
       try {
         const notes = await getAllMemories().catch(() => []);
-        const chunks = migrateLegacyConvoAndNotes(snap, {
+        if (stale()) throw new Error("stale");
+        // 同一个 allocator 同步预留区间——与玩家并发写永不撞号；即使玩家先写，
+        // 迁移也只是排到高位，不会出现同 branch/turn/seq 撞序。
+        const chunks0 = migrateLegacyConvoAndNotes(snap, {
           notes: (notes || []).map((n) => ({ ...n, owner: n.owner })),
           branchId: headBranch(norm.lineage)?.b || "",
           seqStart: 1,
         });
+        let reserve = null;
+        if (chunks0.length) {
+          reserve = allocProseSeq(chunks0.length);
+          chunks0.forEach((c, i) => { c.seq = reserve.startSeq + i; });
+        }
+        const chunks = chunks0;
         if (chunks.length && !stale()) {
           await addProseChunks(chunks);
-          // 迁移占用的 seq 计入 proseSeq，后续正文接续不撞号
-          migratedSeqHigh = chunks.length;
-          if (!stale()) mergeProseSeqFloor(chunks.length);
+          // 迁移占用的 seq 高位计入水位（allocator 已同步推进，此处只供未来判定）
+          migratedSeqHigh = reserve ? reserve.startSeq + chunks.length - 1 : 0;
+          // 防御性水位：allocator 已同步推进，floor 只升不降双保险
+          // （防未来改动中 allocator 被绕过时迁移段水位丢失）。
+          if (!stale()) mergeProseSeqFloor(migratedSeqHigh);
         }
       } catch (_) { /* 迁移失败不阻断游戏 */ }
     }
@@ -60,5 +75,8 @@ export async function reconcileProseLineageAfterLoad(snap, { epoch } = {}) {
     applyProseLineageFork(saveTime, saveSeq);
   } catch (_) {
     /* 失败按不分叉降级 */
+  } finally {
+    releaseGate();
+    setProseReconcilePending(null);
   }
 }

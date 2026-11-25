@@ -4,7 +4,7 @@
 // 小纸条向量召回维持原样作补充，两者在此混排成一块场记板。
 import { embeddingReady } from "./embeddingService.js";
 import { recallWithVisibility } from "./recallWithVisibility.js";
-import { getAllProseChunks, addProseChunks, getProseChunksByTurn, getProseChunksByBranch, migrateLegacyConvoAndNotes } from "../../infra/proseStore.js";
+import { getAllProseChunks, addProseChunks, getProseChunksByTurn, getProseChunksByBranch, migrateLegacyConvoAndNotes, isProseReconcilePending, waitProseReconcile, setProseReconcilePending } from "../../infra/proseStore.js";
 import { rankProseChunks, expandWithNeighbors } from "../../domain/rules/memory/proseRecall.js";
 
 const DEFAULT_HEADER = "\n\n[往事正本·与此刻情形相关的原文记忆，可能不在最近对话里，供你行文时自然照应，不要生硬复述]\n";
@@ -16,12 +16,15 @@ const WEAK_LINE_CHARS = 40;
 
 // 段落库写入口的 ports 出口：engine 层不许直连 infra（棘轮只减不增），
 // runTurn 的写挂经此转手拿 addProseChunks——与上方读取共用同一条 import，不新增跨层计数。
-export { addProseChunks, getProseChunksByTurn, getProseChunksByBranch, migrateLegacyConvoAndNotes };
+export { addProseChunks, getProseChunksByTurn, getProseChunksByBranch, migrateLegacyConvoAndNotes, waitProseReconcile, setProseReconcilePending };
 
 // 原文段落召回（ports 层编排：infra 读库 + domain 纯函数打分/连带）。
 // viewer 是查询视角人物名——witnesses 硬过滤以它为准；不传只看公共段。
 // 失败/空库一律降级为空数组，绝不阻断回合。
 export async function recallProse({ queryText, viewer, topK = 5, epoch, currentTurn, lineage, unscoped = false } = {}) {
+  // reconcile-pending 窗口内保守返回空——读档/undo 的谱系分叉未定，
+  // 宁可这回合没回忆，也不可把将被截断的旧未来段串进正文。
+  if (isProseReconcilePending()) return [];
   try {
     // 按谱系分支逐支索引取段（branchId 索引），不全库扫。
     // 运行时无 lineage 宁可无召回——跨时间线串味比没回忆更糟；
