@@ -61,7 +61,7 @@ function changedFiles({ base, head }) {
     try {
       const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, "utf8"));
       const before = event.before && !/^0+$/.test(event.before) ? event.before : `${head}^`;
-      return runGit(["diff", "--name-only", `${before}...${head}`]);
+      return runGit(["diff", "--name-only", before, head]);
     } catch { return []; }
   }
   return [];
