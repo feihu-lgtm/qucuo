@@ -525,7 +525,9 @@ export function materializeFacts(state, facts, compiledWarrants) {
               // 只在 npc 池且未 dropped 才兑付；查无此物/已在玩家手里不兑付不编造。
               if (pactRec.rewardItemId) {
                 const loc = locateItem({ ...state, inv, room }, pactRec.rewardItemId, null);
-                if (loc && loc.pool === "npc" && !(loc.item && loc.item.dropped)) {
+                // 持有者必须是立约人本人——锁定物若已转给别的在场 NPC，
+                // 从错的人身上扒下来当酬谢等于系统抢劫（复审裁决）。
+                if (loc && loc.pool === "npc" && room.npcs[loc.npcIndex]?.name === fact.npc && !(loc.item && loc.item.dropped)) {
                   const moving = typeof loc.item === "string" ? { name: loc.item } : { ...loc.item };
                   room.npcs[loc.npcIndex].carriedItems[loc.index] = { ...moving, dropped: true };
                   if (!inv.some((e) => e && e.id && e.id === moving.id)) {

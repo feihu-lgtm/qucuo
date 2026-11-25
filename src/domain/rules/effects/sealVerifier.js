@@ -162,7 +162,9 @@ export function verifySealAndMaterialize({
       //    rewardItemId/rewardItemName，不 match 不锁，绝不猜；
       // ③ 锁不定的一律不锁——履约只兑结构化字段，旧档/无锁只有威望+恩账。
       const npcObj = (state?.room?.npcs || []).find((n) => n?.name === pact.npc) || null;
-      const silver = parseSilverAmount(pact.rewardHint);
+      // 银两锁定要求 hint 明言「银」——parseSilverAmount 会把「传你一两招」
+      // 「一百两药材」误读成银子（复审裁决）；无银字不锁银，宁可漏锁不铸币。
+      const silver = /银/.test(String(pact.rewardHint || "")) ? parseSilverAmount(pact.rewardHint) : null;
       const silverCap = 20 * ((Number.isFinite(npcObj?.levelCap) ? npcObj.levelCap : 0) + 1);
       if (silver != null && silver > silverCap) {
         warnings.push(`spontaneousPact 酬谢银两 ${silver} 超 cap ${silverCap}（${pact.npc} 品阶不足），整约不并入`);
@@ -174,8 +176,11 @@ export function verifySealAndMaterialize({
         let rewardItemName = "";
         if (silver != null) rewardSilver = silver;
         const carried = Array.isArray(npcObj?.carriedItems) ? npcObj.carriedItems : [];
-        const hit = carried.find((it) => it && typeof it === "object" && it.id && typeof it.name === "string"
-          && it.name.length >= 2 && !it.dropped && String(pact.rewardHint || "").includes(it.name));
+        // 最长优先：hint「玄铁刀」不得先中短名「铁刀」——按名字长度降序取首个命中。
+        const hit = [...carried]
+          .sort((a, b) => String(b?.name || "").length - String(a?.name || "").length)
+          .find((it) => it && typeof it === "object" && it.id && typeof it.name === "string"
+            && it.name.length >= 2 && !it.dropped && String(pact.rewardHint || "").includes(it.name));
         if (hit) { rewardItemId = hit.id; rewardItemName = hit.name; }
         facts.push({
           id: `pact_${turn}_${facts.length + 1}`, op: "BIND_OR_SETTLE_PACT",

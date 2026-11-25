@@ -140,6 +140,18 @@ describe("materializeFacts 履约物化", () => {
     expect(out.patches.some((p) => p.path.join("/") === "varTree/世界/威望")).toBe(true);
   });
 
+
+  it("履约实物不从他人身上扒：锁定物在别的 NPC 手里不兑付", () => {
+    const st = baseState();
+    // 骨哨转移到另一个在场 NPC 身上
+    st.room.npcs.push({ name: "管家", carriedItems: [] });
+    st.room.npcs[1].carriedItems.push(st.room.npcs[0].carriedItems[0]);
+    st.room.npcs[0].carriedItems.length = 0;
+    const out = materializeFacts(st, [settleFact], {});
+    expect((out.changes.inv || []).filter((e) => e && e.name === "骨哨")).toHaveLength(0);
+    expect(logText(out)).toContain("不兑付");
+  });
+
   it("锁定 id 查无此物不兑付不编造", () => {
     const st = baseState();
     st.varTree.世界.契约.才旦.pact_1.rewardItemId = "it_nonexist";
@@ -170,9 +182,34 @@ describe("sealVerifier 立诺锁奖", () => {
   });
 
   it("超额银约整约不并入：cap = 20×(levelCap+1)", () => {
-    const out = verifySealAndMaterialize({ sealText: sealWith("一百两"), screenText: "说定了。", verdict: verdictBase, anchorIds: [], state: lockState, turn: 20 });
+    const out = verifySealAndMaterialize({ sealText: sealWith("一百两银子"), screenText: "说定了。", verdict: verdictBase, anchorIds: [], state: lockState, turn: 20 });
     expect(out.facts.some((f) => f.op === "BIND_OR_SETTLE_PACT")).toBe(false);
     expect(out.warnings.join()).toContain("超 cap");
+  });
+
+
+  it("「传你一两招」「一百两药材」不误锁银（无银字不锁）", () => {
+    const out = verifySealAndMaterialize({ sealText: sealWith("传你一两招"), screenText: "说定了。", verdict: verdictBase, anchorIds: [], state: lockState, turn: 20 });
+    const fact = out.facts.find((f) => f.op === "BIND_OR_SETTLE_PACT");
+    expect(fact).toBeTruthy(); // 约本身成立
+    expect(fact.rewardSilver).toBeNull();
+    const out2 = verifySealAndMaterialize({ sealText: sealWith("一百两药材"), screenText: "说定了。", verdict: verdictBase, anchorIds: [], state: lockState, turn: 20 });
+    const fact2 = out2.facts.find((f) => f.op === "BIND_OR_SETTLE_PACT");
+    expect(fact2).toBeTruthy(); // 不再被误拒
+    expect(fact2.rewardSilver).toBeNull();
+  });
+
+  it("实物锁定最长优先：hint「玄铁刀」不中短名「铁刀」", () => {
+    const st = {
+      ...lockState,
+      room: { name: "鱼定村", items: [], npcs: [{ name: "才旦", levelCap: 2, carriedItems: [
+        { id: "it_dao1", name: "铁刀", category: "weapon" },
+        { id: "it_dao2", name: "玄铁刀", category: "weapon" },
+      ] }] },
+    };
+    const out = verifySealAndMaterialize({ sealText: sealWith("玄铁刀一把"), screenText: "说定了。", verdict: verdictBase, anchorIds: [], state: st, turn: 20 });
+    const fact = out.facts.find((f) => f.op === "BIND_OR_SETTLE_PACT");
+    expect(fact.rewardItemId).toBe("it_dao2");
   });
 
   it("实物按在场 NPC 携带物锁定 rewardItemId；不匹配不锁", () => {
