@@ -64,7 +64,7 @@ export function scanPactBreaches(state) {
     if (tier >= PACT_BREACH_LETTER_TIER || isFierce(npc)) {
       const { delay } = pigeonDelayShichen(state, npcName);
       letters.push({
-        id: `letter_pact_${pactKey}`,
+        id: `letter_pact_${npcName}_${pactKey}`, // id 含 NPC 名：不同 NPC 信件 id 互不相撞，applyInboundLetter 按 id 移除不误伤
         npcName,
         arriveTime: now + delay * 2,
         sentAt: now,

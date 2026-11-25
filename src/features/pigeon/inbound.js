@@ -9,6 +9,7 @@ import { pigeonDelayShichen } from "./logic.js";
 import { RESIDENT_NPCS } from "../../domain/data/npc/residentNpcs.js";
 import { ADVENTURER_BY_NAME } from "../../domain/data/dungeon/adventurers.js";
 import { ADVENTURER_IP_BY_NAME } from "../../domain/data/dungeon/adventurersIP.js";
+import { NPC_POOL } from "../../domain/data/npc/npcPool.js";
 
 // 可调参数：每 12 格（6 时辰，一日 24 格）抽一次；45% 中；同一写信人 48 格（2 日）
 // 冷却；任一封落地后 24 格（1 日）内不再来新信；来信箱存最近 60 封。
@@ -40,6 +41,7 @@ export function findNpcObject(state, npcName) {
     || Object.values(RESIDENT_NPCS).flat().find((npc) => npc.name === npcName)
     || ADVENTURER_BY_NAME[npcName]
     || ADVENTURER_IP_BY_NAME[npcName]
+    || NPC_POOL.find((npc) => npc.name === npcName) // 游走池兜底：行脚僧等不在驻场表的 NPC 也有品阶/性情，否则裸壳 levelCap 缺失永远压不出斥责信
     || { name: npcName };
 }
 

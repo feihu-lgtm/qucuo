@@ -116,7 +116,7 @@ describe("WO-22B-P1 契约值守扫描器", () => {
     const fierceNpc = { name: "烈娘子", levelCap: 1, personality: "性格刚烈。" };
     const state = makeState({
       pacts: { 烈娘子: { pact_50_1: pactOf({ npc: "烈娘子" }) } },
-      pending: [{ id: "letter_pact_pact_50_1", npcName: "烈娘子", arriveTime: 101, sentAt: 99 }],
+      pending: [{ id: "letter_pact_烈娘子_pact_50_1", npcName: "烈娘子", arriveTime: 101, sentAt: 99 }],
     });
     state.room.npcs = [fierceNpc];
     const result = scanPactBreaches(state);
