@@ -52,7 +52,7 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
     : d.intent.code === "LOOK" ? "talk"  // 查看/环顾：只描述当前场景与在场人物，不发物品，砍物件志（同 talk 档）
     : "full";
   let _gateReport = null;
-  let { sysBlocks, phiBlock, phiRules } = buildSysBase(
+  let { sysBlocks, phiBlock, phiRules, dynBlocks } = buildSysBase(
     d.apiCfg.targetWordCount, d.narrator, d.scenario, d.budgetInstruction,
     // 结算轮灭 lore——但牵涉具体某人的结算（送礼/拜师/赌石成交）仍要人设，
     // 否则那人只剩个名字，写出来的对白没脾气。此时保留 lore（本就是绿灯，只注入在场者）。
@@ -107,10 +107,8 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
       forcePublic: ov.body_gate?.mode === "blue",
       scanText: `${d.cmd}\n${[...d.convo].reverse().find(m => m.role === "assistant")?.content || ""}`,
     });
-  if (_bodyGate.text) {
-    const authorsNote = sysBlocks.find(b => b.tavernBlock === "authorsNote");
-    if (authorsNote) authorsNote.content += (authorsNote.content ? "\n" : "") + _bodyGate.text;
-  }
+  // 体貌与篇幅要求同属"每轮随输入跳变"的导向内容——WO-04 后不再进 sysBlocks
+  // （authorsNote 已撤），统一并入 11 号位 inChat 末尾的逐轮导向段。
   if (_bodyGate.lit.length || _bodyGate.dark.length) {
     traceEvents.push({
       kind: "step", label: "体貌", level: "info",
@@ -149,9 +147,20 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
   const recallPart = memoryOff ? "" : d.recallBlock;
   const reunionPart = memoryOff || ov.reunion?.mode === "off" ? "" : d.reunionBlock;
   const infoDomainPart = memoryOff ? "" : d.infoDomainBlock;
+  // ── WO-04 冰山缓存重排：随轮跳变的世界观/人设/物件志从 sysBlocks 前部搬来这里 ──
+  // 11 号位 inChat 处于对话历史与最新指令之间，正是商用前缀缓存的分界线之后——
+  // 这些内容一字未改，只是不再污染前缀。顺序：先规矩（rulesPrefix）、再世界与人
+  // （dynWorld）、再本轮状态与记忆，篇幅/体貌等逐轮导向贴末尾（最深导向位）。
+  const dynWorld = [
+    dynBlocks.voice, dynBlocks.scenarioLit, dynBlocks.npcLore,
+    dynBlocks.catalog, dynBlocks.talkItemRule, dynBlocks.seaOfMind,
+  ].filter(Boolean).join("\n\n");
+  const dynPrefix = dynWorld ? dynWorld + "\n\n" : "";
+  const steerNote = [dynBlocks.lenNote, _bodyGate.text].filter(Boolean).join("\n");
+  const steerSuffix = (steerNote ? steerNote + "\n" : "") + proseRule;
   const inChatContent = d.isSettle
-    ? rulesPrefix + (d.snowLeopardContext || "") + (d.settleNpc ? reunionPart : "") + ledgerSuffix + angrySettleNote + softSettleNote + "\n\n" + proseRule
-    : rulesPrefix + d.ctx + distantBlock + recallPart + ledgerSuffix + reunionPart + infoDomainPart + "\n\n" + proseRule;
+    ? rulesPrefix + dynPrefix + (d.snowLeopardContext || "") + (d.settleNpc ? reunionPart : "") + ledgerSuffix + angrySettleNote + softSettleNote + "\n\n" + steerSuffix
+    : rulesPrefix + dynPrefix + d.ctx + distantBlock + recallPart + ledgerSuffix + reunionPart + infoDomainPart + "\n\n" + steerSuffix;
   const latestUserContent = cmdSuffix + (extraNudge || "");
 
   // 10 号位 Chat History / 11 号位 In-Chat Injection / 12 号位 User's Latest Message。
