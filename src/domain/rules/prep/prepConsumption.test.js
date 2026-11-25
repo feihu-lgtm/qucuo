@@ -127,6 +127,41 @@ describe("判官消费 prep_item（仍在既有管线钳制内）", () => {
     expect(grant.quality).toBe("白");
     expect(grant.itemName).toBe("紫阶旧剑"); // 物还是那件物，品阶被钳
   });
+  it("WO-24E 初审裁决：两件备料分属两容器不串——翻书桌发不出铁柜草案", () => {
+    const verdict = judgeTurn({
+      turn: 48, day: 3, place: "曲措客栈",
+      npcs: [], varTree: { 世界: {} }, inv: [], entries: [],
+      containers: { 书桌: { collapsed: false, presetItems: [] } }, containerPlace: "曲措客栈",
+      prepItems: [
+        { id: "pa", containerId: "铁柜", name: "铁柜旧药", quality: "白", category: "misc", clue: "", taken: false },
+        { id: "pb", containerId: "木箱", name: "木箱杂物", quality: "白", category: "misc", clue: "", taken: false },
+      ],
+      budget: { maxPointBudget: 0, maxQuality: "白", luck: 0, riskLevel: 0 },
+    }, {
+      read: "", refIds: [],
+      actions: [{ kind: "inspect_container", target: "书桌", itemId: "", direction: "none", stance: "casual", text: "翻书桌" }],
+      proposals: [],
+    }, { rng: () => 0.99 });
+    expect((verdict.facts || []).filter((f) => f.op === "GRANT_ITEM")).toHaveLength(0); // 无匹配容器不发
+    // 翻对容器才发对应那一件
+    const v2 = judgeTurn({
+      turn: 48, day: 3, place: "曲措客栈",
+      npcs: [], varTree: { 世界: {} }, inv: [], entries: [],
+      containers: { 铁柜: { collapsed: false, presetItems: [] } }, containerPlace: "曲措客栈",
+      prepItems: [
+        { id: "pa", containerId: "铁柜", name: "铁柜旧药", quality: "白", category: "misc", clue: "", taken: false },
+        { id: "pb", containerId: "木箱", name: "木箱杂物", quality: "白", category: "misc", clue: "", taken: false },
+      ],
+      budget: { maxPointBudget: 0, maxQuality: "白", luck: 0, riskLevel: 0 },
+    }, {
+      read: "", refIds: [],
+      actions: [{ kind: "inspect_container", target: "铁柜", itemId: "", direction: "none", stance: "casual", text: "翻铁柜" }],
+      proposals: [],
+    }, { rng: () => 0.99 });
+    const grants = (v2.facts || []).filter((f) => f.op === "GRANT_ITEM");
+    expect(grants).toHaveLength(1);
+    expect(grants[0].itemName).toBe("铁柜旧药"); // 只发本容器那件
+  });
   it("WO-24E：quality/category/clue 透传进 fact——materialize 不落「来历成谜」", () => {
     const v = judgeWithPrep([{ id: "p2", containerId: "木箱", name: "旧伤药", quality: "白", category: "misc", clue: "箱角露出一线油纸", taken: false }]);
     const grant = (v.facts || []).find((f) => f.op === "GRANT_ITEM");

@@ -477,7 +477,9 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
       continue;
     }
     // 第二关：备料物（休整期备料池，有则直取一件）
-    const prep = relicOnly ? [] : (Array.isArray(envelope.prepItems) ? envelope.prepItems.filter((it) => it && !it.taken) : []);
+    // WO-24E 初审裁决：必须 exact containerId 匹配当前翻的容器——不匹配不能取
+    // prep[0]（否则书桌能翻出铁柜草案，containerId 契约失效），落入后续 proposals/降级。
+    const prep = relicOnly ? [] : (Array.isArray(envelope.prepItems) ? envelope.prepItems.filter((it) => it && !it.taken && String(it.containerId || "") === String(action.target || "")) : []);
     if (prep.length) {
       const item = prep[0];
       const factId = nextFactId();

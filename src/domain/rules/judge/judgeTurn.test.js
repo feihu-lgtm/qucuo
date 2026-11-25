@@ -114,7 +114,7 @@ describe("judgeTurn 第三步：inspect_container 三关", () => {
   it("第二关：无预设物时备料物直取", () => {
     const verdict = judgeTurn(baseEnvelope({
       containers: { 木箱: { collapsed: false, presetItems: [] } },
-      prepItems: [{ id: "prep_5_1", name: "豹皮护腕" }],
+      prepItems: [{ id: "prep_5_1", name: "豹皮护腕", containerId: "木箱" }], // WO-24E 裁决：exact containerId 匹配才发
     }), { read: "", refIds: [], actions: [inspect], proposals: [] }, { rng: seqRng([0.9]) });
     expect(verdict.facts.some((f) => f.itemName === "豹皮护腕")).toBe(true);
   });
