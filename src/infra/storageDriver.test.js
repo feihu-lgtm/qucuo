@@ -113,23 +113,25 @@ describe("WO-19/20 PR-A canonical adapter", () => {
     expect(getCloudQueue()).toHaveLength(1); // 不丢不推
   });
 
-  it("首次错位 409 自动对齐重推一次成功，不进冲突登记", async () => {
+  it("首次错位 409 也一律进冲突登记（裁决收紧：不自动对齐重推）", async () => {
     boundCfg();
     let n = 0;
-    const bodies = [];
     configureCloudFetch(async (url, init) => {
       n += 1;
-      bodies.push(JSON.parse(init.body));
       if (n === 1) return { ok: false, status: 409, json: async () => ({ serverRev: 7, conflict: true }) };
       return okJson({ rev: 8 });
     });
     enqueueCloudPush("autosave", { v: 1 });
-    const r = await flushCloudQueue();
-    expect(r.ok).toBe(true);
-    expect(n).toBe(2);
-    expect(bodies[1].expectedRev).toBe(7); // 对齐服务端 rev 重推
-    expect(getServerRevs()["sp1::autosave"]).toBe(8);
-    expect(getCloudConflicts()).toEqual([]); // 迁移错位不算冲突
+    await flushCloudQueue();
+    expect(n).toBe(1); // 绝不自动重推——新设备误覆盖另一设备存档的代价不可逆
+    const conflicts = getCloudConflicts();
+    expect(conflicts).toHaveLength(1);
+    expect(conflicts[0].serverRev).toBe(7);
+    // 台账不自动写——等玩家裁决：keep_cloud 才对齐，keep_local 走 force
+    expect(getServerRevs()["sp1::autosave"]).toBeUndefined();
+    // 玩家裁决 keep_cloud：台账对齐服务端 rev，后续续写以此为 expectedRev
+    resolveCloudConflict("autosave", "keep_cloud");
+    expect(getServerRevs()["sp1::autosave"]).toBe(7);
   });
 
   it("真实多端冲突不静默：已有台账的键 409 直接进冲突登记，等玩家裁决", async () => {
@@ -212,22 +214,15 @@ describe("WO-19/20 PR-A canonical adapter", () => {
     expect(bodies[0].expectedRev).toBe(0); // 不是 6
   });
 
-  it("初审返修：旧键有值时 409 仍属首次错位——可自动对齐重推一次", async () => {
+  it("初审返修：旧键有值时 409 同样进冲突登记（无自动对齐特例）", async () => {
     boundCfg();
     localStorage.setItem("wuxia_mud_cloud_revs", JSON.stringify({ autosave: 5 }));
-    let n = 0;
-    const bodies = [];
-    configureCloudFetch(async (url, init) => {
-      n += 1;
-      bodies.push(JSON.parse(init.body));
-      if (n === 1) return { ok: false, status: 409, json: async () => ({ serverRev: 9 }) };
-      return okJson({ rev: 10 });
-    });
+    configureCloudFetch(async () => ({ ok: false, status: 409, json: async () => ({ serverRev: 9 }) }));
     enqueueCloudPush("autosave", { v: 1 });
     await flushCloudQueue();
-    expect(n).toBe(2);
-    expect(bodies[1].expectedRev).toBe(9);
-    expect(getCloudConflicts()).toEqual([]);
+    const conflicts = getCloudConflicts();
+    expect(conflicts).toHaveLength(1);
+    expect(conflicts[0].serverRev).toBe(9);
   });
 
   it("Review 修：换 space 后台账不串——旧空间 rev 不作新空间 CAS 依据", async () => {

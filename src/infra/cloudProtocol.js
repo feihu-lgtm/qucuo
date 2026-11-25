@@ -12,7 +12,6 @@
 // 旧键天然失效（不迁移不读取），留存无害。
 const SERVER_REVS_KEY = "wuxia_mud_cloud_server_revs";
 const HUB_KEY_LS = "wuxia_mud_cloud_hub_key";
-const ALIGNED_ONCE_KEY = "wuxia_mud_cloud_aligned_once";
 
 let _fetchImpl = null;
 export function configureCloudFetch(fetchImpl) { _fetchImpl = fetchImpl; }
@@ -59,15 +58,6 @@ export function clearServerRev(key, spaceId = "") {
 }
 export function clearAllServerRevs() { _lsWrite(SERVER_REVS_KEY, {}); }
 export function expectedRevFor(key, spaceId = "") { return getServerRevs()[ledgerKey(spaceId, key)] ?? 0; }
-
-// 首次错位自动对齐台账：adapter 迁移/换绑后首推必然 409 一次——允许对齐重推一次；
-// 已对齐过或有成功推送台账的键再 409 即真实多端冲突，必须进冲突登记绝不静默。
-export function getAlignedOnce() { return _lsRead(ALIGNED_ONCE_KEY, {}); }
-export function markAlignedOnce(key, spaceId = "") {
-  const aligned = getAlignedOnce();
-  aligned[ledgerKey(spaceId, key)] = true;
-  _lsWrite(ALIGNED_ONCE_KEY, aligned);
-}
 
 // ── WebCrypto AES-GCM 加密封装 ─────────────────────────────────────────
 // 最小可用方案：密钥首次生成后存 localStorage（JWK），不离开本机。

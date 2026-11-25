@@ -1,7 +1,6 @@
 import {
   configureCloudFetch as configureAdapterFetch, hubBinding, hubPutSave, hubDeleteSave, hubWipeSpace,
   encryptSaveValue, expectedRevFor, recordServerRev, clearServerRev, clearAllServerRevs,
-  getServerRevs, getAlignedOnce, markAlignedOnce,
 } from "./cloudProtocol.js";
 
 // 存档三档存储驱动抽象（WO-19）——local / cloud / file
@@ -161,36 +160,14 @@ async function _flushCloudQueueInner() {
       // 已翻代直接停止：不写台账不登记冲突（否则 clearAllServerRevs 之后又把已抹 rev 写回）。
       if (_wipeEpoch !== startEpoch) { failed = false; break; }
       if (result.conflict) {
-        // 首次错位自动对齐一次（PR-A 硬要求）：adapter 迁移/换绑后首推必 409——
-        // 但仅限「无成功推送台账且从未对齐过」的键；已有台账的键再 409 是真实
-        // 多端冲突，必须进冲突登记等玩家裁决，绝不静默吞掉。
-        const hadLedger = getServerRevs()[`${binding.spaceId}::${entry.key}`] !== undefined;
-        const alreadyAligned = getAlignedOnce()[`${binding.spaceId}::${entry.key}`];
-        if (!hadLedger && !alreadyAligned && Number.isInteger(result.serverRev)) {
-          markAlignedOnce(entry.key, binding.spaceId);
-          recordServerRev(entry.key, result.serverRev, binding.spaceId);
-          if (entry.op === "put") {
-            const payloadEnc = await encryptSaveValue(entry.value);
-            result = await hubPutSave(binding, entry.key, payloadEnc, { expectedRev: result.serverRev });
-          } else {
-            result = await hubDeleteSave(binding, entry.key, { expectedRev: result.serverRev });
-          }
-          if (_wipeEpoch !== startEpoch) { failed = false; break; } // 重推 await 期间翻代同样停笔
-          if (result.ok) {
-            if (entry.op === "put" && Number.isInteger(result.rev)) recordServerRev(entry.key, result.rev, binding.spaceId);
-            if (entry.op === "del") clearServerRev(entry.key, binding.spaceId);
-            pushed += 1;
-            continue;
-          }
-        }
-        if (result.conflict) {
-          // 冲突：绝不静默覆盖——登记后等玩家显式裁决。
-          const conflicts = getCloudConflicts().filter((c) => c.key !== entry.key);
-          conflicts.push({ key: entry.key, rev: expectedRev, serverRev: result.serverRev ?? null, queuedAt: entry.queuedAt, detectedAt: Date.now(), op: entry.op, value: entry.value });
-          _lsWrite(CONFLICTS_KEY, conflicts);
-          pushed += 1; // 出队——它不是失败，是待裁决
-          continue;
-        }
+        // 冲突绝不静默（裁决收紧）：一律进冲突登记等玩家显式裁决——包括首次错位。
+        // 迁移/换绑场景的代价只是玩家在 UI 点一次「本地覆盖云端」；新设备误覆盖
+        // 另一设备存档的代价不可逆，两者不对称，宁误登记不误对齐。
+        const conflicts = getCloudConflicts().filter((c) => c.key !== entry.key);
+        conflicts.push({ key: entry.key, rev: expectedRev, serverRev: result.serverRev ?? null, queuedAt: entry.queuedAt, detectedAt: Date.now(), op: entry.op, value: entry.value });
+        _lsWrite(CONFLICTS_KEY, conflicts);
+        pushed += 1; // 出队——它不是失败，是待裁决
+        continue;
       }
       if (!result.ok) throw new Error(`HTTP ${result.status}`);
       if (entry.op === "put" && Number.isInteger(result.rev)) recordServerRev(entry.key, result.rev, binding.spaceId);

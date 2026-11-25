@@ -74,9 +74,13 @@ node --test server/memory-hub/hubCore.test.mjs
 storageDriver 全部云端调用经它翻译成 canonical 契约：
 URL `<host>/api/spaces/<spaceId>/saves/<slotId>`（wipe 重写为 `DELETE /api/space/<spaceId>`）、
 形状 `{expectedRev, payloadEnc}`、鉴权 `x-memory-hub-token` 必带。
-rev 语义：客户端本地计数器不作 CAS 依据——per-key serverRev 台账（首写 expectedRev=0、成功记响应 rev、
-409 对齐）；迁移/换绑首次错位允许自动对齐重推一次（限无台账且从未对齐的键），已有台账的键 409
-即真实多端冲突进登记等玩家裁决。force 仍只能玩家显式「本地覆盖云端」触发。
+rev 语义：客户端本地计数器不作 CAS 依据——per-key serverRev 台账（首写 expectedRev=0、成功记响应 rev），
+按 `spaceId::slot` 命名空间隔离（换空间不串账）。409 一律进冲突登记等玩家显式裁决——包括首次错位
+（裁决收紧：自动对齐无法区分迁移与新设备真多端冲突，误覆盖不可逆；迁移代价只是玩家点一次
+「本地覆盖云端」）。玩家裁决 keep_cloud 时台账对齐服务端 rev，后续续写以此为 expectedRev。
+force 仍只能玩家显式「本地覆盖云端」触发。
+另注：浏览器跨源直连需部署方用同源反代或为 hub 自行加 CORS——hub 本身不应答 OPTIONS preflight，
+服务端零改动是本阶段硬约束；hosted 一键云若成行再另立服务端小单。
 加密：payloadEnc 是 WebCrypto AES-GCM 密文串 `v1.<ivB64>.<ctB64>`，密钥首用生成存 localStorage
 （不离开客户端）；**换设备密钥恢复未做**——换机后无法解密云端快照，恢复链路随后续工单。
 绑定三件套（cloudUrl/spaceId/hubToken）缺一即 unbound 优雅降级，队列不推不丢。
