@@ -20,13 +20,16 @@ export function validateJsonSchema(value, schema, path = "$") {
   if (schema.enum && !schema.enum.includes(value)) {
     return { ok: false, reason: `${path} 值 ${JSON.stringify(value)} 不在枚举内` };
   }
-  if (schema.type) {
-    const check = TYPE_CHECK[schema.type];
-    if (check && !check(value)) {
-      return { ok: false, reason: `${path} 类型应为 ${schema.type}，实为 ${Array.isArray(value) ? "array" : typeof value}` };
+  // type 支持 union 数组（OpenAI strict 可选值写法 ["string","null"]）：任一命中即过。
+  const types = Array.isArray(schema.type) ? schema.type : schema.type ? [schema.type] : [];
+  if (types.length) {
+    const hit = types.some((t) => TYPE_CHECK[t]?.(value));
+    if (!hit) {
+      return { ok: false, reason: `${path} 类型应为 ${types.join("|")}，实为 ${Array.isArray(value) ? "array" : typeof value}` };
     }
   }
-  if (schema.type === "object" && value !== null && typeof value === "object" && !Array.isArray(value)) {
+  const isObjectType = types.includes("object") || (!types.length && schema.properties);
+  if (isObjectType && value !== null && typeof value === "object" && !Array.isArray(value)) {
     const props = schema.properties || {};
     for (const key of schema.required || []) {
       if (!(key in value)) return { ok: false, reason: `${path}.${key} 缺必填键` };
@@ -42,7 +45,7 @@ export function validateJsonSchema(value, schema, path = "$") {
       }
     }
   }
-  if (schema.type === "array" && Array.isArray(value) && schema.items) {
+  if (types.includes("array") && Array.isArray(value) && schema.items) {
     for (let i = 0; i < value.length; i++) {
       const r = validateJsonSchema(value[i], schema.items, `${path}[${i}]`);
       if (!r.ok) return r;
@@ -60,6 +63,14 @@ export function toGeminiResponseSchema(schema) {
   for (const [key, val] of Object.entries(schema)) {
     if (key === "additionalProperties") continue;
     out[key] = toGeminiResponseSchema(val);
+  }
+  // union type 是 OpenAI strict 方言，Gemini 不吃数组——含 null 转 nullable:true，取首个非 null 类型
+  if (Array.isArray(out.type)) {
+    const originalLength = out.type.length;
+    const nonNull = out.type.filter((t) => t !== "null");
+    out.type = nonNull[0];
+    if (nonNull.length < originalLength) out.nullable = true;
+    if (out.type === undefined) delete out.type;
   }
   return out;
 }

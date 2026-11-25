@@ -35,8 +35,8 @@ export function registerDomainCalls() {
 
 你的心结（不肯让步的原因）：${persuade.knot}
 
-【你只输出台词，绝不泄底】
-你只输出【${persuade.who}】这一句话的台词，口语，不超过30个字。
+【台词要求，绝不泄底】
+line 字段只放【${persuade.who}】这一句话的台词，口语，不超过30个字。
 - 不写任何叙事、旁白、动作、神态、括号说明，不写"他说""掌柜道"这类引导语，直接就是这个人说出口的话，像真人回话那么短。
 - 【关键】绝不能暴露游戏机制：不说"你说中了""还差一点""再说一条""你戳中了我的心结"这类话；不把下面的突破口内容当台词念出来提示玩家。心结让玩家自己从对话里揣摩，你只以这个人的身份自然反应。
 
@@ -50,15 +50,14 @@ export function registerDomainCalls() {
 【玩家可能戳中的突破口】（仅供你判断，不要在台词里念出来）：
 ${keysDesc}
 
-【隐藏判定】
-在这句台词的最后另起一行输出一个 JSON（玩家看不到，系统用）：
-{"hit":"戳中的key的id或null","guardDrop":0到50的整数,"yield":true/false}
+【输出格式与隐藏判定】
+只输出一个 JSON 对象（玩家只看到 line 字段，其余系统用），不要任何别的文字：
+{"line":"你这句台词（≤30字，纯口语）","hit":"戳中的key的id或null","guardDrop":0到50的整数,"yield":true或false}
+- line：就是这个人说出口的话本身，不写引导语、不带引号。
 - hit：玩家的话【只要方向对、沾到某个未戳中突破口的边】就填那个 id，不要求字字精准；纯空谈、硬来、重复已戳中的，才填 null。判定宁松勿严——别让玩家好几轮一个都不中。
 - guardDrop：这话让你放下多少戒备。一般讲理/寒暄给 5~15；说得真诚、投机、示弱、给足好处、或说到你情绪痛点上，给 30~50；胡搅蛮缠、冒犯你，给 0。
 - yield：只有当【累计戳中数 ≥ ${persuade.resistance}】且你这句是松口答应时，才 true；否则 false。
-当前累计已戳中：${hitKeyIds.length} / 需要 ${persuade.resistance}。
-
-再强调：台词一行（≤30字，纯口语），JSON 一行，不要有别的。`;
+当前累计已戳中：${hitKeyIds.length} / 需要 ${persuade.resistance}。`;
     },
   });
 
@@ -79,6 +78,27 @@ ${keysDesc}
     history: (ctx) => ctx.history || [],
     join: "",
     blocks: ["persuasion.turn.sys", "persuasion.turn.user"],
+    // 原生结构化输出：hit 枚举随本场突破口动态生成（key id 全集 + null），
+    // 模型没法编造不存在的 key；guardDrop/yield 锁类型，区间裁剪仍由解析层兜底。
+    schema: (ctx) => {
+      const keyIds = (ctx?.persuade?.keys || []).map((k) => k.id).filter(Boolean);
+      return {
+        name: "persuasion_turn",
+        schema: {
+          type: "object",
+          additionalProperties: false,
+          required: ["line", "hit", "guardDrop", "yield"],
+          properties: {
+            line: { type: "string" },
+            // OpenAI strict 可选值用 union type；null 表示未命中。
+            // Gemini 侧由 toGeminiResponseSchema 转写为 string + nullable。
+            hit: { type: ["string", "null"], enum: [...keyIds, null] },
+            guardDrop: { type: "integer" },
+            yield: { type: "boolean" },
+          },
+        },
+      };
+    },
   });
 
   definePrompt("block", "forge.design.sys", {
@@ -124,6 +144,51 @@ ${FORGE_EFFECT_WHITELIST}
     cfg: (_apiCfg, ctx) => ctx.forgeCfg,
     join: "",
     blocks: ["forge.design.sys", "forge.design.user"],
+    // 原生结构化输出：effect/sixDim 是开放词条对象（键来自白名单但组合自由），
+    // schema 只锁其为对象、锁死 category 三选一与五个必填键；词条白名单裁剪仍在解析层。
+    schema: {
+      name: "forge_design",
+      // effect/sixDim 是开放词条对象（键名已声明但不闭合、键值类型异构），不满足
+      // OpenAI strict subset——openai/vertex/openrouter 见此标记回退 json_object，
+      // Gemini/Anthropic 仍用原生 schema，withAI 本地校验不受影响。
+      strictCompatible: false,
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        required: ["candidates"],
+        properties: {
+          candidates: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["name", "category", "effect", "sixDim", "desc"],
+              properties: {
+                name: { type: "string" },
+                category: { type: "string", enum: ["weapon", "armor", "accessory"] },
+                // 词条键名按白名单显式声明（Gemini 要 declared properties）；
+                // 键值类型异构（布尔旗/数值/嵌套对象）不锁 type，白名单裁剪仍在解析层。
+                effect: {
+                  type: "object",
+                  properties: Object.fromEntries([
+                    "forceFirst", "ignoreDefense", "doubleVsStatus", "lowHpBonus", "afterStatusBonus",
+                    "detonateMark", "enemyCostPenalty", "freezeEnergyRecovery", "applyMark", "applyMarkChance",
+                    "onCounterSuccessDamageRatio", "onCounterSuccessEnergyGain", "hpRestore", "energyRestore",
+                  ].map((k) => [k, {}])),
+                },
+                sixDim: {
+                  type: "object",
+                  properties: Object.fromEntries(
+                    ["气运", "身法", "根骨", "魅力", "智谋", "体魄", "悟性"].map((k) => [k, { type: "number" }]),
+                  ),
+                },
+                desc: { type: "string" },
+              },
+            },
+          },
+        },
+      },
+    },
   });
 }
 

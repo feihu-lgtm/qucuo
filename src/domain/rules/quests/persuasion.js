@@ -27,6 +27,24 @@
 
 import "../prompt/calls/domainCalls.js";
 
+// 结构化结果的兜底规整：台词去引导词/引号并硬截 40 字，guardDrop 钳到 0~50 整数。
+// 原生 schema 通路（res.data 已是对象）与手工截取通路共用同一份裁剪，行为不漂。
+export function normalizePersuadeVerdict(verdict, line) {
+  let cleanLine = String(line ?? "").trim();
+  cleanLine = cleanLine.replace(/^[「『"']|[」』"']$/g, "").replace(/^.{0,4}(说道?|道|回道)[:：]\s*/, "").trim();
+  if (cleanLine.length > 40) cleanLine = cleanLine.slice(0, 40);
+  let drop = Number(verdict?.guardDrop);
+  if (!Number.isFinite(drop)) drop = 10;
+  drop = Math.max(0, Math.min(50, Math.round(drop)));
+  return { line: cleanLine || "……", hit: verdict?.hit || null, guardDrop: drop, yield: !!verdict?.yield };
+}
+
+// schema 通路专用：res.data 已是 {line, hit, guardDrop, yield} 整对象时的入口。
+export function parsePersuadeData(data) {
+  if (!data || typeof data.line !== "string") return null;
+  return normalizePersuadeVerdict(data, data.line);
+}
+
 // 解析 AI 返回：拆出"短对话台词" + 判定 JSON。
 export function parsePersuadeReply(raw) {
   const text = (raw || "").trim();
@@ -37,15 +55,10 @@ export function parsePersuadeReply(raw) {
   if (m) {
     try { verdict = JSON.parse(m[0]); } catch { /* 容错：解析失败按未命中处理 */ }
     line = text.slice(0, m.index).trim();
+    // 新格式是整段单个 JSON（台词在 line 字段里）：JSON 前没有散文时，台词取 verdict.line。
+    if (!line && typeof verdict.line === "string") line = verdict.line;
   }
-  // 台词兜底：去掉可能残留的引导词/引号，并硬截到 40 字防跑飞
-  line = line.replace(/^[「『"']|[」』"']$/g, "").replace(/^.{0,4}(说道?|道|回道)[:：]\s*/, "").trim();
-  if (line.length > 40) line = line.slice(0, 40);
-  // guardDrop 兜底与钳制
-  let drop = Number(verdict.guardDrop);
-  if (!Number.isFinite(drop)) drop = 10;
-  drop = Math.max(0, Math.min(50, Math.round(drop)));
-  return { line: line || "……", hit: verdict.hit || null, guardDrop: drop, yield: !!verdict.yield };
+  return normalizePersuadeVerdict(verdict, line);
 }
 
 // 根据戒心值算出应解锁到第几条线索。每跨过一个 30 的坎（100→70→40→10）多解锁一条，

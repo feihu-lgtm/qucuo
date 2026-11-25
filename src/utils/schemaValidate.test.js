@@ -78,3 +78,41 @@ describe("toGeminiResponseSchema", () => {
     expect(INTAKE.additionalProperties).toBe(false);
   });
 });
+
+describe("validateJsonSchema union type（WO-03 补）", () => {
+  it('type:["string","null"] 两种值都过，其他类型不过', () => {
+    const schema = { type: ["string", "null"], enum: ["k1", null] };
+    expect(validateJsonSchema("k1", schema).ok).toBe(true);
+    expect(validateJsonSchema(null, schema).ok).toBe(true);
+    expect(validateJsonSchema(42, schema).ok).toBe(false);
+  });
+
+  it("union 命中其一即过，枚举仍生效", () => {
+    const schema = { type: ["string", "null"] };
+    expect(validateJsonSchema("abc", schema).ok).toBe(true);
+    expect(validateJsonSchema(null, schema).ok).toBe(true);
+    expect(validateJsonSchema(false, schema).ok).toBe(false);
+  });
+});
+
+describe("toGeminiResponseSchema union 转写", () => {
+  it('type:["string","null"] 转 string + nullable:true', () => {
+    const out = toGeminiResponseSchema({ type: ["string", "null"], enum: ["a", null] });
+    expect(out.type).toBe("string");
+    expect(out.nullable).toBe(true);
+    expect(Array.isArray(out.type)).toBe(false);
+  });
+
+  it("不含 null 的 union 不误标 nullable", () => {
+    const out = toGeminiResponseSchema({ type: ["string", "number"] });
+    expect(out.type).toBe("string");
+    expect(out.nullable).toBeUndefined();
+  });
+
+  it("普通 type 不受影响", () => {
+    const out = toGeminiResponseSchema({ type: "object", properties: { x: { type: "number" } } });
+    expect(out.type).toBe("object");
+    expect(out.nullable).toBeUndefined();
+    expect(out.properties.x.type).toBe("number");
+  });
+});

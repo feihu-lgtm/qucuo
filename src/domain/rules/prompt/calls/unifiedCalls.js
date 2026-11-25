@@ -118,6 +118,36 @@ export function registerUnifiedCalls() {
     join: "",
     matrixBlocks: ["intent.classify.sys", "intent.classify.user"],
     blocks: ["intent.classify.sys", "intent.classify.user"],
+    // 原生结构化输出：kind/target/item/direction 的候选清单随轮次动态变化，schema 只锁形状与
+    // condition 枚举，具体取值合法性仍由 recognizer 本地校验（选不出的写「无」）。
+    schema: {
+      name: "intent_classify",
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        required: ["actions"],
+        properties: {
+          actions: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["text", "kind", "target", "item", "direction", "condition", "condition_text", "confidence"],
+              properties: {
+                text: { type: "string" },
+                kind: { type: "string" },
+                target: { type: "string" },
+                item: { type: "string" },
+                direction: { type: "string" },
+                condition: { type: "string", enum: ["遇敌", "到达", "被拒", "其他", "无"] },
+                condition_text: { type: "string" },
+                confidence: { type: "number" },
+              },
+            },
+          },
+        },
+      },
+    },
   });
 }
 

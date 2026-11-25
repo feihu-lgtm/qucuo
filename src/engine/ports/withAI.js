@@ -131,11 +131,13 @@ export async function withAI(
       try {
         parsed = JSON.parse(text);
       } catch {
-        return failOrFallback("schema_json_parse_failed", { text, finishReason: res?.finishReason });
+        // 带上 raw/usage 透传：截断检测（finish_reason=length 藏在 raw.choices 里）依赖它，
+        // schema 解析失败不能把这条诊断链弄丢。
+        return { ...failOrFallback("schema_json_parse_failed", { text, finishReason: res?.finishReason }), ...passthrough };
       }
       const verdict = validateJsonSchema(parsed, schema.schema || schema);
       if (!verdict.ok) {
-        return failOrFallback(`schema_validate_failed: ${verdict.reason}`, { text, finishReason: res?.finishReason });
+        return { ...failOrFallback(`schema_validate_failed: ${verdict.reason}`, { text, finishReason: res?.finishReason }), ...passthrough };
       }
       return {
         ok: true,

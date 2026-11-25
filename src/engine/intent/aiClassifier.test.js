@@ -59,3 +59,30 @@ describe("createAiClassifier", () => {
     expect(result).toEqual({ actions: [], parseFailed: true });
   });
 });
+
+describe("intent.classify 原生 schema（WO-03）", () => {
+  it("schema 透传进 modelOptions，锁死 condition 枚举与八键形状", async () => {
+    const ai = fakeAi({ text: GOOD, finishReason: "stop" });
+    await createAiClassifier(ai, { cfg: { model: "gemini-2.5-flash" } }).recognize(VARS);
+    const [opts] = ai.requests;
+    const schema = opts.modelOptions?.schema;
+    expect(schema?.name).toBe("intent_classify");
+    const item = schema.schema.properties.actions.items;
+    expect(item.required).toEqual(["text", "kind", "target", "item", "direction", "condition", "condition_text", "confidence"]);
+    expect(item.properties.condition.enum).toEqual(["遇敌", "到达", "被拒", "其他", "无"]);
+    expect(item.additionalProperties).toBe(false);
+  });
+
+  it("schema 原生通路：合法 JSON 直取 res.data", async () => {
+    const full = '{"actions":[{"text":"跟才旦切磋","kind":"切磋","target":"才旦","item":"无","direction":"无","condition":"无","condition_text":"","confidence":0.97}]}';
+    const result = await createAiClassifier(fakeAi({ text: full, finishReason: "stop" })).recognize(VARS);
+    expect(result.actions[0]).toMatchObject({ kind: "切磋", target: "才旦" });
+    expect(result.parseFailed).toBeUndefined();
+  });
+
+  it("兜底通路：散文裹着 JSON（schema 校验失败）时手工截取救回", async () => {
+    const wrapped = '我想想……{"actions":[{"text":"跟才旦切磋","kind":"切磋","target":"才旦","item":"无","direction":"无","condition":"无","confidence":0.9}]}';
+    const result = await createAiClassifier(fakeAi({ text: wrapped, finishReason: "stop" })).recognize(VARS);
+    expect(result.actions[0]).toMatchObject({ kind: "切磋", target: "才旦" });
+  });
+});

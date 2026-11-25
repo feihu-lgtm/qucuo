@@ -301,3 +301,43 @@ describe("runSoftSettle", () => {
     expect(formatSettleNote({ note: "" })).toBe("");
   });
 });
+
+describe("settle.judge 原生 schema（WO-03）", () => {
+  it("schema 随 ctx.options 动态生成：choice 枚举与 probs 键锁死在选项内", async () => {
+    const { getPromptDef } = await import("../prompt/registry.js");
+    const def = getPromptDef("call", "settle.judge");
+    expect(typeof def.schema).toBe("function");
+    const options = ["奏效", "未奏效", UNKNOWN_CHOICE];
+    const s = def.schema({ options });
+    expect(s.name).toBe("settle_judge");
+    expect(s.schema.properties.choice.enum).toEqual(options);
+    expect(Object.keys(s.schema.properties.probs.properties)).toEqual(options);
+    expect(s.schema.properties.probs.additionalProperties).toBe(false);
+    // 空选项不挂 schema（避免空枚举把调用卡死）
+    expect(def.schema({ options: [] })).toBeUndefined();
+  });
+
+  it("schema 原生通路：合法 JSON 直取 res.data 并归一化落账", async () => {
+    const onRequest = vi.fn();
+    const ai = createMockAi(['{"choice":"奏效","probs":{"奏效":0.9,"未奏效":0.05,"无法判断":0.05}}'], { onRequest });
+    const result = await runSoftSettle({
+      ai, apiCfg: {}, kind: "appease",
+      ctx: { npc: "才旦", varTree: angryTree(), attempt: "赔罪道歉" },
+    });
+    expect(result.choice).toBe("奏效");
+    expect(result.varTree.角色.才旦.好感度).toBe(23);
+    // schema 透传到传输层 modelOptions
+    const [, opts] = onRequest.mock.calls[0];
+    expect(opts.modelOptions?.schema?.name).toBe("settle_judge");
+  });
+
+  it("兜底通路：schema 校验失败（散文裹着 JSON）时手工截取救回", async () => {
+    const ai = createMockAi(['嗯……{"choice":"奏效","probs":{"奏效":1,"未奏效":0,"无法判断":0}}'],);
+    const result = await runSoftSettle({
+      ai, apiCfg: {}, kind: "appease",
+      ctx: { npc: "才旦", varTree: angryTree(), attempt: "赔罪道歉" },
+    });
+    expect(result.choice).toBe("奏效");
+    expect(result.varTree.角色.才旦.好感度).toBe(23);
+  });
+});

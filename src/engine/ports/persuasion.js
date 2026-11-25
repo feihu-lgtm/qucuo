@@ -1,7 +1,7 @@
 // 说服对话调用口：回复解析与戒心规则留在 domain（quests/persuasion.js），
 // AI 调用上移到 engine/ports。
 import { withAI } from "./withAI.js";
-import { parsePersuadeReply, hintsUnlockedByGuard } from "../../domain/rules/quests/persuasion.js";
+import { parsePersuadeReply, parsePersuadeData, hintsUnlockedByGuard } from "../../domain/rules/quests/persuasion.js";
 
 /**
  * 跑一轮说服对话。
@@ -22,7 +22,9 @@ export async function runPersuadeTurn(p, playerSay, hitKeyIds, ownedFlags, histo
       { persuade: p, playerSay, hitKeyIds, ownedFlags, history, guard },
       { ai, apiCfg },
     );
-    parsed = parsePersuadeReply(res.text);
+    // 原生 schema 通过时 res.data 就是 {line,hit,guardDrop,yield} 整对象，直接取用；
+    // 服务商不支持 schema / 校验未过时回退旧手工截取（台词 + 末尾 JSON 行）。
+    parsed = parsePersuadeData(res.data) || parsePersuadeReply(res.text);
   } catch (e) {
     console.warn("说服调用失败，兜底", e);
     parsed = { line: "（对方没听清，你再说一遍。）", hit: null, guardDrop: 0, yield: false };
