@@ -15,10 +15,18 @@ describe("buildCausalBudgetInput 八参装配", () => {
     expect(out.luck).toBe(5);
     expect(out.gm).toBe(true);
   });
-  it("tension：无遇敌为 0，有遇敌按势力张力加档", () => {
+  it("tension：无遇敌/散人/无冲突记录为 0，有冲突记录读原值非人工定档", () => {
     expect(buildCausalBudgetInput(baseState, {}, {}).tension).toBe(0);
-    const withEnc = buildCausalBudgetInput({ ...baseState, encounter: { factionKey: "雪山派" } }, {}, {});
-    expect(withEnc.tension).toBeGreaterThan(0);
+    expect(buildCausalBudgetInput({ ...baseState, encounter: { factionKey: "散人" } }, {}, {}).tension).toBe(0);
+    // 不存在的势力无冲突记录 → 0
+    expect(buildCausalBudgetInput({ ...baseState, encounter: { factionKey: "虚构势力" } }, {}, {}).tension).toBe(0);
+    // 雪山派有冲突记录——读原值不是 15/30 人工兜底
+    const xf = buildCausalBudgetInput({ ...baseState, encounter: { factionKey: "雪山派" } }, {}, {}).tension;
+    expect(xf).toBe(60);
+    expect(xf).not.toBe(15);
+    expect(xf).not.toBe(30);
+    // 天龙教/黑风寨有冲突记录非 0
+    expect(buildCausalBudgetInput({ ...baseState, encounter: { factionKey: "天龙教" } }, {}, {}).tension).toBe(60);
   });
   it("riskLevel 动作兜底：偷/决斗 2、翻容器 1、talk 0", () => {
     expect(buildCausalBudgetInput(baseState, { actions: [{ kind: "steal" }] }, {}).riskLevel).toBe(2);

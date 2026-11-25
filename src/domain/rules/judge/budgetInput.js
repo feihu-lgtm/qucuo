@@ -17,7 +17,7 @@
 //   dailyLootUsed   varTree.世界.每日搜刮 { day, count }——跨日自动归零；
 //                   只有天机券实际编译入袋的新品计数（materializeFacts 写账），
 //                   预设物/备料物/悬空秘宝不占配额。账本不存在时按 0 读，不破坏旧档。
-import { getTension } from "../conflict/tension.js";
+import { factionTensionProxy } from "../conflict/tension.js";
 
 const ACTION_RISK = {
   steal: 2, duel: 2,
@@ -41,13 +41,14 @@ export function buildCausalBudgetInput(state = {}, intakeResult = {}, opts = {})
   const char = state.char || {};
   const varTree = state.varTree || {};
 
-  // tension：敌对遇敌加成——有路遇势力时读该势力与散人的张力
-  let tension = 0;
+  // tension：路遇场景紧张度——factionTensionProxy 取该势力在势力冲突表
+  // （动态覆盖+BASE_TENSION）里与任意势力的最强张力原值 0-100 直传
+  // （computeCausalBudget 内部已 *0.5）。这是势力冲突烈度代理，不是玩家-势力
+  // 关系账，待后续有玩家关系账再换源；无冲突记录/散人=0，不用人工兜底定档。
   const factionKey = state.encounter?.factionKey;
-  if (factionKey) {
-    const hostility = getTension(state.worldTension || varTree?.世界?.tension, factionKey, "散人");
-    tension = hostility >= 60 ? 30 : 15;
-  }
+  const tension = factionKey
+    ? factionTensionProxy(state.worldTension || varTree?.世界?.tension, factionKey)
+    : 0;
 
   // riskLevel：规则兜底 + 前哨 risk 覆盖接口（取较大者）
   let ruleRisk = 0;
