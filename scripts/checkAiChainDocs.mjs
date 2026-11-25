@@ -68,8 +68,16 @@ function changedFiles({ base, head }) {
 }
 
 function main() {
-  const files = changedFiles(parseArgs(process.argv.slice(2)));
+  const args = parseArgs(process.argv.slice(2));
+  const files = changedFiles(args);
   const result = evaluateChangedFiles(files, { docExists: existsSync(DOC_PATH) });
+  const prContext = Boolean(args.base || process.env.GITHUB_BASE_REF);
+  if (!prContext && existsSync(DOC_PATH) && readFileSync(DOC_PATH, "utf8").includes("本 PR")) {
+    console.error("AI 调用链文档门禁：失败");
+    console.error("main/非 PR 上下文中的架构说明不得残留状态草稿「本 PR」。");
+    console.error("请按 git 历史改成“已合并 #编号”；仍在开的 PR 写“待合 #编号”。");
+    process.exit(1);
+  }
   if (result.pass) {
     if (result.watched.length) console.log("AI 调用链文档门禁：通过（架构说明已随本轮更新）");
     else console.log("AI 调用链文档门禁：通过（本轮未触碰调用链关键文件）");
