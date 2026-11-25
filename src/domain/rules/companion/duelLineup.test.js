@@ -28,14 +28,26 @@ describe("每位冒险者的随从都随主人入队，是两个人", () => {
       const slots = Object.entries(cs).filter(([, c]) => c.servantOf);
       expect(slots, owner.name).toHaveLength(1);
       const [, slot] = slots[0];
-      expect(slot).toMatchObject({ unlocked: true, active: false, label: owner.follower.name });
+      expect(slot).toMatchObject({ unlocked: true, active: false });
+      expect(slot.label, owner.name).toContain(owner.follower.name);
       expect(buildEnemyUnit(companionNpcEntry(cs, slots[0][0])).movesetLocal.length, owner.follower.name).toBeGreaterThan(0);
     }
   });
 
-  it("重名随从（素商、仙音的青鸟）各占一个槽，不互相覆盖", () => {
+  it("重名随从（素商、仙音的青鸟）带主人名分开：各占一个槽、名字不同，切磋时认得出谁是谁", () => {
     const cs = recruit(byName("仙音"), recruit(byName("素商")));
-    expect(Object.values(cs).filter((c) => c.label === "青鸟")).toHaveLength(2);
+    const birds = Object.entries(cs).filter(([, c]) => c.servantOf && c.label.endsWith("青鸟"));
+    expect(birds.map(([, c]) => c.label).sort()).toEqual(["仙音的青鸟", "素商的青鸟"]);
+    const [[suKey], [xianKey]] = birds.sort(([, a], [, b]) => a.label.localeCompare(b.label));
+    const suActive = setActiveCompanion(cs, suKey);
+    expect(duelAllies(suActive, companionNpcEntry(cs, xianKey)).map((a) => a.key)).toEqual([suKey]);
+  });
+
+  it("留守在别处的随从换上出战位即算唤回", () => {
+    const cs = stationCompanion(recruit(byName("史燕")), "imported_阿财", { roomName: "客栈" });
+    const deployed = setActiveCompanion(cs, "imported_阿财");
+    expect(deployed.imported_阿财).toMatchObject({ active: true });
+    expect(deployed.imported_阿财.stationed).toBeUndefined();
   });
 
   it("开口方式按类型：机关人偶与哑巴随从不开口、灵兽不说人话、剑灵与人能说话", () => {

@@ -150,9 +150,14 @@ function followerPreset(f) {
   return { ...base, ...own, mute, beast: !!base.beast, voice };
 }
 
-function followerKey(owner) {
+// 随从重名（素商、仙音各有一只「青鸟」）时带主人名（「素商的青鸟」）：槽位 key、名单上的名字、
+// 好感等按名字记的关系都分开，两只鸟互不串账。
+function followerName(owner) {
   const f = owner.follower;
-  return importedCompanionKey(isSharedFollowerName(f.name) ? `${owner.name}·${f.name}` : f.name);
+  return isSharedFollowerName(f.name) ? `${owner.name}的${f.name}` : f.name;
+}
+function followerKey(owner) {
+  return importedCompanionKey(followerName(owner));
 }
 
 // 随从战斗数据：与主人同档（铁伯高一档），一次性生成后固化进存档，跟其余伙伴同一个"出生固化"哲学。
@@ -167,7 +172,7 @@ export function createFollowerCompanion(owner) {
   const tier = getTierPower(levelCap);
   const maxHp = hpFromNeigong(tier.neigong, special.体魄);
   const npcShape = {
-    name: f.name, id: followerKey(owner),
+    name: followerName(owner), id: followerKey(owner),
     levelCap, special, waigong: tier.waigong, neigong: tier.neigong, baseAtk: tier.baseAtk,
   };
   return {
@@ -196,7 +201,7 @@ export function unlockFollowerCompanion(companionState, owner) {
     ...companionState,
     [key]: {
       unlocked: true, active: false, data: createFollowerCompanion(owner), imported: true,
-      label: f.name, beast: preset.beast, mute: preset.mute, voice: preset.voice,
+      label: followerName(owner), beast: preset.beast, mute: preset.mute, voice: preset.voice,
       cannotSpeak: preset.mute || preset.beast, servantOf: ownerKey,
     },
   };
@@ -311,12 +316,15 @@ export function isCompanionUnlockedByName(companionState, name) {
 }
 
 // 换出战队友：把目标置 active，其余一律置 false（互斥）。
+// 留守在别处的队友换上出战位即算唤回（清 stationed）——人得在身边才能上场。
 // key 传 null 表示谁都不带。
 export function setActiveCompanion(companionState, key) {
   const next = { ...companionState };
   for (const k of allCompanionKeys(next)) {
     if (!next[k]) continue;
-    next[k] = { ...next[k], active: k === key };
+    const entry = { ...next[k], active: k === key };
+    if (k === key) delete entry.stationed;
+    next[k] = entry;
   }
   return next;
 }
