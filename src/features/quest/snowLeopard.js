@@ -82,8 +82,9 @@ export function resolveSnowInteraction(state, cmd) {
 
   // 挠痒：明确给雪豹挠痒（或「挠痒」且雪豹在场唯一语境）
   if (!flags.includes("snow_spirit_scratch") && !snowNegated(cmd, "[挠搔抓]")) {
-    const scratchHit = /(给|替|帮|为)?雪豹.{0,4}(挠|搔|抓)|(挠|搔|抓).{0,4}雪豹/.test(cmd)
-      || ((/(挠|搔|抓)痒/.test(cmd) || /挠一?挠|搔一?搔/.test(cmd)) && cmd.includes("雪豹"));
+    // 必须雪豹是被挠对象：「给/替/帮/为雪豹…挠」或「挠…雪豹」直接及物；
+    // 「我挠挠头，雪豹看着」这类自挠/旁观不误触发
+    const scratchHit = /(给|替|帮|为)雪豹.{0,4}(挠|搔|抓)|(挠|搔|抓)(一?挠|一?搔|一?抓)?雪豹/.test(cmd);
     if (scratchHit) {
       return {
         kind: "scratch",
@@ -96,18 +97,28 @@ export function resolveSnowInteraction(state, cmd) {
 
   // 喂食：明确喂雪豹 + 背包真有肉食——消耗一件肉（按 id 精确），写 snow_spirit_meat
   if (!flags.includes("snow_spirit_meat") && !snowNegated(cmd, "喂")) {
-    const feedHit = /喂(食|了|一口|点)?雪豹|给雪豹(喂|吃|丢|抛|递)|喂雪豹|拿.{0,4}(喂|给).{0,4}雪豹/.test(cmd);
+    const feedHit = /喂(食|了|一口|点)?雪豹|给雪豹(喂|吃|丢|抛|递)|喂雪豹|拿.{0,4}(喂|给).{0,4}雪豹|把.{1,10}(喂|给|丢|抛|递).{0,3}雪豹/.test(cmd);
     if (feedHit) {
       const inv = state.inv || [];
-      const meatIndex = inv.findIndex((entry) => isSnowMeatItem(entry));
-      if (meatIndex === -1) return null; // 无肉不触发，叙事自由发挥
-      const meat = inv[meatIndex];
-      const meatName = typeof meat === "string" ? meat : meat?.name || "肉";
+      const itemName = (entry) => (typeof entry === "string" ? entry : entry?.name || "");
+      // 指令点名了背包物品时以点名物为准：非肉不触发，不能偷换背包里第一块肉
+      const named = inv
+        .map((entry, index) => ({ entry, index, at: itemName(entry).length >= 2 ? cmd.indexOf(itemName(entry)) : -1 }))
+        .filter((hit) => hit.at !== -1)
+        .sort((a, b) => a.at - b.at)[0];
+      const meat = named ? named.entry : inv.find((entry) => isSnowMeatItem(entry));
+      if (!meat || !isSnowMeatItem(meat)) return null; // 点名物非肉 / 无肉——不触发，叙事自由发挥
+      const meatName = itemName(meat) || "肉";
       return {
         kind: "feed",
         changes: {
           flags: (f) => [...new Set([...(f || []), "snow_spirit_meat"])],
-          inv: (list) => (list || []).filter((entry, i) => i !== meatIndex),
+          // 按引用/id 精确移除目标件，不靠捕获 index（状态落账时背包可能已变）
+          inv: (list) => {
+            const arr = list || [];
+            const at = arr.findIndex((entry) => entry === meat || (meat?.id && entry?.id === meat.id) || itemName(entry) === meatName);
+            return at === -1 ? arr : arr.filter((_, i) => i !== at);
+          },
         },
         logs: [{ t: "sys", text: `  ※ 雪豹衔起「${meatName}」三两口吞下，金瞳里透出几分满足。（灵性·吃好了 已落账）` }],
         note: `\n[系统裁决：玩家喂雪豹吃「${meatName}」已结算——肉食一件已消耗、snow_spirit_meat 已落账。顺势叙述进食过程即可，禁重复扣物、禁写任何 snow 旗标。]`,

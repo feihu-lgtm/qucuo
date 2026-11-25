@@ -55,6 +55,33 @@ describe("resolveSnowInteraction 触发面", () => {
   it("无关指令不触发", () => {
     expect(resolveSnowInteraction(base(), "四处看看")).toBeNull();
   });
+  it("自挠/旁观不误触发：雪豹不是被挠对象", () => {
+    expect(resolveSnowInteraction(base(), "雪豹看着我，我挠挠头")).toBeNull();
+    expect(resolveSnowInteraction(base(), "我挠挠自己的背，雪豹眯着眼")).toBeNull();
+  });
+  it("点名非肉不触发，不偷扣背包里的肉", () => {
+    const st = base({ inv: [{ id: "m1", name: "羊肉" }, { id: "b1", name: "青稞饼" }] });
+    expect(resolveSnowInteraction(st, "喂雪豹吃青稞饼")).toBeNull();
+    expect(resolveSnowInteraction(st, "把青稞饼喂给雪豹")).toBeNull();
+  });
+  it("点名为肉扣该件，不扣错件", () => {
+    const st = base({ inv: [{ id: "m1", name: "羊肉" }, { id: "m2", name: "牛肉干" }] });
+    const r = resolveSnowInteraction(st, "把牛肉干喂雪豹");
+    expect(r.kind).toBe("feed");
+    const after = r.changes.inv(st.inv);
+    expect(after).toHaveLength(1);
+    expect(after[0].name).toBe("羊肉"); // 牛肉干被精确扣掉
+  });
+  it("喂雪豹吃X 句式点名", () => {
+    const st = base({ inv: [{ id: "m1", name: "羊肉" }, { id: "m2", name: "牛肉干" }] });
+    const r = resolveSnowInteraction(st, "喂雪豹吃牛肉干");
+    expect(r.changes.inv(st.inv).map((e) => e.name)).toEqual(["羊肉"]);
+  });
+  it("未点名时取背包第一块肉", () => {
+    const st = base({ inv: [{ id: "b1", name: "青稞饼" }, { id: "m1", name: "羊肉" }, { id: "m2", name: "牛肉干" }] });
+    const r = resolveSnowInteraction(st, "喂雪豹吃肉");
+    expect(r.changes.inv(st.inv).map((e) => e.name)).toEqual(["青稞饼", "牛肉干"]);
+  });
 });
 
 describe("quest rule 能吃到确定性 flag", () => {
