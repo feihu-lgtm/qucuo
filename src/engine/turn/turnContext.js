@@ -17,6 +17,7 @@ export { createPhaseSetter } from "./phaseSetter.js";
 // WO-05 零入度接线：场记板编号器/渲染器经此挂入依赖图（消费方在后续工单）。
 export { ensureItemId, resolveEntityByIdOrName } from "../../domain/rules/clapboard/entityId.js";
 export { createClapboardEntry, filterEntriesForViewer, renderClapboardSection } from "../../domain/rules/clapboard/clapboard.js";
+export { computeCausalBudget, DAILY_LOOT_CAP } from "../../domain/rules/judge/causalBudget.js";
 
 // 由 plan（resolveIntent 的裁决结果）+ env（hook 注入的状态/引用/胶水）组装 playTurn 的 ctx。
 export function createTurnContext({ plan, env }) {
