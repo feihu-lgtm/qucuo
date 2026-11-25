@@ -21,6 +21,10 @@ describe("WO-23C1 findEpithetCandidates（系统决定何时赐号）", () => {
     expect(got).toHaveLength(1);
     expect(got[0].isNew).toBe(true);
   });
+  it("门槛收紧：玩家胜利首入谱 grudge=0 不候选；grudge>=1 才候选", () => {
+    expect(findEpithetCandidates({}, roster({ 雪山派: { a: entry({ grudge: 0 }) } }))).toHaveLength(0);
+    expect(findEpithetCandidates({}, roster({ 雪山派: { a: entry({ grudge: 1 }) } }))).toHaveLength(1);
+  });
   it("tier 严格晋升 → 候选；不变/降阶不算", () => {
     const before = roster({ 雪山派: { a: entry({ tier: 1 }) } });
     const up = roster({ 雪山派: { a: entry({ tier: 2 }) } });

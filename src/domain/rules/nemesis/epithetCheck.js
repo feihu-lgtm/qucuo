@@ -19,6 +19,9 @@ export function findEpithetCandidates(before, after) {
       const beforeEntry = before?.[faction]?.entries?.[entryId];
       const isNew = !beforeEntry;
       const tierUp = beforeEntry && Number.isFinite(beforeEntry.tier) && Number.isFinite(entry.tier) && entry.tier > beforeEntry.tier;
+      // 门槛（路线图裁决）：玩家胜利导致的首入谱（grudge=0/tier=1）不赐号——
+      // 首入谱须 grudge>=1（玩家落败胜者入谱）；既有 entry 须 tier 严格晋升。
+      if (isNew && !(Number(entry.grudge) >= 1)) continue;
       if (!isNew && !tierUp) continue;
       out.push({ faction, entryId, entry, isNew, tierUp });
     }
