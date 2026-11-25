@@ -59,9 +59,18 @@ export function snowMeatGift(state, npc, item) {
 // 系统在叙事前确定性落定，不靠模型自证。保守识别：否定/假设/询问一律不触发。
 
 // 询问/假设/条件句整句豁免——宁可漏判不可误触发
-const SNOW_UNCERTAIN_RE = /[吗呢嘛？?]|要不要|如果|假如|若是|要不|是不是|能不能|可不可以|该不该|怎么|如何|怎样|为啥|为什么/;
+const SNOW_UNCERTAIN_RE = /[吗呢嘛？?]|要不要|如果|假如|若是|要不|是不是|能不能|可不可以|该不该/;
+// 「怎么/如何」仅当紧邻动作动词才视为询问方法；「我知道怎么做了」这类陈述不豁免
+const SNOW_HOW_RE = /(怎么|如何|怎样|为啥|为什么)[^，。！？,.!?]{0,3}(喂|给|挠|搔|吃|递|丢|抛)/;
 // 否定词紧贴动作（4 字内）视为否定
-const snowNegated = (cmd, verb) => new RegExp(`[不别没莫勿未休].{0,3}${verb}`).test(cmd);
+const snowNegated = (cmd, verb) => {
+  const re = new RegExp(`[不别没莫勿未休].{0,3}${verb}`, "g");
+  let m;
+  while ((m = re.exec(cmd))) {
+    if (cmd[m.index + m[0].length] !== "的") return true; // 「我不吃的肉」是定语非否定
+  }
+  return false;
+};
 
 export function isSnowMeatItem(item) {
   const name = typeof item === "string" ? item : item?.name || "";
@@ -78,7 +87,7 @@ export function isSnowMeatItem(item) {
 export function resolveSnowInteraction(state, cmd) {
   if (!cmd || typeof cmd !== "string") return null;
   if (!snowQuestActive(state) || !snowLeopardPresent(state)) return null;
-  if (SNOW_UNCERTAIN_RE.test(cmd)) return null;
+  if (SNOW_UNCERTAIN_RE.test(cmd) || SNOW_HOW_RE.test(cmd)) return null;
   if (!cmd.includes("雪豹") && !/挠|搔|喂/.test(cmd)) return null;
   const flags = state.flags || [];
 
@@ -112,7 +121,7 @@ export function resolveSnowInteraction(state, cmd) {
       // 不能偷换成背包里别的肉；泛称（肉/吃的/食物…）才允许回落第一块肉
       const offerM = cmd.match(/把([^，。！？,.!?]{1,10}?)(?:喂|给|丢|抛|递)/) || cmd.match(/喂(?:一?口|点)?雪豹吃([^，。！？,.!?]{1,10})/);
       if (offerM && !named) {
-        const span = offerM[1].replace(/^一?[口点些]/, "");
+        const span = offerM[1].replace(/^一?[块口点些片只]/, "").replace(/[吧呢啊呀啦了]+$/, "");
         if (span && !/^(肉|肉干|吃的|食物|肉食|东西|干粮|猎物)$/.test(span)) return null;
       }
       const meat = named ? named.entry : inv.find((entry) => isSnowMeatItem(entry));

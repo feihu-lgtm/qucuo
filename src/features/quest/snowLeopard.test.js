@@ -101,6 +101,18 @@ describe("resolveSnowInteraction 触发面", () => {
     // 泛称仍允许回落
     expect(resolveSnowInteraction(st, "喂雪豹吃肉")?.kind).toBe("feed");
   });
+  it("量词泛称仍可回落：把一块肉喂给雪豹", () => {
+    const st = base();
+    expect(resolveSnowInteraction(st, "把一块肉喂给雪豹")?.kind).toBe("feed");
+    expect(resolveSnowInteraction(st, "喂雪豹吃肉吧")?.kind).toBe("feed");
+  });
+  it("我不吃的X 是定语不是否定喂食", () => {
+    const st = base({ inv: [{ id: "m1", name: "风干牦牛肉" }] });
+    expect(resolveSnowInteraction(st, "把我不吃的风干牦牛肉喂给雪豹")?.kind).toBe("feed");
+  });
+  it("陈述句含怎么不误伤：我知道怎么做了", () => {
+    expect(resolveSnowInteraction(base(), "我知道怎么做了，给雪豹挠痒")?.kind).toBe("scratch");
+  });
   it("未点名时取背包第一块肉", () => {
     const st = base({ inv: [{ id: "b1", name: "青稞饼" }, { id: "m1", name: "羊肉" }, { id: "m2", name: "牛肉干" }] });
     const r = resolveSnowInteraction(st, "喂雪豹吃肉");
