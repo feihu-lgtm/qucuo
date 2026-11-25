@@ -9,6 +9,7 @@
 // 纯函数，禁 Date.now/Math.random——随机只走传入 rng。
 
 import { computeCausalBudget } from "./causalBudget.js";
+import { resolveFreeActExpense } from "./freeActPricing.js";
 import { resolveWarrantQuality, inferCategoryFromClaim } from "./warrantRules.js";
 import { allowedAffixesForBudget } from "../effects/affixPointTable.js";
 import { giftPreference, computeGiftWeight } from "../npc/giftWeight.js";
@@ -113,7 +114,8 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
     notes.push(`前提未裁，暂不结算：${a.kind}${a.target && a.target !== "无" ? `→${a.target}` : ""}（${a.condition}：${a.condition_text || "未述"}）`);
   }
   const actions = rawActions.filter((a) => !(a?.condition && a.condition !== "无"));
-  const signedRestKeys = new Set(); // WO-16F-F1 本 verdict 调息去重
+  const signedRestKeys = new Set();
+  const signedFreeActGainKeys = new Set(); // WO-16F-F1 本 verdict 调息去重
   // 任务交付去重预扫：quest_advance 提议命中带 deliver 的合法候选时，同目标同物的
   // give 动作必须压制——交付件归属由 questFlagRule 任务通道扣件结算，赠礼通道再转
   // 一次就是双扣件+虚假好感（村2 糌粑→老孙：交差不是送礼）。
@@ -157,20 +159,57 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
         facts.push({ id: nextFactId(), op: "CHANGE_VITALS_SILVER", hpDelta: -dmg, witnesses: wit });
         notes.push(`伤损签发：-${dmg} 气血（risk ${risk}${halved ? "，检定减半" : ""}）`);
       } else if (outcome === "得财") {
-        // 只有 proposal fit 非 absurd 才签——玩家随口「发财」不落银两。
-        const fitProp = proposalsPre.find((pp) => pp && pp.fit && pp.fit !== "absurd");
-        if (!fitProp) { notes.push("得财无 fit 合规 proposal，不签发"); continue; }
+        // S3 得财放宽：不再要求 fit 合格 proposal——按 tier 查表直签；
+        // natural proposal 取上半区间；fit absurd 不签；
+        // 同一游戏时辰 free_act 得财只签一次（varTree.世界.每日搜刮.freeActGain 同账本另键）。
+        const absurd = proposalsPre.some((pp) => pp && pp.fit === "absurd");
+        if (absurd) { notes.push("得财 proposal 离谱（absurd），不签发"); continue; }
+        const gainKey = `freeActGain_${Math.floor(turn / 2)}`;
+        const ledger = varTree?.世界?.每日搜刮 || {};
+        const gainDone = (ledger.freeActGain || []).includes(gainKey) || signedFreeActGainKeys.has(gainKey);
+        if (gainDone) { notes.push("本时辰已签得财，幂等跳过"); continue; }
+        signedFreeActGainKeys.add(gainKey);
         const ranges = [[2, 10], [10, 40], [40, 120]][tierRank];
-        const amt = ranges[0] + Math.floor(roll() * (ranges[1] - ranges[0] + 1));
-        facts.push({ id: nextFactId(), op: "CHANGE_VITALS_SILVER", moneyDelta: amt, witnesses: wit });
-        notes.push(`得财签发：+${amt} 银两（tier ${budget.tier}）`);
+        const natural = proposalsPre.some((pp) => pp && pp.fit === "natural");
+        // natural 取上半区间：lo' = lo + ceil((hi-lo)/2)
+        const lo = natural ? ranges[0] + Math.ceil((ranges[1] - ranges[0]) / 2) : ranges[0];
+        const amt = lo + Math.floor(roll() * (ranges[1] - lo + 1));
+        facts.push({ id: nextFactId(), op: "CHANGE_VITALS_SILVER", moneyDelta: amt, gainKey, witnesses: wit });
+        notes.push(`得财签发：+${amt} 银两（tier ${budget.tier}${natural ? "，natural上半" : ""}）`);
       } else if (outcome === "破费") {
-        // 玩家原话写明数额才签，且不超过现有银两；没写数额不签。
+        // S3 破费查价链：原话写数额按原话；没写依次查 驻场货架同名/同类价 →
+        // 物件志 → priceForQuality(category,"白")；都查不到按 risk 默认 无2/低5/中10/高20。
+        // 超囊中只扣到零并 notes 囊中不足。
         const m = String(action.text || "").match(/(\d+)\s*(?:两|银|钱)/);
-        if (!m) { notes.push("破费未写明数额，不签发"); continue; }
-        const amt = Math.min(parseInt(m[1], 10), money);
-        if (amt <= 0) { notes.push("破费数额超出囊中银两，不签发"); continue; }
+        let amt = 0;
+        let source = "原话";
+        if (m) {
+          amt = parseInt(m[1], 10);
+        } else {
+          const cat = action.item && action.item !== "无" ? (envelope.inv || []).find((e) => e && e.name === action.item)?.category || "misc" : "misc";
+          const hit = resolveFreeActExpense({
+            text: String(action.text || ""),
+            itemName: action.item && action.item !== "无" ? action.item : "",
+            category: cat,
+            presentNpcNames: (envelope.npcs || []).map((n) => n?.name).filter(Boolean),
+          });
+          if (hit) {
+            amt = hit.price;
+            source = hit.source;
+          } else {
+            amt = { 无: 2, 低: 5, 中: 10, 高: 20 }[risk] ?? 2;
+            source = `risk默认(${risk})`;
+          }
+        }
+        if (!(amt > 0)) { notes.push("破费查价为零，不签发"); continue; }
+        let clampNote = "";
+        if (amt > money) {
+          if (!(money > 0)) { notes.push("囊中原已空空，破费无从扣起，不签发"); continue; }
+          amt = money;
+          clampNote = "，囊中不足只扣到零";
+        }
         facts.push({ id: nextFactId(), op: "CHANGE_VITALS_SILVER", moneyDelta: -amt, witnesses: wit });
+        notes.push(`破费签发：-${amt} 银两（${source}${clampNote}）`);
       } else if (outcome === "调息") {
         // 同一游戏时辰只签一次——时辰两回合一档（restKey 按 watch=turn/2 取整），
         // varTree 记账跨回合防重 + 本 verdict 内 signedRest 去重（快照同读）。
