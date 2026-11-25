@@ -1,6 +1,7 @@
 // NPC 财物往来：赠礼 / 送银 / 交易。
 // 从 logic.js 按动作分组拆出——这组只管"东西和银子的来往"。
 import { CATEGORY_LABEL } from "../../domain/rules/economy/equipment.js";
+import { huntedConflictWithNpc } from "../../domain/rules/nemesis/huntedOrders.js";
 import { CATALOG_INDEX } from "../../domain/data/items/catalog.js";
 import { computeGiftWeight, giftPreferenceLabel } from "../../domain/rules/npc/giftWeight.js";
 import { isNpcAngry } from "../../domain/rules/combat/stealSystem.js";
@@ -281,6 +282,12 @@ export function giftSilver(state, npc, amount, now = Date.now()) {
 export function tradeWithNpc(state, npc) {
   if (!npc) return { logs: [{ t: "err", text: "  此地没有这位人物。" }] };
   if (isNpcAngry(state.varTree, npc.name)) return appeaseAngryNpc(state, npc, { kind: "trade" });
+  // WO-23C6 追杀令后果：随行同伴是被该势力通缉的叛徒 → deterministic 冷遇拒绝交易。
+  // 纯读追杀令账，不改任何事实；叛徒不随行（留守/未入队）则照常交易。
+  const hunted = huntedConflictWithNpc(state, npc);
+  if (hunted) {
+    return { logs: [{ t: "sys", text: `  ${npc.name}瞥见你身侧的${hunted.companionName}，脸色骤冷，「叛门之徒也敢登门？带着他滚——生意免谈。」` }] };
+  }
   // 日更杂货摊：换日先刷新货架（changes{room,npcState}+吆喝 logs 由调用方落账）。
   const refreshed = refreshDailyShop(state, npc);
   if (refreshed) npc = refreshed.npc;

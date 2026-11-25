@@ -10,6 +10,7 @@ import { stationedFavorDecayRule, followFavorDriftRule } from "../../domain/rule
 import { npcLetterRule } from "../../features/pigeon/inbound.js";
 import { pactWatchRule } from "../../features/pigeon/pactWatch.js";
 import { nemesisDailyRule } from "../../domain/rules/nemesis/nemesisDaily.js";
+import { huntedNoticeRule } from "../../domain/rules/nemesis/huntedOrders.js";
 import {
   alreadySatisfiedCollectRule,
   collectGroundItemsRule,
@@ -69,6 +70,7 @@ export function useWorldRulesRunner({
         npcLetterRule,
         pactWatchRule,
         nemesisDailyRule,
+        huntedNoticeRule,
         collectGroundItemsRule,
         innerGroundItemsRule,
         derivedMovesetRule,
