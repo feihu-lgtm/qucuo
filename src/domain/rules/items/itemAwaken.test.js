@@ -104,3 +104,29 @@ describe("settleNpcDuel 器物账本接线", () => {
     expect(vt?.世界?.器物谱).toBeUndefined();
   });
 });
+
+describe("Review 回归", () => {
+  it("首胜建档入谱不算斩宿敌（战前谱口径）", () => {
+    const st = {
+      time: 20, inv: [{ id: "wpn_001", name: "青钢剑", category: "weapon", equipped: true }],
+      room: { name: "黑风寨", npcs: [] },
+      char: { hp: [30, 40], money: 10, special: {} }, skills: [], flags: [],
+      questProgress: {}, varTree: { 角色: {}, 世界: {} }, pot: 0,
+    };
+    const foe = { name: "扎西", faction: "雪山派", levelCap: 1 };
+    // win+可辨认疤 → 同回合入谱建档；器物账本不得把他算 nemesisKill
+    const log = [{ round: 1, playerMove: { name: "青钢剑法" }, result: { damageToB: 5 } }];
+    const out = settleNpcDuel(st, foe, { outcome: "win", battleLog: log });
+    const vt = out.changes.varTree({ 角色: {}, 世界: {} });
+    expect(vt.世界.宿敌谱).toBeDefined(); // 确因疤建档
+    expect(vt.世界.器物谱.wpn_001.nemesisKills).toBe(0);
+    expect(vt.世界.器物谱.wpn_001.awakenReady).toBe(false);
+    // 再击败已 active 的同一宿敌 → 计斩
+    st.varTree.世界 = vt.世界;
+    st.time = 21; // 同 battleKey 幂等是设计内——跨场需推进时间
+    const out2 = settleNpcDuel(st, foe, { outcome: "win", battleLog: [] });
+    const vt2 = out2.changes.varTree({ 角色: {}, 世界: st.varTree.世界 });
+    expect(vt2.世界.器物谱.wpn_001.nemesisKills).toBe(1);
+    expect(vt2.世界.器物谱.wpn_001.awakenReady).toBe(true);
+  });
+});

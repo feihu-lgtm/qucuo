@@ -196,7 +196,9 @@ export function settleNpcDuel(state, npc, {
   // 同场 battleKey 幂等；斩宿敌谱 active entry 额外计 nemesisKills。
   if (outcome === "win" && Array.isArray(state.inv)) {
     const faction = nemesisFactionOf(npc);
-    const rosterNow = working.varTree?.世界?.宿敌谱 || {};
+    // 必须读战前谱（state 而非 working）——本回合 win+疤可能刚把对方建档入谱，
+    // 用战后谱会把「首胜」误算成斩宿敌，一场普通胜利直接 ready。
+    const rosterNow = state.varTree?.世界?.宿敌谱 || {};
     const nemesisHit = !!(faction && npc.name && findNemesisEntry(rosterNow, faction, npc.name)?.status === "active");
     const battleKey = `${state.time || 0}:${npc.id || npc.name || ""}`;
     let ledger = working.varTree?.世界?.器物谱 || {};
