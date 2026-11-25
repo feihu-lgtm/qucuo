@@ -9,7 +9,7 @@ import { CURRENT_VERSION } from "../utils/version.js";
 
 export function buildOverlayCtx({ ui, game, overlayState, autosave, actions, addLog, effectiveSpecialNow, onGameStarted }) {
   const { showSettings, showCharCreate, showOpening, showBody, showMusicPanel, showHomestead } = overlayState;
-  const { cardImportHandlers, screenHandlers, duelHandlers, questPanel, aiInspect, outfitAdvice } = actions;
+  const { cardImportHandlers, screenHandlers, duelHandlers, questPanel, aiInspect, outfitAdvice, handleInscribeWeapon } = actions;
   return {
     dispatchCommand: actions.dispatchCommand,
     // apiCfg/settingsInitialTab/uiScale/font/nsfwOn 已迁 sessionUiStore，OverlayHost 直接订阅。
@@ -62,6 +62,7 @@ export function buildOverlayCtx({ ui, game, overlayState, autosave, actions, add
       handleGoldenEgg: screenHandlers.handleGoldenEgg,
       inspectItem: aiInspect.inspectItem, handleConsumeItem: screenHandlers.handleConsumeItem,
       handleCollectGround: screenHandlers.handleCollectGround, handleToggleEquip: screenHandlers.handleToggleEquip,
+      handleInscribeWeapon,
       // activePersuasion/duelingNpc 已迁 sessionUiStore，GlobalOverlays 直接订阅。
       persuasionProgress: game.persuasionProgress,
       savePersuasionProgress: questPanel.savePersuasionProgress, finishPersuasion: questPanel.finishPersuasion,

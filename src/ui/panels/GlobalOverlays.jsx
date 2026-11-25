@@ -27,6 +27,7 @@ import { ocMenuRoutes } from "../../features/npc/ocRecruit.js";
 import ErrorBoundary from "../components/ErrorBoundary.jsx";
 import NpcActionMenu from "../components/NpcActionMenu.jsx";
 import ItemActionMenu from "../components/ItemActionMenu.jsx";
+import { awakenableWeapons } from "../../domain/rules/items/itemAwaken.js";
 import { OVERLAY, closeOverlay, openOverlay, useOverlay } from "../../store/uiStore.js";
 import {
   useSessionUi, setActiveNpcMenu, setActiveItemMenu, setCharacterPageTarget,
@@ -61,7 +62,7 @@ export default function GlobalOverlays({
   handleNpcLook, handleNpcTalk, handleNpcGift, handleNpcDuel, handleNpcSteal,
   handleNpcLearnSkill, handleNpcTrade, handleInviteCompanion,
   handleOcRecruit, handleRecallCompanion, handleGoldenEgg,
-  inspectItem, handleConsumeItem, handleCollectGround, handleToggleEquip,
+  inspectItem, handleConsumeItem, handleCollectGround, handleToggleEquip, handleInscribeWeapon,
   persuasionProgress, savePersuasionProgress, finishPersuasion,
   resetDuel, duelFinishHandler,
 }) {
@@ -225,6 +226,8 @@ export default function GlobalOverlays({
         onSell={(npc) => handleNpcTrade(npc)}
         onCollect={handleCollectGround}
         onEquip={handleToggleEquip}
+        awakenReady={typeof activeItemMenu.item === "object" && awakenableWeapons({ inv, varTree }).some((w) => w.id === activeItemMenu.item?.id)}
+        onInscribe={handleInscribeWeapon}
       />
     )},
     { show: activePersuasion, render: () => {

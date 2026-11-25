@@ -12,6 +12,7 @@ export default function ItemActionMenu({
   item, mode = "inventory", roomNpcs = [], zoneTheme,
   canConsume = false,
   onClose, onInspect, onConsume, onGive, onSell, onCollect, onEquip,
+  awakenReady = false, onInscribe,
 }) {
   const closeGuard = useOverlayCloseGuard(onClose);
   const [picker, setPicker] = useState(null); // null | "give" | "sell"
@@ -75,6 +76,10 @@ export default function ItemActionMenu({
         { key: "look", label: "查看", desc: "端详此物", enabled: true, onClick: () => { onInspect(item); onClose(); } },
       ]
     : [
+        // WO-23D2 器物觉醒入口：账本 ready 且仍装备中才出现——可觉醒是系统账，UI 只读
+        ...(awakenReady && typeof onInscribe === "function"
+          ? [{ key: "inscribe", label: "铭文", desc: "兵器灵性已醒，为它刻下铭文", enabled: true, onClick: () => { onInscribe(item); onClose(); } }]
+          : []),
         { key: "look", label: "查看", desc: "端详此物", enabled: true, onClick: () => { onInspect(item); onClose(); } },
         // 可装备之物：把「服食」位换成「穿戴/卸下」；不可装备的照旧显示服食。
         canEquip
