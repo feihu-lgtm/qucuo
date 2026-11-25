@@ -7,7 +7,10 @@
 // · 鉴权：`x-memory-hub-token` 必带；缺 cloudUrl/spaceId/hubToken 任一即 unbound 优雅降级
 // · deviceId 保留为 X-Device-Id header：服务端当前忽略但无拒收，留作未来按设备判冲突的线索
 
-const SERVER_REVS_KEY = "wuxia_mud_cloud_revs"; // 语义重指：服务端权威 rev 台账（原本地计数器同键迁移）
+// 独立新键（初审返修）：绝不复用旧 `wuxia_mud_cloud_revs`——旧键里是本地递增计数器，
+// 继承其值会把本地计数错当服务端权威 rev：hadLedger 误判 true，首次错位自动对齐永不发生。
+// 旧键天然失效（不迁移不读取），留存无害。
+const SERVER_REVS_KEY = "wuxia_mud_cloud_server_revs";
 const HUB_KEY_LS = "wuxia_mud_cloud_hub_key";
 const ALIGNED_ONCE_KEY = "wuxia_mud_cloud_aligned_once";
 

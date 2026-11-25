@@ -20,7 +20,6 @@ import {
 
 const CONFIG_KEY = "wuxia_mud_storage_config";
 const QUEUE_KEY = "wuxia_mud_cloud_queue";
-const REVS_KEY = "wuxia_mud_cloud_revs";
 const CONFLICTS_KEY = "wuxia_mud_cloud_conflicts";
 
 // ── 配置 ─────────────────────────────────────────────────────────────────────
@@ -76,7 +75,6 @@ function _lsRead(key, fallback) { try { const raw = localStorage.getItem(key); r
 function _lsWrite(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { return false; } }
 
 export function getCloudQueue() { return _lsRead(QUEUE_KEY, []); }
-export function getCloudRevs() { return _lsRead(REVS_KEY, {}); }
 export function getCloudConflicts() { return _lsRead(CONFLICTS_KEY, []); }
 
 // 入队：每键只留最新一份（同键后写覆盖前写——合并语义安全，存档本来就是全量快照）。
@@ -156,6 +154,9 @@ async function _flushCloudQueueInner() {
       } else {
         result = await hubDeleteSave(binding, entry.key, { expectedRev });
       }
+      // wipe 竞态（初审返修）：fetch await 期间发生抹除——响应返回后必须先核对翻代，
+      // 已翻代直接停止：不写台账不登记冲突（否则 clearAllServerRevs 之后又把已抹 rev 写回）。
+      if (_wipeEpoch !== startEpoch) { failed = false; break; }
       if (result.conflict) {
         // 首次错位自动对齐一次（PR-A 硬要求）：adapter 迁移/换绑后首推必 409——
         // 但仅限「无成功推送台账且从未对齐过」的键；已有台账的键再 409 是真实
@@ -171,6 +172,7 @@ async function _flushCloudQueueInner() {
           } else {
             result = await hubDeleteSave(binding, entry.key, { expectedRev: result.serverRev });
           }
+          if (_wipeEpoch !== startEpoch) { failed = false; break; } // 重推 await 期间翻代同样停笔
           if (result.ok) {
             if (entry.op === "put" && Number.isInteger(result.rev)) recordServerRev(entry.key, result.rev);
             if (entry.op === "del") clearServerRev(entry.key);

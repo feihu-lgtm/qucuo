@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   loadStorageConfig, saveStorageConfig, getStorageDriver, setStorageDriver,
-  configureCloudFetch, enqueueCloudPush, flushCloudQueue, getCloudQueue, getCloudRevs,
+  configureCloudFetch, enqueueCloudPush, flushCloudQueue, getCloudQueue,
   getCloudConflicts, resolveCloudConflict, wipeCloudAll, mirrorSaveWrite, _resetCloudStateForTest,
 } from "./storageDriver.js";
 import { getServerRevs, _resetCloudProtocolForTest } from "./cloudProtocol.js";
@@ -187,9 +187,7 @@ describe("WO-19/20 PR-A canonical adapter", () => {
     bodies.length = 0;
     configureCloudFetch(async (url, init) => { bodies.push(JSON.parse(init.body || "{}")); return okJson({ rev: 6 }); });
     resolveCloudConflict("autosave", "keep_local");
-    await vi.advanceTimersByTimeAsync(0);
-    await vi.runAllTimersAsync();
-    expect(bodies.some((b) => b.force === true)).toBe(true);
+    await vi.waitFor(() => { expect(bodies.some((b) => b.force === true)).toBe(true); }, { timeout: 2000, interval: 20 });
   });
 
   it("wipe 重写为 canonical DELETE /api/space/<spaceId>（单数无 saves 后缀）并带 token", async () => {
@@ -201,6 +199,51 @@ describe("WO-19/20 PR-A canonical adapter", () => {
     expect(calls[0].method).toBe("DELETE");
     expect(calls[0].url).toBe("https://cloud.example.com/api/space/sp1");
     expect(calls[0].headers["x-memory-hub-token"]).toBe("tok_test");
+  });
+
+  it("初审返修：旧本地计数器键（wuxia_mud_cloud_revs）不继承——有旧值仍按无台账首写 expectedRev=0", async () => {
+    boundCfg();
+    // 旧 seam 遗产：本地递增计数器残留在旧键——绝不当服务端权威 rev
+    localStorage.setItem("wuxia_mud_cloud_revs", JSON.stringify({ autosave: 5 }));
+    const bodies = [];
+    configureCloudFetch(async (url, init) => { bodies.push(JSON.parse(init.body)); return okJson({ rev: 1 }); });
+    enqueueCloudPush("autosave", { v: 1 });
+    await flushCloudQueue();
+    expect(bodies[0].expectedRev).toBe(0); // 不是 6
+  });
+
+  it("初审返修：旧键有值时 409 仍属首次错位——可自动对齐重推一次", async () => {
+    boundCfg();
+    localStorage.setItem("wuxia_mud_cloud_revs", JSON.stringify({ autosave: 5 }));
+    let n = 0;
+    const bodies = [];
+    configureCloudFetch(async (url, init) => {
+      n += 1;
+      bodies.push(JSON.parse(init.body));
+      if (n === 1) return { ok: false, status: 409, json: async () => ({ serverRev: 9 }) };
+      return okJson({ rev: 10 });
+    });
+    enqueueCloudPush("autosave", { v: 1 });
+    await flushCloudQueue();
+    expect(n).toBe(2);
+    expect(bodies[1].expectedRev).toBe(9);
+    expect(getCloudConflicts()).toEqual([]);
+  });
+
+  it("初审返修：wipe 发生在 fetch await 期间——响应返回后翻代停笔，不写台账", async () => {
+    boundCfg();
+    let resolvePut = null;
+    configureCloudFetch(async (url, init) => {
+      if (init.method === "PUT") return new Promise((res) => { resolvePut = res; }); // 悬住 PUT
+      return okJson({ ok: true }); // wipe 的 DELETE /api/space 即刻成功
+    });
+    enqueueCloudPush("autosave", { v: 1 });
+    const flushing = flushCloudQueue(); // 不 await——让 PUT 悬在飞
+    await vi.waitFor(() => { expect(typeof resolvePut).toBe("function"); }, { timeout: 1000, interval: 10 });
+    await wipeCloudAll(); // 翻代发生在 PUT 未返回期间
+    resolvePut(okJson({ rev: 1 })); // 迟到的成功响应
+    await flushing;
+    expect(getServerRevs().autosave).toBeUndefined(); // 台账不得写入已抹 rev
   });
 
   it("网络失败保留队列 + 退避重试，离线不丢", async () => {
