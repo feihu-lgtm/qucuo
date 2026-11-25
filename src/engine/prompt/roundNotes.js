@@ -95,11 +95,15 @@ export function buildQuestStageNote({ questProgress, flags, varTree, char, room,
       const needsGiver = first.giver !== null && quest.giver;
       const flagWorthy = (Array.isArray(first.completionFlag) ? first.completionFlag.length : !!first.completionFlag) || first.choices?.length;
       const rlFirst = first.requireLocation;
+      // deliver 收件人在场也算「这里」（面板同口径）——真正该交付的地方不能没有入口
+      const deliverHereFirst = !!first.deliver?.to && room.npcs.some(
+        (n) => n.name === first.deliver.to && isNpcVisibleInInnerRoom(room.name, innerRoomName, n),
+      );
       const hereFirst = rlFirst
         ? atStagePlace(first, room, innerRoomName)
         : quest.giver
-          ? room.npcs.some(n => n.name === quest.giver && isNpcVisibleInInnerRoom(room.name, innerRoomName, n))
-          : isAtQuestPlace(first.at, room.name, innerRoomName);
+          ? room.npcs.some(n => n.name === quest.giver && isNpcVisibleInInnerRoom(room.name, innerRoomName, n)) || deliverHereFirst
+          : isAtQuestPlace(first.at, room.name, innerRoomName) || deliverHereFirst;
       if (flagWorthy && hereFirst) {
         if (first.choices?.length && (questTriggerMode !== "script" || allCombat(first))) {
           noteLines.push(`《${quest.title}》在此可开启——这一步的推进由玩家在任务面板抉择，叙事最多写到撞见此景，不要在 flags_add 加这一阶段的 flag`);

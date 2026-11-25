@@ -7,7 +7,7 @@
 //   除非 questTriggerMode==="script" 且非全战斗（旧 script 通道的系统内替代）；
 //   localOnly / 雪豹排除——前者有专属 feature，后者 resolveSnowInteraction 确定性发旗。
 import { QUCUO_QUESTS } from "../../data/quests/qucuoQuests.js";
-import { getCurrentStage, isQuestGateOpen, canBypassExclusive } from "./questEngine.js";
+import { getCurrentStage, isChoiceOpen, isQuestGateOpen, canBypassExclusive } from "./questEngine.js";
 import { isNpcVisibleInInnerRoom } from "../map/innerMap.js";
 import { isAtQuestPlace } from "./questPlace.js";
 
@@ -31,7 +31,7 @@ function flagList(completionFlag) {
   return completionFlag ? [completionFlag] : [];
 }
 
-function stageCandidates(quest, stage, { room, inv, innerRoomName, questTriggerMode }) {
+function stageCandidates(quest, stage, { room, inv, innerRoomName, questTriggerMode, flags = [] }) {
   if (!stage) return [];
   // deliver 闸：收件人须此刻在场（过内层可见性），交付件须真在包里
   const deliver = stage.deliver;
@@ -53,8 +53,13 @@ function stageCandidates(quest, stage, { room, inv, innerRoomName, questTriggerM
   const combatFlags = new Set((stage.choices || [])
     .filter((choice) => choice.resolve === "combat" && choice.combatNpc)
     .map((choice) => choice.flag));
+  // 分支前提门槛：choice 自带的前置条件（requiresFlags 等）未满足时该分支旗不进候选——
+  // questEngine advanceQuestStages 本来就用 isChoiceOpen 拒收关门分支，候选不能先漏出去。
+  const closedFlags = new Set((stage.choices || [])
+    .filter((choice) => choice.flag && !isChoiceOpen(choice, flags))
+    .map((choice) => choice.flag));
   return flagList(stage.completionFlag)
-    .filter((flag) => !combatFlags.has(flag))
+    .filter((flag) => !combatFlags.has(flag) && !closedFlags.has(flag))
     .map((flag) => ({
       questId: quest.id,
       flag,
@@ -74,7 +79,7 @@ export function questAdvanceCandidates({
     if (prog?.status === "locked_by_exclusive" || prog?.status === "completed") continue;
     if (!isQuestGateOpen(quest, questProgress, flags, varTree)) continue;
     if (quest.id === "hidden_all_collect_line" && !canBypassExclusive({ char, flags })) continue;
-    const ctx = { room, inv, innerRoomName, questTriggerMode };
+    const ctx = { room, inv, innerRoomName, questTriggerMode, flags };
     if (prog?.status === "active") {
       out.push(...stageCandidates(quest, getCurrentStage(quest, prog), ctx));
     } else {
@@ -85,11 +90,16 @@ export function questAdvanceCandidates({
       // roundNotes 旧 needsGiver/giverHere 口径（有 giver 就要 giver 在场）与面板矛盾，已同源修正。
       const first = quest.stages[0];
       const rl = first.requireLocation;
+      // deliver 收件人在场也算「这里」（面板同口径）——不然 ❢/候选只在发布人身边出现，
+      // 真正该交付的地方反而开不了（村2 糌粑→老孙饭馆在 script/自然触发下白跑）。
+      const deliverHere = !!first.deliver?.to && (room?.npcs || []).some(
+        (n) => n.name === first.deliver.to && isNpcVisibleInInnerRoom(room?.name, innerRoomName, n),
+      );
       const here = rl
         ? atStagePlace(first, room, innerRoomName)
         : quest.giver
-          ? (room?.npcs || []).some((n) => n.name === quest.giver && isNpcVisibleInInnerRoom(room?.name, innerRoomName, n))
-          : isAtQuestPlace(first.at, room?.name, innerRoomName);
+          ? (room?.npcs || []).some((n) => n.name === quest.giver && isNpcVisibleInInnerRoom(room?.name, innerRoomName, n)) || deliverHere
+          : isAtQuestPlace(first.at, room?.name, innerRoomName) || deliverHere;
       if (here) {
         out.push(...stageCandidates(quest, first, ctx));
       }

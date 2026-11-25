@@ -67,6 +67,38 @@ describe("questAdvanceCandidates 候选生成", () => {
     expect(out.some((c) => c.flag === "q_mix_talk")).toBe(true);
     expect(out.some((c) => c.flag === "q_mix_fight")).toBe(false);
   });
+  it("首阶段 deliver：收件人在场（giver 不在）也算「这里」——面板同口径", () => {
+    const DELIVER_FIRST = {
+      id: "q_df", title: "送糌粑", giver: "才旦",
+      stages: [{ description: "把糌粑交给老孙", completionFlag: "q_df_done", deliver: { to: "老孙", item: "糌粑" } }],
+    };
+    // 未开启、才旦不在场、老孙在饭馆、糌粑在包——应出候选（script 通道不再白跑）
+    const base = { ...BASE,
+      room: { name: "鱼定村", npcs: [{ name: "老孙" }] },
+      inv: [{ name: "糌粑" }], quests: [DELIVER_FIRST], questTriggerMode: "script" };
+    const out = questAdvanceCandidates(base);
+    expect(out.some((c) => c.flag === "q_df_done")).toBe(true);
+    // 收件人也不在：无候选
+    const noOne = { ...base, room: { name: "鱼定村", npcs: [] } };
+    expect(questAdvanceCandidates(noOne).length).toBe(0);
+  });
+
+  it("分支前提未开：requiresFlags 未满足的 choice 旗不进候选", () => {
+    const GATE_CHOICE = {
+      id: "q_gate", title: "门考", giver: "老孙",
+      stages: [{ description: "分支", completionFlag: ["q_gate_token", "q_gate_plain"], choices: [
+        { flag: "q_gate_token", label: "令牌路", resolve: "auto", requiresFlags: ["q_prereq_done"] },
+        { flag: "q_gate_plain", label: "平凡路", resolve: "auto" }] }],
+    };
+    const base = { ...BASE, questProgress: { q_gate: { status: "active", currentStageIndex: 0 } }, questTriggerMode: "script", quests: [GATE_CHOICE], flags: [] };
+    const out = questAdvanceCandidates(base);
+    expect(out.some((c) => c.flag === "q_gate_token")).toBe(false);
+    expect(out.some((c) => c.flag === "q_gate_plain")).toBe(true);
+    // 前提满足后两支都开
+    const opened = { ...base, flags: ["q_prereq_done"] };
+    expect(questAdvanceCandidates(opened).some((c) => c.flag === "q_gate_token")).toBe(true);
+  });
+
   it("非 choices 叙事阶段任何模式都候选；completed/locked 不候选", () => {
     const at3 = { ...BASE, questProgress: activeAt(3) };
     expect(questAdvanceCandidates(at3).some((c) => c.flag === "q_test_free")).toBe(true);
