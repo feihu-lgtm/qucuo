@@ -13,6 +13,7 @@
 
 import { buildIndex, lexicalRank } from "./lexical.js";
 import { stripOtherInnerThoughts } from "./proseChunker.js";
+import { branchVisible } from "./lineage.js";
 
 // 强相关邻段连带的段落名额：只有前 N 名配得上拉邻段（再多的话场记板会被原文淹没）。
 export const PROSE_NEIGHBOR_QUOTA = 3;
@@ -21,12 +22,16 @@ const NEIGHBOR_RADIUS = 1;
 
 // witnesses 硬过滤：段落可见 ⇔ witnesses 含 "*"（公共）或含视角人物本人。
 // viewer 为空时只看公共段——宁可少召回，不可串味。
-export function filterVisibleChunks(chunks, viewer, { epoch, currentTurn } = {}) {
+export function filterVisibleChunks(chunks, viewer, { epoch, currentTurn, lineage } = {}) {
   return (chunks || []).filter((c) => {
-    // 回合上限：不晚于当前回合才可见（防未来剧透）。
-    // 注：saveEpoch 时间线隔离方案暂停——gameEpoch 是内存计数器不可持久化，
-    // 等调度裁决持久身份方案后再补（epoch 参数保留在接口里不接逻辑）。
-    if (Number.isFinite(currentTurn) && Number.isFinite(c?.turn) && c.turn > currentTurn) return false;
+    // 时间线可见性（读档按需分叉）：谱系传入时 chunk.branchId 必须命中分支、
+    // 非头 turn<=upTo、头 turn<=currentTurn、无 branchId 旧段一律不可见；
+    // 谱系未传的裸路径（测试/迁移期）退回纯回合上限口径。
+    if (Array.isArray(lineage)) {
+      if (!branchVisible(c, lineage, currentTurn)) return false;
+    } else if (Number.isFinite(currentTurn) && Number.isFinite(c?.turn) && c.turn > currentTurn) {
+      return false;
+    }
     const w = Array.isArray(c?.witnesses) ? c.witnesses : [];
     if (w.includes("*")) return true;
     return viewer ? w.includes(viewer) : false;
@@ -36,12 +41,12 @@ export function filterVisibleChunks(chunks, viewer, { epoch, currentTurn } = {})
 // 段号解析：契约 id 为 P<turn>_<seq>；迁移老数据是 P<turn>_legacy…/P<turn>_note…
 // 无数字段号的返回 null（不参与邻段连带，但本身仍可被召回）。
 export function chunkSeq(chunk) {
-  // 新格式 P<saveEpoch>_<turn>_<seq> 三段数字；legacy P<turn>_<seq> 两段；
-  // 迁移老数据 P<turn>_legacy…/P<turn>_note… 无数字段号 → null（不参与邻段连带）。
+  // 显式 seq 字段优先（branchId 本身可能含下划线，靠拆 id 必碎）；
+  // 无字段的老数据退回拆 id：legacy P<turn>_<seq> 两段数字。
+  if (Number.isFinite(chunk?.seq)) return chunk.seq;
   const parts = String(chunk?.id || "").split("_");
-  // 除 P 头外全部位都是数字才算契约段号（legacy/note 中段含字母 → null）
-  const ok = parts.length >= 2 && parts.length <= 3 && /^P\d+$/.test(parts[0]) && parts.slice(1).every((x) => /^\d+$/.test(x));
-  return ok ? Number(parts[parts.length - 1]) : null;
+  const ok = parts.length === 2 && /^P\d+$/.test(parts[0]) && /^\d+$/.test(parts[1]);
+  return ok ? Number(parts[1]) : null;
 }
 
 // 召回侧动态可见文本：写库即定稿的 publicText 是按写入时视角剥的——
@@ -69,10 +74,10 @@ export function rankProseChunks(chunks, queryText, viewer, scope = {}) {
 // 按 (turn, seq) 排序后把相邻段号连续的分组拼成一段原文（\n 连接），
 // 跨回合/不连续的各自独立成条。返回 [{ ids, turn, text, anchorScore, anchorId }]。
 // 原字不改——合并只是拼接，绝不改写/摘要。
-export function expandWithNeighbors(allChunks, hits, { quota = PROSE_NEIGHBOR_QUOTA, viewer = "", epoch, currentTurn } = {}) {
+export function expandWithNeighbors(allChunks, hits, { quota = PROSE_NEIGHBOR_QUOTA, viewer = "", epoch, currentTurn, lineage } = {}) {
   if (!hits?.length) return [];
   // fix：邻段只能在 viewer 可见段里拉——全库 id 会把未见证段带进来。
-  const visible = filterVisibleChunks(allChunks, viewer, { epoch, currentTurn });
+  const visible = filterVisibleChunks(allChunks, viewer, { epoch, currentTurn, lineage });
   const visibleIds = new Set(visible.map((c) => c.id));
   const byTurnSeq = new Map();
   for (const c of visible) {

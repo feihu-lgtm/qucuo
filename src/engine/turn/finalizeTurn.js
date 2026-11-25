@@ -3,6 +3,8 @@
 // 记账失败只记监控、不阻塞回合。
 
 import { commitRound } from "../act/commitRound.js";
+import { writeTurnProse } from "../act/proseWrite.js";
+import { addProseChunks as proseChunkSink } from "../ports/recallBlock.js";
 import { runBookkeepAfterTurn } from "../act/bookkeepTurn.js";
 import { PHASE, turnMonitor, withTurnContext } from "../../infra/turnMonitor.js";
 
@@ -27,6 +29,16 @@ export async function finalizeTurn({ ctx, trace, turn, turnOpts, opts, setPhase 
     return result;
   });
   await Promise.resolve();
+  // WO-18 原文段落写挂：事务落盘成功且结果未 stale 才触发——回滚的叙事
+  // 永进不了段落库。fire-and-forget 不阻塞回合（写挂内部静默降级）。
+  if (!ctx.isStale?.() && turn?.prosePayload) {
+    writeTurnProse({
+      ...turn.prosePayload,
+      guard: ctx.proseEpochGuard,
+      addChunks: ctx.proseSink || proseChunkSink,
+      seqAlloc: ctx.proseSeqAlloc,
+    });
+  }
   if (!ctx.deferMonitorFinish) turnMonitor.finish(trace, "行动完成");
   const bookkeep = ctx.bookkeep === false ? null : ctx.bookkeep || runBookkeepAfterTurn;
   const bookkeepCtx = {

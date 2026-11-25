@@ -67,7 +67,7 @@ export async function runKnowledgeTurn({ varTreeLatest, roomNpcNames, infoDomain
 // 注入 prompt，让 AI"想起"窗口外的伏笔/承诺/旧账。
 // 双路查询：Q_intent=玩家这句话；Q_context=上轮引擎回复 + 当前位置/在场人物。
 // 全程降级安全：没开向量开关或召回失败，recallInfo 为 null，这段完全不影响后续流程。
-export async function runRecall({ apiCfg, cmd, lastAiText, room, varTreeLatest, flags, activeTarget, activeGroundItem, isTalk, talkTarget, followingNames = [], recentTexts = [], viewer = "", epoch, currentTurn } = {}) {
+export async function runRecall({ apiCfg, cmd, lastAiText, room, varTreeLatest, flags, activeTarget, activeGroundItem, isTalk, talkTarget, followingNames = [], recentTexts = [], viewer = "", epoch, currentTurn, lineage } = {}) {
   // WO-18：不在这层按 embeddingReady 截停——原文段落召回是纯本地词法路，
   // 没开向量也必须跑；向量纸条/reembed 的开关判断统一收进 runFormattedRecall 内部。
   // 召回前对账（后台自愈，不阻塞本轮）：把换模型后指纹过期、召不回的老纸条重算向量写回。
@@ -93,5 +93,6 @@ export async function runRecall({ apiCfg, cmd, lastAiText, room, varTreeLatest, 
     viewer,
     epoch,
     currentTurn,
+    lineage,
   });
 }

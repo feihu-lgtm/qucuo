@@ -41,6 +41,21 @@ export async function getProseChunksByTurn(turn) {
   }
 }
 
+// 按分支取段（v3 branchId 索引）：读档 reconcile 判旧未来、检索按谱系过滤都用。
+export async function getProseChunksByBranch(branchId) {
+  if (!branchId) return [];
+  try {
+    const store = await memoryStoreOf("readonly", STORE);
+    return await new Promise((resolve, reject) => {
+      const req = store.index("branchId").getAll(branchId);
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  } catch (_) {
+    return []; // 降级：索引缺失/库异常按空处理
+  }
+}
+
 export async function getAllProseChunks() {
   try {
     const store = await tx("readonly");
@@ -79,7 +94,7 @@ export async function countProseChunks() {
 // 拿不准就留空字符串——不编造）。
 // 幂等口径：不设 proseMigrated 状态旗——同一存档再迁一遍产出完全相同的
 // 确定性 chunk id，put 自然覆盖，不重复增生；少一个状态源就不会半死。
-export function migrateLegacyConvoAndNotes(saveSnapshot, { notes = [] } = {}) {
+export function migrateLegacyConvoAndNotes(saveSnapshot, { notes = [], branchId = "", seqStart = 1 } = {}) {
   if (!saveSnapshot || typeof saveSnapshot !== "object") return [];
   const chunks = [];
   const timeNow = Number(saveSnapshot.time) || 0;
@@ -130,6 +145,16 @@ export function migrateLegacyConvoAndNotes(saveSnapshot, { notes = [] } = {}) {
       anchorFactIds: [],
       migrated: true,
     });
+  }
+  // 谱系补挂：迁移进根分支的 chunk 必须带 branchId/seq（检索可见性硬口径）。
+  // seq 从 seqStart 顺序递增——同一存档输入顺序确定，幂等键仍是确定性 id+put 覆盖。
+  if (branchId) {
+    let seq = seqStart - 1;
+    for (const c of chunks) {
+      seq += 1;
+      c.branchId = branchId;
+      c.seq = seq;
+    }
   }
   return chunks;
 }

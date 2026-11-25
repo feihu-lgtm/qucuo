@@ -135,3 +135,27 @@ describe("WO-18 复审补测——时间线隔离/格式/见证标签", () => {
     expect(r.recallBlock.length).toBeLessThan(300);
   });
 });
+
+describe("WO-18 谱系——检索可见性", () => {
+  beforeEach(() => {
+    globalThis.indexedDB = new IDBFactory();
+    _resetMemoryDbForTest();
+  });
+  const lin = [{ b: "bOld", upTo: 5 }, { b: "bHead", upTo: null }];
+  const seedLin = async () => addProseChunks([
+    { id: "bOld_3_1", branchId: "bOld", seq: 1, turn: 3, kind: "raw_memory", location: "", witnesses: ["*"], entities: [], publicText: "铸剑旧事正史", rawText: "铸剑旧事正史", importance: 1, anchorFactIds: [] },
+    { id: "bOld_8_1", branchId: "bOld", seq: 2, turn: 8, kind: "raw_memory", location: "", witnesses: ["*"], entities: [], publicText: "铸剑旧未来分支", rawText: "铸剑旧未来分支", importance: 1, anchorFactIds: [] },
+    { id: "bHead_6_1", branchId: "bHead", seq: 1, turn: 6, kind: "raw_memory", location: "", witnesses: ["*"], entities: [], publicText: "铸剑新分支正文", rawText: "铸剑新分支正文", importance: 1, anchorFactIds: [] },
+    { id: "P2_1", turn: 2, kind: "raw_memory", location: "", witnesses: ["*"], entities: [], publicText: "铸剑无branchId遗产", rawText: "铸剑无branchId遗产", importance: 1, anchorFactIds: [] },
+  ]);
+
+  it("分叉后旧未来不可见、正史与新分支可见、无 branchId 一律不可见", async () => {
+    await seedLin();
+    const out = await recallProse({ queryText: "铸剑", viewer: "主角", lineage: lin, currentTurn: 10 });
+    const texts = out.map((e) => e.text).join("\n");
+    expect(texts).toContain("正史");
+    expect(texts).toContain("新分支");
+    expect(texts).not.toContain("旧未来");
+    expect(texts).not.toContain("遗产");
+  });
+});

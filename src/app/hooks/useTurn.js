@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef } from "react";
-import { gameActions, gameStore, subscribeGameReplaced, getGameEpoch, isGameEpochStale } from "../../store/gameStore.js";
+import { gameActions, gameStore, subscribeGameReplaced, getGameEpoch, isGameEpochStale, allocProseSeq } from "../../store/gameStore.js";
 import { snapshotIntentPending } from "../../store/intentPendingStore.js";
 import { applyResult } from "../../features/run.js";
 import { parseLocalCommand } from "../../engine/localCommands.js";
@@ -154,6 +154,10 @@ export function useTurn({
       cmd, opts, extraReplies, interactMode: effMode, apiCfg, gm, _trace, isStale,
       proseEpochGuard: () => isGameEpochStale(turnEpoch),
       proseEpoch: turnEpoch,
+      // 段落 seq 同步分配器：zustand 写读同步，同一 tick 内先读再写即原子——
+      // 同回合连写（连搭话）各自拿到不重叠的 seq 区间。谱系缺失时顺手补建根
+      // 分支（新开一局/老存档首写都经此路落地）。
+      proseSeqAlloc: allocProseSeq,
       pending: snapshotIntentPending(),
       state: {
         ...gameStore.getState(),

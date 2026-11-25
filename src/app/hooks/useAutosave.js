@@ -3,7 +3,8 @@ import { createAutosaveScheduler, noteAutosaveSaved, resetAutosaveProgress, getR
 import { snapshotFromStore } from "../../store/persist.js";
 import { setRngState } from "../../utils/rng.js";
 import { DEFAULT_PRESETS } from "../../engine/newGame.js";
-import { gameActions, gameStore, markGameReplaced } from "../../store/gameStore.js";
+import { gameActions, gameStore, markGameReplaced, getGameEpoch } from "../../store/gameStore.js";
+import { reconcileProseLineageAfterLoad } from "./proseReconcile.js";
 import { OVERLAY, closeOverlay } from "../../store/uiStore.js";
 import { autoSave, tryRestoreSave, flushLocalBackup, isCompatibleCharShape, isCompatibleRoomShape } from "../../infra/saves.js";
 import { statsForQuality } from "../../domain/rules/economy/equipment.js";
@@ -188,6 +189,9 @@ export function useAutosave({
         setInnerRoomName(restoredInnerRoomName);
       }
       markGameReplaced();
+      // 原文段落谱系 reconcile（异步不阻塞读档）：无谱系建根+迁移、有旧未来按需分叉。
+      // markGameReplaced 刚 bump 过 epoch——捕获新代次防串台。
+      void reconcileProseLineageAfterLoad(snap, { epoch: getGameEpoch() }).catch(() => {});
       closeOverlay(OVERLAY.SETTINGS);
     };
     const scheduler = schedulerRef.current;

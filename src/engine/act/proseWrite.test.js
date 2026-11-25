@@ -58,35 +58,48 @@ describe("writeTurnProse — 原文段落写挂", () => {
   });
 });
 
-describe("WO-18 阶段零——epoch id 与同回合续号", () => {
+
+describe("WO-18 谱系——allocator 写挂", () => {
   beforeEach(() => {
     globalThis.indexedDB = new IDBFactory();
     _resetMemoryDbForTest();
   });
   const flush = () => new Promise((r) => setTimeout(r, 40));
 
-  it("同回合两次写挂 seq 接续不撞号", async () => {
-    const { getProseChunksByTurn } = await import("../../infra/proseStore.js");
-    const args = {
-      narrativeText: "第一次搭话正文", turn: 5, location: "x", playerName: "主角",
-      addChunks: addProseChunks, listChunksByTurn: getProseChunksByTurn,
-    };
-    writeTurnProse(args);
-    await flush();
-    writeTurnProse({ ...args, narrativeText: "第二次搭话正文" });
-    await flush();
-    const all = await getAllProseChunks();
-    expect(all.length).toBe(2);
-    expect(all.map((c) => c.id).sort()).toEqual(["P5_1", "P5_2"]);
-  });
-
-  it("无 epoch 时 legacy id 形状不变（P<turn>_<seq>）", async () => {
+  it("allocator 注入：branchId 进 chunk+id，显式 seq 字段", async () => {
+    let seq = 0;
     writeTurnProse({
-      narrativeText: "正文", turn: 5, location: "x", playerName: "主角",
+      narrativeText: "第一段。\n第二段。", turn: 5, location: "x", playerName: "主角",
       addChunks: addProseChunks,
+      seqAlloc: (n) => { const start = seq + 1; seq += n; return { branchId: "bT1", startSeq: start }; },
     });
     await flush();
     const all = await getAllProseChunks();
-    expect(all[0].id).toBe("P5_1");
+    expect(all).toHaveLength(2);
+    expect(all[0].branchId).toBe("bT1");
+    expect(all[0].id).toBe("bT1_5_1");
+    expect(all[1].seq).toBe(2);
+  });
+
+  it("同分支连续两次同 turn 写不撞号（allocator 真原子递增）", async () => {
+    let seq = 0;
+    const alloc = (n) => { const start = seq + 1; seq += n; return { branchId: "bT2", startSeq: start }; };
+    const base = { turn: 5, location: "x", playerName: "主角", addChunks: addProseChunks, seqAlloc: alloc };
+    writeTurnProse({ ...base, narrativeText: "第一次" });
+    writeTurnProse({ ...base, narrativeText: "第二次" });
+    await flush();
+    const all = await getAllProseChunks();
+    expect(all).toHaveLength(2);
+    expect(new Set(all.map((c) => c.id)).size).toBe(2);
+  });
+
+  it("迟到写入被 guard 丢弃", async () => {
+    writeTurnProse({
+      narrativeText: "迟到的正文", turn: 5, location: "x", playerName: "主角",
+      addChunks: addProseChunks, guard: () => true,
+      seqAlloc: () => ({ branchId: "bT3", startSeq: 1 }),
+    });
+    await flush();
+    expect(await countProseChunks()).toBe(0);
   });
 });

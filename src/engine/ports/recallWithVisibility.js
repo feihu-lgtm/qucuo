@@ -13,6 +13,9 @@
 
 import { getEmbedding, embeddingReady, embeddingFingerprint } from "./embeddingService.js";
 import { getAllMemories } from "../../infra/memoryStore.js";
+
+// ports 转手出口：app 层 reconcile 等消费方经此拿取，不新增跨层 infra 计数
+export { getAllMemories };
 import { rerank, applyRerank } from "./rerank.js";
 import { recall } from "../../domain/rules/memory/recallEngine.js";
 import { noteVisibleTo } from "../../domain/rules/memory/note.js";

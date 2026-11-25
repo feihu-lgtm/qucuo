@@ -4,7 +4,7 @@
 // 小纸条向量召回维持原样作补充，两者在此混排成一块场记板。
 import { embeddingReady } from "./embeddingService.js";
 import { recallWithVisibility } from "./recallWithVisibility.js";
-import { getAllProseChunks, addProseChunks, getProseChunksByTurn } from "../../infra/proseStore.js";
+import { getAllProseChunks, addProseChunks, getProseChunksByTurn, getProseChunksByBranch, migrateLegacyConvoAndNotes } from "../../infra/proseStore.js";
 import { rankProseChunks, expandWithNeighbors } from "../../domain/rules/memory/proseRecall.js";
 
 const DEFAULT_HEADER = "\n\n[往事正本·与此刻情形相关的原文记忆，可能不在最近对话里，供你行文时自然照应，不要生硬复述]\n";
@@ -16,19 +16,19 @@ const WEAK_LINE_CHARS = 40;
 
 // 段落库写入口的 ports 出口：engine 层不许直连 infra（棘轮只减不增），
 // runTurn 的写挂经此转手拿 addProseChunks——与上方读取共用同一条 import，不新增跨层计数。
-export { addProseChunks, getProseChunksByTurn };
+export { addProseChunks, getProseChunksByTurn, getProseChunksByBranch, migrateLegacyConvoAndNotes };
 
 // 原文段落召回（ports 层编排：infra 读库 + domain 纯函数打分/连带）。
 // viewer 是查询视角人物名——witnesses 硬过滤以它为准；不传只看公共段。
 // 失败/空库一律降级为空数组，绝不阻断回合。
-export async function recallProse({ queryText, viewer, topK = 5, epoch, currentTurn } = {}) {
+export async function recallProse({ queryText, viewer, topK = 5, epoch, currentTurn, lineage } = {}) {
   try {
     const all = await getAllProseChunks();
     if (!all.length) return [];
-    const scope = { epoch, currentTurn };
+    const scope = { epoch, currentTurn, lineage };
     const hits = rankProseChunks(all, queryText || "", viewer, scope);
     if (!hits.length) return [];
-    return expandWithNeighbors(all, hits, { viewer, epoch, currentTurn }).slice(0, topK);
+    return expandWithNeighbors(all, hits, { viewer, epoch, currentTurn, lineage }).slice(0, topK);
   } catch (_) {
     return [];
   }
@@ -125,6 +125,7 @@ export async function runFormattedRecall({
   budgetChars = RECALL_BUDGET_CHARS,
   epoch,
   currentTurn,
+  lineage,
 }) {
   // 原文段落召回与向量开关无关：纯本地词法检索，永远跑（失败静默降级空数组）。
   // 查询词 = 玩家输入 + 上下文，专名命中多半在输入里，上下文补场景词。
@@ -134,6 +135,7 @@ export async function runFormattedRecall({
     topK,
     epoch,
     currentTurn,
+    lineage,
   });
   if (!embeddingReady(apiCfg)) {
     return formatRecallEntries(null, { recentTexts, header, proseEntries, budgetChars });

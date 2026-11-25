@@ -16,7 +16,7 @@ import { renderJudgeVerdict, renderCausalBudget } from "../domain/rules/judge/ju
 import { buildIntakeUserContent, normalizeIntakeResult } from "./turn/intakeTurn.js";
 import { verifySealAndMaterialize } from "../domain/rules/effects/sealVerifier.js";
 import { writeTurnProse } from "./act/proseWrite.js";
-import { addProseChunks as proseChunkSink, getProseChunksByTurn as proseListByTurn } from "./ports/recallBlock.js";
+import { addProseChunks as proseChunkSink } from "./ports/recallBlock.js";
 import { random } from "../utils/rng.js";
 import { validateEmergenceSeal } from "../domain/rules/npc/npcEmergence.js";
 import { getPresentNpcs } from "../domain/rules/prompt/promptRefs.js";
@@ -137,8 +137,8 @@ async function runTurnSteps(ctx, cmd, opts) {
       varTreeLatest: ctx.memory.varTreeLatest,
       recentTexts: [hist],
       viewer: ctx.prompt?.char?.name || ctx.char?.name || "主角",
-      epoch: ctx.proseEpoch,
       currentTurn: ctx.getGameState?.()?.time ?? undefined,
+      lineage: ctx.getGameState?.()?.proseLineage,
     });
     [knowledgeTurn, recall] = await Promise.all([
       runKnowledgeTurn({
@@ -493,12 +493,13 @@ async function runTurnSteps(ctx, cmd, opts) {
     if (memoryText) p = { ...p, memory: memoryText };
   }
 
-  // WO-18 原文段落写挂：尾章定稿后把最终上屏正文（含系统补锚短句）切进段落库。
-  // fire-and-forget 增量层，护栏按存档代次（ctx.proseEpochGuard）不按回合 stale。
-  {
+  // WO-18 原文段落写挂 payload：不在这里触发——commitRound 可能抛错回滚，
+  // 被回滚的叙事不能进段落库。payload 随结果带给 finalizeTurn，在事务成功
+  // 且未 stale 后统一派发（见 finalizeTurn）。
+  const prosePayload = (() => {
     const liveNow = ctx.getGameState?.() || {};
     const roomNow = liveNow.room || deps.room || {};
-    writeTurnProse({
+    return {
       narrativeText,
       turn: getGameStateTime(ctx, deps),
       location: roomNow.name || "",
@@ -510,13 +511,11 @@ async function runTurnSteps(ctx, cmd, opts) {
         ...(judgeVerdict?.facts || []).map((f) => f?.id).filter(Boolean),
         ...(sealParts?.anchors || []).map((a) => a?.id).filter(Boolean),
       ],
-      guard: ctx.proseEpochGuard,
-      addChunks: ctx.proseSink || proseChunkSink,
-      listChunksByTurn: proseListByTurn,
-    });
-  }
+    };
+  })();
 
   return {
+    prosePayload,
     p,
     mvuCommands,
     dealResult,

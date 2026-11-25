@@ -106,8 +106,8 @@ export function usePrivateTalk({
           header: "\n\n[你记得的往事，与此刻私聊相关，供你回应时自然照应，不要生硬复述]\n",
         // 视角仍是玩家本人：私聊对象是旁白，回忆可见性按玩家见证口径过滤
         viewer: gameStore.getState().char?.name || "主角",
-          epoch: getGameEpoch(),
           currentTurn: gameStore.getState().time,
+          lineage: gameStore.getState().proseLineage,
         }));
         if (isStale()) return;
         if (recallInfo && recallInfo.visible.length) {

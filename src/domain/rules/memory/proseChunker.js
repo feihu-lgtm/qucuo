@@ -70,7 +70,7 @@ export function stripOtherInnerThoughts(text, viewerName = "") {
 // 产出字段：id/kind/turn/location/witnesses/entities/publicText/rawText/importance/anchorFactIds
 // entities 迁移期只收 witnesses 中的人名（实体编号归 WO-18 检索期细化）；
 // importance 粗分：段落带锚点事实=2（要紧），否则 1（寻常）。
-export function splitProseIntoChunks(rawProse, { turn, location, witnesses = [], anchoredFacts = [], viewerName = "主角", saveEpoch, seqOffset = 0 } = {}) {
+export function splitProseIntoChunks(rawProse, { turn, location, witnesses = [], anchoredFacts = [], viewerName = "主角", saveEpoch, seqOffset = 0, branchId = "" } = {}) {
   const prose = String(rawProse || "");
   if (!prose.trim()) return [];
   const paragraphs = prose.split(/\n{1,}/).map((p) => p.trim()).filter(Boolean);
@@ -87,7 +87,9 @@ export function splitProseIntoChunks(rawProse, { turn, location, witnesses = [],
     if (!stripped) continue; // 整段只有锚点/空白，不成段
     const anchored = anchorIds.filter((fid) => !factSet.size || factSet.has(fid));
     chunks.push({
-      id: saveEpoch != null ? `P${saveEpoch}_${turn}_${seq + seqOffset}` : `P${turn}_${seq + seqOffset}`,
+      id: branchId ? `${branchId}_${turn}_${seq + seqOffset}` : `P${turn}_${seq + seqOffset}`,
+      seq: seq + seqOffset,
+      ...(branchId ? { branchId } : {}),
       kind: "raw_memory",
       turn,
       ...(saveEpoch != null ? { saveEpoch } : {}),

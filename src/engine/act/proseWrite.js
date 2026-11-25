@@ -16,7 +16,7 @@ import { splitProseIntoChunks } from "../../domain/rules/memory/proseChunker.js"
 // addChunks/listChunks 由 ports 层转手注入（engine 不得直连 infra——层级棘轮只减不增）；
 // 未注入时静默跳过，测试/裸引擎路径不受影响。
 export function writeTurnProse(args = {}) {
-  const { narrativeText, turn, location, playerName, roomNpcNames = [], isTalk = false, talkTarget = "", anchoredFacts = [], guard, addChunks, listChunksByTurn } = args || {};
+  const { narrativeText, turn, location, playerName, roomNpcNames = [], isTalk = false, talkTarget = "", anchoredFacts = [], guard, addChunks, seqAlloc } = args || {};
   try {
     const text = String(narrativeText || "").trim();
     if (!text || !Number.isFinite(turn) || turn <= 0) return;
@@ -24,29 +24,29 @@ export function writeTurnProse(args = {}) {
       ? [playerName, talkTarget].filter(Boolean)
       : [playerName, ...roomNpcNames].filter(Boolean);
     if (typeof addChunks !== "function") return;
+
+    // 同步切分+同步预留 seq：allocator 在 fire 的同一 tick 内原子递增 store 的
+    // proseSeq，两次同回合写挂（连搭话）不撞号——替代已废弃的 listChunksByTurn
+    // 数存量方案（那对 fire-and-forget 并发写入仍会撞）。allocator 缺失的裸
+    // 引擎/测试路径降级 legacy id 形状（P<turn>_<seq>，从 1 起）。
+    const probe = splitProseIntoChunks(text, {
+      turn, location: location || "", witnesses, anchoredFacts,
+      viewerName: playerName || "主角",
+    });
+    if (!probe.length) return;
+    const alloc = typeof seqAlloc === "function" ? seqAlloc(probe.length) : null;
+    const branchId = alloc?.branchId || "";
+    const seqOffset = alloc ? alloc.startSeq - 1 : 0;
+    const chunks = splitProseIntoChunks(text, {
+      turn, location: location || "", witnesses, anchoredFacts,
+      viewerName: playerName || "主角", branchId, seqOffset,
+    });
+    if (!chunks.length) return;
     void (async () => {
       // 读档/换存档往往发生在回合结束后的空窗——落库前最后核一次代次；
       // 挡不住毫秒级竞态的全部，但用户驱动的存档切换是秒级动作，这一道足够。
+      // 正确性兜底在分支/upTo 可见性，不在本护栏。
       if (guard?.()) return;
-      // 同回合多次写挂（连搭两次话/连续行动）seq 接续不撞号覆盖：
-      // 数一下同代同回合已有几段，从其后接着编号。
-      let seqOffset = 0;
-      if (typeof listChunksByTurn === "function") {
-        try {
-          const existing = await listChunksByTurn(turn);
-          seqOffset = existing.length;
-        } catch (_) { /* 数不出来就从 0 起——宁可覆盖一段也不卡死写挂 */ }
-      }
-      if (guard?.()) return;
-      const chunks = splitProseIntoChunks(text, {
-        turn,
-        location: location || "",
-        witnesses,
-        anchoredFacts,
-        viewerName: playerName || "主角",
-        seqOffset,
-      });
-      if (!chunks.length) return;
       await addChunks(chunks);
     })().catch(() => { /* 增量层写失败静默降级 */ });
   } catch (_) {

@@ -47,6 +47,49 @@ const createSetter = (key) => (next) => gameStore.setState((state) => ({
   [key]: typeof next === "function" ? next(state[key]) : next,
 }));
 
+// ── 原文段落谱系写收口（WO-18）──────────────────────────────────
+// proseLineage/proseSeq 的写操作只能在这里发生——app/hooks 直写 state 受
+// 棘轮只减不增管控，谱系簿记统一收口 store 层。
+import { ensureProseLineage, forkLineage, headBranch } from "../domain/rules/memory/lineage.js";
+
+// 同步 seq 分配器：zustand 写读同步，同一 tick 内先读再写即原子。
+// 谱系缺失时顺手补建根分支（新开一局/老存档首写都经此路落地）。
+export function allocProseSeq(count) {
+  const st = gameStore.getState();
+  const norm = ensureProseLineage(st);
+  if (norm.created || norm.proseLineage !== st.proseLineage || norm.proseSeq !== st.proseSeq) {
+    gameActions.setProseLineage(norm.proseLineage);
+    gameActions.setProseSeq(norm.proseSeq);
+  }
+  const head = headBranch(norm.proseLineage);
+  const start = (Number.isFinite(norm.proseSeq) ? norm.proseSeq : 0) + 1;
+  gameActions.setProseSeq(start - 1 + count);
+  return { branchId: head?.b || "", startSeq: start };
+}
+
+// 谱系规范化写回（reconcile 用）：缺谱系补建根分支，返回 { created, lineage }。
+export function ensureProseLineageInStore() {
+  const st = gameStore.getState();
+  const norm = ensureProseLineage(st);
+  if (norm.created || norm.proseLineage !== st.proseLineage) {
+    gameActions.setProseLineage(norm.proseLineage);
+    gameActions.setProseSeq(norm.proseSeq);
+  }
+  return { created: norm.created, lineage: norm.proseLineage };
+}
+
+// 迁移占用 seq 记账 + 分叉写回（reconcile 用）
+export function writeProseSeq(value) {
+  gameActions.setProseSeq(value);
+}
+export function applyProseLineageFork(atTurn) {
+  const cur = gameStore.getState().proseLineage;
+  const forked = forkLineage(cur, atTurn);
+  gameActions.setProseLineage(forked.proseLineage);
+  gameActions.setProseSeq(0);
+  return forked.proseLineage;
+}
+
 export const gameActions = {
   setChar: createSetter("char"),
   setDao: createSetter("dao"),
@@ -63,6 +106,8 @@ export const gameActions = {
   setNpcState: createSetter("npcState"),
   setRoomCache: createSetter("roomCache"),
   setTime: createSetter("time"),
+  setProseLineage: createSetter("proseLineage"),
+  setProseSeq: createSetter("proseSeq"),
   setLog: createSetter("log"),
   setConvo: createSetter("convo"),
   setNarrator: createSetter("narrator"),
