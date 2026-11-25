@@ -229,9 +229,14 @@ export async function exportFullSave(snapshot, label) {
 // 兼容两种输入：① 我们导出的 {kind, snapshot} 包裹格式；② 直接是裸 snapshot。
 export function importSave(jsonText) {
   const data = JSON.parse(jsonText);
-  const snap = data && data.kind === "qucuo-save-export" ? data.snapshot : data;
+  let snap = data && data.kind === "qucuo-save-export" ? data.snapshot : data;
   if (!snap || !snap.preset || !snap.char) throw new Error("这个文件不是有效的曲措乡存档。");
   const label = (data && data.label) ? `${data.label}（导入）` : "导入的存档";
+  // 谱系重映射必须在 saveToSlot 之前——入槽即 structuredClone，事后改不进槽。
+  const stamp0 = `imp${(snap.savedAt || 0).toString(36)}`;
+  if (Array.isArray(snap.proseLineage)) {
+    snap = { ...snap, proseLineage: snap.proseLineage.map((e) => (e && e.b ? { ...e, b: `${e.b}_${stamp0}` } : e)) };
+  }
   const id = saveToSlot(snap, label);
   // v2 整包：原文段落库一并还原（fire-and-forget 静默降级——段落库是增量层，
   // 还原失败不阻断存档导入本身；put 按 id 幂等，重复导入不增生）。
@@ -240,22 +245,21 @@ export function importSave(jsonText) {
     // 两台设备各玩一段后 id 必然撞号——原样 put 会把本机段落覆成别机故事。
     // 导入一律重挂到独立导入分支、id 加导入戳后缀：不覆盖本机任何现有段落，
     // 重复导入同一文件仍幂等（后缀确定性）。
-    // 三路判重（Review 两轮根因）：①本地无同 id——原样导入，branchId/谱系保真，
-    //    读入该槽位后召回正确不混排；②同 id 同内容——跳过（同设备重复导入天然幂等）；
-    //    ③同 id 异内容（跨设备分叉撞号）——加确定性导入戳，绝不覆盖本机段落；
-    //    此时同分支存在两个版本属分叉事实的如实保留，非污染。
+    // 分支一致重映射（Review 四轮根因终审）：导入段落 branchId 与 snapshot.proseLineage
+    // 一起换到导入私域 `<orig>_<stamp>`——
+    //   · 不串本机同分支：本机时间线与导入时间线在谱系层面就是两套，召回绝不混排；
+    //   · 召回仍可见：读入该槽位时其谱系引用的正是重映射后的分支；
+    //   · 绝不覆盖：chunk id 同戳重写，IDB keyPath 不撞本机任何段落；
+    //   · 幂等：同文件再导入产出相同戳/id，put 覆盖自身不增生。
+    const stamp = stamp0;
+    const remapBranch = (b) => (typeof b === "string" && b ? `${b}_${stamp}` : b);
     void (async () => {
       try {
-        const { addProseChunks, getAllProseChunks } = await import("./proseStore.js");
-        const existing = new Map((await getAllProseChunks().catch(() => [])).map((c) => [c.id, c]));
-        const stamp = `imp${(snap.savedAt || 0).toString(36)}`;
+        const { addProseChunks } = await import("./proseStore.js");
         const out = [];
         for (const c of data.prose) {
           if (!c || typeof c.id !== "string") continue;
-          const hit = existing.get(c.id);
-          if (!hit) { out.push(c); continue; }
-          if (JSON.stringify(hit) === JSON.stringify(c)) continue; // 同内容幂等跳过
-          out.push({ ...c, id: `${c.id}_${stamp}` });
+          out.push({ ...c, id: `${c.id}_${stamp}`, branchId: remapBranch(c.branchId) });
         }
         if (out.length) await addProseChunks(out);
       } catch { /* 增量层静默降级 */ }

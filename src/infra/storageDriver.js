@@ -108,6 +108,10 @@ export function enqueueCloudPush(key, value, op = "put") {
 // 推送：逐条 POST /saves/<key>，body 带 rev。409 → 进冲突登记、不重试不覆盖；
 // 网络/5xx 失败 → 保留队列、指数退避重试（1s 起翻倍，封顶 60s）。
 let _flushing = false;
+// 在飞 flush 的中止柄：wipeCloudAll 确认后 abort——即便服务端竞态已不可完全根除
+// （在飞 PUT 可能先于 DELETE 到达，属服务端 WO-20 竞态限制），客户端至少不再发出
+// 后续请求、也不再消费在飞结果。
+let _activeAbort = null;
 // 抹除代次：wipeCloudAll 递增，在飞 flush 逐条核对——服务端已确认删除后再推
 // 新存档等于撤销玩家的抹除确认（复审必修）。
 let _wipeEpoch = 0;
@@ -139,12 +143,15 @@ async function _flushCloudQueueInner() {
   let failed = false;
   for (const entry of queue) {
     if (_wipeEpoch !== startEpoch) { failed = false; break; } // 抹除发生：立即停止，剩余条目已被清空不再推
+    if (!_activeAbort) _activeAbort = new AbortController();
+    const signal = _activeAbort.signal;
     try {
       const rev = entry.op === "put" ? nextRev(entry.key) : (getCloudRevs()[entry.key] || 0) + 1;
       const res = await doFetch(`${cfg.cloudUrl.replace(/\/$/, "")}/saves/${encodeURIComponent(entry.key)}`, {
         method: entry.op === "put" ? "PUT" : "DELETE",
         headers: { "Content-Type": "application/json", "X-Device-Id": cfg.deviceId },
         body: entry.op === "put" ? JSON.stringify({ rev, value: entry.value, deviceId: cfg.deviceId }) : undefined,
+        signal,
       });
       if (res.status === 409) {
         // 冲突：绝不静默覆盖——登记后等玩家显式裁决。
@@ -161,6 +168,7 @@ async function _flushCloudQueueInner() {
       if (entry.op === "del") { const revs = getCloudRevs(); revs[entry.key] = rev; _lsWrite(REVS_KEY, revs); }
       pushed += 1;
     } catch (_) {
+      if (signal.aborted || _wipeEpoch !== startEpoch) { failed = false; break; } // 抹除中止：不重试不残留
       remaining.push(entry);
       failed = true;
     }
@@ -245,6 +253,8 @@ export async function wipeCloudAll() {
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     _wipeEpoch += 1; // 服务端确认删除后才翻代——在飞 flush 即刻停推
+    try { _activeAbort?.abort(); } catch { /* */ }
+    _activeAbort = null;
     _lsWrite(QUEUE_KEY, []);
     _lsWrite(REVS_KEY, {});
     _lsWrite(CONFLICTS_KEY, []);

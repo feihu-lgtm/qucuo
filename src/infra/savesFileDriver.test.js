@@ -28,24 +28,28 @@ describe("saves file 档整包与 local 兼容", () => {
     const id = importSave(text);
     expect(loadSlot(id)?.preset?.id).toBe("p");
     await new Promise((r) => setTimeout(r, 30));
-    // 三路判重：同 id 同内容幂等跳过——不增生、原段不动
+    // 分支一致重映射口径：导入段落 id/branchId 加确定性戳进导入私域——
+    // 本机原段不动、谱系不串、重复导入幂等不增生
     const after = await getAllProseChunks();
-    expect(after.length).toBe(before);
-    expect(after.some((c) => c.id === "P1_1")).toBe(true);
-    // 无冲突的新段落原样导入（保 branchId/谱系，召回不混排）
-    const snap2 = { savedAt: 9, preset: { id: "p", name: "n" }, char: {}, room: {} };
+    expect(after.length).toBe(before + 1);
+    expect(after.find((c) => c.id === "P1_1")?.publicText).toBe("测试段落"); // 本机原段不被覆盖
+    const imp = after.find((c) => c.id.startsWith("P1_1_imp"));
+    expect(imp).toBeTruthy();
+    expect(imp.branchId).toMatch(/^b1_imp/); // 分支同步入私域
+    // 谱系一致重映射：槽位快照的 proseLineage 分支同步换戳——读入后召回可见且不串本机
+    const { loadSlot: loadSlot2 } = await import("./saves.js");
+    const snap2 = { savedAt: 9, preset: { id: "p", name: "n" }, char: {}, room: {}, proseLineage: [{ b: "b9", upTo: null }] };
     const text2 = JSON.stringify({ kind: "qucuo-save-export", version: 2, snapshot: snap2, prose: [{ id: "P7_3", turn: 7, seq: 3, branchId: "b9", publicText: "异机段落", witnesses: ["*"] }] });
+    const id2 = importSave(text2);
+    await new Promise((r) => setTimeout(r, 30));
+    const stored = loadSlot2(id2);
+    expect(stored.proseLineage[0].b).toMatch(/^b9_imp/);
+    const after2 = await getAllProseChunks();
+    expect(after2.find((c) => c.id.startsWith("P7_3_imp"))?.branchId).toBe(stored.proseLineage[0].b); // chunk 分支与谱系一致
+    // 重复导入同一文件幂等（戳确定性，put 覆盖自身）
     importSave(text2);
     await new Promise((r) => setTimeout(r, 30));
-    const after2 = await getAllProseChunks();
-    expect(after2.some((c) => c.id === "P7_3" && c.branchId === "b9")).toBe(true);
-    // 同 id 异内容（跨设备分叉撞号）：加戳并存，绝不覆盖本机段落
-    const text3 = JSON.stringify({ kind: "qucuo-save-export", version: 2, snapshot: { ...snap2, savedAt: 10 }, prose: [{ id: "P1_1", turn: 1, seq: 1, branchId: "b1", publicText: "别机版本", witnesses: ["*"] }] });
-    importSave(text3);
-    await new Promise((r) => setTimeout(r, 30));
-    const after3 = await getAllProseChunks();
-    expect(after3.find((c) => c.id === "P1_1")?.publicText).toBe("测试段落"); // 本机原段不被覆盖
-    expect(after3.some((c) => c.id.startsWith("P1_1_imp") && c.publicText === "别机版本")).toBe(true);
+    expect((await getAllProseChunks()).filter((c) => c.id.startsWith("P7_3_imp"))).toHaveLength(1);
   });
 
   it("local 默认档行为不变：exportSave 同步单快照、importSave 兼容 v1 裸包", async () => {
