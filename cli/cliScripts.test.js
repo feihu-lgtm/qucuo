@@ -277,7 +277,7 @@ describe("CLI scripts", () => {
   it("runs a script with sibling replies using the default mock AI", () => {
     const output = execFileSync(process.execPath, [
       resolve(projectRoot, "cli/qucuo.mjs"),
-      "--script", "tests/cli/ai-turn.txt", "--no-intent", "--no-soft-settle", "--no-extraction",
+      "--script", "tests/cli/ai-turn.txt", "--no-intent", "--no-extraction",
     ], { cwd: projectRoot, encoding: "utf8" });
 
     expect(output).toContain("石阶旁的草叶轻轻摇动。");
