@@ -294,6 +294,13 @@ describe("conditional steps", () => {
     expect(validatePlan(state, result.actions).triggers).toHaveLength(1);
   });
 
+  it("reads the gift amount from the action half when the model keeps the premise in text", async () => {
+    const input = "要是他先还我100两，就送才旦20两";
+    const classifier = scripted({ actions: [act({ text: input, kind: "赠送", target: "才旦", item: SILVER, condition: "到达" })] });
+    const result = await recognizeIntent(state, input, { classifier });
+    expect(result.actions[0]).toMatchObject({ kind: "赠送", item: SILVER, amount: 20 });
+  });
+
   it("keeps conditioned steps out of immediate validation and arms them as triggers", () => {
     const gift = { kind: "赠送", target: "才旦", item: SILVER, amount: 100 };
     const cond = { kind: "切磋", target: "不在场的人", condition: { on: "encounter", detail: "碰到山贼" } };

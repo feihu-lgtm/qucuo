@@ -28,7 +28,8 @@ describe("UI 字号统一调度", () => {
     const offenders = [];
     for (const file of SCAN_DIRS.flatMap((dir) => walk(dir))) {
       const text = fs.readFileSync(file, "utf8");
-      const hits = text.match(/fontSize:\s*(\d|"\d[\d.]*(px)?")/g) || [];
+      // 浏览器认 "12PX"、" 12px " 这类写法，大小写与首尾空白一并算进去
+      const hits = text.match(/fontSize:\s*(\d|["'`]\s*\d[\d.]*\s*(px)?\s*["'`])/gi) || [];
       if (hits.length) offenders.push([path.relative(ROOT, file), hits.length]);
     }
     const total = offenders.reduce((sum, [, n]) => sum + n, 0);

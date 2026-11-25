@@ -65,7 +65,8 @@ export function useScreenHandlers({
   // 撤销点顶掉，玩家点「回滚一步」只回到原地（判定结果先算，有 changes 才存）。
   const handleInviteCompanion = useCallback((npc) => applyResult(featureCtx(), () => {
     const result = inviteCompanion(gameStore.getState(), npc);
-    if (!result.changes) return;
+    // 被拒（任务撞车等）只有日志没有 changes：不存撤销点，但拒绝理由照样给玩家看
+    if (!result.changes) { if (result.logs?.length) applyResult(featureCtx(), { logs: result.logs }); return; }
     captureUndo();
     setActiveTarget(npc.name);
     applyResult(featureCtx(), result);
@@ -95,14 +96,17 @@ export function useScreenHandlers({
   // 伙伴留在当前房间（出战位不收留守）；唤回=清 stationed 归队
   // 伙伴可留守到任意房间：spot 缺省留当前房、null=唤回随行、给房间则落位过去
   const handleStationCompanion = useCallback((key, spotOverride) => applyResult(featureCtx(), () => {
-    captureUndo();
     const { companionState, room, innerRoomName, time } = gameStore.getState();
-    if (spotOverride === null) {
-      applyResult(featureCtx(), { changes: { companionState: unstationCompanion(companionState, key) } });
+    const spot = spotOverride === null ? null
+      : { since: time || 0, ...(spotOverride || { district: room?.name, roomId: innerRoomName || room?.name, roomName: innerRoomName || room?.name }) };
+    const next = spot ? stationCompanion(companionState, key, spot) : unstationCompanion(companionState, key);
+    // 被拒（主仆组里有人在出战位）返回同一引用：不存撤销点，免得顶掉上一步真改动的撤销点
+    if (next === companionState) {
+      if (spot) addLog([{ t: "sys", text: "  出战位上的伙伴（连同主仆同组的人）不能留守，先换下出战位。" }]);
       return;
     }
-    const spot = { since: time || 0, ...(spotOverride || { district: room?.name, roomId: innerRoomName || room?.name, roomName: innerRoomName || room?.name }) };
-    applyResult(featureCtx(), { changes: { companionState: stationCompanion(companionState, key, spot) } });
+    captureUndo();
+    applyResult(featureCtx(), { changes: { companionState: next } });
   }, { feature: "npc.stationCompanion" }), [captureUndo]);
 
   const handleRecallCompanion = useCallback((npc) => applyResult(featureCtx(), () => {

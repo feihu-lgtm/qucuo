@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   duelLineup, duelAllies, duelFoeFollower, unlockImportedCompanion, unlockFollowerCompanion,
-  unlockSnowLeopard, setActiveCompanion, stationCompanion,
+  unlockSnowLeopard, setActiveCompanion, stationCompanion, companionNpcEntry,
 } from "./companion.js";
 import { ocSignatureMoves } from "./ocKungfu.js";
 import { buildEnemyUnit, buildLeopardUnit, buildPlayerUnit } from "../combat/teamUnits.js";
@@ -19,13 +19,14 @@ const recruited = () => {
 };
 
 describe("敌方阵容：打元朵朵时铁伯陪她迎战", () => {
-  it("玩家没伙伴也走团战：敌方 = 朵朵 + 铁伯，己方只有玩家", () => {
-    const foe = duoduoNpc();
-    const lineup = duelLineup({}, foe);
-    expect(lineup.team).toBe(true);
-    expect(lineup.allies).toEqual([]);
-    expect(lineup.enemies.map((e) => e.name)).toEqual(["元朵朵", "铁伯"]);
-    const tie = buildEnemyUnit(lineup.enemies[1], 1);
+  it("玩家独自上阵打朵朵走 1v1（保住战斗道具栏），铁伯不下场", () => {
+    const lineup = duelLineup({}, duoduoNpc());
+    expect(lineup.team).toBe(false);
+    expect(lineup.enemies.map((e) => e.name)).toEqual(["元朵朵"]);
+  });
+
+  it("铁伯作为敌方随从的战斗数据：防御权重压过攻击、带精钢盾甲", () => {
+    const tie = buildEnemyUnit(duelFoeFollower({}, duoduoNpc()), 1);
     expect(tie.side).toBe("enemy");
     expect(tie.movesetLocal.map((m) => m.name)).toContain("精钢盾甲");
     expect(tie.profile.moveWeights.防御).toBeGreaterThan(tie.profile.moveWeights.攻击);
@@ -40,6 +41,14 @@ describe("敌方阵容：打元朵朵时铁伯陪她迎战", () => {
   it("别的对手仍是 1v1；朵朵/铁伯已在玩家队里时不再给她配敌方随从", () => {
     expect(duelLineup({}, { name: "拦路山贼" }).team).toBe(false);
     expect(duelFoeFollower(recruited(), duoduoNpc())).toBeNull();
+  });
+});
+
+describe("名单条目：哑仆点交谈走不通人言分支", () => {
+  it("铁伯的条目带 cannotSpeak，朵朵的不带", () => {
+    const cs = recruited();
+    expect(companionNpcEntry(cs, "imported_铁伯").cannotSpeak).toBe(true);
+    expect(companionNpcEntry(cs, "imported_元朵朵").cannotSpeak).toBeUndefined();
   });
 });
 

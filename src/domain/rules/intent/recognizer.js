@@ -64,7 +64,12 @@ function validateAction(state, input, raw) {
     }
     action[slot] = value;
   }
-  if (kind === ACTION_KINDS.GIFT && action.item === SILVER) action.amount = parseSilverAmount(text);
+  // 带前提的赠送，模型可能把前提整句也放进 text（「要是他先给我一百两，我就送他二十两」）：
+  // 银两数只从行动那半句里取，不能把前提里的数额当成要送出去的钱。
+  if (kind === ACTION_KINDS.GIFT && action.item === SILVER) {
+    const actionText = condition ? splitConditionClause(text)?.actionText || text.replace(condition.detail, "") : text;
+    action.amount = parseSilverAmount(actionText);
+  }
   return withCondition(action);
 }
 
