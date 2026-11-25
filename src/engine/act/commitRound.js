@@ -20,6 +20,7 @@ import { burnIntimateTicket } from "./postCommit/intimateTicket.js";
 import { appendConvo } from "./postCommit/convoAppend.js";
 import { noteRoundCompleted } from "../../features/autosaveScheduler.js";
 import { applyPostResult } from "./postCommit/applyPostResult.js";
+import { commitPatches } from "../../domain/rules/state/applyPatches.js";
 
 // 两阶段 pipeline 的提交段：把本轮解析结果（d.p / d.mvuCommands / d.dealResult）
 // 写回世界状态；提交失败由 playTurn 还原事务快照。
@@ -152,6 +153,19 @@ export function commitRound(d) {
     p: d.p, room: d.room, innerRoomName: d.innerRoomName,
     questProgress: d.questProgress, pendingQuestBranch: d.pendingQuestBranch,
   }));
+  // WO-13 判官管线落账：materializeFacts 的 changes 直写状态切片，
+  // patches 走标准 applyPatches 落到 varTree 等路径，logs 回吐事实短句。
+  if (d.materialized) {
+    applyPostResult(d, {
+      changes: d.materialized.changes,
+      logs: (d.materialized.logs || []).map((l) => ({ t: l.t || "sys", text: l.text || String(l) })),
+    });
+    if ((d.materialized.patches || []).length) {
+      commitPatches({
+        setVarTree: d.setVarTree, setChar: d.setChar, setInv: d.setInv, setFlags: d.setFlags,
+      }, d.materialized.patches);
+    }
+  }
   applyPostResult(d, emitChoices({ choices: d.p.choices })); // 选项延时浮现
   if (!d.isTalk) d.setTime(t => t + 1);
   applyPostResult(d, writeMemoryNote({ // 小纸条·向量写入

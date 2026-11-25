@@ -14,6 +14,12 @@ import { filterPlanDelta, filterRejectedEffects, planExtractionNote } from "../d
 import { SOFT_SETTLE_KINDS } from "../domain/rules/settle/softRules.js";
 import { UNKNOWN_CHOICE } from "../domain/rules/settle/judge.js";
 import { classifyError } from "../utils/apiErrors.js";
+import { withAI } from "./ports/withAI.js";
+import { judgeTurn } from "../domain/rules/judge/judgeTurn.js";
+import { renderJudgeVerdict, renderCausalBudget } from "../domain/rules/judge/judgeTurn.js";
+import { buildIntakeUserContent, normalizeIntakeResult } from "./turn/intakeTurn.js";
+import { verifySealAndMaterialize } from "../domain/rules/effects/sealVerifier.js";
+import { random } from "../utils/rng.js";
 
 const MAX_AUTO_RETRY = 2;
 
@@ -93,6 +99,12 @@ export async function runTurn(ctx, cmd, opts = {}) {
   }
 }
 
+
+function getGameStateTime(ctx, deps) {
+  const t = ctx.getGameState?.()?.time ?? deps.time;
+  return Number.isFinite(t) ? t : 0;
+}
+
 async function runTurnSteps(ctx, cmd, opts) {
   const ai = bindTurnAi(ctx.ai || createWebAi(), ctx._trace);
   const convo = ctx.convo || [];
@@ -162,7 +174,46 @@ async function runTurnSteps(ctx, cmd, opts) {
   const trace = (layer, status, detail) => traceStep(deps._trace, layer, status, detail);
   const callDeps = () => ({ ...deps });
   const apiCfg = deps.apiCfg;
+  // ── WO-13 判官管线：前哨听意 → 纯函数判官 → 定案单注入主叙事 ──
+  // 降级安全：intake 调用失败/不合形制一律空听意单，判官照常签发（多半空事实），
+  // 主叙事拿不到锚点任务时退化为普通正文，锚点剥离/尾章校对全是 no-op。
+  let judgeVerdict = null;
+  if (deps.apiCfg?.judgePipelineEnabled) {
+    try {
+      const visibleNpcs = preparedPrompt.visibleNpcsForAI || preparedPrompt.visibleNpcs || deps.room?.npcs || [];
+      const intakeContent = buildIntakeUserContent({
+        playerInput: cmd,
+        recentTurns: convo.slice(-4).map((m) => (m.role === "user" ? { user: m.content } : { engine: m.content }))
+          .reduce((acc, cur) => { if (cur.user) acc.push({ user: cur.user, engine: "" }); else if (acc.length) acc[acc.length - 1].engine = cur.engine; return acc; }, []),
+        npcs: visibleNpcs,
+        entries: [],
+      });
+      const intakeRes = await withAI("turn.intake", { userContent: intakeContent, cfg: deps.apiCfg }, { ai, apiCfg: deps.apiCfg, throwOnError: false });
+      const intakeResult = normalizeIntakeResult(intakeRes?.data);
+      const timeNow = getGameStateTime(ctx, deps);
+      judgeVerdict = judgeTurn({
+        turn: timeNow, day: Math.floor(timeNow / 24) + 1, place: deps.room?.name || "",
+        npcs: visibleNpcs, varTree: deps.varTree || ctx.memory?.varTreeLatest || {},
+        inv: deps.inv || [], entries: [],
+        budget: { riskLevel: 0, luck: deps.char?.special?.气运 ?? 0 },
+      }, intakeResult, { rng: random });
+      deps.judgePipelineActive = true;
+      deps.judgeVerdict = judgeVerdict;
+      deps.causalBudget = judgeVerdict.budget;
+      deps.judgeRuleBlock = [
+        "【判官定案·锚点铁律】系统已裁定本轮事实，你只有叙事权：",
+        renderJudgeVerdict(judgeVerdict),
+        renderCausalBudget(judgeVerdict.budget),
+        "正文中每落实一条 facts 事实，须在落实处文末埋对应锚点 ⟦F编号⟧（玩家不可见，系统会剥除）；",
+        "禁编造判官未签发的新器物/新武学/好感大变；写完正文换行输出 ---SEAL--- 紧跟单行 JSON：fills 给空白天机券填 name/chosenAffix/desc，respondedNpcs 列本轮开口的角色，spontaneousPact 无则 null。",
+      ].join("\n");
+      trace("判官管线", "pass", `intake ${intakeResult.actions?.length || 0} 动作/${intakeResult.proposals?.length || 0} 提议 → facts ${judgeVerdict.facts.length} 条/warrants ${judgeVerdict.warrants.length} 张（tier ${judgeVerdict.causalTier}）`);
+    } catch (error) {
+      trace("判官管线", "fail", `前哨听意异常降级：${error?.message || error}`);
+    }
+  }
   let rawFull = "";
+  let sealParts = null;
   let p = {};
   let mvuCommands = [];
   let dealResult = null;
@@ -180,6 +231,7 @@ async function runTurnSteps(ctx, cmd, opts) {
         assertNonEmpty(result.rawFull);
         rawFull = result.rawFull;
         mainFinishReason = result.finishReason;
+        sealParts = { sealText: result.sealText, anchors: result.sealAnchors, sealed: result.sealed };
         trace("AI调用", "pass", attempt > 1
           ? `主叙事第${attempt}次尝试成功（双调用·主叙事模型=${getApiModel(apiCfg) || "未设置"}）`
           : `主叙事一次成功（双调用·主叙事模型=${getApiModel(apiCfg) || "未设置"}）`);
@@ -274,6 +326,7 @@ async function runTurnSteps(ctx, cmd, opts) {
         assertNonEmpty(result.rawFull);
         rawFull = result.rawFull;
         finishReason = result.finishReason;
+        sealParts = { sealText: result.sealText, anchors: result.sealAnchors, sealed: result.sealed };
         trace("AI调用", "pass", attempt > 1
           ? `第${attempt}次重试后成功（单调用·主模型=${getApiModel(apiCfg) || "未设置"}）`
           : `一次成功（单调用·主模型=${getApiModel(apiCfg) || "未设置"}）`);
@@ -308,6 +361,41 @@ async function runTurnSteps(ctx, cmd, opts) {
     }
   }
 
+  // ── WO-13 尾章校对与落账编译：漏写锚点系统补句、穿帮告警、
+  // fills 编译进 materializeFacts，产物随 turn 带给 finalizeTurn 经 commitRound 落盘。
+  let judgeEffects = null;
+  if (judgeVerdict && deps.judgePipelineActive) {
+    const stateForFacts = {
+      time: getGameStateTime(ctx, deps),
+      inv: deps.inv || [], room: deps.room, char: deps.char,
+      skills: deps.skills || ctx.getGameState?.()?.skills || [],
+      exp: ctx.getGameState?.()?.exp ?? 0, pot: ctx.getGameState?.()?.pot ?? 0,
+      flags: deps.flags || ctx.getGameState?.()?.flags || [],
+    };
+    const verified = verifySealAndMaterialize({
+      sealText: sealParts?.sealText || "",
+      screenText: narrativeText || rawFull,
+      verdict: judgeVerdict,
+      anchorIds: (sealParts?.anchors || []).map((a) => a.id),
+      state: stateForFacts,
+      luck: deps.char?.special?.气运 ?? 0,
+      turn: stateForFacts.time,
+    });
+    if (verified.missingAnchors.length) {
+      const before = narrativeText || "";
+      const patched = verified.screenText.startsWith(before) ? verified.screenText.slice(before.length) : "";
+      narrativeText = verified.screenText;
+      // 正文已上屏（流式/非流式皆然）——系统补写的事实短句以旁白行追补落地，不篡改原文
+      if (patched.trim()) addLog([{ t: "desc", text: "  " + patched.trim() }]);
+    }
+    for (const warning of verified.warnings) {
+      trace("尾章校对", "warn", warning);
+      addLog([{ t: "sys", text: `  ⚠ ${warning}` }]);
+    }
+    judgeEffects = { verdict: judgeVerdict, sealReport: verified, materialized: verified.materialized };
+    trace("尾章校对", "pass", `锚点齐 ${judgeVerdict.facts.length - verified.missingAnchors.length}/${judgeVerdict.facts.length}，编译券 ${Object.keys(verified.materialized?.receipts || {}).length}，facts 落盘 ${verified.facts.length} 条`);
+  }
+
   // settle 回合提取被跳过（或没吐出 memory）时，把结算文本登记为本轮事实：
   // 事实账本/小纸条/日总结都走 p.memory 这一个入口，不能因为是结算轮就漏记。
   // 只取首句：settle 文本尾部常带叙事指令（"请让…说道""只描写…"），不是事实不能入账。
@@ -328,5 +416,6 @@ async function runTurnSteps(ctx, cmd, opts) {
     recallInfo: recall.recallInfo,
     recallBlock: recall.recallBlock,
     newConvo,
+    judgeEffects,
   };
 }
