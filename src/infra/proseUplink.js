@@ -12,7 +12,7 @@
 // · 全程 fire-and-forget：上行失败绝不阻断游戏与本地段落库。
 
 import { hubBinding, hubAppendProse } from "./cloudProtocol.js";
-import { loadStorageConfig } from "./storageDriver.js";
+import { loadStorageConfig } from "./storageConfig.js";
 
 const QUEUE_KEY = "wuxia_mud_prose_uplink_queue";
 const DEAD_KEY = "wuxia_mud_prose_uplink_dead";

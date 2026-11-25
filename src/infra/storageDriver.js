@@ -2,6 +2,8 @@ import {
   configureCloudFetch as configureAdapterFetch, hubBinding, hubPutSave, hubDeleteSave, hubWipeSpace,
   encryptSaveValue, expectedRevFor, recordServerRev, clearServerRev, clearAllServerRevs,
 } from "./cloudProtocol.js";
+import { loadStorageConfig, saveStorageConfig } from "./storageConfig.js";
+export { loadStorageConfig, saveStorageConfig };
 
 // 存档三档存储驱动抽象（WO-19）——local / cloud / file
 // ------------------------------------------------------------------
@@ -17,39 +19,10 @@ import {
 // · 网络失败指数退避 + 3 秒防抖合批；离线/失败队列持久化在 LS，刷新不丢。
 // · 服务端 WO-20 另做——本模块只是客户端接口与可测试 adapter seam，fetch 可注入。
 
-const CONFIG_KEY = "wuxia_mud_storage_config";
 const QUEUE_KEY = "wuxia_mud_cloud_queue";
 const CONFLICTS_KEY = "wuxia_mud_cloud_conflicts";
 
 // ── 配置 ─────────────────────────────────────────────────────────────────────
-export function loadStorageConfig() {
-  try {
-    const raw = localStorage.getItem(CONFIG_KEY);
-    const cfg = raw ? JSON.parse(raw) : {};
-    return {
-      driver: ["local", "cloud", "file"].includes(cfg.driver) ? cfg.driver : "local",
-      cloudUrl: typeof cfg.cloudUrl === "string" ? cfg.cloudUrl : "",
-      spaceId: typeof cfg.spaceId === "string" ? cfg.spaceId : "",
-      hubToken: typeof cfg.hubToken === "string" ? cfg.hubToken : "",
-      deviceId: typeof cfg.deviceId === "string" && cfg.deviceId
-        ? cfg.deviceId
-        : (() => {
-          // 设备 id 一旦生成立即持久化——每次现造随机 id 等于每次都换设备，
-          // 服务端按设备判冲突会全乱（二审必修 1）。
-          const id = `dev_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
-          try { localStorage.setItem(CONFIG_KEY, JSON.stringify({ ...cfg, deviceId: id })); } catch { /* */ }
-          return id;
-        })(),
-      boundAt: cfg.boundAt || null,
-    };
-  } catch {
-    return { driver: "local", cloudUrl: "", spaceId: "", hubToken: "", deviceId: "dev_fallback", boundAt: null };
-  }
-}
-
-export function saveStorageConfig(cfg) {
-  try { localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg)); return true; } catch { return false; }
-}
 
 // 模块内驱动缓存：LS 是真相源，内存只是热读
 let _driver = null;
