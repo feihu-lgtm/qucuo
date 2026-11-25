@@ -11,7 +11,7 @@ vi.mock("react", async (importOriginal) => ({
   useEffect: (fn) => fn(),
 }));
 
-function setupRouter({ npcs = [], handleNpcTrade = vi.fn(), handleNpcDuel = vi.fn() } = {}) {
+function useRouterHarness({ npcs = [], handleNpcTrade = vi.fn(), handleNpcDuel = vi.fn() } = {}) {
   initGameStore({ flags: [], inv: [], questProgress: {}, room: { name: "曲措乡", npcs }, char: { name: "行旅" } });
   const routerRef = { current: null };
   useIntentRouter(routerRef, {
@@ -23,7 +23,7 @@ function setupRouter({ npcs = [], handleNpcTrade = vi.fn(), handleNpcDuel = vi.f
 
 describe("WO-16F-F2c runDeferred 暴露与守卫", () => {
   it("runDeferred 已暴露到 routerRef.current", () => {
-    const { routerRef } = setupRouter();
+    const { routerRef } = useRouterHarness();
     expect(typeof routerRef.current?.runDeferred).toBe("function");
   });
 
@@ -43,7 +43,7 @@ describe("WO-16F-F2c runDeferred 暴露与守卫", () => {
 
   it("BUY single：npc 在场调 handler 且 opts 透传（skipCaptureUndo 抵达）", () => {
     const handleNpcTrade = vi.fn();
-    const { routerRef } = setupRouter({ npcs: [{ name: "掌柜" }], handleNpcTrade });
+    const { routerRef } = useRouterHarness({ npcs: [{ name: "掌柜" }], handleNpcTrade });
     routerRef.current.runDeferred({ kind: "购买", target: "掌柜" }, true, { skipCaptureUndo: true });
     expect(handleNpcTrade).toHaveBeenCalledTimes(1);
     expect(handleNpcTrade.mock.calls[0][0]?.name).toBe("掌柜");
@@ -52,7 +52,7 @@ describe("WO-16F-F2c runDeferred 暴露与守卫", () => {
 
   it("DUEL single：opts 同样透传 handleNpcDuel", () => {
     const handleNpcDuel = vi.fn();
-    const { routerRef } = setupRouter({ npcs: [{ name: "铁匠" }], handleNpcDuel });
+    const { routerRef } = useRouterHarness({ npcs: [{ name: "铁匠" }], handleNpcDuel });
     routerRef.current.runDeferred({ kind: "切磋", target: "铁匠" }, true, { skipCaptureUndo: true });
     expect(handleNpcDuel).toHaveBeenCalledTimes(1);
     expect(handleNpcDuel.mock.calls[0][1]).toEqual({ skipCaptureUndo: true });
