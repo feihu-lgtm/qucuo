@@ -9,8 +9,10 @@
 //                   key 合并动态优先）里与任意势力的最强张力原值 0-100 直传。
 //                   这是势力冲突烈度代理，不是玩家-势力关系账，待有玩家关系账再换源；
 //                   无冲突记录/散人=0，不用人工兜底定档。
-//   riskLevel       前哨 risk 字段（WO-16G 才加）优先：给了「中/高」取前哨值与规则值较大者；
-//                   现在一律走规则兜底——按动作种类定档（偷/决斗 2、翻容器/取物/用物/装备 1、其余 0）。
+//   riskLevel       前哨 risk（WO-16G 才加）：action.risk 每项字段是正式粒度，顶层
+//                   intakeResult.risk 只是过渡兼容；两层都读取最大档，再与规则值取较大者。
+//                   现在前哨还没发 risk，一律走规则兜底——按动作种类定档（偷/决斗 2、
+//                   翻容器/取物/用物/装备 1、其余 0）。
 //   costPaid        v1 保守口径：赠出/交易出去每件记 5，使用消耗品记 3，其余 0
 //                   （流血等事后代价开庭前不可知，不虚构）。
 //   targetAffection 社交动作目标 NPC 的当前好感最大值（varTree.角色.好感度）。
@@ -58,7 +60,12 @@ export function buildCausalBudgetInput(state = {}, intakeResult = {}, opts = {})
   for (const action of actions) {
     ruleRisk = Math.max(ruleRisk, ACTION_RISK[action?.kind] || 0);
   }
-  const intakeRisk = INTAKE_RISK[intakeResult?.risk] || 0;
+  // intakeRisk 兼容两层：顶层 intakeResult.risk 只是过渡兼容口径，actions[] 每项
+  // 的 action.risk 才是 WO-16G 落地后的正式粒度——两层都读取最大档（多动作取最险）。
+  let intakeRisk = INTAKE_RISK[intakeResult?.risk] || 0;
+  for (const action of actions) {
+    intakeRisk = Math.max(intakeRisk, INTAKE_RISK[action?.risk] || 0);
+  }
   const riskLevel = Math.max(ruleRisk, intakeRisk);
 
   // costPaid：给出物品/用消耗品是有形代价（v1 保守）

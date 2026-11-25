@@ -140,3 +140,20 @@ describe("factionTensionProxy 动态覆盖语义", () => {
     expect(factionTensionProxy({ "雪山派|虚构势力": 80 }, "雪山派")).toBe(80);
   });
 });
+
+describe("risk 两层兼容", () => {
+  const base = { intakeResult: { actions: [{ kind: "talk" }] }, opts: {} };
+  it("actions 低/高并存取高", () => {
+    const input = buildCausalBudgetInput(baseState, {
+      actions: [{ kind: "talk", risk: "低" }, { kind: "talk", risk: "高" }],
+    });
+    expect(input.riskLevel).toBe(3);
+  });
+  it("顶层高但动作低也取高", () => {
+    const input = buildCausalBudgetInput(baseState, {
+      risk: "高",
+      actions: [{ kind: "talk", risk: "低" }],
+    });
+    expect(input.riskLevel).toBe(3);
+  });
+});
