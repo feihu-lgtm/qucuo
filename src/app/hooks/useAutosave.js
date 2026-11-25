@@ -173,7 +173,9 @@ export function useAutosave({
       setCompanionState(snap.companionState || initCompanionState());
       setDungeonRun(snap.dungeonRun || null); // 地宫 checkpoint 随档还原
       setNpcState(snap.npcState || {}); // NPC 随身交易账随档还原
-      if (snap.roomMap || snap.roomCache) setRoomCache(snap.roomCache || snap.roomMap);
+      // 无条件重置客房缓存：老档无此字段时清空（否则上一局的缓存漏进新档），
+      // 当前房由房间同步 effect 自愈
+      setRoomCache(snap.roomCache || snap.roomMap || {});
       if (snap.squares) loadSquares(snap.squares);
       if (snap.rngState != null) setRngState(snap.rngState);
       // 内层箱庭位置：老存档没这个字段、或存的房间已不在该据点内景里（改过地图数据），
