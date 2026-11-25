@@ -4,3 +4,7 @@ node_modules/
 .vite/
 dist/
 .intent-eval/
+
+# WO-16D-2 影子采样产物（本地再生，不进库）
+shadow-report.json
+shadow-report-summary.json
