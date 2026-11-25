@@ -44,14 +44,17 @@ export function registerNemesisCalls() {
     join: "",
     blocks: ["nemesis.epithet.sys", "nemesis.epithet.user"],
     schema: {
-      type: "object",
-      properties: {
-        epithet: { type: "string" },
-        tauntLine: { type: "string" },
-        rumorSnippet: { type: "string" },
+      name: "nemesis_epithet",
+      schema: {
+        type: "object",
+        properties: {
+          epithet: { type: "string" },
+          tauntLine: { type: "string" },
+          rumorSnippet: { type: "string" },
+        },
+        required: ["epithet", "tauntLine", "rumorSnippet"],
+        additionalProperties: false,
       },
-      required: ["epithet", "tauntLine", "rumorSnippet"],
-      additionalProperties: false,
     },
   });
 }
