@@ -64,12 +64,14 @@ export function recordAggregate(epoch, result, cmd = "") {
     // WO-16D-M2 采样去重：同一 epoch 同一句 cmd 只占一个名额——一句触发多类目
     // 时合并进 cats 数组，不再重复占位挤掉别的样本（上限 20 句仍指去重后的句数）。
     if (v.verdict === "single_only" && cmd) {
-      const key = String(cmd).slice(0, 60);
-      const existing = agg.samples.find((s) => s.cmd === key);
+      // 去重键用完整 cmd 原文——若按展示截断 60 字当键，两句同前缀不同尾的真不同指令
+      // 会被错并成一条（复审 finding）；存储/展示仍只留 60 字截断。
+      const full = String(cmd);
+      const existing = agg.samples.find((s) => s.key === full);
       if (existing) {
         if (!existing.cats.includes(cat)) existing.cats.push(cat);
       } else if (agg.samples.length < SAMPLE_CAP) {
-        agg.samples.push({ cat, cats: [cat], cmd: key });
+        agg.samples.push({ cat, cats: [cat], key: full, cmd: full.slice(0, 60) });
       }
     }
   }

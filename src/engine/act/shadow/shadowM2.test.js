@@ -108,6 +108,15 @@ describe("WO-16D-M2 采样按句去重", () => {
     expect(agg.samples.length).toBe(20);
   });
 
+  it("同前缀不同尾的两句真不同指令不错并（复审 finding 钉测试）", () => {
+    const result = { verdicts: { inv: { verdict: "single_only" } }, hasGap: true, judgeExtra: false };
+    const prefix = "我仔细打量着对方怀里的物件然后伸手进去想要看看能不能摸到一些值钱的东西顺便再翻翻外层口袋和腰带夹层再检查一遍内衬"; // 加尾巴后超 60 字截断线，两句截断后完全相同
+    recordAggregateProbe("ep_prefix", result, `${prefix}然后偷走`);
+    recordAggregateProbe("ep_prefix", result, `${prefix}然后收手`);
+    const agg = shadowAggregates("ep_prefix");
+    expect(agg.samples.length).toBe(2); // 两句都留——60 字截断相同也不并
+  });
+
   it("formatAggregate 采样行合并展示 cats", () => {
     const result = { verdicts: { inv: { verdict: "single_only" }, flags: { verdict: "single_only" } }, hasGap: true, judgeExtra: false };
     recordAggregateProbe("ep_fmt", result, "试试深浅");
