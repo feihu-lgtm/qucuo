@@ -140,7 +140,7 @@ describe("S7 计量口径两小修", () => {
     expect(m4.verdicts.affection.verdict).toBe("single_only");
   });
   it("trade 进 feature 路由豁免：inv+vitals 直写记 excluded", () => {
-    const cats = featureRoutedCats([{ kind: "trade", target: "掌柜", condition: "无" }]);
+    const cats = featureRoutedCats([{ kind: "trade", target: "掌柜", condition: "无" }], { npcs: [{ name: "掌柜" }] });
     expect(cats.sort()).toEqual(["inv", "vitals"]);
     const diff = { categories: { inv: { add: ["烧刀子"], rm: [] }, vitals: { money: -8 } }, excluded: [] };
     const proj = {};
@@ -151,5 +151,25 @@ describe("S7 计量口径两小修", () => {
     // 带条件的 trade（condition≠无）live router 跳过不执行——不豁免（S5 Review 修口径保持）
     const cats2 = featureRoutedCats([{ kind: "trade", target: "掌柜", condition: "被拒" }]);
     expect(cats2).toEqual([]);
+  });
+});
+
+describe("S7 Review 修：trade 豁免只对真被路由的意向生效", () => {
+  it("target 不在场/为无 → 不豁免；排在已受理 duel 后 → 不豁免", () => {
+    // 不在场：collectDeferredIntents 拒收，无 feature 前路，豁免会洗盲区
+    expect(featureRoutedCats([{ kind: "trade", target: "掌柜", condition: "无" }], { npcs: [{ name: "伙计" }] })).toEqual([]);
+    expect(featureRoutedCats([{ kind: "trade", target: "无", condition: "无" }], { npcs: [{ name: "掌柜" }] })).toEqual([]);
+    // 先受理 duel 占位（一回合只接一场），后排 trade「一场方休」不路由 → 不豁免
+    const cats = featureRoutedCats([
+      { kind: "duel", target: "伙计", condition: "无" },
+      { kind: "trade", target: "掌柜", condition: "无" },
+    ], { npcs: [{ name: "掌柜" }, { name: "伙计" }] });
+    expect(cats).toEqual([]);
+    // duel 在前但被拒（target 不在场）→ 不占位，trade 正常豁免
+    const cats2 = featureRoutedCats([
+      { kind: "duel", target: "路人", condition: "无" },
+      { kind: "trade", target: "掌柜", condition: "无" },
+    ], { npcs: [{ name: "掌柜" }] });
+    expect(cats2.sort()).toEqual(["inv", "vitals"]);
   });
 });

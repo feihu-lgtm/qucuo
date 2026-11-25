@@ -47,12 +47,30 @@ export const FEATURE_ROUTED_KIND_CATS = {
   trade: ["inv", "vitals"],
 };
 
-export function featureRoutedCats(actions = []) {
+export function featureRoutedCats(actions = [], { npcs = [] } = {}) {
   const out = new Set();
+  const present = new Set((npcs || []).map((n) => n?.name).filter(Boolean));
+  // Review 修（S7）：trade 豁免只对「真的会被路由」的意向生效——复刻
+  // collectDeferredIntents/useTurn 受理口径：target 在场非「无」、且是回合内
+  // 第一个被受理的延期交互意向（useTurn 一回合只接第一场，其余「一场方休」
+  // 根本不路由）。不被受理的 trade 没有 feature 前路，豁免会把单调用直写
+  // 洗成盲区、漏掉真缺口。
+  let deferredSlotTaken = false;
   for (const a of actions || []) {
     // Review 修（S5）：带前提的条件动作（「要是/如果……就」）在 live router 里
     // 跳过不执行——并未真走 feature 路由，豁免会把判官漏判洗成盲区。
     if (a?.condition && a.condition !== "无") continue;
+    if (a?.kind === "trade" || a?.kind === "duel") {
+      const targetOk = typeof a.target === "string" && a.target !== "无" && present.has(a.target);
+      if (targetOk && !deferredSlotTaken) {
+        deferredSlotTaken = true;
+        for (const cat of FEATURE_ROUTED_KIND_CATS[a.kind] || []) out.add(cat);
+      } else if (targetOk) {
+        deferredSlotTaken = true;
+      }
+      // duel 无豁免类目（战斗自成子系统），trade 未受理不豁免
+      continue;
+    }
     for (const cat of FEATURE_ROUTED_KIND_CATS[a?.kind] || []) out.add(cat);
   }
   return [...out];
