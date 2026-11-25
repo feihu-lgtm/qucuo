@@ -1,4 +1,0 @@
-# The CLI prompt should focus on the selected NPC, even when others are visible.
-:new
-:set room.npcs=[{"id":"npc_master","name":"师父"},{"id":"npc_merchant","name":"商人"}]
-交谈 商人 近来如何

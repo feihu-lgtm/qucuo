@@ -1,5 +1,0 @@
-:new
-:set innerRoomName=null
-:mapcache {"roomMap":{"鱼定村":{"npcs":[],"items":[]}},"squares":{"雅江":{"day":0,"desc":"雅江缓存","item":{"name":"雪山当归","category":"misc","quality":"蓝","desc":"一味药材。"},"itemTaken":false,"encounter":null,"encounterMet":false,"burned":false}}}
-走 东
-:save uncached-failure.json

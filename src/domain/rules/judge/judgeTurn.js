@@ -9,17 +9,11 @@
 // 纯函数，禁 Date.now/Math.random——随机只走传入 rng。
 
 import { computeCausalBudget } from "./causalBudget.js";
+import { resolveWarrantQuality, inferCategoryFromClaim } from "./warrantRules.js";
 import { allowedAffixesForBudget } from "../effects/affixPointTable.js";
 import { giftPreference, computeGiftWeight } from "../npc/giftWeight.js";
 
 const QUALITY_ORDER = ["白", "绿", "蓝", "紫", "橙", "红"];
-
-function capQuality(quality, maxQuality) {
-  const qi = QUALITY_ORDER.indexOf(quality);
-  const mi = QUALITY_ORDER.indexOf(maxQuality);
-  if (qi < 0) return maxQuality;
-  return QUALITY_ORDER[Math.min(qi, mi < 0 ? QUALITY_ORDER.length - 1 : mi)];
-}
 
 // 性情对收拒的修正：冷傲难动、豪爽易热、精明看价、温善心软、暴烈吃软不吃硬。
 const PERSONA_MOD = [
@@ -305,13 +299,18 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
       if (budget.maxPointBudget <= 0 && QUALITY_ORDER.indexOf(budget.maxQuality) <= 0) {
         continue; // 额度归零，连白档都发不出——留待降级
       }
+      // WO-16E：品阶按 resolveWarrantQuality 掷骰裁定（GM 红/配额尽白/否则按
+      // fit+气运概率取 maxQuality 或降一档），品类按 inferCategoryFromClaim
+      // 从玩家声称原话推断——不再固定白阶 misc。
+      const quality = resolveWarrantQuality(budget, proposal, luck, roll());
+      const category = inferCategoryFromClaim(proposal.claim);
       const warrantId = `W${turn}_${++warrantSeq}`;
       facts.push({ id: factId, op: "GRANT_ITEM", from: action.target, to: "player", witnesses: ["主角"] });
       warrants.push({
         warrantId, factId, op: "GRANT_ITEM",
-        category: "misc", quality: capQuality("白", budget.maxQuality),
+        category, quality,
         pointBudget: budget.maxPointBudget,
-        allowedAffixes: allowedAffixesForBudget("misc", budget.maxPointBudget),
+        allowedAffixes: allowedAffixesForBudget(category, budget.maxPointBudget),
         origin: { turn, day, place, fromNpc: "" },
       });
       granted = true;

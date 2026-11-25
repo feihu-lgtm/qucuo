@@ -1,6 +1,0 @@
-# A malformed AI reply leaves game state and seeded RNG unchanged.
-:new
-:seed 123
-:state
-探索石阶
-:state

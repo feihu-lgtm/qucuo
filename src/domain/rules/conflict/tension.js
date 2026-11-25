@@ -31,3 +31,20 @@ export function decayTension(tension, days = 1, rate = 2) {
   }
   return out;
 }
+
+// WO-16E 路遇紧张度代理：该势力在「动态覆盖+BASE_TENSION」里与任意势力的
+// 最强张力原值（0-100）。这是势力冲突烈度代理，不是玩家-势力关系账——
+// 待后续有玩家关系账再换源。无冲突记录/散人=0，绝不用人工兜底定档。
+export function factionTensionProxy(tension, factionKey) {
+  if (!factionKey || factionKey === "散人") return 0;
+  // 按 pair key 合并：动态表有该 key 用动态值（覆盖语义同 getTension——
+  // 关系缓和降到 20 不会被 BASE 60 顶回去），否则用 BASE；再取 max。
+  const merged = { ...BASE_TENSION, ...(tension || {}) };
+  let max = 0;
+  for (const [key, value] of Object.entries(merged)) {
+    const [a, b] = key.split("|");
+    if (a !== factionKey && b !== factionKey) continue;
+    if (Number.isFinite(value) && value > max) max = value;
+  }
+  return max;
+}
