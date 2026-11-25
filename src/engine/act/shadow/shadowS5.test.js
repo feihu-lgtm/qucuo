@@ -110,4 +110,14 @@ describe("S5 Review 三修", () => {
     const post2 = { inv: [], flags: [], varTree: { 世界: { 威望: 3, 契约: { 掌柜: { p1: { promise: "x", breachTurn: 51 } } } } }, room: { npcs: [] } };
     expect(diffSnapshots(pre, post2).categories.world).toEqual({ 威望: -2 });
   });
+  it("Review修：违约触发威望地板时归因按实际跌幅封顶，不虚增缺口", () => {
+    // 威望 97→95：1 桩违约名义 -5，实际只跌 2（clamp ±100 部分扣减）。
+    // 归因若按名义 -5 会造出 +3 反向虚增被误判判官漏判；封顶后残差 0。
+    const pre = { inv: [], flags: [], varTree: { 世界: { 威望: 97, 契约: { 掌柜: { p1: { promise: "x" } } } } }, room: { npcs: [] } };
+    const post = { inv: [], flags: [], varTree: { 世界: { 威望: 95, 契约: { 掌柜: { p1: { promise: "x", breachTurn: 51 } } } } }, room: { npcs: [] } };
+    expect(diffSnapshots(pre, post).categories.world).toEqual({});
+    // 威望不降反升：判官另签正向，违约归因不吞正向残差
+    const post2 = { inv: [], flags: [], varTree: { 世界: { 威望: 102, 契约: { 掌柜: { p1: { promise: "x", breachTurn: 51 } } } } }, room: { npcs: [] } };
+    expect(diffSnapshots(pre, post2).categories.world).toEqual({ 威望: 10 }); // +5 实际 +5违约抵消 → 判官净 +10
+  });
 });

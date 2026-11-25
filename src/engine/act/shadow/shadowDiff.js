@@ -121,8 +121,13 @@ export function diffSnapshots(pre, post, { moved = false } = {}) {
     };
     const newBreaches = countBreaches(postWorld.契约) - countBreaches(preWorld.契约);
     if (newBreaches > 0) {
-      const explained = -5 * newBreaches; // PACT_BREACH_PRESTIGE_COST=5（pigeon/pactWatch）
-      const residual = out.world.威望 - explained;
+      // pactWatch clamp ±100：触发地板时实际扣减小于 5*n。归因量按实际跌落
+      // 幅度封顶——diff 为负且幅度不足 5n 时只能全额归因（无法分辨混入的
+      // 判官签发，best-effort），绝不归因出反向增益。
+      const full = -5 * newBreaches; // PACT_BREACH_PRESTIGE_COST=5（pigeon/pactWatch）
+      const diff = out.world.威望;
+      const explained = diff < 0 && Math.abs(diff) < Math.abs(full) ? diff : full;
+      const residual = diff - explained;
       if (residual === 0) delete out.world.威望;
       else out.world.威望 = residual;
     }
