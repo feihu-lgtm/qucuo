@@ -8,6 +8,34 @@ import { QUCUO_SHOPS, buildShopInventory } from "../../data/shops/qucuoShops.js"
 import { CATALOG_INDEX } from "../../data/items/catalog.js";
 import { priceForQuality } from "../economy/equipment.js";
 
+// 中文数字解析（破费原话数额）：三两/十五两/一百二十两 与阿拉伯数字并认。
+const CN_DIGITS = { 零: 0, 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
+const CN_UNITS = { 十: 10, 百: 100, 千: 1000, 万: 10000 };
+function parseCnNumeral(str) {
+  if (/^\d+$/.test(str)) return parseInt(str, 10);
+  let total = 0, section = 0, num = 0, seen = false;
+  for (const ch of str) {
+    if (ch in CN_DIGITS) { num = CN_DIGITS[ch]; seen = true; }
+    else if (ch in CN_UNITS) {
+      const u = CN_UNITS[ch];
+      seen = true;
+      if (u === 10000) { total += (section + num) * u; section = 0; }
+      else section += (num || 1) * u;
+      num = 0;
+    } else return NaN;
+  }
+  const out = total + section + num;
+  return seen && Number.isFinite(out) ? out : NaN;
+}
+
+// 原话写数额按原话：「掏出 30 两」「花三两请客」都认；没写返回 null。
+export function parseStatedExpense(text) {
+  const m = String(text || "").match(/([零一二三四五六七八九十百千万\d]+)\s*(?:两|银|钱)/);
+  if (!m) return null;
+  const n = parseCnNumeral(m[1]);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
 export function resolveFreeActExpense({ text = "", itemName = "", category = "misc", presentNpcNames = [] } = {}) {
   // ①② 驻场货架
   const shelves = [];
@@ -25,11 +53,14 @@ export function resolveFreeActExpense({ text = "", itemName = "", category = "mi
     const sameCat = shelves.find((it) => it.category === category);
     if (sameCat?.buyPrice > 0) return { price: sameCat.buyPrice, source: `货架同类（${sameCat.name}）` };
   }
-  // ③ 物件志具名价（基价按具名条目的 category+quality 公式，不取倍率后高价——破费是常价锚）
-  if (wanted && CATALOG_INDEX[wanted]) {
-    const entry = CATALOG_INDEX[wanted];
+  // ③ 物件志具名价（基价按具名条目的 category+quality 公式，不取倍率后高价——破费是常价锚）。
+  // intake 常给 item:"无" 而原文点名货物——此时扫原文里出现的具名（>=2 字防单字误撞）。
+  const cnName = (wanted && CATALOG_INDEX[wanted]) ? wanted
+    : Object.keys(CATALOG_INDEX).find((n) => n.length >= 2 && String(text).includes(n)) || "";
+  if (cnName) {
+    const entry = CATALOG_INDEX[cnName];
     const p = priceForQuality(entry.category || "misc", entry.quality || "白");
-    if (p.buyPrice > 0) return { price: p.buyPrice, source: `物件志（${wanted}）` };
+    if (p.buyPrice > 0) return { price: p.buyPrice, source: `物件志（${cnName}）` };
   }
   // ④ 白档公式兜底
   const fallback = priceForQuality(category || "misc", "白");

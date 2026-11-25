@@ -9,7 +9,7 @@
 // 纯函数，禁 Date.now/Math.random——随机只走传入 rng。
 
 import { computeCausalBudget } from "./causalBudget.js";
-import { resolveFreeActExpense } from "./freeActPricing.js";
+import { resolveFreeActExpense, parseStatedExpense } from "./freeActPricing.js";
 import { resolveWarrantQuality, inferCategoryFromClaim } from "./warrantRules.js";
 import { allowedAffixesForBudget } from "../effects/affixPointTable.js";
 import { giftPreference, computeGiftWeight } from "../npc/giftWeight.js";
@@ -135,6 +135,9 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
   // WO-16A 搭话开闸：talkOnly 回合（纯搭话）判官只产小额社交事实——
   // 严禁因搭话误搬物品：give/inspect_container 等硬事实整条拦截，只留 notes 痕迹。
   const talkOnly = !!envelope.talkOnly;
+  // S3 破费查价链修订：同一回合内 得财/破费 按签发顺序累计流水余额，
+  // 先赚后花不再被开场余额误卡（materialize 按 facts 顺序落账，此处同序预演）。
+  let freeActMoneyRun = envelope.char?.money ?? 0;
   for (const action of actions) {
     // ── WO-16F-F1 free_act 按 outcome+risk 查表签发（target 常为「无」，先于此处理）──
     // 检定/区间随机只用传入 rng；公式见 docs/PR：伤损 -maxHp×{低.05,中.12,高.25}、
@@ -175,16 +178,17 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
         const lo = natural ? ranges[0] + Math.ceil((ranges[1] - ranges[0]) / 2) : ranges[0];
         const amt = lo + Math.floor(roll() * (ranges[1] - lo + 1));
         facts.push({ id: nextFactId(), op: "CHANGE_VITALS_SILVER", moneyDelta: amt, gainKey, witnesses: wit });
+        freeActMoneyRun += amt;
         notes.push(`得财签发：+${amt} 银两（tier ${budget.tier}${natural ? "，natural上半" : ""}）`);
       } else if (outcome === "破费") {
         // S3 破费查价链：原话写数额按原话；没写依次查 驻场货架同名/同类价 →
         // 物件志 → priceForQuality(category,"白")；都查不到按 risk 默认 无2/低5/中10/高20。
         // 超囊中只扣到零并 notes 囊中不足。
-        const m = String(action.text || "").match(/(\d+)\s*(?:两|银|钱)/);
+        const stated = parseStatedExpense(action.text);
         let amt = 0;
         let source = "原话";
-        if (m) {
-          amt = parseInt(m[1], 10);
+        if (stated != null) {
+          amt = stated;
         } else {
           const cat = action.item && action.item !== "无" ? (envelope.inv || []).find((e) => e && e.name === action.item)?.category || "misc" : "misc";
           const hit = resolveFreeActExpense({
@@ -203,12 +207,13 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
         }
         if (!(amt > 0)) { notes.push("破费查价为零，不签发"); continue; }
         let clampNote = "";
-        if (amt > money) {
-          if (!(money > 0)) { notes.push("囊中原已空空，破费无从扣起，不签发"); continue; }
-          amt = money;
+        if (amt > freeActMoneyRun) {
+          if (!(freeActMoneyRun > 0)) { notes.push("囊中原已空空，破费无从扣起，不签发"); continue; }
+          amt = freeActMoneyRun;
           clampNote = "，囊中不足只扣到零";
         }
         facts.push({ id: nextFactId(), op: "CHANGE_VITALS_SILVER", moneyDelta: -amt, witnesses: wit });
+        freeActMoneyRun -= amt;
         notes.push(`破费签发：-${amt} 银两（${source}${clampNote}）`);
       } else if (outcome === "调息") {
         // 同一游戏时辰只签一次——时辰两回合一档（restKey 按 watch=turn/2 取整），

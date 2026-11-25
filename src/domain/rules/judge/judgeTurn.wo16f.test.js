@@ -135,3 +135,32 @@ describe("WO-16F-F1 steal 按表裁定", () => {
     expect(tk.facts.length).toBe(0);
   });
 });
+
+describe("S3 Review 三单回归", () => {
+  it("中文数字原话数额照扣：三两/十五两/一百二十两", () => {
+    const v = judgeTurn(base(), act(fa("破费", "无", "花三两请客")), { rng: () => 0.5 });
+    expect(v.facts.find((x) => x.op === "CHANGE_VITALS_SILVER").moneyDelta).toBe(-3);
+    const v2 = judgeTurn(base(), act(fa("破费", "无", "掏出十五两")), { rng: () => 0.5 });
+    expect(v2.facts.find((x) => x.op === "CHANGE_VITALS_SILVER").moneyDelta).toBe(-15);
+  });
+  it("item 为无但原文点具名货：查物件志价不落白档", async () => {
+    const { CATALOG_INDEX } = await import("../../data/items/catalog.js");
+    const named = Object.keys(CATALOG_INDEX).find((n) => n.length >= 2);
+    expect(named).toBeTruthy();
+    const v = judgeTurn(base(), act(fa("破费", "无", `买下${named}防身`)), { rng: () => 0.5 });
+    expect(v.notes.some((n) => n.includes("物件志"))).toBe(true);
+  });
+  it("同回合先赚后花：破费按流水余额不卡开场", () => {
+    // money=50：先得财 T0 2-10（rng 0.999→上限 10），再破费 60 两——原口径卡 50，现按 60 流水全额签
+    const two = { read: "", refIds: [], actions: [fa("得财"), fa("破费", "无", "掏出六十两打赏")], proposals: [] };
+    const v = judgeTurn(base(), two, { rng: () => 0.999 });
+    const debits = v.facts.filter((x) => x.op === "CHANGE_VITALS_SILVER");
+    expect(debits.length).toBe(2);
+    expect(debits[0].moneyDelta).toBeGreaterThan(0);
+    expect(debits[1].moneyDelta).toBe(-60); // 50+10 流水够 60，不卡开场 50
+    // 反过来：先花后赚仍按花时点的流水扣
+    const spendFirst = { read: "", refIds: [], actions: [fa("破费", "无", "掏出六十两打赏"), fa("得财")], proposals: [] };
+    const v2 = judgeTurn(base(), spendFirst, { rng: () => 0.999 });
+    expect(v2.facts[0].moneyDelta).toBe(-50); // 开场 50 不够 60，扣到零
+  });
+});
