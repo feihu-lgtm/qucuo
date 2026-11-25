@@ -146,6 +146,12 @@ describe("WO-16D 影子对账接线", () => {
     expect(runShadowJudge).not.toHaveBeenCalled();
   });
 
+  it("opts.settle 直传也不跑影子（创造模式兜底）", async () => {
+    runTurn.mockResolvedValue({ narrativeText: "test" });
+    await playTurn(shadowCtx(), "test", { settle: true });
+    expect(runShadowJudge).not.toHaveBeenCalled();
+  });
+
   it("stale 回合不跑影子", async () => {
     runTurn.mockResolvedValue({ narrativeText: "test" });
     await playTurn(shadowCtx(), "test", { isStale: undefined });

@@ -76,7 +76,10 @@ export async function playTurn(ctx, cmd, opts = {}) {
     });
     // commit 成功且未 stale 才 fire-and-forget；影子吃回合前快照、对比 commit 后现状，
     // 结果只进 trace/内存聚合，异常静默，绝不阻塞回合。
-    if (shadowPre && finalized?.ok && !finalized?.stale && !turnCtx.isStale?.() && !turnCtx.isSettle) {
+    // settle 双保险：turnCtx.isSettle 是 plan 派生主信号，opts.settle 是调用方直传——
+    // 创造模式等路径可能出现 plan 未派生但 opts.settle 为真的回合（runTurnSteps 仍认它），
+    // 任一命中都不跑影子（影子只在普通自由行动回合对账）。
+    if (shadowPre && finalized?.ok && !finalized?.stale && !turnCtx.isStale?.() && !turnCtx.isSettle && !opts.settle && !opts.isSettle) {
       const liveAfter = getGameState?.() || {};
       const shadowPost = {
         inv: liveAfter.inv, flags: liveAfter.flags, varTree: liveAfter.varTree,
