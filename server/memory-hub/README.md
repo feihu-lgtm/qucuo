@@ -94,6 +94,13 @@ canonical，绝不携带 embedding 字段。**明文口径（有意）**：prose
 威胁模型与存档相反，存档密文 at-rest、prose 明文对 hub 运营方可见，witnesses 元数据供可见性过滤；
 prose 路径绝不触碰存档密钥/密文。嵌入向量管线仍不做（后续工单）。
 
+## ⚠ known limitation（WO-19/20 PR-B 裁决接受）
+
+FTS 候选 cap（`Math.max(topK*4, 20)`）在谱系/可见性过滤**之前**截取（hubCore queryProseChunks）——
+重度分叉/重迁移时别分支副本可能挤占候选名额，致当前分支命中减少甚至为零。这是谱系模型的内在代价
+（分叉本就要求每分支各存一份）。客户端云查询接入 recall 链路前，**必须另立服务端小单**把
+lineage/visibility 过滤下推进 SQL 或调整候选池策略。PR-B 阶段接受此限制：云查询尚未接入玩家可见链路。
+
 ## ⚠ pre-release schema 不兼容声明
 
 本服务尚未发布。`UNIQUE(space_id, chunk_id)`、branch_id/seq/embedding 元数据列等均为终审后契约——
