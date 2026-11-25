@@ -36,7 +36,7 @@ export function stepEffect(state, step) {
   const npc = findStepNpc(state, step);
   switch (step.kind) {
     case ACTION_KINDS.GIFT:
-      return step.item === SILVER ? giftSilver(state, npc, step.amount) : giftNpc(state, npc, findInvItem(state, step.item));
+      return step.item === SILVER ? giftSilver(state, npc, step.amount) : giftNpc(state, npc, findInvItem(state, step.item).item);
     case ACTION_KINDS.LEARN: return learnNpcSkill(state, npc);
     case ACTION_KINDS.USE_ITEM: {
       const found = findInvItem(state, step.item, step.itemId);
