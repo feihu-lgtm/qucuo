@@ -52,3 +52,71 @@ export function clearRumor(varTree, name) {
   delete rumors[name];
   return { ...varTree, 世界: { ...varTree.世界, [RUMOR_KEY]: rumors } };
 }
+
+// ── WO 过渡复接：SEAL 尾章涌现申报校验（纯函数）──
+// SEAL 与正文同出模型一人之口，凡申报必经五路校验，非法项安静丢弃：
+//   · 名字必须在正文真实出现（防自证空报）；
+//   · 剔除空白/超长/玩家名/在场 NPC/同伴（含雪豹）/驻场名册/已有传闻重复项；
+//   · emergedNpc 必须对应 varTree.世界.传闻人物 里已存在的传闻——无传闻不登场；
+//   · description 只准定性短句：非数字、不超 40 字、不带阿拉伯数字数值。
+import { getAllResidentNpcNames } from "../../data/npc/residentNpcs.js";
+import { getImportedResidentNames } from "../cards/importedRegistry.js";
+import { COMPANION_SLOTS } from "../companion/companionSlots.js";
+
+const MAX_NAME_LEN = 8;
+
+function exclusionSet({ roomNpcs = [], playerName = "" } = {}) {
+  const set = new Set([...getAllResidentNpcNames(), ...getImportedResidentNames()]);
+  for (const slot of COMPANION_SLOTS) if (slot?.label) set.add(slot.label);
+  for (const npc of roomNpcs) if (npc?.name) set.add(npc.name);
+  if (playerName) set.add(playerName);
+  return set;
+}
+
+function isValidNewName(name, { screenText, excluded }) {
+  if (typeof name !== "string") return false;
+  const trimmed = name.trim();
+  if (!trimmed || trimmed.length > MAX_NAME_LEN) return false;
+  if (trimmed.includes("雪豹")) return false;
+  if (excluded.has(trimmed)) return false;
+  return String(screenText || "").includes(trimmed);
+}
+
+// 返回值全是干净副本；非法项进 notes/warnings，不进状态。
+export function validateEmergenceSeal(sealData, {
+  screenText = "", varTree = {}, roomNpcs = [], playerName = "",
+} = {}) {
+  const notes = [];
+  const warnings = [];
+  const excluded = exclusionSet({ roomNpcs, playerName });
+  const rumors = varTree?.世界?.[RUMOR_KEY] || {};
+
+  const mentionedNewNpcs = [];
+  const rawMentioned = Array.isArray(sealData?.mentionedNewNpcs) ? sealData.mentionedNewNpcs : [];
+  for (const name of rawMentioned) {
+    const trimmed = typeof name === "string" ? name.trim() : "";
+    if (rumors[trimmed]) { notes.push(`「${trimmed}」已在传闻册，重复申报剔除`); continue; }
+    if (!isValidNewName(trimmed, { screenText, excluded })) {
+      notes.push(`传闻申报「${trimmed || "?"}」未过校验（未见正文/在册/非法形），丢弃`);
+      continue;
+    }
+    if (!mentionedNewNpcs.includes(trimmed)) mentionedNewNpcs.push(trimmed);
+  }
+
+  let emergedNpc = null;
+  const rawEmerged = sealData?.emergedNpc;
+  if (rawEmerged && typeof rawEmerged === "object") {
+    const name = typeof rawEmerged.name === "string" ? rawEmerged.name.trim() : "";
+    const description = typeof rawEmerged.description === "string" ? rawEmerged.description.trim() : "";
+    if (!name || !rumors[name]) {
+      notes.push(`登场申报「${name || "?"}」无对应传闻，丢弃`);
+    } else if (!String(screenText || "").includes(name)) {
+      notes.push(`登场申报「${name}」未在正文登场，丢弃`);
+    } else if (!description || description.length > 40 || /\d/.test(description)) {
+      warnings.push(`登场申报「${name}」定性描述非法（空/超长/带数值），丢弃`);
+    } else {
+      emergedNpc = { name, description };
+    }
+  }
+  return { mentionedNewNpcs, emergedNpc, notes, warnings };
+}

@@ -63,7 +63,10 @@ export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo)
     : "";
   const targetedRumor = input.findTargetedRumor?.(varTree, cmd);
   const emergenceNote = targetedRumor
-    ? `\n[人物涌现] 玩家这句话明确指向了此前提到过的人物"${targetedRumor.name}"（提及语境：${targetedRumor.context}）。如果当前场景逻辑上合理让这个人物真正登场（玩家确实去了他所在之处，或情境足以让他出现），在 room.npcs 加入他（{"name":"${targetedRumor.name}","id":"（自拟英文id）","brief":"≤15字简介"}），并在顶层JSON额外加两个字段：{"emergedNpcName":"${targetedRumor.name}","emergedNpcDescription":"一句话定性其身份性格，如'磨坊学徒，憨厚老实'，不给数值"}。场景不适合登场就不强行加入，正常描述。`
+    ? (apiCfg.extractionEnabled
+      // 判官叙事模式：没有顶层 JSON 可写——登场申报走 ---SEAL--- 尾章 emergedNpc 键。
+      ? `\n[人物涌现] 玩家这句话明确指向了此前提到过的人物"${targetedRumor.name}"（提及语境：${targetedRumor.context}）。如果当前场景逻辑上合理让这个人物真正登场（玩家确实去了他所在之处，或情境足以让他出现），在正文里写他登场，并在 ---SEAL--- 尾章 JSON 填 emergedNpc:{"name":"${targetedRumor.name}","description":"一句话定性其身份性格，如'磨坊学徒，憨厚老实'，不给数值"}；未登场则 emergedNpc 给 null。场景不适合登场就不强行写，正常叙事。`
+      : `\n[人物涌现] 玩家这句话明确指向了此前提到过的人物"${targetedRumor.name}"（提及语境：${targetedRumor.context}）。如果当前场景逻辑上合理让这个人物真正登场（玩家确实去了他所在之处，或情境足以让他出现），在 room.npcs 加入他（{"name":"${targetedRumor.name}","id":"（自拟英文id）","brief":"≤15字简介"}），并在顶层JSON额外加两个字段：{"emergedNpcName":"${targetedRumor.name}","emergedNpcDescription":"一句话定性其身份性格，如'磨坊学徒，憨厚老实'，不给数值"}。场景不适合登场就不强行加入，正常描述。`)
     : "";
   const presence = input.buildPresence
     ? input.buildPresence({ _trace: ctx._trace, isTalk, lockedDestName, room, innerRoomName, companionState })

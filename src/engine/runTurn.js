@@ -16,6 +16,7 @@ import { renderJudgeVerdict, renderCausalBudget } from "../domain/rules/judge/ju
 import { buildIntakeUserContent, normalizeIntakeResult } from "./turn/intakeTurn.js";
 import { verifySealAndMaterialize } from "../domain/rules/effects/sealVerifier.js";
 import { random } from "../utils/rng.js";
+import { validateEmergenceSeal } from "../domain/rules/npc/npcEmergence.js";
 import { getPresentNpcs } from "../domain/rules/prompt/promptRefs.js";
 
 const MAX_AUTO_RETRY = 2;
@@ -218,7 +219,7 @@ async function runTurnSteps(ctx, cmd, opts) {
         renderJudgeVerdict(judgeVerdict),
         renderCausalBudget(judgeVerdict.budget),
         "正文中每落实一条 facts 事实，须在落实处文末埋对应锚点 ⟦F编号⟧（玩家不可见，系统会剥除）；",
-        "禁编造判官未签发的新器物/新武学/好感大变；写完正文换行输出 ---SEAL--- 紧跟单行 JSON：fills 给空白天机券填 name/chosenAffix/desc，respondedNpcs 列本轮开口的角色，spontaneousPact 无则 null。",
+        "禁编造判官未签发的新器物/新武学/好感大变；写完正文换行输出 ---SEAL--- 紧跟单行 JSON：fills 给空白天机券填 name/chosenAffix/desc，respondedNpcs 列本轮开口的角色，spontaneousPact 无则 null；正文新提到的具名人物列进 mentionedNewNpcs（只报名字，未提到给 []）；玩家明确指向的传闻人物若果真登场，填 emergedNpc:{name,description}——description 只写一句话定性身份性格、禁带数值，未登场给 null。",
         "条件券只有正文埋锚且尾章填空才成立——写了拾取却不填名、或填了名正文却没写拾取，券都作废，系统绝不代你硬塞。",
       ].join("\n");
       trace("判官管线", "pass", `intake ${intakeResult.actions?.length || 0} 动作/${intakeResult.proposals?.length || 0} 提议 → facts ${judgeVerdict.facts.length} 条/warrants ${judgeVerdict.warrants.length} 张（tier ${judgeVerdict.causalTier}）`);
@@ -417,6 +418,36 @@ async function runTurnSteps(ctx, cmd, opts) {
     // 在场过滤仍由 talkKnow 统一执行，不得用于 pact 自证（见 docs）。
     if (!(deps.derivedRespondedNpcs || []).length && Array.isArray(verified.sealData?.respondedNpcs) && verified.sealData.respondedNpcs.length) {
       p = { ...p, respondedNpcs: verified.sealData.respondedNpcs };
+    }
+    // 涌现过渡复接：SEAL 申报的传闻/登场经五路校验后接回 p——recordRumors、
+    // materializeEmergence、fixateNpcs、writeRoom 原管线接管；数值仍由系统侧定量。
+    const emergenceCheck = validateEmergenceSeal(verified.sealData, {
+      screenText: verified.screenText,
+      varTree: live.varTree || deps.varTree || {},
+      roomNpcs: (live.room || deps.room)?.npcs || [],
+      playerName: (live.char || deps.char)?.name || "",
+    });
+    for (const note of emergenceCheck.notes) trace("涌现校验", "info", note);
+    for (const warning of emergenceCheck.warnings) {
+      trace("涌现校验", "warn", warning);
+      addLog([{ t: "sys", text: `  ⚠ ${warning}` }]);
+    }
+    if (emergenceCheck.mentionedNewNpcs.length) {
+      p = { ...p, mentionedNewNpcs: emergenceCheck.mentionedNewNpcs };
+    }
+    if (emergenceCheck.emergedNpc) {
+      // materializeNpc 只替换不新增——先把最小形状并入 room.npcs 让原管线替换固化；
+      // 不编造数值/随身物/id，战斗数据由 fixateNpcs/materializeEmergence 定量。
+      const roomNpcs = [...(p.room?.npcs || [])];
+      if (!roomNpcs.some((n) => n?.name === emergenceCheck.emergedNpc.name)) {
+        roomNpcs.push({ name: emergenceCheck.emergedNpc.name, brief: emergenceCheck.emergedNpc.description.slice(0, 15) });
+      }
+      p = {
+        ...p,
+        emergedNpcName: emergenceCheck.emergedNpc.name,
+        emergedNpcDescription: emergenceCheck.emergedNpc.description,
+        room: { ...(p.room || {}), npcs: roomNpcs },
+      };
     }
     judgeEffects = { verdict: judgeVerdict, sealReport: verified, materialized: verified.materialized };
     trace("尾章校对", "pass", `锚点齐 ${judgeVerdict.facts.length - verified.missingAnchors.length}/${judgeVerdict.facts.length}，编译券 ${Object.keys(verified.materialized?.receipts || {}).length}，facts 落盘 ${verified.facts.length} 条`);
