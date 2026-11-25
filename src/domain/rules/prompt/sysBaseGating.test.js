@@ -115,20 +115,29 @@ describe("budgetInstruction 与 scenario 蓝绿灯", () => {
 
   it("冰山前缀：同一 scope 下逐轮输入再变，sysBlocks 也一字不动", () => {
     // 契约（WO-04 核心）：sysBlocks 严格收束为不随单轮输入跳变的冰山前缀——
-    // 字数预算、玩家输入词、NPC 人设、好感档位再怎么变，sysBlocks 逐字节相同，
-    // 动态内容全部由 dynBlocks 带去 11 号位。
-    const build = (budget, npcLore, affection, input) => buildSysBase(220, { stage: "NORMAL", affection }, input, budget, false, npcLore, false, "full",
-      { playerName: "少侠", hasNpc: true, gateCtx: { userInput: input, lastReply: "" } });
+    // scenario 固定，玩家输入分别命中/不命中绿灯关键词，加上字数预算、NPC 人设、
+    // 好感档位的差异，sysBlocks 也必须逐字节相同；绿灯差异只能进 dynBlocks。
     const scenario = "世界观头部。\n\n具名人物\n才旦是鱼定村的年轻猎户。\n\n拓扑连通关系\n鱼定村北通天都镇。";
-    const a = build("本轮只答一两句。", "才旦的人设甲", 20, scenario.replace(/^/m, ""));
-    const b = build("本轮写长些，写足五百字。", "呼延雪的人设乙", 80, scenario);
-    const c = build(null, "", 50, scenario);
+    const build = (budget, npcLore, affection, userInput) => buildSysBase(220, { stage: "NORMAL", affection }, scenario, budget, false, npcLore, false, "full",
+      { playerName: "少侠", hasNpc: true, gateCtx: { userInput, lastReply: "" } });
+    // a：命中绿灯词「鱼定村」（拓扑）与「才旦」（具名人物）；b：一个绿灯词都不沾；
+    // c：换一批命中词（大草甸→规则补充段）+ 不同预算/人设/好感档位。
+    const a = build("本轮只答一两句。", "才旦的人设甲", 20, "去鱼定村找才旦");
+    const b = build("本轮写长些，写足五百字。", "呼延雪的人设乙", 80, "四下打量");
+    const c = build(null, "", 50, "穿过大草甸赶路");
     const dump = (r) => JSON.stringify(r.sysBlocks.map((x) => [x.tavernBlock, x.content]));
     expect(dump(a)).toBe(dump(b));
     expect(dump(a)).toBe(dump(c));
-    // 绿灯专项段（具名人物/拓扑）进了动态块，蓝灯基底留在 scenario 块。
-    expect(c.dynBlocks.scenarioLit + c.dynBlocks.npcLore).not.toContain("世界观头部");
-    expect(c.sysBlocks.find((x) => x.tavernBlock === "scenario").content).toContain("世界观头部");
+    // 绿灯差异确实发生了（a 点亮拓扑/具名人物，b 全灭），且只落在 dynBlocks.scenarioLit。
+    expect(a.dynBlocks.scenarioLit).toContain("拓扑连通关系");
+    expect(a.dynBlocks.scenarioLit).toContain("具名人物");
+    expect(b.dynBlocks.scenarioLit).not.toContain("拓扑连通关系");
+    expect(b.dynBlocks.scenarioLit).not.toContain("具名人物");
+    // 蓝灯基底留守 scenario 块，三种输入下一致。
+    const scenBlock = (r) => r.sysBlocks.find((x) => x.tavernBlock === "scenario").content;
+    expect(scenBlock(a)).toContain("世界观头部");
+    expect(scenBlock(a)).not.toContain("拓扑连通关系");
+    expect(scenBlock(a)).toBe(scenBlock(b));
   });
 
   it("绿灯专项世界观段不进 sysBlocks：蓝灯基底留守，专项段走 dynBlocks", () => {

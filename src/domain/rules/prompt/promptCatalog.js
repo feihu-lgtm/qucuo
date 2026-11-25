@@ -43,13 +43,15 @@ export const ROUTE_LABELS = {
 
 const BLOCK_CATALOG_META = {
   engine_identity: { name: "引擎身份声明", category: "style", slot: "sys", editable: "engine" },
-  length: { name: "篇幅与节奏要求", category: "style", slot: "authorsNote", editable: "toggle" },
-  voice: { name: "旁白语气（品德与好感文风）", category: "style", slot: "sys", editable: "supplement" },
-  preset_scenario: { name: "世界观总纲（此地与地理蓝绿灯）", category: "world", slot: "sys", editable: "static" },
+  // WO-04 冰山重排后的真实承载位：length/voice/npc_lore/catalog 全部随轮跳变，
+  // 已迁 11 号位 inChat；preset_scenario 拆分——蓝灯基底留守 sys、绿灯专项段迁 inChat。
+  length: { name: "篇幅与节奏要求", category: "style", slot: "inChat", editable: "toggle" },
+  voice: { name: "旁白语气（品德与好感文风）", category: "style", slot: "inChat", editable: "supplement" },
+  preset_scenario: { name: "世界观总纲（蓝灯基底在 sys、绿灯专项段在 inChat）", category: "world", slot: "sys+inChat", editable: "static" },
   preset_genrules: { name: "世界与行动通用铁律", category: "style", slot: "sys", editable: "static" },
   preset_wenfeng: { name: "文体铁律与禁用句式", category: "style", slot: "sys", editable: "static" },
-  npc_lore: { name: "在场人物档案（性格/生平/关系）", category: "npc", slot: "sys", editable: "toggle" },
-  catalog: { name: "曲措乡物件志（物品白名单）", category: "world", slot: "sys", editable: "toggle" },
+  npc_lore: { name: "在场人物档案（性格/生平/关系）", category: "npc", slot: "inChat", editable: "toggle" },
+  catalog: { name: "曲措乡物件志（物品白名单）", category: "world", slot: "inChat", editable: "toggle" },
   isolation: { name: "NPC 认知隔离硬规则", category: "npc", slot: "sys", editable: "engine" },
   map_law: { name: "地图与出口铁律", category: "world", slot: "sys", editable: "engine" },
   mode_note: { name: "对话模式动作锁定", category: "style", slot: "sys", editable: "engine" },
@@ -70,7 +72,7 @@ const BLOCK_CATALOG_META = {
   user_prose: { name: "成文铁律（Depth 0 贴生成处）", category: "style", slot: "inChat", editable: "static", defaultMode: "blue" },
   nsfw_rules: { name: "NSFW 写作规则（■ 模式）", category: "style", slot: "inChat", editable: "toggle", defaultMode: "green" },
   gm_rule: { name: "创造模式规则（⚡ 模式）", category: "style", slot: "inChat", editable: "toggle", defaultMode: "green" },
-  body_gate: { name: "外貌体貌门控（公开层/私密层）", category: "player", slot: "authorsNote", editable: "toggle", defaultMode: "green" },
+  body_gate: { name: "外貌体貌门控（公开层/私密层）", category: "player", slot: "inChat", editable: "toggle", defaultMode: "green" },
   whisper_ctx: { name: "旁白身份与亲疏语境", category: "npc", slot: "sys", editable: "supplement" },
   world_state: { name: "精简世界状态（此地与背包）", category: "world", slot: "sys", editable: "toggle" },
   facts: { name: "全知事实账本", category: "memory", slot: "sys", editable: "toggle" },

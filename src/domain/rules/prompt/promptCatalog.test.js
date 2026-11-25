@@ -44,6 +44,21 @@ describe("promptCatalog unified control matrix", () => {
     }
   });
 
+  it("WO-04 后目录 slot 元数据与真实承载位一致，控制台不说谎", () => {
+    // 契约：冰山重排把 length/voice/npc_lore/catalog/body_gate 迁去 11 号位 inChat，
+    // preset_scenario 拆成 sys 蓝灯基底 + inChat 绿灯专项段——目录必须标真实新位置。
+    const matrix = getCallControlMatrix("main:combat", { mode: "single" });
+    const slotOf = (id) => matrix.items.find((i) => i.id === id)?.slot;
+    for (const id of ["length", "voice", "npc_lore", "catalog", "body_gate"]) {
+      expect(slotOf(id), `${id} 应标 inChat`).toBe("inChat");
+    }
+    expect(slotOf("preset_scenario")).toBe("sys+inChat");
+    // 留守冰山前缀的块仍标 sys。
+    for (const id of ["engine_identity", "isolation", "map_law"]) {
+      expect(slotOf(id), `${id} 应留守 sys`).toBe("sys");
+    }
+  });
+
   it("switches block lighting via setPromptOverride and prevents turning off engine blocks", () => {
     const base = getCallControlMatrix("main:explore", { mode: "single" });
     const catBase = base.items.find((i) => i.id === "catalog");
