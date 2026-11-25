@@ -1,4 +1,4 @@
-// WO-16D-2 影子判官覆盖率可复现采样 harness
+// WO-16D-2 + S6 影子判官覆盖率可复现采样 harness（S6：情景表驱动 200+ 回合）
 // ============================================================================
 // 真实接线：playTurn + 真 runTurn + 真 commitRound + 真 shadowJudge，
 // 只有 AI 是确定性 router mock（按消息内容分流主叙事/影子 intake）。
@@ -155,148 +155,411 @@ function makePlan(overrides = {}) {
   };
 }
 
-// 回合脚本：cmd + plan 覆盖 + 主叙事 mock（含 mvu 单调用落账）+ 影子 intake mock
-const TURNS = [
-  // ── talk 线：判官已接管好感签发，单调用侧好感靠模型自觉写 mvu ──
-  { cmd: "掌柜，最近可好？", plan: { isTalk: true, talkTarget: "掌柜", intent: { code: "TALK", label: "搭话" } },
-    narrative: narrative("掌柜笑着擦了擦柜台：「托福托福，小店还算安生。」", { mvu: "_.add('角色.掌柜.好感度', 1);" }),
-    intake: intake1("talk", "掌柜", "", "掌柜，最近可好？"),
-    note: "talk 寒暄·模型写+1（对照判官签发口径）" },
-  { cmd: "跟伙计打听镇上的消息", plan: { isTalk: true, talkTarget: "伙计", intent: { code: "TALK", label: "搭话" } },
-    narrative: narrative("伙计压低声音说了些镇上的闲事。"),
-    intake: intake1("talk", "伙计", "", "跟伙计打听镇上的消息"),
-    note: "talk 打听·模型不写好感（judge_only 证据面）" },
-  { cmd: "骂掌柜是个奸商", plan: { isTalk: true, talkTarget: "掌柜", intent: { code: "TALK", label: "搭话" } },
-    narrative: narrative("掌柜脸色一沉，别过头去不理人了。", { mvu: "_.add('角色.掌柜.好感度', -2);" }),
-    intake: intake1("talk", "掌柜", "", "骂掌柜是个奸商"),
-    note: "talk 冒犯·模型写-2（负向对照）" },
-  { cmd: "跟掌柜闲聊天气", plan: { isTalk: true, talkTarget: "掌柜", intent: { code: "TALK", label: "搭话" } },
-    narrative: narrative("掌柜抬头望了望窗外，随口应付两句。"),
-    intake: intake1("talk", "掌柜", "", "跟掌柜闲聊天气"),
-    note: "talk 闲谈·零效果" },
-  // ── give 线：物品经 delta.items_rm 落账，好感走 mvu ──
-  { cmd: "把干粮塞给掌柜", plan: {},
-    narrative: narrative("少侠把干粮推过柜台，掌柜愣了愣，拱手道谢。", { mvu: "_.add('角色.掌柜.好感度', 3);", memory: "赠干粮予掌柜", delta: { items_rm: ["干粮"] } }),
-    intake: intake1("give", "掌柜", "干粮", "把干粮塞给掌柜"),
-    note: "give 自由文本送礼（affection+inv 双类目）" },
-  { cmd: "把伤药送给伙计", plan: {},
-    narrative: narrative("伙计接过伤药，喜出望外连声道谢。", { mvu: "_.add('角色.伙计.好感度', 2);", memory: "赠伤药予伙计", delta: { items_rm: ["伤药"] } }),
-    intake: intake1("give", "伙计", "伤药", "把伤药送给伙计"),
-    note: "give 第二件·药房类礼" },
-  { cmd: "送掌柜一壶酒", plan: {},
-    narrative: narrative("少侠拱手递上一壶酒，掌柜推辞再三还是收了。", { mvu: "_.add('角色.掌柜.好感度', 2);", memory: "赠酒予掌柜" }),
-    intake: intake1("give", "掌柜", "酒", "送掌柜一壶酒"),
-    note: "give 无实物礼（inv 不动）" },
-  // ── steal 线：判官 F1 查表接管类目 ──
-  { cmd: "偷偷摸走柜台的茶壶", plan: {},
-    narrative: narrative("少侠趁人不备，把茶壶袖进了怀里。", { memory: "窃了茶壶", delta: { items_add: ["茶壶"] } }),
-    intake: intake1("steal", "掌柜", "茶壶", "偷偷摸走柜台的茶壶"),
-    note: "steal 偷窃成功面（对照判官查表签发）" },
-  { cmd: "偷掌柜怀里的钱袋", plan: {},
-    narrative: narrative("少侠刚伸手，掌柜一巴掌拍开：「好你个小贼！」", { char: { hp: [85, 100] }, memory: "行窃被擒" }),
-    intake: intake1("steal", "掌柜", "钱袋", "偷掌柜怀里的钱袋"),
-    note: "steal 被擒·伤损（vitals.hp）" },
-  { cmd: "顺走伙计的抹布", plan: {},
-    narrative: narrative("少侠顺手把抹布揣进怀里，伙计浑然不觉。", { delta: { items_add: ["抹布"] } }),
-    intake: intake1("steal", "伙计", "抹布", "顺走伙计的抹布"),
-    note: "steal 小物件成功面" },
-  // ── free_act 线：调息/修习/伤损/中毒/受寒/醉酒/破费/得财 ──
-  { cmd: "打坐调息一个时辰", plan: {},
-    narrative: narrative("少侠盘膝而坐，气息渐匀，只觉经脉通畅了几分。", { delta: { exp: 2, pot: 1 }, memory: "打坐练功" }),
-    intake: intake1("free_act", "无", "", "打坐调息一个时辰", { outcome: "调息" }),
-    note: "free_act 调息（cultivation exp/pot）" },
-  { cmd: "修习内功心法", plan: {},
-    narrative: narrative("少侠默运心法，内力又有精进。", { delta: { exp: 3 } }),
-    intake: intake1("free_act", "无", "", "修习内功心法", { outcome: "修习" }),
-    note: "free_act 修习（cultivation）" },
-  { cmd: "翻墙摔了一跤", plan: {},
-    narrative: narrative("少侠脚下一滑摔下墙头，疼得龇牙咧嘴。", { char: { hp: [78, 100] } }),
-    intake: intake1("free_act", "无", "", "翻墙摔了一跤", { outcome: "伤损", risk: "低" }),
-    note: "free_act 伤损（vitals.hp -7）" },
-  { cmd: "误食毒蘑菇", plan: {},
-    narrative: narrative("少侠吃下野菇，腹中绞痛，面无人色。", { char: { hp: [70, 100] }, delta: { flags_add: ["中了菇毒"] } }),
-    intake: intake1("free_act", "无", "", "误食毒蘑菇", { outcome: "受寒中毒", risk: "中" }),
-    note: "free_act 中毒（vitals+flags 双类目）" },
-  { cmd: "寒夜席地而睡", plan: {},
-    narrative: narrative("夜里风寒刺骨，少侠冻得直打哆嗦。", { char: { hp: [66, 100] } }),
-    intake: intake1("free_act", "无", "", "寒夜席地而睡", { outcome: "受寒中毒", risk: "低" }),
-    note: "free_act 受寒（vitals）" },
-  { cmd: "灌下三碗烈酒", plan: {},
-    narrative: narrative("三碗下肚，少侠天旋地转，脚下打飘。"),
-    intake: intake1("free_act", "无", "", "灌下三碗烈酒", { outcome: "醉酒" }),
-    note: "free_act 醉酒·模型零写入（judge_only 证据面）" },
-  { cmd: "打赏唱曲的十两银子", plan: {},
-    narrative: narrative("少侠豪掷十两，满堂喝彩。", { char: { money: 90 } }),
-    intake: intake1("free_act", "无", "", "打赏唱曲的十两银子", { outcome: "破费" }),
-    note: "free_act 破费（vitals.money）" },
-  { cmd: "捡到钱袋收进怀里", plan: {},
-    narrative: narrative("少侠拾起钱袋掂了掂，约莫五十两，揣进怀里。", { char: { money: 150 } }),
-    intake: intake1("free_act", "无", "", "捡到钱袋收进怀里", { outcome: "得财" }),
-    note: "free_act 得财（vitals.money）" },
-  // ── inspect_container 线：无备料/有备料 ──
-  { cmd: "翻一翻柜台后面的木箱", plan: {},
-    narrative: narrative("少侠探头去瞧那木箱，掌柜连忙拦住：「哎哎，那是家当。」"),
-    intake: intake1("inspect_container", "木箱", "", "翻一翻柜台后面的木箱", { proposals: [{ claim: "箱里有碎银", kind: "find_item", fit: "natural" }] }),
-    note: "inspect_container 无备料·被拦" },
-  { cmd: "再翻客栈角落的箱笼", plan: {},
-    narrative: narrative("箱笼里积着灰，翻出一串铜钱。", { delta: { items_add: ["铜钱"] } }),
-    intake: intake1("inspect_container", "箱笼", "", "再翻客栈角落的箱笼"),
-    note: "inspect_container 无备料·有所获" },
-  { cmd: "翻一翻沉水石函", plan: { innerRoomName: "贡措海密室" },
-    narrative: narrative("石函沉水多年，函盖吱呀开启，里头静静躺着一柄锈匕首。", { delta: { items_add: ["锈匕首"] } }),
-    intake: intake1("inspect_container", "沉水石函", "", "翻一翻沉水石函"),
-    setup: () => {
-      // WO-16D-3 保真：容器三关只在「内容表声明的容器」上走——裸编容器名判官
-      // 正确拒签「没什么可翻的」（那本身就是真实行为不是 gap）。把场景切到真实
-      // 内层房 贡措海密室（声明了 沉水石函），备料种子按切后场景切片签发才有效。
-      gameActions.setRoom({ name: "贡措海", desc: "密室", exits: [], npcs: [], items: [] });
-      const s = { ...gameStore.getState(), innerRoomName: "贡措海密室" };
-      const sv = prepStateVersion(s);
-      gameActions.setPrepSeeds([createPrepSeed({
-        id: "seed-prepitem-1", kind: "prep_item", turn: s.time, day: Math.floor((s.time || 0) / 24),
-        location: "贡措海", stateVersion: sv,
-        payload: { containerId: "沉水石函", name: "锈匕首", category: "weapon", quality: "白", clue: "备料线索" },
-      })]);
-    },
-    note: "inspect_container 有备料 prep_item（真实内层房声明容器）" },
-  // ── pickup/take 线 ──
-  { cmd: "拾起地上的石子", plan: {},
-    setup: () => {
-      gameActions.setRoom(room);
-      gameActions.setPrepSeeds([]);
-    },
-    narrative: narrative("少侠弯腰拾起那颗石子，掂了掂揣进怀里。", { delta: { items_add: ["石子"] } }),
-    intake: intake1("pickup", "石子", "stone1", "拾起地上的石子"),
-    note: "pickup 地上物（inv 类目）" },
-  { cmd: "拿走桌上的茶壶", plan: {},
-    narrative: narrative("少侠把桌上的茶壶拿了过来。"),
-    intake: intake1("free_act", "茶壶", "", "拿走桌上的茶壶"),
-    note: "take 拿取·模型未落账（对照判官签发）" },
-  // ── equip/use_item：feature 路由专属，自由文本进 shadow 口径存疑——各一留证 ──
-  { cmd: "把铁剑装备上", plan: {},
-    narrative: narrative("少侠把铁剑佩在腰间。"),
-    intake: intake1("equip", "铁剑", "sword1", "把铁剑装备上"),
-    note: "equip 自由文本（feature 路由语义，shadow 口径或应 excluded）" },
-  { cmd: "吃下干粮充饥", plan: {},
-    narrative: narrative("少侠啃了几口干粮，腹中踏实了些。", { delta: { items_rm: ["干粮"] } }),
-    intake: intake1("use_item", "干粮", "food1", "吃下干粮充饥"),
-    note: "use_item 自由文本（feature 路由语义，留证）" },
-  // ── move 线 ──
-  { cmd: "出门往北走", plan: { movingDir: "n", intent: { code: "MOVE", label: "移动" } },
-    narrative: narrative("少侠出了客栈，北风扑面。"),
-    intake: EMPTY_INTAKE,
-    note: "move 移动回合（零类目基线）" },
-  // ── 世界.威望：合法 mvu 路径但 diff 类目不可见——taxonomy 结构盲区留证 ──
-  { cmd: "当众羞辱掌柜", plan: { isTalk: true, talkTarget: "掌柜", intent: { code: "TALK", label: "搭话" } },
-    narrative: narrative("少侠当众奚落掌柜，旁人窃窃私语。", { mvu: "_.add('世界.威望', -2);\n_.add('角色.掌柜.好感度', -3);" }),
-    intake: intake1("talk", "掌柜", "", "当众羞辱掌柜"),
-    note: "talk 贬损·威望 mvu 落账但 diff 不可见（taxonomy 盲区证据）" },
+// ============================================================================
+// S6 情景表驱动采样：十四种 kind 每类 ≥10；free_act 十种 outcome 每类 ≥5；
+// settle 三类/群聊/条件动作各 ≥5；总数 ≥200，确定性可复现。
+// 每个脚本带 kind/outcome 标签，报告按两个维度分列覆盖率。
+// ============================================================================
+
+// 通用道具池：判官 give/steal 查重量品级，裸条目恒拒签属 harness 失真。
+const ITEMS = [
+  { id: "food1", name: "干粮", category: "misc", quality: "白", weight: 1 },
+  { id: "med1", name: "伤药", category: "misc", quality: "绿", weight: 1 },
+  { id: "sword1", name: "铁剑", category: "weapon", quality: "白", weight: 3 },
+  { id: "wine1", name: "烧刀子", category: "misc", quality: "白", weight: 1 },
+  { id: "jade1", name: "玉佩", category: "misc", quality: "绿", weight: 1 },
 ];
+
+// 回合前状态复位：逐回合回到同一基线，保证串行 200 回合确定性可复现——
+// 不复位则 hp 跌穿/银两耗尽/背包容器状态漂移，后面的回合输入面就变了。
+function resetBaseline() {
+  const s = gameStore.getState();
+  gameActions.setChar({ ...s.char, hp: [90, 100], money: 100 });
+  gameActions.setInv(ITEMS.map((it) => ({ ...it })));
+  gameActions.setExp(0); gameActions.setPot(0);
+  gameActions.setFlags([]);
+  gameActions.setRoom({
+    ...room,
+    npcs: room.npcs.map((n) => ({ ...n, carriedItems: (n.carriedItems || []).map((c) => ({ ...c })) })),
+    items: [{ id: "stone1", name: "石子" }],
+  });
+  gameActions.setPrepSeeds([]);
+  gameActions.setVarTreeState({ 角色: { 掌柜: { 好感度: 10 }, 伙计: { 好感度: 5 } }, 世界: {} });
+}
+
+// ── 情景生成器 ──────────────────────────────────────────────────────────
+const T = (cmd, script) => ({ cmd, ...script });
+const NPCS2 = ["掌柜", "伙计"];
+
+function talkTurns() {
+  const stances = ["sincere", "casual", "hostile", "perfunctory", "clever"];
+  const lines = [
+    ["掌柜，最近可好？", "掌柜笑着擦柜台：「托福托福。」"],
+    ["跟伙计打听镇上的消息", "伙计压低声音说了些闲事。"],
+    ["骂掌柜是个奸商", "掌柜脸色一沉别过头去。"],
+    ["跟掌柜闲聊天气", "掌柜望望窗外随口应付。"],
+    ["夸伙计手脚麻利", "伙计挠头嘿嘿一笑。"],
+    ["讥讽掌柜抠门", "掌柜冷笑一声不再理会。"],
+    ["跟伙计讨杯热茶", "伙计麻利地倒了碗热茶。"],
+    ["问掌柜可有什么差事", "掌柜捻须沉吟片刻。"],
+    ["当众羞辱掌柜", "旁人窃窃私语，掌柜面红耳赤。"],
+    ["跟伙计套近乎", "伙计放下抹布攀谈起来。"],
+  ];
+  return lines.map(([cmd, out], i) => T(cmd, {
+    kind: "talk",
+    plan: { isTalk: true, talkTarget: NPCS2[i % 2], intent: { code: "TALK", label: "搭话" } },
+    narrative: narrative(out, i % 3 === 0 ? { mvu: `_.add('角色.${NPCS2[i % 2]}.好感度', ${i % 2 ? -2 : 1});` } : {}),
+    intake: intake1("talk", NPCS2[i % 2], "", cmd, { stance: stances[i % stances.length] }),
+    note: `talk 场景${i + 1}·stance=${stances[i % stances.length]}`,
+  }));
+}
+
+function moveTurns() {
+  return Array.from({ length: 10 }, (_, i) => {
+    const dir = ["n", "s", "e", "w"][i % 4];
+    return T(`出门往${{ n: "北", s: "南", e: "东", w: "西" }[dir]}走${i > 3 ? "再折返" + i : ""}`, {
+      kind: "move",
+      plan: { movingDir: dir, intent: { code: "MOVE", label: "移动" } },
+      narrative: narrative(`少侠出了门，沿街走了一段。`),
+      intake: EMPTY_INTAKE,
+      note: `move 场景${i + 1}·dir=${dir}`,
+    });
+  });
+}
+
+function inspectTurns() {
+  const out = [];
+  for (let i = 0; i < 10; i++) {
+    const mode = i % 4;
+    if (mode === 0) {
+      // 有备料·真实声明容器（贡措海密室/沉水石函）
+      out.push(T(`翻一翻沉水石函${i ? "再来" + i : ""}`, {
+        kind: "inspect_container",
+        plan: { innerRoomName: "贡措海密室" },
+        setup: () => {
+          gameActions.setRoom({ name: "贡措海", desc: "密室", exits: [], npcs: [], items: [] });
+          const s = { ...gameStore.getState(), innerRoomName: "贡措海密室" };
+          const sv = prepStateVersion(s);
+          gameActions.setPrepSeeds([createPrepSeed({
+            id: `seed-prep-${i}`, kind: "prep_item", turn: s.time, day: Math.floor((s.time || 0) / 24),
+            location: "贡措海", stateVersion: sv,
+            payload: { containerId: "沉水石函", name: "锈匕首", category: "weapon", quality: "白", clue: "备料线索" },
+          })]);
+        },
+        narrative: narrative("石函开启，里头静静躺着一柄锈匕首。", { delta: { items_add: ["锈匕首"] } }),
+        intake: intake1("inspect_container", "沉水石函", "", `翻一翻沉水石函`),
+        note: "inspect_container 有备料·声明容器",
+      }));
+    } else if (mode === 1) {
+      // 声明容器·无备料
+      out.push(T(`再翻沉水石函空手${i}`, {
+        kind: "inspect_container",
+        plan: { innerRoomName: "贡措海密室" },
+        setup: () => {
+          gameActions.setRoom({ name: "贡措海", desc: "密室", exits: [], npcs: [], items: [] });
+        },
+        narrative: narrative("石函里空空如也，只剩些水渍。"),
+        intake: intake1("inspect_container", "沉水石函", "", `再翻沉水石函`),
+        note: "inspect_container 无备料·声明容器",
+      }));
+    } else {
+      // 未声明容器：判官正确拒签「没什么可翻的」——真实行为留证
+      const name = mode === 2 ? "木箱" : "箱笼";
+      out.push(T(`翻一翻柜台后的${name}${i}`, {
+        kind: "inspect_container",
+        narrative: narrative(`少侠探头去瞧那${name}，掌柜连忙拦住。`, mode === 3 ? { delta: { items_add: ["铜钱"] } } : {}),
+        intake: intake1("inspect_container", name, "", `翻一翻柜台后的${name}`, mode === 3 ? { proposals: [{ claim: "箱里有铜钱", kind: "find_item", fit: "natural" }] } : {}),
+        note: `inspect_container 未声明容器·${mode === 2 ? "被拦" : "模型自称有所获"}`,
+      }));
+    }
+  }
+  return out;
+}
+
+function takeTurns() {
+  return Array.from({ length: 10 }, (_, i) => T(`拾起地上的石子${i ? "又一次" + i : ""}`, {
+    kind: "take",
+    narrative: narrative(i % 2 ? "少侠弯腰拾起石子揣进怀里。" : "少侠看了看石子又放下了。", i % 2 ? { delta: { items_add: ["石子"] } } : {}),
+    intake: intake1("take", "石子", "stone1", "拾起地上的石子"),
+    note: `take 场景${i + 1}·${i % 2 ? "模型落账" : "模型未落账"}`,
+  }));
+}
+
+function giveTurns() {
+  const combos = [
+    ["干粮", "掌柜"], ["伤药", "伙计"], ["烧刀子", "掌柜"], ["玉佩", "伙计"], ["铁剑", "掌柜"],
+    ["干粮", "伙计"], ["伤药", "掌柜"], ["烧刀子", "伙计"], ["玉佩", "掌柜"], ["干粮", "掌柜"],
+  ];
+  return combos.map(([item, target], i) => T(`把${item}送给${target}${i >= 5 ? "再" + i : ""}`, {
+    kind: "give",
+    narrative: narrative(`少侠把${item}递过去，${target}拱手道谢。`, {
+      mvu: `_.add('角色.${target}.好感度', 2);`, memory: `赠${item}予${target}`,
+      delta: { items_rm: [item] },
+    }),
+    intake: intake1("give", target, item, `把${item}送给${target}`),
+    note: `give 场景${i + 1}·${item}→${target}`,
+  }));
+}
+
+function tradeTurns() {
+  return Array.from({ length: 10 }, (_, i) => {
+    const buy = i % 2 === 0;
+    return T(`${buy ? "向掌柜买" : "把玉佩卖给掌柜换"}${buy ? "一壶烧刀子" : "些银两"}${i > 1 ? "又来" + i : ""}`, {
+      kind: "trade",
+      narrative: narrative(buy ? "掌柜收了银子，递来一壶烧刀子。" : "掌柜掂了掂玉佩，数出银两。", buy
+        ? { char: { money: 92 }, delta: { items_add: ["烧刀子"] } }
+        : { char: { money: 120 }, delta: { items_rm: ["玉佩"] } }),
+      intake: intake1("trade", "掌柜", buy ? "烧刀子" : "玉佩", buy ? "买一壶烧刀子" : "把玉佩卖给掌柜"),
+      note: `trade 场景${i + 1}·${buy ? "买入" : "卖出"}`,
+    });
+  });
+}
+
+function stealTurns() {
+  return Array.from({ length: 10 }, (_, i) => {
+    const target = NPCS2[i % 2];
+    const item = target === "掌柜" ? (i % 4 === 0 ? "钱袋" : "茶壶") : "抹布";
+    const caught = i % 3 === 1;
+    return T(`偷${target}的${item}${i > 1 ? "再试" + i : ""}`, {
+      kind: "steal",
+      narrative: narrative(caught
+        ? `少侠刚伸手，${target}一巴掌拍开：「好你个小贼！」`
+        : `少侠趁人不备把${item}袖进怀里。`, caught
+        ? { char: { hp: [82, 100] }, memory: "行窃被擒" }
+        : { delta: { items_add: [item] }, memory: `窃了${item}` }),
+      intake: intake1("steal", target, item, `偷${target}的${item}`, { risk: "中" }),
+      note: `steal 场景${i + 1}·${caught ? "被擒伤损" : "得手"}`,
+    });
+  });
+}
+
+function duelTurns() {
+  return Array.from({ length: 10 }, (_, i) => {
+    const target = NPCS2[i % 2];
+    const win = i % 2 === 0;
+    return T(`向${target}讨教几招${i > 1 ? "再来" + i : ""}`, {
+      kind: "duel",
+      narrative: narrative(win ? `三招过后${target}拱手认输。` : `少侠一个踉跄败下阵来。`, win
+        ? { delta: { exp: 2 } }
+        : { char: { hp: [80, 100] } }),
+      intake: intake1("duel", target, "", `向${target}讨教几招`, { outcome: win ? "修习" : "伤损", risk: "中" }),
+      note: `duel 场景${i + 1}·${win ? "胜" : "负"}`,
+    });
+  });
+}
+
+function appeaseTurns() {
+  return Array.from({ length: 10 }, (_, i) => {
+    const target = NPCS2[i % 2];
+    const withGift = i % 2 === 0;
+    return T(`向${target}赔罪${withGift ? "奉上烧刀子" : "好言相劝"}${i > 1 ? "再" + i : ""}`, {
+      kind: "appease",
+      narrative: narrative(withGift ? `${target}脸色稍霁，把酒收下了。` : `${target}哼了一声，气却消了几分。`, {
+        mvu: `_.add('角色.${target}.好感度', 2);`,
+        ...(withGift ? { delta: { items_rm: ["烧刀子"] } } : {}),
+      }),
+      intake: intake1("appease", target, withGift ? "烧刀子" : "", `向${target}赔罪`, { stance: "sincere" }),
+      note: `appease 场景${i + 1}·${withGift ? "带礼" : "空手"}`,
+    });
+  });
+}
+
+function learnTurns() {
+  return Array.from({ length: 10 }, (_, i) => {
+    const target = NPCS2[i % 2];
+    return T(`求${target}教几手${i % 2 ? "算账的本事" : "跑堂的门道"}${i > 1 ? "再求" + i : ""}`, {
+      kind: "learn",
+      narrative: narrative(i % 3 === 0 ? `${target}指点了几句，少侠若有所悟。` : `${target}摆摆手不肯教。`, i % 3 === 0 ? { delta: { exp: 1, pot: 1 } } : {}),
+      intake: intake1("learn", target, "", `求${target}教几手`),
+      note: `learn 场景${i + 1}·${i % 3 === 0 ? "有所悟" : "被拒"}`,
+    });
+  });
+}
+
+function inviteTurns() {
+  return Array.from({ length: 10 }, (_, i) => {
+    const target = NPCS2[i % 2];
+    return T(`邀${target}同行闯荡${i ? "再邀" + i : ""}`, {
+      kind: "invite",
+      narrative: narrative(i % 2 ? `${target}摇摇头：「店里走不开。」` : `${target}沉吟半晌没有作声。`),
+      intake: intake1("invite", target, "", `邀${target}同行闯荡`),
+      note: `invite 场景${i + 1}`,
+    });
+  });
+}
+
+function itemUseTurns() {
+  const uses = [["干粮", "吃下干粮充饥"], ["伤药", "敷上伤药"], ["烧刀子", "喝一口烧刀子"], ["干粮", "又啃干粮"], ["伤药", "再敷伤药"]];
+  return Array.from({ length: 10 }, (_, i) => {
+    const [item, act] = uses[i % uses.length];
+    return T(`${act}${i >= 5 ? "第" + i : ""}`, {
+      kind: "use_item",
+      narrative: narrative(`少侠${act.replace(/^(吃|敷|喝|又啃|再敷)/, (m) => m)}，感觉好了些。`, {
+        delta: { items_rm: [item] },
+        ...(item === "伤药" ? { char: { hp: [95, 100] } } : {}),
+      }),
+      intake: intake1("use_item", item, ITEMS.find((x) => x.name === item)?.id || "", act, { outcome: item === "伤药" ? "服用" : "无" }),
+      note: `use_item 场景${i + 1}·${item}`,
+    });
+  });
+}
+
+function equipTurns() {
+  return Array.from({ length: 10 }, (_, i) => T(`${i % 2 ? "卸下" : "装备"}铁剑${i > 1 ? "又" + i : ""}`, {
+    kind: "equip",
+    narrative: narrative(i % 2 ? "少侠把铁剑解下收好。" : "少侠把铁剑佩在腰间。"),
+    intake: intake1("equip", "铁剑", "sword1", i % 2 ? "卸下铁剑" : "装备铁剑"),
+    note: `equip 场景${i + 1}·${i % 2 ? "卸下" : "穿戴"}`,
+  }));
+}
+
+// free_act 十种 outcome × 5：伤损/得财/破费/调息/修习/服用/受寒中毒/醉酒/无/其他
+function freeActTurns() {
+  const outcomes = [
+    { outcome: "伤损", cmd: "翻墙摔了一跤", out: "少侠脚下一滑摔下墙头。", char: { hp: [80, 100] }, risk: "低" },
+    { outcome: "得财", cmd: "捡到钱袋收进怀里", out: "少侠拾起钱袋揣进怀里。", char: { money: 140 } },
+    { outcome: "破费", cmd: "打赏唱曲的十两银子", out: "少侠豪掷十两，满堂喝彩。", char: { money: 90 } },
+    { outcome: "调息", cmd: "打坐调息一个时辰", out: "少侠盘膝而坐气息渐匀。", delta: { pot: 1 } },
+    { outcome: "修习", cmd: "修习内功心法", out: "少侠默运心法内力精进。", delta: { pot: 2 } },
+    { outcome: "服用", cmd: "冲服一包药粉", out: "药粉入喉苦得皱眉。", char: { hp: [94, 100] } },
+    { outcome: "受寒中毒", cmd: "误食毒蘑菇", out: "少侠腹中绞痛面无人色。", char: { hp: [72, 100] }, delta: { flags_add: ["中了菇毒"] }, risk: "中" },
+    { outcome: "醉酒", cmd: "灌下三碗烈酒", out: "三碗下肚天旋地转。" },
+    { outcome: "无", cmd: "坐在门槛上发呆", out: "少侠望着街面出了会儿神。" },
+    { outcome: "其他", cmd: "帮伙计劈了一担柴", out: "少侠抡斧劈柴，汗透衣背。" },
+  ];
+  const turns = [];
+  for (const spec of outcomes) {
+    for (let i = 0; i < 5; i++) {
+      turns.push(T(`${spec.cmd}${i ? "第" + (i + 1) + "回" : ""}`, {
+        kind: "free_act", outcome: spec.outcome,
+        narrative: narrative(spec.out, {
+          ...(spec.char ? { char: spec.char } : {}),
+          ...(spec.delta ? { delta: spec.delta } : {}),
+        }),
+        intake: intake1("free_act", "无", "", spec.cmd, { outcome: spec.outcome, risk: spec.risk || "无" }),
+        note: `free_act outcome=${spec.outcome} #${i + 1}`,
+      }));
+    }
+  }
+  return turns;
+}
+
+// settle 三类（gift/learn_skill/companion_invite）×5：判官管线直接裁定不走影子，
+// 采样如实记录「影子结构性不参与」——覆盖报告里单列，不算计量缺口。
+function settleTurns() {
+  const kinds = [
+    { settleKind: "gift", extra: { giftInfo: { item: "烧刀子" } }, cmd: "（结算）把烧刀子赠予掌柜" },
+    { settleKind: "learn_skill", extra: { learnInfo: { skill: "算账" } }, cmd: "（结算）向掌柜求学算账" },
+    { settleKind: "companion_invite", extra: {}, cmd: "（结算）邀伙计同行" },
+  ];
+  const turns = [];
+  for (const k of kinds) {
+    for (let i = 0; i < 5; i++) {
+      turns.push(T(`${k.cmd}#${i + 1}`, {
+        kind: `settle:${k.settleKind}`,
+        plan: { isSettle: true },
+        settleOpts: { settle: true, settleKind: k.settleKind, settleNpc: k.settleKind === "companion_invite" ? "伙计" : "掌柜", ...k.extra },
+        narrative: narrative("掌柜沉吟片刻，点了点头。"),
+        intake: EMPTY_INTAKE,
+        note: `settle ${k.settleKind} #${i + 1}（影子结构性不参与）`,
+      }));
+    }
+  }
+  return turns;
+}
+
+// 群聊 ×5：isTalk 且无 talkTarget、在场 NPC≥2 → groupTalkRuleBlock 路径
+function groupTalkTurns() {
+  return Array.from({ length: 5 }, (_, i) => T(`跟大伙打个招呼${i ? "再" + i : ""}`, {
+    kind: "group_talk",
+    plan: { isTalk: true, talkTarget: null, intent: { code: "TALK", label: "搭话" } },
+    narrative: narrative("掌柜和伙计都抬起头，笑着应了声。"),
+    intake: intake1("talk", "无", "", "跟大伙打个招呼"),
+    note: `群聊 #${i + 1}`,
+  }));
+}
+
+// 条件动作 ×5：condition≠无 的动作 live router 跳过不执行（S5 Review 修后不豁免，
+// 单调用若落账即 single_only 如实暴露）
+function conditionalTurns() {
+  const conds = [["遇敌", "要是遇上劫道的就"], ["到达", "到了山口就"], ["被拒", "若掌柜不肯就"], ["其他", "万一有人来就"], ["遇敌", "倘有埋伏就"]];
+  return conds.map(([cond, prefix], i) => T(`${prefix}拔剑戒备${i ? "变式" + i : ""}`, {
+    kind: "conditional",
+    narrative: narrative("少侠按剑四顾，并无异动。"),
+    intake: intake1("free_act", "无", "", `${prefix}拔剑戒备`, { condition: cond === "其他" ? "其他" : cond, condition_text: prefix }),
+    note: `条件动作 #${i + 1}·condition=${cond}`,
+  }));
+}
+
+const TURNS = [
+  ...talkTurns(), ...moveTurns(), ...inspectTurns(), ...takeTurns(), ...giveTurns(),
+  ...tradeTurns(), ...stealTurns(), ...duelTurns(), ...appeaseTurns(), ...learnTurns(),
+  ...inviteTurns(), ...itemUseTurns(), ...equipTurns(), ...freeActTurns(),
+  ...settleTurns(), ...groupTalkTurns(), ...conditionalTurns(),
+];
+
+// ── per-kind/outcome 覆盖率透视 ──────────────────────────────────────────
+// agg.log 每条带 cmd——按 cmd 回联脚本的 kind/outcome 标签，分列 verdict 计数。
+// verdict 类目级：一个回合多类目 verdict 各计一次（覆盖率口径=回合×类目格子）。
+function buildKindPerspective(agg, scripts) {
+  const byCmd = new Map(scripts.map((s) => [s.cmd, s]));
+  const dim = {};
+  const bump = (key, cat, verdict) => {
+    dim[key] = dim[key] || { turns: new Set(), cells: 0, match: 0, single_only: 0, judge_only: 0, both_diff: 0, caliber_diff: 0, excluded: 0 };
+    const d = dim[key];
+    d.cells += 1;
+    if (d[verdict] != null) d[verdict] += 1;
+  };
+  const shadowedCmds = new Set();
+  for (const entry of agg.log || []) {
+    const s = byCmd.get(entry.cmd);
+    if (!s) continue;
+    for (const [cat, v] of Object.entries(entry.cats || {})) {
+      bump(`kind:${s.kind}`, cat, v.verdict);
+      if (s.outcome) bump(`outcome:${s.outcome}`, cat, v.verdict);
+    }
+  }
+  // match 回合不进 agg.log——用 shadowed 总数与 log 差额补 match 近似值太绕，
+  // 直白口径：透视表只统计「非 match 格子」分布 + 每维度回合数，覆盖率细看聚合表。
+  for (const s of scripts) {
+    const key = `kind:${s.kind}`;
+    dim[key] = dim[key] || { turns: new Set(), cells: 0, match: 0, single_only: 0, judge_only: 0, both_diff: 0, caliber_diff: 0, excluded: 0 };
+    dim[key].turns.add(s.cmd);
+    if (s.outcome) {
+      const k2 = `outcome:${s.outcome}`;
+      dim[k2] = dim[k2] || { turns: new Set(), cells: 0, match: 0, single_only: 0, judge_only: 0, both_diff: 0, caliber_diff: 0, excluded: 0 };
+      dim[k2].turns.add(s.cmd);
+    }
+  }
+  return Object.fromEntries(Object.entries(dim).map(([k, d]) => [k, {
+    turns: d.turns.size, nonMatchCells: d.cells,
+    single_only: d.single_only || 0, judge_only: d.judge_only || 0,
+    both_diff: d.both_diff || 0, caliber_diff: d.caliber_diff || 0, excluded: d.excluded || 0,
+  }]));
+}
 
 const report = { turns: [], errors: [] };
 
-describe("WO-16D-2 影子覆盖率采样 harness", () => {
-  it("驱动代表性回合串并产出 shadow-report.json", async () => {
+describe("WO-16D-2/S6 影子覆盖率采样 harness（情景表驱动 200+ 回合）", () => {
+  it("驱动情景表回合串并产出 shadow-report.json", async () => {
+    // S6 配额自检：十四种 kind ≥10、free_act outcome ≥5、settle/群聊/条件 ≥5、总数 ≥200
+    const kindCount = {};
+    for (const s of TURNS) kindCount[s.kind] = (kindCount[s.kind] || 0) + 1;
+    for (const k of ["talk", "move", "inspect_container", "take", "give", "trade", "steal", "duel", "appease", "learn", "invite", "use_item", "equip", "free_act"]) {
+      expect(kindCount[k] || 0, `kind ${k} 样本不足`).toBeGreaterThanOrEqual(10);
+    }
+    const ocCount = {};
+    for (const s of TURNS.filter((x) => x.kind === "free_act")) ocCount[s.outcome] = (ocCount[s.outcome] || 0) + 1;
+    for (const oc of ["无", "伤损", "得财", "破费", "调息", "修习", "服用", "受寒中毒", "醉酒", "其他"]) {
+      expect(ocCount[oc] || 0, `outcome ${oc} 样本不足`).toBeGreaterThanOrEqual(5);
+    }
+    expect(kindCount["settle:gift"]).toBeGreaterThanOrEqual(5);
+    expect(kindCount["settle:learn_skill"]).toBeGreaterThanOrEqual(5);
+    expect(kindCount["settle:companion_invite"]).toBeGreaterThanOrEqual(5);
+    expect(kindCount.group_talk).toBeGreaterThanOrEqual(5);
+    expect(kindCount.conditional).toBeGreaterThanOrEqual(5);
+    expect(TURNS.length).toBeGreaterThanOrEqual(200);
+
     _resetShadowAggregates();
     initGameStore(baseState());
     const apiCfg = {
@@ -306,10 +569,10 @@ describe("WO-16D-2 影子覆盖率采样 harness", () => {
     const ai = makeRouterAi(TURNS);
 
     const warnLines = [];
-    const origWarn = console.warn;
     console.warn = (...args) => { warnLines.push(args.map(String).join(" ")); };
     for (const script of TURNS) {
       const before = shadowAggregates("default").turns;
+      resetBaseline();
       if (script.setup) script.setup();
       const plan = makePlan(script.plan);
       const trace = turnMonitor.start(script.cmd);
@@ -325,32 +588,27 @@ describe("WO-16D-2 影子覆盖率采样 harness", () => {
       };
       let result;
       try {
-        result = await playTurn(ctx, script.cmd, { isTalk: plan.isTalk });
+        result = await playTurn(ctx, script.cmd, { isTalk: plan.isTalk, ...(script.settleOpts || {}) });
       } catch (e) {
         report.errors.push({ cmd: script.cmd, error: String(e?.message || e) });
         report.turns.push({ cmd: script.cmd, note: script.note, outcome: "throw" });
         continue;
       }
-      // 影子是 fire-and-forget：等聚合 turns 递增（mock 同步返回，几拍内必落）
       let shadowed = false;
       for (let i = 0; i < 200; i++) {
         await new Promise((r) => setTimeout(r, 5));
         if (shadowAggregates("default").turns > before) { shadowed = true; break; }
       }
-      // WO-16D-3 关键 diff 证据：回合后实际落账切片（好感/背包/银两/气血），
-      // 评审可对照影子 verdict 判断噪声还是真 gap；不含正文/key。
       const afterState = gameStore.getState();
       const turnWarns = warnLines.splice(0);
       report.turns.push({
-        cmd: script.cmd, note: script.note,
-        warns: turnWarns.filter((w) => !w.startsWith("[HMR]")).slice(0, 6),
+        cmd: script.cmd, note: script.note, kind: script.kind, ...(script.outcome ? { outcome: script.outcome } : {}),
+        warns: turnWarns.filter((w) => !w.startsWith("[HMR]")).slice(0, 4),
         outcome: result?.ok ? "ok" : result?.stale ? "stale" : "fail",
         shadowed,
-        mvuCount: result?.turn?.mvuCommands?.length ?? -1,
-        parseKeys: result?.turn?.p ? Object.keys(result.turn.p).slice(0, 8) : null,
         landed: {
           affection: Object.fromEntries(Object.entries(afterState.varTree?.角色 || {}).map(([k, v]) => [k, v?.好感度]).filter(([, v]) => v != null)),
-          inv: (afterState.inv || []).map((e) => e?.name || e).slice(0, 10),
+          invCount: (afterState.inv || []).length,
           money: afterState.char?.money ?? null,
           hp: afterState.char?.hp?.[0] ?? null,
           威望: afterState.varTree?.世界?.威望 ?? null,
@@ -361,19 +619,24 @@ describe("WO-16D-2 影子覆盖率采样 harness", () => {
     const agg = shadowAggregates("default");
     const summary = summarizeShadowCoverage(agg);
     const evaluation = evaluateShadowThresholds(summary);
-    // 落盘线上同形状聚合 + 摘要，供 npm run shadow:report 消费
+    const perspective = buildKindPerspective(agg, TURNS);
+    // 落盘线上同形状聚合 + 摘要 + kind/outcome 透视，供 npm run shadow:report 消费
     writeFileSync("shadow-report.json", JSON.stringify(agg, null, 2));
-    writeFileSync("shadow-report-summary.json", JSON.stringify({ summary, evaluation, turns: report.turns, errors: report.errors }, null, 2));
-    console.log("=== shadow coverage sample ===");
+    writeFileSync("shadow-report-summary.json", JSON.stringify({
+      summary, evaluation, perspective,
+      singleOnlyTop20: (agg.samples || []).slice(0, 20),
+      turns: report.turns, errors: report.errors,
+    }, null, 2));
+    console.log("=== shadow coverage sample (S6 情景表) ===");
     console.log(formatCoverageReport(summary, evaluation).join("\n"));
-    console.log("turns:", JSON.stringify(report.turns, null, 1));
+    console.log("perspective:", JSON.stringify(perspective, null, 1));
     console.log("errors:", JSON.stringify(report.errors, null, 1));
-    // harness 自检：至少大半回合真正跑通且影子有采样——否则报告无意义
+    // harness 自检：零 throw；大半回合 ok；影子采样数与「非 settle」回合一致量级
     const okTurns = report.turns.filter((t) => t.outcome === "ok" && t.shadowed).length;
     expect(report.errors).toEqual([]);
-    expect(okTurns).toBeGreaterThanOrEqual(Math.ceil(TURNS.length / 2));
+    expect(okTurns).toBeGreaterThanOrEqual(150);
     expect(agg.turns).toBeGreaterThan(0);
-  }, 120000);
+  }, 600000);
 });
 
 afterAll(() => {
