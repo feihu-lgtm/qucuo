@@ -311,7 +311,32 @@ export function usePrivateTalk({
             { ai: bindTurnAi(createWebAi(), _wt), apiCfg, throwOnError: false },
           );
           if (isStale()) return;
-          const c = affRes?.data?.choice;
+          let c = affRes?.data?.choice;
+          // schema 校验未过/服务商不支持时 withAI 回退 text——手工截一次 JSON 补救，
+          // 并尊重 probs 的 argmax（概率最大者与 choice 不一致时以概率为准）。
+          if (!(typeof c === "string" && c in AFFINITY_VALUES) && affRes?.text) {
+            const raw = String(affRes.text);
+            const i0 = raw.indexOf("{"), i1 = raw.lastIndexOf("}");
+            if (i0 >= 0 && i1 > i0) {
+              try {
+                const parsed = JSON.parse(raw.slice(i0, i1 + 1));
+                if (typeof parsed?.choice === "string" && parsed.choice in AFFINITY_VALUES) c = parsed.choice;
+                const probs = parsed?.probs || {};
+                let best = null;
+                for (const [opt, p2] of Object.entries(probs)) {
+                  if (opt in AFFINITY_VALUES && Number.isFinite(p2) && (best === null || p2 > probs[best])) best = opt;
+                }
+                if (best) c = best;
+              } catch { /* 保持无法判断 */ }
+            }
+          } else if (typeof c === "string" && c in AFFINITY_VALUES) {
+            const probs = affRes?.data?.probs || {};
+            let best = null;
+            for (const [opt, p2] of Object.entries(probs)) {
+              if (opt in AFFINITY_VALUES && Number.isFinite(p2) && (best === null || p2 > probs[best])) best = opt;
+            }
+            if (best) c = best;
+          }
           if (typeof c === "string" && c in AFFINITY_VALUES) choice = c;
         } catch { /* 判不了就当她没表态 */ }
         if (choice !== "无法判断") {
