@@ -7,6 +7,7 @@ export const VERDICT_LABEL = {
   single_only: "判官漏判",
   judge_only: "判官会判",
   both_diff: "两边都偏",
+  caliber_diff: "口径差(方向一致)",
   excluded: "盲区(排除)",
 };
 
@@ -54,7 +55,7 @@ export function formatAggregate(agg) {
   for (const [cat, c] of Object.entries(agg.byCategory || {})) {
     // WO-16D-M2：quest 状态驱动推进归因不可靠——reference-only 不计入 gaps，需人工甄别
     const ref = cat === "quest" ? "（参考·不计入缺口，人工甄别）" : "";
-    lines.push(`${cat}：漏判 ${c.single_only || 0} · 会判 ${c.judge_only || 0} · 两边都偏 ${c.both_diff || 0}${ref}`);
+    lines.push(`${cat}：漏判 ${c.single_only || 0} · 会判 ${c.judge_only || 0} · 两边都偏 ${c.both_diff || 0} · 口径差 ${c.caliber_diff || 0}${ref}`);
   }
   const ex = Object.entries(agg.excluded || {});
   if (ex.length) lines.push(`盲区(不计入覆盖)：${ex.map(([cat, n]) => `${cat}×${n}`).join("、")}`);

@@ -8,17 +8,35 @@ import { formatReleaseGateMarkdown } from "../../ports/releaseMetrics.js";
 
 describe("WO-16D-M2 数值 sub 方向明细", () => {
   it("hp both_diff + money single_only 同回合不坍缩：sub 各自带方向", () => {
+    // S5：反号才是 both_diff 真冲突——hp 用 -10/+5 反号例保留本测试的演示意图
     const res = compareCategories(
       { categories: { ...emptyCategories(), vitals: { hp: -10, money: -30 } }, excluded: ["npcs"] },
-      { ...emptyCategories(), vitals: { hp: -5, money: 0 } },
+      { ...emptyCategories(), vitals: { hp: 5, money: 0 } },
     );
     const v = res.verdicts.vitals;
     // 一级摘要仍是 single_only（优先级口径保留），但 sub 明细必须能看出 hp 是 both_diff
     expect(v.verdict).toBe("single_only");
     expect(v.sub.hp.verdict).toBe("both_diff");
-    expect(v.sub.hp).toMatchObject({ single: -10, judge: -5 });
+    expect(v.sub.hp).toMatchObject({ single: -10, judge: 5 });
     expect(v.sub.money.verdict).toBe("single_only");
     expect(v.sub.money).toMatchObject({ single: -30, judge: 0 });
+  });
+
+  it("S5 两级判定：同号方向一致即覆盖，差超 50% 记 caliber_diff 不计缺口", () => {
+    const res = compareCategories(
+      { categories: { ...emptyCategories(), vitals: { hp: -10, money: 0 } }, excluded: ["npcs"] },
+      { ...emptyCategories(), vitals: { hp: -4, money: 0 } },
+    );
+    const v = res.verdicts.vitals;
+    expect(v.verdict).toBe("caliber_diff");
+    expect(v.sub.hp.verdict).toBe("caliber_diff");
+    expect(res.hasGap).toBe(false); // 口径差不计缺口
+    // 差 50% 以内按 match 计覆盖
+    const res2 = compareCategories(
+      { categories: { ...emptyCategories(), vitals: { hp: -10, money: 0 } }, excluded: ["npcs"] },
+      { ...emptyCategories(), vitals: { hp: -6, money: 0 } },
+    );
+    expect(res2.verdicts.vitals.verdict).toBe("match");
   });
 
   it("formatVerdictLine 渲染 sub 逐子项方向标签", () => {

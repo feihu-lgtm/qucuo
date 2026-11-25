@@ -94,6 +94,45 @@ export function diffSnapshots(pre, post, { moved = false } = {}) {
     if (before.status !== qp?.status || before.currentStageIndex !== qp?.currentStageIndex) out.quest.advance.push(qid);
   }
 
+  // S5 world 类目：varTree.世界 的数值标量 leaf 差（威望 等）——合法 mvu 写账
+  // 此前八类目无一覆盖（taxonomy 盲区）。只 diff 数值 leaf：对象/数组账本
+  // （容器/调息账/每日搜刮 等）是结构化账本不是标量状态，不混进此类目。
+  const preWorld = pre?.varTree?.世界 || {};
+  const postWorld = post?.varTree?.世界 || {};
+  for (const key of new Set([...Object.keys(preWorld), ...Object.keys(postWorld)])) {
+    const bv = preWorld[key], av = postWorld[key];
+    if (typeof bv !== "number" && typeof av !== "number") continue;
+    const before = Number.isFinite(bv) ? bv : 0;
+    const after = Number.isFinite(av) ? av : 0;
+    if (after !== before) out.world[key] = after - before;
+  }
+  // Review 修（S5）：契约违约系统的威望扣减是 deterministic 值守扫描（pactWatch
+  // breachTurn 幂等标记，每桩 -5），不经判官也不该算判官漏判——按窗口内新增
+  // breachTurn 标记数归因剔除。模型/判官真写威望的差额部分照常保留。
+  if (out.world.威望) {
+    const countBreaches = (tree) => {
+      let n = 0;
+      for (const pacts of Object.values(tree || {})) {
+        for (const pact of Object.values(pacts || {})) {
+          if (Number.isFinite(pact?.breachTurn)) n += 1;
+        }
+      }
+      return n;
+    };
+    const newBreaches = countBreaches(postWorld.契约) - countBreaches(preWorld.契约);
+    if (newBreaches > 0) {
+      // pactWatch clamp ±100：触发地板时实际扣减小于 5*n。归因量按实际跌落
+      // 幅度封顶——diff 为负且幅度不足 5n 时只能全额归因（无法分辨混入的
+      // 判官签发，best-effort），绝不归因出反向增益。
+      const full = -5 * newBreaches; // PACT_BREACH_PRESTIGE_COST=5（pigeon/pactWatch）
+      const diff = out.world.威望;
+      const explained = diff < 0 && Math.abs(diff) < Math.abs(full) ? diff : full;
+      const residual = diff - explained;
+      if (residual === 0) delete out.world.威望;
+      else out.world.威望 = residual;
+    }
+  }
+
   // 审计结论：room.npcs 在窗口内有整链系统改写（幽灵过滤/驻场剔除/战斗固化/
   // 移动落房/涌现实体化/焚卡烙印），纯 diff 无法归因——v1 恒 excluded，
   // 不做泛化复杂旁路（协调裁决）。

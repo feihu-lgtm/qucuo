@@ -14,7 +14,7 @@ import { resolveFloatingItems } from "../../../domain/rules/judge/floatingRelics
 import { questAdvanceCandidates } from "../../../domain/rules/quests/questAdvanceCandidates.js";
 import { createRng } from "../../../utils/rng.js";
 import { diffSnapshots } from "./shadowDiff.js";
-import { projectFacts } from "./shadowTaxonomy.js";
+import { projectFacts, featureRoutedCats, SHADOW_CATEGORIES } from "./shadowTaxonomy.js";
 import { compareCategories } from "./shadowCompare.js";
 import { resolvePrepItemsForJudge, buildPrepMaterialBlock } from "../../../domain/rules/prep/prepConsumption.js";
 
@@ -73,6 +73,10 @@ function compactEvidence(v) {
 export function recordAggregate(epoch, result, cmd = "") {
   const agg = shadowAggregates(epoch);
   agg.turns += 1;
+  // Review 修（S5）：计量类目快照戳——旧导出（pre-S5 无 world 类目）/未来类目
+  // 增删时，覆盖率摘要只按「当时真测了哪些类目」计 comparable，
+  // 未测类目不得按全 match 伪造 100% 覆盖率。
+  agg.measuredCats = [...SHADOW_CATEGORIES];
   // WO-16D-3 per-turn verdict 证据：评审可据此判断 single_only/judge_only 是
   // harness 噪声还是真 gap；cap 200 防爆内存，只进内存聚合不进持久层。
   agg.log = agg.log || [];
@@ -220,7 +224,8 @@ export async function runShadowJudge({
 
     const diffOut = diffSnapshots(preState, postState, { moved });
     const proj = projectFacts(verdict?.facts || []);
-    const result = compareCategories(diffOut, proj);
+    // S5：feature 路由 kind 对应类目不参与比较（equip/use_item/take/invite）
+    const result = compareCategories(diffOut, proj, { featureRoutedCats: featureRoutedCats(intakeResult?.actions) });
     if (isStale?.() || epochGuard?.()) return null;
     recordAggregate(epoch, result, cmd);
     // 结构化 trace：verdicts 原样进 fields，TraceViewer 按类目渲染含 excluded 盲区；

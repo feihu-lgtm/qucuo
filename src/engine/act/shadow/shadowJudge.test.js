@@ -37,7 +37,8 @@ describe("diff 归因排除", () => {
       varTree: { 角色: { 甲: { 好感度: 15 } } }, room: { npcs: [] },
     };
     const { categories } = diffSnapshots(pre, post);
-    expect(categories.inv.add).toEqual(["b"]);
+    // S5 归一：diff 与投影双边「名字优先 id 兜底」——同一物 id/名字差异不误报
+    expect(categories.inv.add).toEqual(["牛肉干"]);
     expect(categories.flags.add).toEqual(["q1"]);
     expect(categories.affection).toEqual({ 甲: 5 });
   });

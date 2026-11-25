@@ -7,7 +7,7 @@
 // WO-16D-M1 补四类目：vitals 气血/银两（char.hp[0]/char.money 数值增减）、skills 技能增删、
 // cultivation 修为（exp/pot 数值增量）、quest 任务推进语义投影。money 不复活大类——
 // 银两作为 vitals.money 子项随气血同列（char.money 可精确 diff，见 shadowDiff）。
-export const SHADOW_CATEGORIES = ["inv", "flags", "affection", "npcs", "vitals", "skills", "cultivation", "quest"];
+export const SHADOW_CATEGORIES = ["inv", "flags", "affection", "npcs", "vitals", "skills", "cultivation", "quest", "world"];
 
 export function emptyCategories() {
   return {
@@ -19,11 +19,39 @@ export function emptyCategories() {
     skills: { add: [], rm: [] },
     cultivation: { exp: 0, pot: 0 },
     quest: { advance: [] },
+    world: {}, // 世界变量 numeric leaf -> delta（威望 等 varTree.世界 标量）
   };
 }
 
-const itemKey = (entry) => (typeof entry === "string" ? entry : entry?.id || entry?.name || "");
-export { itemKey };
+// S5 归一裁决：同一物的 id/名字差异不得误报——双边统一「名字优先、id 兜底」。
+// 判官事实带 itemId+itemName、单调用 inv 条目带 id+name，语义同一性按名字对齐。
+const itemKey = (entry) => (typeof entry === "string" ? entry : entry?.name || entry?.id || "");
+const factItemKey = (fact) => fact?.itemName || fact?.itemId || "";
+export { itemKey, factItemKey };
+
+// S5 feature 路由类目豁免映射：这些 kind 有系统 deterministic 前路
+// （intentRouter/feature 层），影子按 intake actions 命中即把对应类目标不参与比较。
+//   equip    装备/卸下 → inv（ deterministic 穿脱，inv 变化不走判官）
+//   use_item 吃喝敷药  → inv+vitals（消耗品扣件/回血走系统前路）
+//   take     拾取      → inv（collectGranted deterministic 拾取）
+//   invite   邀同行    → affection（同伴系统结算好感不经判官）
+export const FEATURE_ROUTED_KIND_CATS = {
+  equip: ["inv"],
+  use_item: ["inv", "vitals"],
+  take: ["inv"],
+  invite: ["affection"],
+};
+
+export function featureRoutedCats(actions = []) {
+  const out = new Set();
+  for (const a of actions || []) {
+    // Review 修（S5）：带前提的条件动作（「要是/如果……就」）在 live router 里
+    // 跳过不执行——并未真走 feature 路由，豁免会把判官漏判洗成盲区。
+    if (a?.condition && a.condition !== "无") continue;
+    for (const cat of FEATURE_ROUTED_KIND_CATS[a?.kind] || []) out.add(cat);
+  }
+  return [...out];
+}
 
 
 // 判官 facts → 五类目投影（op 级直投，不经过 materializeFacts 的状态编译——
@@ -34,12 +62,16 @@ export function projectFacts(facts = []) {
     if (!fact || typeof fact !== "object" || fact.conditional) continue;
     switch (fact.op) {
       case "GRANT_ITEM": {
-        if (fact.to === "player" || !fact.from) out.inv.add.push(fact.itemId || fact.itemName || "");
-        else out.inv.rm.push(fact.itemId || fact.itemName || "");
+        if (fact.to === "player" || !fact.from) out.inv.add.push(factItemKey(fact));
+        else out.inv.rm.push(factItemKey(fact));
         break;
       }
       case "TRANSFER_ITEM": {
-        out.inv.rm.push(fact.itemId || fact.itemName || "");
+        // S5 双向投影：与单调用 items_add/items_rm 同口径——玩家失去记 rm
+        // （give 送礼），玩家获得记 add（steal 得手），不再单向只记 rm。
+        const k = factItemKey(fact);
+        if (fact.to === "player") out.inv.add.push(k);
+        else out.inv.rm.push(k);
         break;
       }
       case "MUTATE_SOCIAL": {
