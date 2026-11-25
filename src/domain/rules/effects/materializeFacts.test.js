@@ -165,7 +165,7 @@ describe("materializeFacts 十二律覆盖矩阵", () => {
     const base = baseState();
     base.varTree = { 角色: { 才旦: { 好感度: 10 }, 哑仆: { 好感度: 30 } }, 世界: {} };
     base.char = { ...base.char, special: { 魅力: 10 } };
-    base.room = { ...base.room, npcs: [{ name: "才旦" }, { name: "哑仆", cannotSpeak: true }] };
+    base.room = { ...base.room, npcs: [{ name: "才旦" }, { name: "哑仆", intimacy: { forbidden: true } }] };
     // 魅力 10 → 正向增量 +30% 修正（6→8 区间取整），且写好感日增账
     const out = materializeFacts(base, [
       { id: "F30", op: "MUTATE_SOCIAL", npc: "才旦", affectionDelta: 6, ledgerKind: "恩" },
@@ -181,6 +181,37 @@ describe("materializeFacts 十二律覆盖矩阵", () => {
     // 负向：clamp 不写日增账
     const negPatch = out.patches.find((p) => p.factId === "F32" && p.path.join(".") === "varTree.角色.才旦.好感度");
     expect(negPatch).toBeTruthy();
+  });
+
+  it("MUTATE_SOCIAL 群聊串行叠加：同批多条事实不互相覆盖、日增账按 NPC 分别入账", () => {
+    const base = baseState();
+    base.varTree = { 角色: { 才旦: { 好感度: 10 }, 卓玛: { 好感度: 20 } }, 世界: {} };
+    base.char = { ...base.char, special: { 魅力: 5 } };
+    base.room = { ...base.room, npcs: [{ name: "才旦" }, { name: "卓玛" }] };
+    const out = materializeFacts(base, [
+      { id: "G1", op: "MUTATE_SOCIAL", npc: "才旦", affectionDelta: 2 },
+      { id: "G2", op: "MUTATE_SOCIAL", npc: "才旦", affectionDelta: 3 },
+      { id: "G3", op: "MUTATE_SOCIAL", npc: "卓玛", affectionDelta: 4 },
+    ], {});
+    // 同一 NPC 两条事实串行：最终 patch 必须是 10+2+3=15（若从同一快照起算会写成 13 覆盖 12）
+    const lastCain = out.patches.filter((p) => p.path.join(".") === "varTree.角色.才旦.好感度").at(-1);
+    expect(lastCain.value).toBe(15);
+    // 日增账：两个 NPC 的额度都保留（后一条不冲掉前一条的 gained）
+    const lastGained = out.patches.filter((p) => p.path.join(".") === "varTree.世界.好感日增").at(-1);
+    expect(lastGained.value.gained).toMatchObject({ 才旦: 5, 卓玛: 4 });
+  });
+
+  it("MUTATE_SOCIAL 首识基线：无好感数值的 NPC 按初始好感 10 打底再结算增量", () => {
+    const base = baseState();
+    base.varTree = { 角色: {}, 世界: {} };
+    base.char = { ...base.char, special: { 魅力: 5 } };
+    base.room = { ...base.room, npcs: [{ name: "陌生客" }] };
+    const out = materializeFacts(base, [
+      { id: "H1", op: "MUTATE_SOCIAL", npc: "陌生客", affectionDelta: 2 },
+    ], {});
+    const patch = out.patches.find((p) => p.path.join(".") === "varTree.角色.陌生客.好感度");
+    // 10 基线 + 2 增量 = 12，而不是裸写的 2（否则顶掉 INITIAL_FAVORABILITY 种子）
+    expect(patch.value).toBe(12);
   });
 
   it("MUTATE_SOCIAL perfunctory=0 不产事实（judgeTurn 层）", async () => {
