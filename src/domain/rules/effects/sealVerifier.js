@@ -97,7 +97,19 @@ export function verifySealAndMaterialize({
   const rejectedAffixes = [];
   for (const warrant of warrants) {
     const fill = fills[warrant.warrantId];
-    if (!fill) {
+    // WO-16C 条件券双证据：①正文出现对应 F 锚点 且 ②fill 可编译，缺一即作废
+    // 零落账——绝不走普通 facts 的漏锚补写（否则正文没捡系统硬塞，自相矛盾）。
+    if (warrant.conditional) {
+      const anchored = warrant.factId && seen.has(warrant.factId);
+      if (!anchored) {
+        notes.push(`${warrant.warrantId} 条件券正文未埋锚（叙事此刻不宜拾取），券作废`);
+        continue;
+      }
+      if (!fill) {
+        notes.push(`${warrant.warrantId} 条件券正文已埋锚但尾章未填空，券作废`);
+        continue;
+      }
+    } else if (!fill) {
       notes.push(`${warrant.warrantId} 尾章未填空，该券作废`);
       continue;
     }
@@ -117,6 +129,15 @@ export function verifySealAndMaterialize({
     if (compiled.rejectedAffix) rejectedAffixes.push(warrant.warrantId);
     compiledWarrants[warrant.warrantId] = compiled;
     if (warrant.factId) compiledWarrants[warrant.factId] = compiled;
+    if (warrant.conditional && warrant.factId) {
+      // 双证据齐备：合成 GRANT_ITEM fact 进 materializeFacts（锚点已在文中，无需补写）
+      facts.push({
+        id: warrant.factId, op: "GRANT_ITEM",
+        itemName: typeof fill.name === "string" ? fill.name.trim() : "",
+        from: "", to: "player", witnesses: ["主角"],
+      });
+      notes.push(`${warrant.warrantId} 条件券双证据齐备，合成事实 ${warrant.factId} 落账`);
+    }
   }
 
   // spontaneousPact 校验并入 facts

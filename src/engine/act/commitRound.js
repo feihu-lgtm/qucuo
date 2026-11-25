@@ -143,6 +143,7 @@ export function commitRound(d) {
     preserveHp: d.preserveHp, gm: d.gm,
     pickupJudgment: d.pickupJudgment, collectGranted: d.collectGranted,
     pickupExtractionFailed: d.pickupExtractionFailed,
+    judgePipelineActive: d.judgePipelineActive,
     innerRoomName: d.innerRoomName,
   }, { trace: (...args) => traceStep(d._trace, ...args) }));
   applyPostResult(d, commitModelFlags({  // flags_add 过滤落盘（原 commitProposalWrites 尾部内嵌）

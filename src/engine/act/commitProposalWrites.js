@@ -12,7 +12,7 @@ const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 // 入参：pickupJudgment/collectGranted/pickupExtractionFailed 均为 ref 的值、
 // 
 // 返回的 changes.room 是多段写回按顺序组合成的单个 updater。
-export function commitProposalWrites({ p, isTalk, giftAlreadySettled, deliveredItems, preserveHp, gm, pickupJudgment, collectGranted, pickupExtractionFailed, innerRoomName }, { trace }) {
+export function commitProposalWrites({ p, isTalk, giftAlreadySettled, deliveredItems, preserveHp, gm, pickupJudgment, collectGranted, pickupExtractionFailed, judgePipelineActive, innerRoomName }, { trace }) {
   const out = {};
   const changes = {};
   const roomWrites = [];
@@ -84,7 +84,12 @@ export function commitProposalWrites({ p, isTalk, giftAlreadySettled, deliveredI
     //     抠名永远补不全量词/书名号变体，真正的解法是把提取层解析修健壮，见 cleanJsonString）；
     //     品质/分类用 judgment。
     if (judgment && !usedJudgment) {
-      if (pickupExtractionFailed) {
+      if (judgePipelineActive) {
+        // WO-16C：判官链接管移动拾取——掷中物走条件券+SEAL fill 双证据落账，
+        // 此处绝不再保底发放（否则与券重复入包），也不打误导性 trace。
+        // judgment 照常消费清空不残留；单调用旧路（judgePipelineActive 假）行为不变。
+        trace?.("拾取判定", "judge", "判官条件券通道接管，跳过单调用后处理");
+      } else if (pickupExtractionFailed) {
         const name = `${judgment.quality === "白" ? "" : judgment.quality}品路遇之物`;
         const gained = makeGameItem({ name, category: judgment.category, quality: judgment.quality, desc: "路上拾得的物件。" });
         const prevInv = changes.inv;

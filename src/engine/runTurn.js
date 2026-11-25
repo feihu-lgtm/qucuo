@@ -200,6 +200,7 @@ async function runTurnSteps(ctx, cmd, opts) {
         turn: timeNow, day: Math.floor(timeNow / 24) + 1, place: deps.room?.name || "",
         npcs: visibleNpcs, varTree: deps.varTree || ctx.memory?.varTreeLatest || {},
         inv: deps.inv || [], entries: [], talkOnly: isTalk,
+        pickupJudgment: deps.pickupJudgment || null,
         budget: { riskLevel: 0, luck: deps.char?.special?.气运 ?? 0 },
       }, intakeResult, { rng: random });
       // WO-16A respondedNpcs 系统推导：intake 听意单里 kind=talk 的 target 即
@@ -218,6 +219,7 @@ async function runTurnSteps(ctx, cmd, opts) {
         renderCausalBudget(judgeVerdict.budget),
         "正文中每落实一条 facts 事实，须在落实处文末埋对应锚点 ⟦F编号⟧（玩家不可见，系统会剥除）；",
         "禁编造判官未签发的新器物/新武学/好感大变；写完正文换行输出 ---SEAL--- 紧跟单行 JSON：fills 给空白天机券填 name/chosenAffix/desc，respondedNpcs 列本轮开口的角色，spontaneousPact 无则 null。",
+        "条件券只有正文埋锚且尾章填空才成立——写了拾取却不填名、或填了名正文却没写拾取，券都作废，系统绝不代你硬塞。",
       ].join("\n");
       trace("判官管线", "pass", `intake ${intakeResult.actions?.length || 0} 动作/${intakeResult.proposals?.length || 0} 提议 → facts ${judgeVerdict.facts.length} 条/warrants ${judgeVerdict.warrants.length} 张（tier ${judgeVerdict.causalTier}）`);
     } catch (error) {
@@ -460,6 +462,7 @@ async function runTurnSteps(ctx, cmd, opts) {
     newConvo,
     judgeEffects,
     derivedRespondedNpcs: deps.derivedRespondedNpcs || null,
+    judgePipelineActive: !!deps.judgePipelineActive,
   };
 }
 

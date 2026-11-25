@@ -230,4 +230,50 @@ describe("judgeTurn 第四步：签发形状与渲染", () => {
     );
     expect(verdict.facts.some((f) => f.op === "MUTATE_SOCIAL")).toBe(true);
   });
+
+  it("WO-16C 移动拾取条件券：pickupJudgment 只签 warrant 不进 facts，数值锁定", () => {
+    const verdict = judgeTurn(
+      { turn: 7, day: 1, place: "野径", npcs: [], varTree: { 角色: {} }, inv: [],
+        pickupJudgment: { quality: "蓝", category: "accessory" } },
+      { read: "", refIds: [], actions: [], proposals: [] },
+      { rng: () => 0.5 },
+    );
+    // facts 里不得有该 GRANT_ITEM（条件券不先发事实）
+    expect(verdict.facts.filter((f) => f.op === "GRANT_ITEM")).toHaveLength(0);
+    const w = verdict.warrants.find((x) => x.conditional);
+    expect(w).toBeTruthy();
+    expect(w.quality).toBe("蓝");
+    expect(w.category).toBe("accessory");
+    expect(w.pointBudget).toBe(0);
+    expect(w.allowedAffixes).toEqual([]);
+    expect(w.factId).toBeTruthy();
+  });
+
+  it("WO-16C 无 pickupJudgment 或 talkOnly 不签条件券", () => {
+    const noJudgment = judgeTurn(
+      { turn: 7, day: 1, place: "野径", npcs: [], varTree: { 角色: {} }, inv: [] },
+      { read: "", refIds: [], actions: [], proposals: [] },
+      { rng: () => 0.5 },
+    );
+    expect(noJudgment.warrants.filter((x) => x.conditional)).toHaveLength(0);
+    const talkOnly = judgeTurn(
+      { turn: 7, day: 1, place: "野径", npcs: [], varTree: { 角色: {} }, inv: [], talkOnly: true,
+        pickupJudgment: { quality: "蓝", category: "misc" } },
+      { read: "", refIds: [], actions: [], proposals: [] },
+      { rng: () => 0.5 },
+    );
+    expect(talkOnly.warrants.filter((x) => x.conditional)).toHaveLength(0);
+  });
+
+  it("renderJudgeVerdict 条件券显示品质类别与双证据语义", async () => {
+    const { renderJudgeVerdict } = await import("./judgeTurn.js");
+    const text = renderJudgeVerdict({
+      causalTier: "T1", pacingWords: 320, facts: [],
+      warrants: [{ warrantId: "W7_1", factId: "F7_1", op: "GRANT_ITEM", conditional: true, category: "misc", quality: "蓝", pointBudget: 0, allowedAffixes: [] }],
+    });
+    expect(text).toContain("条件拾取券");
+    expect(text).toContain("蓝");
+    expect(text).toContain("⟦F7_1⟧");
+    expect(text).toContain("⟦W7_1⟧");
+  });
 });

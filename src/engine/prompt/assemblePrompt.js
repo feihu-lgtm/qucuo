@@ -78,8 +78,15 @@ export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo)
   const encounterNote = input.encounter
     ? input.buildEncounterNote?.(input.encounter, lockedDestName) || ""
     : "";
+  // WO-16C：判官管线激活时移动拾取改走条件券通道——品质/类别已由系统锁进
+  // 判官定案的条件券（见上文判官定案），叙事只需决定捡不捡：捡就在落实处埋
+  // 券上印的 ⟦F⟧ 锚点并在尾章 fills 填名；不捡就忽略，绝不写 delta.items_add。
+  // 单调用旧路（无判官）仍走 delta.items_add 原指令。
+  const judgePickupActive = apiCfg?.judgePipelineEnabled && apiCfg?.extractionEnabled;
   const pickupNote = input.pickupJudgment
-    ? `\n[系统裁决：本次移动途中触发拾取事件，品质已判为「${input.pickupJudgment.quality}」，物品分类建议「${input.categoryLabel?.[input.pickupJudgment.category]}」。请在 output 自然描述玩家路上发现/捡到了什么，并在 delta.items_add 加入这件物品：quality 精确写"${input.pickupJudgment.quality}"，category 写"${input.pickupJudgment.category}"，name 自拟一个符合场景与地域特色、与品质相衬的名字（品质越高越有分量，但不要浮夸到脱离世界观）。若场景此刻不适合捡（身处险境、被人盯着），可以合理地不触发，只在 output 说明原因，不必强塞。]`
+    ? judgePickupActive
+      ? `\n[系统裁决：本次移动途中触发拾取事件，品质已判为「${input.pickupJudgment.quality}」，物品分类建议「${input.categoryLabel?.[input.pickupJudgment.category]}」——数值已锁进判官条件券，你不可以改动品质/类别。若场景适合拾取：在正文自然描述发现/捡到何物（名字自拟，与品质相衬、不浮夸），在落实处埋判官条件券的 ⟦F⟧ 锚点，并在尾章 fills 为券填名；若此刻不适合捡（身处险境、被人盯着），正文说明原因即可，该券自动作废，不必强塞。]`
+      : `\n[系统裁决：本次移动途中触发拾取事件，品质已判为「${input.pickupJudgment.quality}」，物品分类建议「${input.categoryLabel?.[input.pickupJudgment.category]}」。请在 output 自然描述玩家路上发现/捡到了什么，并在 delta.items_add 加入这件物品：quality 精确写"${input.pickupJudgment.quality}"，category 写"${input.pickupJudgment.category}"，name 自拟一个符合场景与地域特色、与品质相衬的名字（品质越高越有分量，但不要浮夸到脱离世界观）。若场景此刻不适合捡（身处险境、被人盯着），可以合理地不触发，只在 output 说明原因，不必强塞。]`
     : "";
   const stateContext = buildMainStatePrompt({
     ...input,
