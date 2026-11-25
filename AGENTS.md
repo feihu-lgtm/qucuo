@@ -2,7 +2,7 @@
 
 Read this file first before modifying any code. Source code and CI gates are the single source of truth; archived documents in `docs/_archive/` are historical only.
 
-## 1. Four Non-Negotiable Architectural Rules
+## 1. Five Non-Negotiable Architectural Rules
 
 1. **Single AI Gateway (`withAI`)**
    All new AI calls must be declared via `definePrompt` and invoked through `src/engine/ports/withAI.js`. Do not add new direct `callModel`, `callModelStream`, or `ai.chat` calls anywhere in `src/ui/`, `src/app/`, `src/features/`, or `src/engine/`. Existing legacy callers are capped in `scripts/ratchet.mjs` (`KNOWN_DIRECT_AI_CALL_DEBT`) and may only decrease.
@@ -15,6 +15,9 @@ Read this file first before modifying any code. Source code and CI gates are the
 
 4. **Unified NPC Context and No Parallel Duplicate Subsystems**
    Extend existing `companion`, `npcTrade`, and unified prompt/context helpers instead of creating parallel subsystems or hand-rolling separate NPC context snippets per screen or hook.
+
+5. **AI 调用链说明同步**
+   `docs/AI调用链架构说明.md` 是 AI 调用线的活文档。改动 AI 调用入口、回合管线、事实落盘、状态写入口、提示词冰山、结构化输出契约、判官/场记板/十二律时，必须在同一 PR 更新该文档。
 
 ## 2. Layer Boundaries
 
