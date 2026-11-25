@@ -17,6 +17,13 @@ function parseCnNumeral(w) {
   if (!w) return 0;
   if (w === "十") return 10;
   let total = 0, section = 0, rest = w;
+  const qian = rest.indexOf("千");
+  if (qian >= 0) {
+    const t = CN_NUM[rest.slice(0, qian)];
+    if (!t) return 0;
+    total += t * 1000;
+    rest = rest.slice(qian + 1);
+  }
   const bai = rest.indexOf("百");
   if (bai >= 0) {
     const h = CN_NUM[rest.slice(0, bai)];
@@ -48,13 +55,15 @@ export function extractSilverAmounts(text) {
   const amounts = [];
   const consumed = [];
   // 中文数字在前（字符集不重叠不会与阿拉伯混淆）
-  const cnRe = /([一二三四五六七八九十百]{1,4})\s*两/g;
+  const cnRe = /([一二三四五六七八九十百千]{1,6})\s*两/g;
   let m;
   while ((m = cnRe.exec(src))) {
     const v = parseCnNumeral(m[1]);
     if (v > 0) amounts.push(v);
     consumed.push([m.index, m.index + m[0].length]);
   }
+  // 万级以上不猜：含「万」的数额提及超出最小口径，整句拒收（宁可不签不可错扣）
+  if (/万/.test(src) && /两/.test(src) && /万[^。，,]{0,6}两|两[^。，,]{0,6}万/.test(src)) return [];
   // 阿拉伯数字：前后不得紧邻数字或小数点（1.5两/12.5整体拒收），且不在中文数字段内
   const digitRe = /(?<![\d.])(\d+)\s*两(?!\d)/g;
   while ((m = digitRe.exec(src))) {

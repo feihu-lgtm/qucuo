@@ -110,3 +110,22 @@ describe("S2 talkTarget 回填：敌意不点名不落空", () => {
     expect(social).toBeFalsy();
   });
 });
+
+describe("S7 送银桥集成：真实链 playerInput 接线防回归", () => {
+  it("打字「把5两银子送给温掌柜」：判官签 CHANGE_VITALS_SILVER -5", async () => {
+    const intakeJson = JSON.stringify({
+      read: "玩家送银", refIds: [],
+      actions: [{ kind: "give", target: "温掌柜", item: "银两", itemId: "银两", direction: "none", condition: "无", condition_text: "", stance: "sincere", outcome: "无", risk: "无", confidence: 0.9, text: "把5两银子送给温掌柜" }],
+      proposals: [],
+    });
+    const ai = createMockAi([intakeJson, "温掌柜掂了掂银子，眉开眼笑"]);
+    const deps = makeDeps({ char: { hp: [80, 100], money: 100, special: { 气运: 5, 魅力: 5 } } });
+    deps.ai = ai;
+    const turn = await runTurn(deps, "把5两银子送给温掌柜", {});
+    const silver = turn.judgeEffects?.verdict?.facts?.find((f) => f.op === "CHANGE_VITALS_SILVER");
+    expect(silver).toBeTruthy();
+    expect(silver.moneyDelta).toBe(-5);
+    const social = turn.judgeEffects?.verdict?.facts?.find((f) => f.op === "MUTATE_SOCIAL");
+    expect(social?.ledgerKind).toBe("恩");
+  });
+});
