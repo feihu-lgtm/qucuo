@@ -10,7 +10,7 @@ const REAL = QUCUO_QUESTS.find((q) => !q.localOnly && q.id !== "snow_leopard_que
 const base = {
   questProgress: {}, flags: [], varTree: {}, char: {}, inv: [],
   room: { name: "鱼定村", npcs: [{ name: REAL?.giver || "老孙" }] },
-  pendingQuestBranch: null, visibleNpcs: [], convo: [], settleNpc: null, cmd: "聊聊",
+  visibleNpcs: [], convo: [], settleNpc: null, cmd: "聊聊",
   innerRoomName: null, questTriggerMode: "prompt",
 };
 
@@ -41,5 +41,9 @@ describe("buildQuestStageNote flags_add 指令压下", () => {
     // choices 阶段提示本来就不让吐 flag，两种模式都该保留该句型
     const note = buildQuestStageNote({ ...base, suppressModelFlags: true });
     expect(note).not.toContain("flags_add 加入");
+  });
+  it("不再注入已废弃的 pendingQuestBranch mode=talk [说服判定] 提示", () => {
+    const note = buildQuestStageNote({ ...base, pendingQuestBranch: { mode: "talk", goal: "交出旧信", flag: "交信" } });
+    expect(note).not.toContain("[说服判定]");
   });
 });

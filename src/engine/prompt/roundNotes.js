@@ -45,7 +45,7 @@ export function shouldSuppressModelFlags(apiCfg, settleish) {
   return !!(apiCfg?.judgePipelineEnabled && apiCfg?.extractionEnabled) && !settleish;
 }
 
-export function buildQuestStageNote({ questProgress, flags, varTree, char, room, inv, pendingQuestBranch, visibleNpcs, convo, settleNpc, cmd, innerRoomName, questTriggerMode, suppressModelFlags }) {
+export function buildQuestStageNote({ questProgress, flags, varTree, char, room, inv, visibleNpcs, convo, settleNpc, cmd, innerRoomName, questTriggerMode, suppressModelFlags }) {
   const describeFlag = (f) => Array.isArray(f) ? f.map(x => `"${x}"`).join("/或") + "（按玩家实际选择的分支，只加其中一个）" : `"${f}"`;
   const noteLines = [];
   for (const quest of QUCUO_QUESTS) {
@@ -131,9 +131,6 @@ export function buildQuestStageNote({ questProgress, flags, varTree, char, room,
   // 玩家若想采，直接顺势叙述（真正的入袋/推进由系统裁决，不劳 AI 动 items_add）。
   const cLines = collectPromptLines(room.name, { questProgress, quests: QUCUO_QUESTS, getCurrentStage, inv, innerRoomName });
   if (cLines.length) note += `\n[可采集] ${cLines.join("；")}。玩家表达采集意图时顺势叙述采集过程即可，系统自动结算入袋，不要写"采不到"。`;
-  if (pendingQuestBranch?.mode === "talk" && pendingQuestBranch.goal) {
-    note += `\n[说服判定] 玩家正试图通过言辞达成：${pendingQuestBranch.goal}。这是真正的言语交锋，不是走过场——评估这句话是否切中要害、有理有据、气势压得住对方。确实说动/驳倒对方时，在 flags_add 加入「${pendingQuestBranch.flag}」并让对方让步；玩家只是空喊、被驳倒或理亏，让对方继续刁难，不吐这个 flag，玩家可再想说辞。`;
-  }
   return note + snowLeopardNote({ questProgress, flags, room: { ...room, npcs: visibleNpcs ?? room.npcs }, convo, settleNpc, cmd, innerRoomName });
 }
 

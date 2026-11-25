@@ -309,8 +309,6 @@ describe("undo controller", () => { it("keeps the real pickup undo point when a 
       setPendingQuestBranch: () => calls.push("branch"),
       setDuelingNpc: () => calls.push("duel"),
       setActivePersuasion: vi.fn(),
-      setInteractMode: vi.fn(),
-      setTalkTarget: vi.fn(),
       captureUndo: () => calls.push("capture"),
       forceAdvanceQuest: vi.fn(),
     }, {

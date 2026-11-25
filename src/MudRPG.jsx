@@ -286,7 +286,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   });
   const questPanel = commandScheduler.wrapHandlers("useQuestPanel", useQuestPanel({
     act, apiCfg, addLog, setPendingQuestBranch, setDuelingNpc, captureUndo,
-    setActivePersuasion, setInteractMode, setTalkTarget, setPersuasionProgress, setChar,
+    setActivePersuasion, setPersuasionProgress, setChar,
   }));
 
   const autoTravelTo = useAutoTravel({

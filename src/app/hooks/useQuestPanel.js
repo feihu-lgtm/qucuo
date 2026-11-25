@@ -39,7 +39,7 @@ export function runQuestChoice(ctx, entry, choice) {
 
 async function resolveQuestChoice({
   act, apiCfg, addLog, setPendingQuestBranch, setDuelingNpc,
-  setActivePersuasion, setInteractMode, setTalkTarget, captureUndo, forceAdvanceQuest,
+  setActivePersuasion, captureUndo, forceAdvanceQuest,
   
 }, entry, pickedChoice) {
   const { quest, stage } = entry;
@@ -69,19 +69,9 @@ async function resolveQuestChoice({
     return;
   }
 
-  if (resolve === "talk") {
+  if (resolve === "talk" && choice.persuade) {
     addLog([{ t: "cmd", text: `> ❢ ${quest.title}：${choice.label}` }]);
-    if (choice.persuade) {
-      setActivePersuasion({ persuade: choice.persuade, questId: quest.id, flag: choice.flag });
-      return;
-    }
-    setPendingQuestBranch({ questId: quest.id, flag: choice.flag, mode: "talk", goal: choice.talkGoal });
-    setInteractMode("talk");
-    setTalkTarget(choice.talkTarget || quest.giver);
-    addLog([
-      { t: "sys", text: `  你决定${choice.label}。` },
-      { t: "sys", text: `  〔说赢了对方才会松口。〕` },
-    ]);
+    setActivePersuasion({ persuade: choice.persuade, questId: quest.id, flag: choice.flag });
     return;
   }
 
@@ -95,7 +85,7 @@ async function resolveQuestChoice({
 
 export function useQuestPanel({
   act, apiCfg, addLog, setPendingQuestBranch, setDuelingNpc,
-  setActivePersuasion, setInteractMode, setTalkTarget, captureUndo, setPersuasionProgress, setChar,
+  setActivePersuasion, captureUndo, setPersuasionProgress, setChar,
 }) {
   const forceAdvanceQuest = useCallback((quest, targetFlag) => applyResult(featureCtx(), () => {
     captureUndo();
@@ -182,10 +172,10 @@ export function useQuestPanel({
 
   const triggerQuestChoice = useCallback((entry, choice) => runQuestChoice({
     act, apiCfg, addLog, setPendingQuestBranch, setDuelingNpc,
-    setActivePersuasion, setInteractMode, setTalkTarget, captureUndo, forceAdvanceQuest,
+    setActivePersuasion, captureUndo, forceAdvanceQuest,
   }, entry, choice), [
     act, apiCfg, addLog, setPendingQuestBranch, setDuelingNpc,
-    setActivePersuasion, setInteractMode, setTalkTarget, captureUndo, forceAdvanceQuest,
+    setActivePersuasion, captureUndo, forceAdvanceQuest,
   ]);
 
   const savePersuasionProgress = useCallback((key, progress) => applyResult(featureCtx(), () => {
