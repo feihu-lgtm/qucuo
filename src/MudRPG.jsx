@@ -21,6 +21,7 @@ import { usePigeonHandlers } from "./app/hooks/usePigeonHandlers.js";
 import { useAutoTravel } from "./app/hooks/useAutoTravel.js";
 import { useCraftingAI } from "./app/hooks/useCraftingAI.js";
 import { useScreenHandlers } from "./app/hooks/useScreenHandlers.js";
+import { useInscribeWeapon } from "./app/hooks/useInscribeWeapon.js";
 import { useIntentRouter } from "./app/hooks/useIntentRouter.js";
 import { useCardImportHandlers } from "./app/hooks/useCardImportHandlers.js";
 import { useBuildingHandlers } from "./app/hooks/useBuildingHandlers.js";
@@ -331,6 +332,8 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     setInteractMode, setTalkTarget, act, apiCfg, addLog, setTime, jotNote,
   }));
 
+  const handleInscribeWeapon = useInscribeWeapon({ apiCfg, addLog });
+
   const cardImportHandlers = commandScheduler.wrapHandlers("useCardImportHandlers", useCardImportHandlers({
     setVarTree, schedulerRef,
   }));
@@ -355,7 +358,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     dispatchCommand: commandScheduler.dispatch,
     questPanel, pigeonHandlers, duelHandlers, screenHandlers, buildingHandlers,
     craftingAI, playerActionHandlers, progressionHandlers, aiInspect, outfitAdvice,
-    cardImportHandlers,
+    cardImportHandlers, handleInscribeWeapon,
   };
   const overlayState = {
     showSettings, showCharCreate, showOpening, showBody, showMusicPanel, showHomestead,

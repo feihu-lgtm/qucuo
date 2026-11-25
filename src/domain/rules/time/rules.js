@@ -11,7 +11,7 @@ import { cleanExpiredBuffs } from "../../../utils/buffSystem.js";
 import { buildRoomNpcWithCombat } from "../npc/rules.js";
 import { npcTradeOf } from "../npc/npcTrade.js";
 
-const QUALITIES = ["白", "绿", "蓝", "紫", "橙", "红"];
+export const QUALITIES = ["白", "绿", "蓝", "紫", "橙", "红"];
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 
 function makeEscalationNpc(record, state, { pool = false } = {}) {

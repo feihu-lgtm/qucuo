@@ -224,6 +224,49 @@ ${FORGE_EFFECT_WHITELIST}
       },
     },
   });
+  // ── WO-23D2 器物觉醒铭文：AI 只写铭文文案，成败/升品/数值全在系统侧 ──
+  definePrompt("block", "item.inscription.sys", {
+    label: "器物铭文系统指令",
+    slot: "sys",
+    text: () => `你是曲措乡这个澜湄雪域武侠世界里兵器觉醒的"铭文手"——一件随主人出生入死的兵器灵性已醒，你为它拟一句刻在身上的铭文。铁律：你只写铭文文案，绝不决定成败、数值、伤势、奖励——那些全由系统定。铭文要求：中文八到六十字；不得含数字与英文；不得提玩家名字；不得夸口境界或战力承诺（无敌/天下第一/必中之类一律不行）；不得编造具体来历——若给了来历原文可化用其意，没给就只能写器物脾性与相伴之情，绝不可虚构"某年某地某人相赠"这类具体情节。`,
+  });
+
+  definePrompt("block", "item.inscription.user", {
+    label: "器物战绩与来历",
+    slot: "user",
+    text: (ctx) => `器物：「${ctx.name || "兵器"}」（${ctx.category || "weapon"}）
+战绩：随主胜场 ${ctx.wins ?? 0} 场${ctx.nemesisKills ? `，斩宿敌 ${ctx.nemesisKills} 人` : ""}
+${ctx.originText ? `来历原文（可化用）：${ctx.originText}` : "来历原文：（无——不得编造具体来历，只写器物脾性与相伴之情）"}
+
+只输出 JSON，不要任何解释或 markdown：
+{"inscription":"铭文全文，中文八到六十字"}`,
+  });
+
+  definePrompt("call", "item.inscription", {
+    group: "sync",
+    label: "器物铭文",
+    execution: "sync_pipeline",
+    route: "extraction",
+    reviewDesc: "结构化输出 inscription 字符串，validateInscription deterministic 校验不过最多重试一次，再失败静默不升级",
+    tokenLimitKey: "extraction",
+    defaultMaxTokens: 800,
+    cfg: (_apiCfg, ctx) => ctx.inscribeCfg,
+    join: "",
+    blocks: ["item.inscription.sys", "item.inscription.user"],
+    // 原生结构化输出主路径：单一字符串字段闭合 schema，满足 strict subset；
+    // 手解 JSON 仅作老 provider 兼容兜底。
+    schema: {
+      name: "item_inscription",
+      strictCompatible: true,
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        required: ["inscription"],
+        properties: { inscription: { type: "string" } },
+      },
+    },
+  });
+
 }
 
 registerDomainCalls();
