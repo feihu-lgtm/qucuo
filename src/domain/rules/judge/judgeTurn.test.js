@@ -1,0 +1,198 @@
+import { describe, expect, it } from "vitest";
+import { judgeTurn, renderJudgeVerdict, renderCausalBudget } from "./judgeTurn.js";
+import { createClapboardEntry } from "../clapboard/clapboard.js";
+
+// 可重复 rng：按给定序列循环出牌
+function seqRng(values) {
+  let i = 0;
+  return () => values[i++ % values.length];
+}
+
+const NPCS = [
+  { name: "才旦", personality: "爽朗直率", brief: "猎户" },
+  { name: "八云", personality: "冷傲孤高", brief: "雪山弟子" },
+];
+
+const VAR_TREE = { 角色: { 才旦: { 好感度: 70 } } };
+
+const INV = [{ id: "it_8f3a", name: "霜牙短刀", category: "weapon", quality: "蓝" }];
+
+function baseEnvelope(extra = {}) {
+  return { turn: 42, day: 2, place: "鱼定村·茶馆", npcs: NPCS, varTree: VAR_TREE, inv: INV, entries: [], budget: { riskLevel: 1 }, ...extra };
+}
+
+describe("judgeTurn 第一步：refIds 知情权核验", () => {
+  const entries = [
+    createClapboardEntry({ kind: "raw_memory", turn: 18, seq: 2, witnesses: ["主角", "呼延雪"], publicText: "呼延雪拍剑", rawText: "呼延雪拍剑*心理*" }),
+    createClapboardEntry({ kind: "fact_index", turn: 18, seq: 3, witnesses: [], publicText: "村口贴了告示" }),
+  ];
+
+  it("不知情 NPC 拆独立反应导引，公共条目人人知情", () => {
+    const verdict = judgeTurn(baseEnvelope({ entries }), { read: "", refIds: ["P18_2", "F18_3"], actions: [], proposals: [] }, { rng: seqRng([0.9]) });
+    const caidan = verdict.reactionGuides.find((g) => g.npc === "才旦");
+    // P18_2 见证者只含主角与呼延雪——才旦不知情，拆独立导引
+    expect(caidan.unknownRefIds).toContain("P18_2");
+    expect(caidan.guidance).toContain("不知晓");
+    // F18_3 witnesses 空 = 公共常识
+    expect(caidan.knownRefIds).toContain("F18_3");
+  });
+
+  it("查无此条目的引用记入 notes 不崩", () => {
+    const verdict = judgeTurn(baseEnvelope({ entries }), { read: "", refIds: ["P99_9"], actions: [], proposals: [] }, { rng: seqRng([0.5]) });
+    expect(verdict.notes.join()).toContain("查无此条目");
+  });
+});
+
+describe("judgeTurn 第二步：赠礼/赔罪/求教收拒", () => {
+  it("豪爽高好感 + 偏爱命中（猎户爱 weapon）低骰收礼：TRANSFER_ITEM + MUTATE_SOCIAL", () => {
+    const verdict = judgeTurn(baseEnvelope(), {
+      read: "", refIds: [],
+      actions: [{ kind: "give", target: "才旦", itemId: "it_8f3a", direction: "none", stance: "sincere" }],
+      proposals: [],
+    }, { rng: seqRng([0.1]) });
+    const transfer = verdict.facts.find((f) => f.op === "TRANSFER_ITEM");
+    expect(transfer).toBeTruthy();
+    expect(transfer.itemName).toBe("霜牙短刀");
+    expect(transfer.from).toBe("player");
+    expect(transfer.to).toBe("才旦");
+    expect(transfer.id).toBe("F42_1");
+    const social = verdict.facts.find((f) => f.op === "MUTATE_SOCIAL");
+    expect(social.affectionDelta).toBeGreaterThan(0);
+    expect(verdict.allowSpontaneousPact).toBe(true);
+  });
+
+  it("冷傲零好感高骰拒收：不产扣物事实，物件未易主", () => {
+    const verdict = judgeTurn(baseEnvelope(), {
+      read: "", refIds: [],
+      actions: [{ kind: "give", target: "八云", itemId: "it_8f3a", direction: "none", stance: "casual" }],
+      proposals: [],
+    }, { rng: seqRng([0.99]) });
+    expect(verdict.facts.filter((f) => f.op === "TRANSFER_ITEM")).toHaveLength(0);
+    expect(verdict.notes.join()).toContain("拒收");
+    expect(verdict.notes.join()).toContain("未易主");
+  });
+
+  it("求教：tier 不足授技降级点拨；T2 以上签发 BESTOW_SKILL 空白天机券", () => {
+    const low = judgeTurn(baseEnvelope({ budget: {} }), {
+      read: "", refIds: [],
+      actions: [{ kind: "learn", target: "才旦", itemId: "", direction: "none", stance: "sincere" }],
+      proposals: [],
+    }, { rng: seqRng([0.05]) });
+    // 无涉险无代价 → 恒 T0 → 降级点拨
+    const tipoff = low.facts.find((f) => f.op === "PROGRESS_CULTIVATION");
+    expect(tipoff).toBeTruthy();
+    // WO-11 落盘可消费：potDelta/expDelta/neigongDelta/stageDelta 至少一项非空
+    expect(tipoff.potDelta).toBeGreaterThan(0);
+    expect(low.warrants).toHaveLength(0);
+    expect(low.notes.join()).toContain("降为点拨");
+
+    const high = judgeTurn(baseEnvelope({ budget: { riskLevel: 3, costPaid: 10, tension: 80 } }), {
+      read: "", refIds: [],
+      actions: [{ kind: "learn", target: "才旦", itemId: "", direction: "none", stance: "sincere" }],
+      proposals: [],
+    }, { rng: seqRng([0.05]) });
+    expect(high.warrants.some((w) => w.op === "BESTOW_SKILL")).toBe(true);
+  });
+});
+
+describe("judgeTurn 第三步：inspect_container 三关", () => {
+  const inspect = { kind: "inspect_container", target: "木箱", itemId: "", direction: "none", stance: "casual" };
+
+  it("已坍缩容器无所得", () => {
+    const verdict = judgeTurn(baseEnvelope({ containers: { 木箱: { collapsed: true } } }),
+      { read: "", refIds: [], actions: [inspect], proposals: [] }, { rng: seqRng([0]) });
+    expect(verdict.facts.filter((f) => f.op === "GRANT_ITEM")).toHaveLength(0);
+    expect(verdict.notes.join()).toContain("已坍缩");
+  });
+
+  it("第一关：预设物必中", () => {
+    const verdict = judgeTurn(baseEnvelope({ containers: { 木箱: { collapsed: false, presetItems: [{ id: "it_pre", name: "铁钥匙" }] } } }),
+      { read: "", refIds: [], actions: [inspect], proposals: [] }, { rng: seqRng([0.9]) });
+    expect(verdict.facts.some((f) => f.itemName === "铁钥匙")).toBe(true);
+  });
+
+  it("第二关：无预设物时备料物直取", () => {
+    const verdict = judgeTurn(baseEnvelope({
+      containers: { 木箱: { collapsed: false, presetItems: [] } },
+      prepItems: [{ id: "prep_5_1", name: "豹皮护腕" }],
+    }), { read: "", refIds: [], actions: [inspect], proposals: [] }, { rng: seqRng([0.9]) });
+    expect(verdict.facts.some((f) => f.itemName === "豹皮护腕")).toBe(true);
+  });
+
+  it("第三关：natural fit 低骰中签空白天机券，affixes 随 pointBudget 圈定", () => {
+    const verdict = judgeTurn(baseEnvelope({
+      containers: { 木箱: { collapsed: false } },
+      budget: { riskLevel: 2, costPaid: 10, tension: 60 },  // T2 → pointBudget 2
+    }), {
+      read: "", refIds: [], actions: [inspect],
+      proposals: [{ claim: "箱底有把匕首", kind: "find_item", fit: "natural" }],
+    }, { rng: seqRng([0.1]) });
+    const warrant = verdict.warrants.find((w) => w.op === "GRANT_ITEM");
+    expect(warrant).toBeTruthy();
+    expect(warrant.pointBudget).toBe(2);
+    expect(warrant.allowedAffixes.length).toBeGreaterThan(0);
+    expect(warrant.origin.turn).toBe(42);
+  });
+
+  it("第三关：absurd fit 高骰不达标降级残页线索", () => {
+    const verdict = judgeTurn(baseEnvelope({ containers: { 木箱: { collapsed: false } } }), {
+      read: "", refIds: [], actions: [inspect],
+      proposals: [{ claim: "箱底藏着屠龙刀", kind: "find_item", fit: "absurd" }],
+    }, { rng: seqRng([0.9]) });
+    expect(verdict.warrants.filter((w) => w.op === "GRANT_ITEM")).toHaveLength(0);
+    const scene = verdict.facts.find((f) => f.op === "ALTER_WORLD_SCENE");
+    expect(scene.detail).toContain("残页");
+    // WO-11 可消费形状：sceneKey + key/value（materializeFacts 只认 updates/key-value/note）
+    expect(scene.sceneKey).toBeTruthy();
+    expect(scene.key).toBe("clue");
+    expect(scene.value).toContain("残页");
+    expect(verdict.notes.join()).toContain("降级为残页线索");
+  });
+
+  it("悬空道具落点优先：有悬空道具时直接落它不发券", () => {
+    const verdict = judgeTurn(baseEnvelope({
+      containers: { 木箱: { collapsed: false } },
+      floatingItems: [{ id: "it_float", name: "无名剑谱", placed: false }],
+    }), {
+      read: "", refIds: [], actions: [inspect],
+      proposals: [{ claim: "箱底有本剑谱", kind: "find_item", fit: "natural" }],
+    }, { rng: seqRng([0.1]) });
+    expect(verdict.facts.some((f) => f.itemName === "无名剑谱")).toBe(true);
+    expect(verdict.warrants.filter((w) => w.op === "GRANT_ITEM")).toHaveLength(0);
+  });
+});
+
+describe("judgeTurn 第四步：签发形状与渲染", () => {
+  it("facts id 连续编号 F<turn>_<seq>，verdict 含 tier/pacingWords/warrants/allowSpontaneousPact", () => {
+    const verdict = judgeTurn(baseEnvelope(), {
+      read: "", refIds: [],
+      actions: [{ kind: "give", target: "才旦", itemId: "it_8f3a", direction: "none", stance: "sincere" }],
+      proposals: [],
+    }, { rng: seqRng([0.1]) });
+    expect(verdict.facts[0].id).toBe("F42_1");
+    expect(verdict.facts[1].id).toBe("F42_2");
+    expect(verdict.causalTier).toBeTruthy();
+    expect(verdict.pacingWords).toBe(320);
+  });
+
+  it("同 rng 序列同输入恒同输出（纯函数）", () => {
+    const intake = { read: "", refIds: [], actions: [{ kind: "give", target: "才旦", itemId: "it_8f3a", direction: "none", stance: "sincere" }], proposals: [] };
+    const a = judgeTurn(baseEnvelope(), intake, { rng: seqRng([0.3, 0.7]) });
+    const b = judgeTurn(baseEnvelope(), intake, { rng: seqRng([0.3, 0.7]) });
+    expect(a).toEqual(b);
+  });
+
+  it("renderJudgeVerdict/renderCausalBudget 渲染非空；空输入返回空串", () => {
+    const verdict = judgeTurn(baseEnvelope(), {
+      read: "", refIds: [],
+      actions: [{ kind: "give", target: "才旦", itemId: "it_8f3a", direction: "none", stance: "sincere" }],
+      proposals: [],
+    }, { rng: seqRng([0.1]) });
+    const text = renderJudgeVerdict(verdict);
+    expect(text).toContain("⟦F42_1⟧");
+    expect(text).toContain("TRANSFER_ITEM");
+    expect(renderJudgeVerdict(null)).toBe("");
+    expect(renderCausalBudget(verdict.budget)).toContain("品阶上限");
+    expect(renderCausalBudget(null)).toBe("");
+  });
+});

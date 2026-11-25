@@ -6,6 +6,7 @@ import "../../domain/rules/settle/judge.js";
 import "../../domain/rules/memory/bookkeep.js";
 import "../../engine/ports/storyteller.js";
 import "../../engine/ports/cardScan/scanCalls.js";
+import "../../engine/turn/intakeTurn.js";
 import "./hookCalls.js";
 
 export function ensureAllPromptsRegistered() {

@@ -1,5 +1,23 @@
 import { priceForQuality, CATEGORY_LABEL } from "../economy/equipment.js";
-import { GIFT_WEIGHT } from "../state/fields.js";
+import { SERVICE_MENUS } from "../../data/buildings/menuData.js";
+
+const foodPrice = () => SERVICE_MENUS.饭馆.find((dish) => dish.name === "青稞糌粑").price;
+const weaponPrice = () => priceForQuality("weapon", "白").buyPrice;
+export const GIFT_WEIGHT = {
+  modest: /乞丐|流浪汉/,
+  wealthy: /土司本人|土司之女|^土司$/,
+  baseline: {
+    modest: foodPrice,
+    ordinary: () => priceForQuality("misc", "白").buyPrice,
+    wealthy: weaponPrice,
+  },
+  bands: [
+    { ratio: 0, label: "薄礼", range: [1, 2], reaction: "礼貌致谢，礼轻情意重，仍记一份心意" },
+    { ratio: 0.5, label: "寻常", range: [2, 4], reaction: "自然领情，略显亲切" },
+    { ratio: 1.5, label: "厚礼", range: [4, 6], reaction: "明显动容，具体说出这份礼对自己为何有用" },
+    { ratio: 4, label: "重金", range: [6, 9], reaction: "郑重承情，表现出礼物非同寻常，但不凭空许诺回报" },
+  ],
+};
 
 export function computeGiftWeight(npc, gift) {
   const identity = [npc?.name, npc?.brief, npc?.title].filter(Boolean);
