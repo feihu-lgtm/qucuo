@@ -120,7 +120,9 @@ describe("MVU 裁决契约", () => {
 
 
 
-  it("giftSettlement：只放行该 NPC 的一条 add 好感度指令，其余 mvu 全丢", () => {
+  it("giftSettlement：送礼好感已 feature 硬结算，模型写的好感 MVU 全拦截防双计", () => {
+    // WO-16B 新契约：feature deterministic 补账后，commitRound 不再放行那
+    // "唯一一条"送礼好感——模型乱写的任何 settle 好感指令都必须归零。
     const state = baseState();
     state.varTree.角色.侠客 = { 好感度: 50 };
     const { deps } = makeDeps(state, {}, {
@@ -132,9 +134,34 @@ describe("MVU 裁决契约", () => {
       ],
     });
     commitRound(deps);
-    expect(state.varTree.角色.侠客.好感度).toBeGreaterThanOrEqual(50);
+    expect(state.varTree.角色.侠客.好感度).toBe(50); // 一两都不许涨
     expect(state.varTree.角色.别人).toBeUndefined();
     expect(state.varTree.主角).toBeUndefined();
+  });
+
+  it("learn_skill settle：模型乱写师父好感被拦截，其余合法 MVU 不受影响", () => {
+    const state = baseState();
+    state.varTree.角色.师父 = { 好感度: 50 };
+    const { deps } = makeDeps(state, {}, {
+      settleKind: "learn_skill", settleNpc: "师父",
+      mvuCommands: [
+        { op: "add", path: "角色.师父.好感度", value: 6 },
+        { op: "set", path: "主角.别名", value: "青衣" },
+      ],
+    });
+    commitRound(deps);
+    expect(state.varTree.角色.师父.好感度).toBe(50);
+    expect(state.varTree.主角.别名).toBe("青衣");
+  });
+
+  it("companion_invite settle：模型乱写 _.set 好感被拦截", () => {
+    const state = baseState();
+    const { deps } = makeDeps(state, {}, {
+      settleKind: "companion_invite", settleNpc: "墨团",
+      mvuCommands: [{ op: "set", path: "角色.墨团.好感度", value: 99 }],
+    });
+    commitRound(deps);
+    expect(state.varTree.角色.墨团?.好感度 ?? 0).not.toBe(99);
   });
 
   it("幽灵好感度：既不在场也非已知角色的 角色.X.好感度 指令被丢弃", () => {

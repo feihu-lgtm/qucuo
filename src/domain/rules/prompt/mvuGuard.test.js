@@ -226,9 +226,9 @@ describe("11 号位收下全部约束", () => {
       giftInfo: { itemName: "青锋剑", quality: "绿", range: [4, 6], suggestedDelta: 5 },
     });
     expect(phiRules).toContain("送礼反应铁律");
-    expect(phiRules).toContain("+4~+6");
-    expect(phiRules).toContain("<mvu>...</mvu>");
-    expect(phiRules).toContain("本轮必须输出 <mvu> 且为正向增量");
+    // WO-16B：好感系统确定性结算，提示词禁写好感 MVU、不再给幅度取值指令
+    expect(phiRules).toContain("禁输出任何好感相关 <mvu>");
+    expect(phiRules).not.toContain("本轮必须输出 <mvu> 且为正向增量");
   });
 
   it("settle无settleKind：措辞是软的「确有变化才给出」", () => {

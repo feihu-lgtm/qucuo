@@ -235,13 +235,15 @@ describe("settleKind 铁律的其余分支", () => {
     }
   });
 
-  it("companion_invite 单调用：直接 _.set 初始好感，不是 _.add", () => {
-    // 契约：单调用模式下伙伴入队用 set 定初始值（初登场非增量）。
+  it("companion_invite 单调用：好感系统钉账，禁写好感 MVU", () => {
+    // 新契约（WO-16B）：伙伴入队初始好感由 feature deterministic 钉账，
+    // 提示词不再要求 _.set，反而禁止模型写好感 MVU（防双计）。
     const { phiRules } = mk("settle", false, {
       settleNpc: "才旦", settleKind: "companion_invite",
     });
-    expect(phiRules).toContain("_.set('角色.才旦.好感度'");
-    expect(phiRules).toContain("本轮必须输出 <mvu> 且为正向");
+    expect(phiRules).toContain("禁输出任何好感相关 <mvu>");
+    expect(phiRules).not.toContain("_.set('角色.才旦.好感度'");
+    expect(phiRules).not.toContain("本轮必须输出 <mvu>");
   });
 
   it("未注册 settleKind 的通用 settle：仍是软措辞提示", () => {

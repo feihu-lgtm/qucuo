@@ -45,12 +45,13 @@ describe("拜师 learn_skill 铁律（0728 起改由 11 号位承载，不再在
     },
   );
 
-  it("单调用：铁律+幅度区间+必给措辞，全在 phiRules（11位）", () => {
+  it("单调用：铁律在、好感系统结算禁写 MVU，全在 phiRules（11位）", () => {
     const { phiRules, phiBlock } = mk(false);
     expect(phiRules).toContain("授业传艺铁律");
-    expect(phiRules).toContain("+4~+8");
-    expect(phiRules).toContain("_.add('角色.雪豹.好感度', 6)");
-    expect(phiRules).toContain("本轮必须输出 <mvu> 且为正向增量");
+    // WO-16B：授业好感由系统按绝学/通用定格结算，提示词不再要求幅度取值
+    expect(phiRules).toContain("禁输出任何好感相关 <mvu>");
+    expect(phiRules).not.toContain("_.add('角色.雪豹.好感度'");
+    expect(phiRules).not.toContain("本轮必须输出 <mvu> 且为正向增量");
     // 13 位只剩形状：JSON 骨架在、铁律不在
     expect(phiBlock.content).toContain('"output"');
     expect(phiBlock.content).not.toContain("授业传艺铁律");

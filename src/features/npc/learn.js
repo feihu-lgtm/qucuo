@@ -9,6 +9,8 @@ import { isNpcAngry } from "../../domain/rules/combat/stealSystem.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
 import { appeaseAngryNpc } from "./anger.js";
 import { add, applyWrite, set, updateField } from "../../domain/rules/state/applyWrite.js";
+import { systemAffectionDelta, hasNoAffectionTrack } from "../../domain/rules/state/affection.js";
+import { learnRange } from "../../domain/rules/state/fields.js";
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 
@@ -121,9 +123,19 @@ export function learnNpcSkill(state, npc) {
   const label = decision.isMaster ? "授业绝学" : "江湖通行招";
   const verb = decision.isMaster ? "将平生所学" : "将几手江湖基本功";
 
+  // WO-16B：授业好感 deterministic 硬结算——普通 3/绝学 6（learnRange 第三值），
+  // 经系统账本（魅力修正/日涨上限/0-100 clamp）；兽类无好感轨道跳过。
+  const [learnLo, learnHi, learnBase] = learnRange(decision.isMaster);
+  const affectionWrite = hasNoAffectionTrack(npc) ? null : (prev) => {
+    const charm = state.effectiveSpecial?.魅力 ?? char?.special?.魅力 ?? 5;
+    return systemAffectionDelta(prev, npc.name, learnBase, { charm, time: state.time ?? 0, range: [learnLo, learnHi] }).tree;
+  };
   return {
     changes: {
-      varTree: (prev) => markNpcKnown(prev || {}, npc.name),
+      varTree: (prev) => {
+        const known = markNpcKnown(prev || {}, npc.name);
+        return affectionWrite ? affectionWrite(known) : known;
+      },
       char: applyWrite({ char }, add("char.money", -decision.totalPrice)).state.char,
       skills: [...skills, ...decision.freshSkills],
     },

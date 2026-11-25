@@ -94,32 +94,14 @@ it("passes the band and its reaction to narration", async () => {
     const { phiRules } = buildSysBase(200, {}, "", "", false, "", narrativeOnly, "settle", settleOptions);
     expect(phiRules).toContain("分量：薄礼");
     expect(phiRules).toContain("礼貌致谢");
-    if (!narrativeOnly) expect(phiRules).toContain("1~+2");
+    // WO-16B：好感系统结算后单调用不再提示幅度取值，改为禁写好感 MVU
+    if (!narrativeOnly) expect(phiRules).toContain("禁写好感相关 MVU");
   }
 });
 
-it.each([0, 11])("clamps the gift and preserves the daily cap (already gained %s)", (gained) => {
-  const state = baseState();
-  state.room.npcs = [chieftain, beggar];
-  state.varTree.角色[chieftain.name] = { 好感度: 60 };
-  state.varTree.世界.好感日增 = { dayStamp: 1, gained: { [chieftain.name]: gained } };
-  const { deps } = makeDeps(state, { char: { money: 0 }, delta: { items_rm: ["药丸"] } }, {
-    giftAlreadySettled: true,
-    effectiveSpecialNow: { 魅力: 10 },
-    giftSettlement: { npc: chieftain.name, range: computeGiftWeight(chieftain, { amount: 100 }).range },
-    mvuCommands: [
-      { op: "set", path: `角色.${chieftain.name}.好感度`, value: 100 },
-      { op: "add", path: `角色.${beggar.name}.好感度`, value: 50 },
-      { op: "add", path: `角色.${chieftain.name}.好感度`, value: 50 },
-      { op: "add", path: `角色.${chieftain.name}.好感度`, value: 50 },
-    ],
-  });
-  commitRound(deps);
-  expect(state.varTree.角色[chieftain.name].好感度).toBe(gained ? 61 : 66);
-  expect(state.varTree.角色[beggar.name]?.好感度).toBeUndefined();
-  expect(state.char.money).toBe(30);
-  expect(state.inv).toEqual(["药丸", "药丸"]);
-});
+// WO-16B：原「clamps the gift and preserves the daily cap」契约已废——
+// 送礼好感改为 feature deterministic 硬结算，模型 MVU 一律拦截（见 commitRound.test.js）。
+// clamp/日涨上限语义由 domain/rules/state/affection.test.js 直接钉住。
 
 it.each([{}, { gm: true }, { gm: true, preserveHp: true }, { isTalk: true }])(
   "keeps resolved proposal fields, drop order and silence (%j)", (overrides) => {
