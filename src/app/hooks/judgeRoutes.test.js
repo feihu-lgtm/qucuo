@@ -7,6 +7,16 @@ import { initialNarratorState } from "../../domain/rules/narrator/narrator.js";
 import { emptyBodyProfile } from "../../domain/rules/character/bodyProfile.js";
 import { gameActions, gameStore } from "../../store/gameStore.js";
 import { bindTurnRuntime } from "../../features/turnRuntime.js";
+
+const spySettle = vi.hoisted(() => vi.fn());
+const spyAct = vi.hoisted(() => vi.fn());
+vi.mock("../runtime/gameRuntime.js", async (importOriginal) => {
+  const orig = await importOriginal();
+  return {
+    ...orig,
+    featureCtx: () => ({ ...orig.featureCtx(), settleInBackground: spySettle, act: spyAct }),
+  };
+});
 import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../../infra/turnMonitor.js";
 bindTurnRuntime({ getTurnContext, PHASE, turnMonitor, withTurnContext });
 
@@ -327,6 +337,38 @@ describe("WO-16F-F2a 判官路由集成", () => {
     } finally {
       gameActions.setCompanionState(prevComp || {});
       if (prevRoom) gameActions.setRoom(prevRoom);
+    }
+  });
+
+  it("invite 路由剥 settle 防递归：成功/生气 appease 岔路均不触发二次 settle（返修 blocker）", async () => {
+    const prevComp = gameStore.getState().companionState;
+    const prevRoom = gameStore.getState().room;
+    const prevTree = gameStore.getState().varTree;
+    try {
+      spySettle.mockClear(); spyAct.mockClear();
+      // ① 成功 imported companion：落 companionState 但替身零调用
+      gameActions.setRoom({ name: "鱼定村", npcs: [{ name: "阿岚", imported: true, companionCandidate: true }], exits: [], items: [] });
+      gameActions.setCompanionState({});
+      const ok = executeJudgeRoutes([{ kind: "invite", target: "阿岚", item: "无", text: "邀阿岚同行" }]);
+      expect(ok.receipts[0].ok).toBe(true);
+      expect(ok.receipts[0].text).toContain("已应允同行");
+      expect(Object.keys(gameStore.getState().companionState || {}).some((k) => gameStore.getState().companionState[k]?.unlocked)).toBe(true);
+      expect(spySettle).not.toHaveBeenCalled();
+      expect(spyAct).not.toHaveBeenCalled();
+
+      // ② 生气 NPC：appease 岔路不判成功、递归计数仍为 0
+      gameActions.setVarTree({ 角色: { 才旦: { 生气状态: { active: true } } } });
+      gameActions.setRoom({ name: "鱼定村", npcs: [{ name: "才旦", imported: true, companionCandidate: true }], exits: [], items: [] });
+      gameActions.setCompanionState({});
+      const angry = executeJudgeRoutes([{ kind: "invite", target: "才旦", item: "无", text: "邀才旦同行" }]);
+      expect(angry.receipts[0].ok).toBe(false);
+      expect(Object.keys(gameStore.getState().companionState || {}).some((k) => gameStore.getState().companionState[k]?.unlocked)).toBe(false);
+      expect(spySettle).not.toHaveBeenCalled();
+      expect(spyAct).not.toHaveBeenCalled();
+    } finally {
+      gameActions.setCompanionState(prevComp || {});
+      if (prevRoom) gameActions.setRoom(prevRoom);
+      if (prevTree) gameActions.setVarTree(prevTree);
     }
   });
 
