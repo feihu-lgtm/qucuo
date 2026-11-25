@@ -5,6 +5,7 @@ import { featureCtx } from "../runtime/gameRuntime.js";
 import { gameStore, getGameEpoch, isGameEpochStale, useGameStore } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import { applyInboundLetter, dueInboundLetters, findNpcObject, inboundFallbackLine, markAllLettersRead } from "../../features/pigeon/inbound.js";
+import { pactLetterView } from "../../features/pigeon/pactLetter.js";
 import { createWebAi } from "../../engine/ports/ai.js";
 import { withAI } from "../../engine/ports/withAI.js";
 import "../../domain/rules/prompt/calls/sideCalls.js";
@@ -29,7 +30,7 @@ export function useNpcLetters({ apiCfg }) {
     try {
       const { ok, text: aiText } = await withAI("pigeon.inbound", {
         state,
-        letter: { ...letter, npc },
+        letter: { ...letter, npc, pactView: pactLetterView(state, letter, npc) },
         preset: state.preset,
         trace: (paths) => {
           const turn = turnMonitor.start("NPC 来信", { background: true, source: "background-ai" });
