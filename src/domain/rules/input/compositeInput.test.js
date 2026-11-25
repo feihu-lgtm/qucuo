@@ -56,3 +56,22 @@ describe("buildCompositeNote", () => {
     expect(buildCompositeNote("单打独斗一句话")).toBe("");
   });
 });
+
+describe("WO-16F-F2c isTradeInput 交易意向不进免费纯搭话", () => {
+  it("「问问老孙价格」「老孙，这个多少钱」分流 action 不免费", () => {
+    expect(routeAutoInput("问问老孙价格", []).kind).toBe("action");
+    expect(routeAutoInput("老孙，这个多少钱", []).kind).toBe("action");
+    expect(routeAutoInput("掌柜，拿货看看", []).kind).toBe("action");
+  });
+  it("「聊聊家常」仍 talk；送礼排除不回归", () => {
+    expect(routeAutoInput("聊聊家常", []).kind).toBe("talk");
+    expect(routeAutoInput("把这壶酒送给老孙", []).kind).toBe("action");
+  });
+  it("元问题不误判：isTradeInput 排除概念问答", async () => {
+    const { isTradeInput } = await import("../prompt/inputIntent.js");
+    expect(isTradeInput("价格是什么")).toBe(false);
+    expect(isTradeInput("什么叫交易")).toBe(false);
+    expect(isTradeInput("这个多少钱")).toBe(true);
+    expect(isTradeInput("问问价格")).toBe(true);
+  });
+});

@@ -167,6 +167,9 @@ it("WO-16F-F2c：deferredIntents 在 playTurn resolve 后映射 runDeferred 消�
     expect(runDeferred).toHaveBeenCalledTimes(1);
     expect(runDeferred.mock.calls[0][0]).toMatchObject({ kind: "切磋", target: "铁匠" });
     expect(runDeferred.mock.calls[0][1]).toBe(true);
+    // WO-16F-F2c Review 修：deferred 消费是同一回合叙事后续接，必须 skipCaptureUndo——
+    // 不得覆盖本回合开头的撤销检查点（按钮老路无第三参照旧捕获）。
+    expect(runDeferred.mock.calls[0][2]).toEqual({ skipCaptureUndo: true });
   } finally {
     clearInterval(waitTimerRef.current);
     turnMonitor.clear();

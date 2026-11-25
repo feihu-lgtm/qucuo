@@ -241,7 +241,7 @@ export function useTurn({
         const kind = KIND_MAP[first.kind];
         if (kind && !isStale()) {
           try {
-            intentRouterRef.current?.runDeferred?.({ kind, target: first.target, text: first.text || "" }, true);
+            intentRouterRef.current?.runDeferred?.({ kind, target: first.target, text: first.text || "" }, true, { skipCaptureUndo: true });
           } catch (deferredError) {
             traceStep(_trace, "交互意向", "fail", `${first.kind}→${first.target} 接入口异常：${deferredError?.message || deferredError}`);
           }

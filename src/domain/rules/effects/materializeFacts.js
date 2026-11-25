@@ -370,6 +370,16 @@ export function materializeFacts(state, facts, compiledWarrants) {
           }
           if (result.note) logs.push({ t: "sys", text: `  ${result.note}` });
         }
+        // WO-16F-F3 赔罪奏效消气：生气状态.active 置 false（与 commitRound 信号字段同语义，
+        // 但由判官事实系统签发而非模型）。
+        if (fact.angerRelease) {
+          patches.push({
+            op: "merge",
+            path: ["varTree", "角色", fact.npc, "生气状态"],
+            value: (prev) => (prev && typeof prev === "object" ? { ...prev, active: false } : { active: false, reason: "", turnsLeft: 0, attempts: prev?.attempts || [] }),
+            factId: fact.id,
+          });
+        }
         // WO-16F-F1 steal 败露生气标记：按现有 varTree 生气状态最小字段落账。
         if (fact.anger && fact.anger.active) {
           patches.push({
@@ -394,7 +404,20 @@ export function materializeFacts(state, facts, compiledWarrants) {
               op: "merge",
               path: ["varTree", "角色", fact.npc, "心账"],
               // 单人 16 条上限淘汰最旧（roadmap，成本低顺手做）
-              value: (prev) => capHeartLedgerEntries([...(Array.isArray(prev) ? prev : []), dedupeHeartLedgerId(entry, prev)]),
+              value: (prev) => {
+              let list = Array.isArray(prev) ? [...prev] : [];
+              // WO-16F-F3 赔罪奏效：消解最近一条未了「怨」——不删原文，打 resolvedTurn/resolved
+              // 标记，幂等只一条（已 resolved 的不重复标）。
+              if (fact.grudgeResolve) {
+                for (let i = list.length - 1; i >= 0; i--) {
+                  if (list[i]?.tag === "怨" && !list[i]?.resolved) {
+                    list[i] = { ...list[i], resolved: true, resolvedTurn: turn };
+                    break;
+                  }
+                }
+              }
+              return capHeartLedgerEntries([...list, dedupeHeartLedgerId(entry, prev)]);
+            },
               factId: fact.id,
             });
           }

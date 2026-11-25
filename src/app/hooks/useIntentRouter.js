@@ -25,10 +25,19 @@ export function useIntentRouter(routerRef, {
   apiCfg, act, addLog, dispatchCommand, handleNpcDuel, handleNpcTrade, setActiveTarget, setDuelPending, setTradingShop,
 }) {
   useEffect(() => {
-    function runDeferred(step, single) {
+    // WO-16F-F2c：第三参 opts 透传 handler（如 skipCaptureUndo）——判官链叙事后
+    // 接续的交互不是新玩家动作；旧调用无第三参，行为零变化。
+    function runDeferred(step, single, opts = {}) {
       const npc = findStepNpc(gameStore.getState(), step);
       if (step.kind === ACTION_KINDS.MOVE) return act(DIR_CMD[step.direction] || step.direction, [], { keepUndo: true, intentSkip: true });
-      if (step.kind === ACTION_KINDS.BUY && single) return handleNpcTrade(npc);
+      // BUY single 守卫：对象不在场/查无此人时不喂 null 进 handler
+      if (step.kind === ACTION_KINDS.BUY && single) {
+        if (!npc) {
+          addLog?.([{ t: "sys", text: `  ${step.target || "对方"}不在眼前，交易无从谈起。` }]);
+          return undefined;
+        }
+        return handleNpcTrade(npc, opts);
+      }
       if (step.kind === ACTION_KINDS.BUY && npc) {
         const result = tradeWithNpc(gameStore.getState(), npc);
         if (result.shop) {
@@ -38,7 +47,7 @@ export function useIntentRouter(routerRef, {
         return applyResult(featureCtx(), result);
       }
       if (step.kind !== ACTION_KINDS.DUEL || !npc) return undefined;
-      if (single) return handleNpcDuel(npc);
+      if (single) return handleNpcDuel(npc, opts);
       return dispatchCommand(KIND_COMMAND[step.kind], () => applyResult(featureCtx(), () => {
         applyResult(featureCtx(), recognizeNpc(gameStore.getState(), npc));
         setActiveTarget(npc.name);

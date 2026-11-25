@@ -96,6 +96,17 @@ export function isGiftInput(rawInput) {
   return !/(谁|是否|是不是|何人|咋|怎么)[^，。！？]*?(送给|赠予|赠送|递给)/.test(input);
 }
 
+// WO-16F-F2c：交易/问价是硬交互意向——「问问老孙价格」带明显交互动词，
+// 不能因「问问」二字被当免费纯搭话吞掉（判官链下 turn.intake 根本不跑，
+// trade 动作从源头消失）。词面保守：只排明显交互动词，元问题/复杂否定先不做。
+const TRADE_RE = /买|卖|交易|问价|价格|价钱|多少钱|开价|拿货看看|什么货|进货|出货/;
+export function isTradeInput(rawInput) {
+  const input = (rawInput || "").trim();
+  if (!TRADE_RE.test(input)) return false;
+  // 元问题排除：「价格是什么/什么叫交易」这类概念问答不是交易意向。
+  return !/(是什么|什么意思|什么叫)/.test(input);
+}
+
 export function classifyIntent(rawInput) {
   const s = (rawInput || "").trim();
   if (!s) return INTENT.UNKNOWN;

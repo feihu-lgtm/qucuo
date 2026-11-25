@@ -73,6 +73,20 @@ describe("WO-16H-H1 11号位十二段拼装顺序", () => {
     expect(inChat.indexOf("MARK_GROUPTALK_BLOCK")).toBeLessThan(inChat.indexOf("成文铁律"));
   });
 
+  it("WO-16F-F3：判官激活的 appease settle——settle inChat 也接判官定案单", () => {
+    // settle 分支不含 MARK_CTX_STATE（ctx 不注入），直接全量检索消息数组
+    const withJudge = buildMainCallPayload(null, true, makeDeps({
+      isSettle: true, settleNpc: "八云", settleKind: "appease",
+      judgeRuleBlock: "MARK_JUDGE_BLOCK",
+    }));
+    expect(JSON.stringify(withJudge.messages || withJudge.chatMessages)).toContain("MARK_JUDGE_BLOCK");
+    // 普通非判官 settle 仍不收尾章税
+    const plain = buildMainCallPayload(null, true, makeDeps({
+      isSettle: true, settleNpc: "八云", settleKind: "gift",
+    }));
+    expect(JSON.stringify(plain.messages || plain.chatMessages)).not.toContain("判官定案");
+  });
+
   it("尾章指引三选一：判官块优先于群聊块；两者皆无则不留尾巴", () => {
     const both = inChatOf(buildMainCallPayload(null, true, makeDeps({
       judgeRuleBlock: "MARK_JUDGE_BLOCK", groupTalkRuleBlock: "MARK_GROUPTALK_BLOCK",
