@@ -11,15 +11,14 @@ function state(overrides = {}) {
       { name: "李掌柜", brief: "杂货铺老板" },
       { name: "路人甲" },
     ] },
-    innerRoomName: "茶馆",
+    innerRoomName: "一楼客厅",
     varTree: {
       世界: {
         宿敌谱: {
           黑风寨: { entries: { a: { id: "a", name: "麻三", faction: "黑风寨", tier: 2, status: "active", grudge: 2, scars: [], firstTurn: 1, lastTurn: 1 } } },
         },
         容器: {
-          chest_1: { label: "墙角旧木箱", looted: false },
-          chest_2: { label: "破柜", looted: true },
+          "天都镇/一楼客厅": { 铁柜: { collapsed: true } },
         },
       },
       领域: {
@@ -75,12 +74,12 @@ describe("WO-24B buildWorldPrepInput 输入裁剪", () => {
   it("在场 NPC/未翻容器/宿敌/近期事实正确裁剪", () => {
     const out = buildWorldPrepInput(state());
     expect(out.place).toBe("天都镇");
-    expect(out.innerRoom).toBe("茶馆");
+    expect(out.innerRoom).toBe("一楼客厅");
     expect(out.day).toBe(2);
     expect(out.presentNpcsText).toContain("李掌柜");
-    // 未翻容器只有 chest_1（chest_2 已翻）
-    expect(out.unlootedContainersText).toContain("chest_1");
-    expect(out.unlootedContainersText).not.toContain("chest_2");
+    // 容器按内容表声明+collapsed：铁柜已坍缩不进、书桌未翻进（初审裁决口径）
+    expect(out.unlootedContainersText).toContain("书桌");
+    expect(out.unlootedContainersText).not.toContain("铁柜");
     expect(out.nemesisSummaryText).toContain("麻三");
     expect(out.recentFactsText).toContain("雪山派");
     expect(out.recentFactsText.startsWith("山茶开了")).toBe(true); // 最新在前
@@ -99,7 +98,7 @@ describe("WO-24B buildWorldPrepInput 输入裁剪", () => {
   it("坏形状不炸：无容器账/无宿敌谱/无事实/空 state", () => {
     expect(() => buildWorldPrepInput({})).not.toThrow();
     expect(() => buildWorldPrepInput(null)).not.toThrow();
-    const bare = buildWorldPrepInput({ varTree: { 世界: { 容器: "oops" }, 领域: { 事实: [1, 2] } }, room: {} });
+    const bare = buildWorldPrepInput({ varTree: { 世界: { 容器: "oops" }, 领域: { 事实: [1, 2] } }, room: {}, innerRoomName: null });
     expect(bare.unlootedContainersText).toBe("");
     expect(bare.recentFactsText).toBe("");
   });

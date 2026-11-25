@@ -5,6 +5,8 @@
 import { definePrompt } from "../registry.js";
 import { flattenNemeses } from "../../nemesis/nemesisLines.js";
 import { ITEM_CATEGORY } from "../../economy/equipment.js";
+import { resolveContainerContext } from "../../world/containers.js";
+import { getInnerRoom } from "../../map/innerMap.js";
 
 const QUALITY_ENUM = ["白", "绿", "蓝", "紫"]; // 最高紫——不给神兵绝学
 const CATEGORY_ENUM = Object.values(ITEM_CATEGORY);
@@ -26,13 +28,19 @@ export function buildWorldPrepInput(state, { maxQualityHint = "紫" } = {}) {
     .slice(0, 5)
     .map((n) => `${n.name}${n.brief ? `（${String(n.brief).slice(0, 20)}）` : ""}`);
 
-  const containersRaw = varTree?.世界?.容器;
-  const unlooted = containersRaw && typeof containersRaw === "object"
-    ? Object.entries(containersRaw)
-        .filter(([, c]) => c && typeof c === "object" && !c.looted)
-        .slice(0, 4)
-        .map(([id, c]) => `${id}${c.label ? `（${String(c.label).slice(0, 12)}）` : ""}`)
-    : [];
+  // 容器名单（初审裁决口径）：未翻容器不预先写入 varTree，必须结合房间内容表声明——
+  // resolveContainerContext 一站解析（containerPlace=据点/内层房），
+  // 取 containerView 里 collapsed !== true 的容器名，cap 4。
+  const { containerView } = resolveContainerContext({
+    districtName: room.name,
+    innerRoomName: state?.innerRoomName ?? null,
+    varTree,
+    roomDefLookup: getInnerRoom,
+  });
+  const unlooted = Object.entries(containerView || {})
+    .filter(([, c]) => c && c.collapsed !== true)
+    .slice(0, 4)
+    .map(([name]) => name);
 
   const nemesisLines = flattenNemeses(varTree)
     .filter((e) => e.status === "active")
