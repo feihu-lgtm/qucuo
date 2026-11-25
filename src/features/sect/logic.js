@@ -6,6 +6,20 @@ import { markNpcAsKnown } from "../../domain/rules/npc/npcAwareness.js";
 import { factionRepOf, formatRepChanges, grantFactionRep } from "../../domain/rules/economy/factionRep.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
 import { getBuildingIdForInnerRoom } from "../../domain/rules/map/innerMap.js";
+import { systemAffectionDelta, hasNoAffectionTrack } from "../../domain/rules/state/affection.js";
+import { learnRange } from "../../domain/rules/state/fields.js";
+import { selectEffectiveStats } from "../stats/logic.js";
+
+// WO-16B：入门拜师走 learn_skill settle——提示词已声明授业好感系统定格，
+// 这里按绝学档（isMaster）deterministic 补账，与 learnNpcSkill 同口径。
+function sectAffectionWrite(state, master) {
+  return (prev) => {
+    if (hasNoAffectionTrack({ name: master })) return prev;
+    const [lo, hi, base] = learnRange(true);
+    const charm = selectEffectiveStats(state).effectiveSpecialNow?.魅力 ?? 5;
+    return systemAffectionDelta(prev, master, base, { charm, time: state.time ?? 0, range: [lo, hi] }).tree;
+  };
+}
 import {
   DEFECT_REP, SECT_MEMBER_FLAGS, checkFactionEntry, currentSectOf, defectedFlag, factionEntryForBuilding, hasDefected, sectMasterOf, sectTokenOf,
 } from "../../domain/rules/character/factionEntry.js";
@@ -22,7 +36,8 @@ function joinFactionSect(state, entry, now = Date.now()) {
     changes: {
       inv: (inv = []) => [...inv.filter((it) => it !== status.trialItem), ...items],
       flags: (flags = []) => (flags.includes(entry.flag) ? flags : [...flags, entry.flag]),
-      varTree: (prev) => markNpcAsKnown(grantFactionRep(prev, { [sect]: entry.repBonus }).varTree, master),
+      varTree: (prev) => sectAffectionWrite(state, master)(
+        markNpcAsKnown(grantFactionRep(prev, { [sect]: entry.repBonus }).varTree, master)),
     },
     logs: [
       ...(status.trialItem ? [{ t: "sys", text: `  （你含下一份${status.trialItem.name}，硬扛下了那碗酒）` }] : []),
@@ -59,7 +74,8 @@ export function joinSect(state) {
       char: updateField("char", add("char.money", -SECT_ENTRY.tuition)),
       inv: updateField("inv", (inv) => set("inv", [...inv, token])),
       flags: updateField("flags", (flags) => set("flags", flags.includes(SECT_ENTRY.flag) ? flags : [...flags, SECT_ENTRY.flag])),
-      varTree: prev => markNpcAsKnown(grantFactionRep(prev, { [SECT_ENTRY.sect]: SECT_ENTRY.repBonus }).varTree, SECT_ENTRY.master),
+      varTree: prev => sectAffectionWrite(state, SECT_ENTRY.master)(
+        markNpcAsKnown(grantFactionRep(prev, { [SECT_ENTRY.sect]: SECT_ENTRY.repBonus }).varTree, SECT_ENTRY.master)),
     },
     logs: [
       { t: "sys", text: `  （奉上束脩银${SECT_ENTRY.tuition}两，得雪山派弟子令牌 · 内堂之后的弟子别院已开，${formatRepChanges(grantFactionRep(state.varTree, { [SECT_ENTRY.sect]: SECT_ENTRY.repBonus }).applied)}）` },

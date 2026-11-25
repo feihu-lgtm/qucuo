@@ -44,6 +44,27 @@ describe("systemAffectionDelta 系统好感结算", () => {
   });
 });
 
+describe("systemAffectionDelta 负增量（WO-16A talk forceful 复用预留）", () => {
+  it("100 分扣 5 落到 95，不进日涨账、不吃魅力放大", () => {
+    const tree = { 角色: { 甲: { 好感度: 100 } } };
+    const { delta, tree: next } = systemAffectionDelta(tree, "甲", -5, { charm: 10, time: 0 });
+    expect(delta).toBe(-5);
+    expect(next.角色.甲.好感度).toBe(95);
+    expect(next.世界?.好感日增).toBeUndefined();
+  });
+  it("0 分扣不出负数：clamp 到 0、实际 delta 为 0", () => {
+    const { delta, tree } = systemAffectionDelta({}, "甲", -1, { charm: 5, time: 0 });
+    expect(delta).toBe(0);
+    expect(tree.角色?.甲).toBeUndefined();
+  });
+  it("3 分扣 5 实际只落 -3", () => {
+    const tree = { 角色: { 甲: { 好感度: 3 } } };
+    const { delta, tree: next } = systemAffectionDelta(tree, "甲", -5, { charm: 5, time: 0 });
+    expect(delta).toBe(-3);
+    expect(next.角色.甲.好感度).toBe(0);
+  });
+});
+
 describe("systemAffectionPin 邀同行钉账", () => {
   it("从无到有钉到 45", () => {
     const { tree } = systemAffectionPin({}, "墨团", 45);
@@ -60,7 +81,8 @@ describe("hasNoAffectionTrack 无好感轨道", () => {
   it("兽类/forbidden/缄默跳过", () => {
     expect(hasNoAffectionTrack({ beast: true })).toBe(true);
     expect(hasNoAffectionTrack({ intimacy: { forbidden: true } })).toBe(true);
-    expect(hasNoAffectionTrack({ cannotSpeak: true })).toBe(true);
     expect(hasNoAffectionTrack({ name: "才旦" })).toBe(false);
+    // 「不能说话」≠无好感轨道：哑人/人形缄默伙伴仍有情感关系
+    expect(hasNoAffectionTrack({ cannotSpeak: true })).toBe(false);
   });
 });

@@ -15,8 +15,16 @@ export function systemAffectionDelta(tree, npc, baseDelta, { charm = 5, time = 0
   if (range) delta = clamp(delta, range[0], range[1]);
   const before = tree?.角色?.[npc]?.好感度;
   const base = typeof before === "number" ? before : 0;
+  // 负增量语义（WO-16A talk forceful 等复用）：不吃魅力放大、不进日涨账，
+  // 结果 clamp 到 0（好感不能为负），返回实际落地的 delta。
+  if (baseDelta < 0) {
+    const target = Math.max(0, base + baseDelta);
+    const actual = target - base;
+    if (actual === 0) return { delta: 0, before: base, tree, note: "好感无实质变化" };
+    return { delta: actual, before: base, tree: writePath(tree, ["角色", npc, "好感度"], target), note: null };
+  }
   if (delta > 0) delta = Math.min(delta, 100 - base);
-  if (delta <= 0) return { delta, before: base, tree, note: delta <= 0 ? "好感无实质变化" : null };
+  if (delta <= 0) return { delta, before: base, tree, note: "好感无实质变化" };
   const { daily } = AFFECTION_RULES.mvu;
   const dayStamp = Math.floor((Number(time) || 0) / 24);
   const last = tree?.世界?.好感日增;
@@ -34,12 +42,15 @@ export function systemAffectionDelta(tree, npc, baseDelta, { charm = 5, time = 0
 export function systemAffectionPin(tree, npc, target) {
   const before = tree?.角色?.[npc]?.好感度;
   const base = typeof before === "number" ? before : 0;
-  if (base >= target) return { delta: 0, before: base, tree };
-  const next = writePath(tree, ["角色", npc, "好感度"], clamp(target, 0, 100));
-  return { delta: target - base, before: base, tree: next };
+  const pinned = clamp(target, 0, 100);
+  if (base >= pinned) return { delta: 0, before: base, tree };
+  const next = writePath(tree, ["角色", npc, "好感度"], pinned);
+  return { delta: pinned - base, before: base, tree: next };
 }
 
 // 无好感轨道判定口径与 commitRound 搭话跳过一致：intimacy.forbidden 或兽类。
 export function hasNoAffectionTrack(npc) {
-  return !!(npc?.intimacy?.forbidden || npc?.beast || npc?.cannotSpeak);
+  // 口径与 commitRound 搭话跳过一致：intimacy.forbidden 或兽类。
+  // 「不能说话」≠无好感轨道——哑人/人形缄默伙伴仍有情感关系。
+  return !!(npc?.intimacy?.forbidden || npc?.beast);
 }

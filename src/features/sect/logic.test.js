@@ -27,7 +27,8 @@ describe("sect logic", () => {
     expect(gameStore.getState().inv).toEqual([result.logs[1].item]);
     expect(result.logs[1].item).toMatchObject({ name: SECT_ENTRY.keyName, quality: "绿", category: "misc" });
     expect(tree.世界.已认识人物).toContain(SECT_ENTRY.master);
-    expect(tree.角色[SECT_ENTRY.master].好感度).toBe(30);
+    // WO-16B：拜师授业好感 deterministic 硬结算（绝学档 +6）——30 入门门槛基础上 +6
+    expect(tree.角色[SECT_ENTRY.master].好感度).toBe(36);
     expect(result.logs.map(l => l.t)).toEqual(["sys", "loot"]);
     expect(jotNote).toHaveBeenCalledWith(result.note);
     expect(act).toHaveBeenCalledWith(result.settle, [], {

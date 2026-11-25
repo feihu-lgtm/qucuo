@@ -14,6 +14,7 @@ import { appeaseAngryNpc, recordNpcAttempt } from "./anger.js";
 import { add, applyWrite, set, updateField } from "../../domain/rules/state/applyWrite.js";
 import { giftRange } from "../../domain/rules/state/fields.js";
 import { systemAffectionDelta, hasNoAffectionTrack } from "../../domain/rules/state/affection.js";
+import { selectEffectiveStats } from "../stats/logic.js";
 import { forceAdvanceQuest } from "../quest/logic.js";
 import { soupKitchenRepGain } from "../../domain/rules/economy/soupKitchen.js";
 import { factionTurnInOf } from "../../domain/rules/economy/factionTurnIn.js";
@@ -115,7 +116,7 @@ export function giftNpc(state, npc, item, now = Date.now()) {
     const range = weight?.range ?? giftRange(giftInfo.quality);
     const preferHit = giftInfo.preferLabel && giftInfo.categoryLabel === giftInfo.preferLabel;
     const baseDelta = preferHit ? range[1] : Math.round((range[0] + range[1]) / 2);
-    const charm = state.effectiveSpecial?.魅力 ?? state.char?.special?.魅力 ?? 5;
+    const charm = selectEffectiveStats(state).effectiveSpecialNow?.魅力 ?? 5;
     changes.varTree = composeUpdates(changes.varTree, (prev) =>
       systemAffectionDelta(prev, npc.name, baseDelta, { charm, time: state.time ?? 0, range }).tree);
   }
@@ -229,7 +230,7 @@ export function giftSilver(state, npc, amount, now = Date.now()) {
         if (!angry && !hasNoAffectionTrack(npc)) {
           const range = computeGiftWeight(npc, { amount })?.range;
           const baseDelta = range ? Math.round((range[0] + range[1]) / 2) : 2;
-          const charm = state.effectiveSpecial?.魅力 ?? state.char?.special?.魅力 ?? 5;
+          const charm = selectEffectiveStats(state).effectiveSpecialNow?.魅力 ?? 5;
           tree = systemAffectionDelta(tree, npc.name, baseDelta, { charm, time: state.time ?? 0, range }).tree;
         }
         if (!alms) return tree;

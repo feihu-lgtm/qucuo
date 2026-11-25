@@ -11,6 +11,8 @@ import { allContent } from "../../domain/rules/content/registry.js";
 import { unlockImportedCompanion, unlockFollowerCompanion } from "../../domain/rules/companion/companion.js";
 import { ocSignatureMoves } from "../../domain/rules/companion/ocKungfu.js";
 import { markNpcAsKnown } from "../../domain/rules/npc/npcAwareness.js";
+import { systemAffectionPin, hasNoAffectionTrack } from "../../domain/rules/state/affection.js";
+import { AFFECTION_RULES } from "../../domain/rules/state/fields.js";
 import { removeNpc } from "../../domain/rules/npc/roomNpcs.js";
 import { isNpcAngry } from "../../domain/rules/combat/stealSystem.js";
 
@@ -166,7 +168,13 @@ export function applyRecruit(state, adventurer, effect) {
     changes: {
       companionState: effect.companionState,
       ...(effect.moneyDelta ? { char: (c) => ({ ...c, money: Math.max(0, (c.money || 0) + effect.moneyDelta) }) } : {}),
-      varTree: (prev) => markNpcAsKnown(prev || {}, adventurer.name),
+      varTree: (prev) => {
+        const known = markNpcAsKnown(prev || {}, adventurer.name);
+        // WO-16B：付费招募同为 companion_invite settle——提示词已声明好感 45
+        // 系统落定，这里必须把账补齐（兽类/forbidden 跳过）。
+        if (hasNoAffectionTrack(adventurer)) return known;
+        return systemAffectionPin(known, adventurer.name, AFFECTION_RULES.companion.example).tree;
+      },
       room: (prev) => ({
         ...prev,
         npcs: removeNpc(prev.npcs, (entry) => entry.name === adventurer.name || (!!effect.followerName && entry.name === effect.followerName)),

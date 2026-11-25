@@ -11,6 +11,7 @@ import { appeaseAngryNpc } from "./anger.js";
 import { add, applyWrite, set, updateField } from "../../domain/rules/state/applyWrite.js";
 import { systemAffectionDelta, hasNoAffectionTrack } from "../../domain/rules/state/affection.js";
 import { learnRange } from "../../domain/rules/state/fields.js";
+import { selectEffectiveStats } from "../stats/logic.js";
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 
@@ -127,7 +128,7 @@ export function learnNpcSkill(state, npc) {
   // 经系统账本（魅力修正/日涨上限/0-100 clamp）；兽类无好感轨道跳过。
   const [learnLo, learnHi, learnBase] = learnRange(decision.isMaster);
   const affectionWrite = hasNoAffectionTrack(npc) ? null : (prev) => {
-    const charm = state.effectiveSpecial?.魅力 ?? char?.special?.魅力 ?? 5;
+    const charm = selectEffectiveStats(state).effectiveSpecialNow?.魅力 ?? 5;
     return systemAffectionDelta(prev, npc.name, learnBase, { charm, time: state.time ?? 0, range: [learnLo, learnHi] }).tree;
   };
   return {
