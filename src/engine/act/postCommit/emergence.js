@@ -15,6 +15,9 @@ export function materializeEmergence({ p, luck, innerRoomName, npcState }) {
       varTree: (prev) => clearRumor(prev, p.emergedNpcName),
       room: (r) => {
         const fixed = ensureNpcCombatData({
+          // 合并次序：r.npcs 同名者（重逢）最优先，其次 p.room.npcs 里 runTurn 并入的
+          // 最小形状——brief 只能从这里来，否则 upsert 登场者名片恒空。
+          ...(p.room?.npcs?.find(n => n?.name === p.emergedNpcName) || {}),
           ...(r.npcs.find(n => n.name === p.emergedNpcName) || {}),
           // upsert 路径下原名单里没有此人，名字必须显式带上
           name: p.emergedNpcName,

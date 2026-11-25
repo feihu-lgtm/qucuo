@@ -37,7 +37,10 @@ describe("涌现复接管线·真实 writeRoom 分支", () => {
     expect(vt2.世界.传闻人物?.磨坊阿福).toBeUndefined();
     // materializeEmergence upsert：当前 room.npcs 没有此人也能进屋
     const roomAfterEm = em.changes.room(BASE_ROOM);
-    expect(roomAfterEm.npcs.some((n) => n.name === "磨坊阿福")).toBe(true);
+    const emerged = roomAfterEm.npcs.find((n) => n.name === "磨坊阿福");
+    expect(emerged).toBeTruthy();
+    // brief 来自 p.room.npcs 最小形状（description 前 15 字），不得为空
+    expect(emerged.brief).toBe("磨坊学徒，憨厚老实");
     expect(roomAfterEm.npcs.some((n) => n.name === "才旦")).toBe(true);
     // writeRoom 固定地图分支：名单锁定 r.npcs，只回填战斗数据——登场者必须活下来
     const wr = writeRoom({
