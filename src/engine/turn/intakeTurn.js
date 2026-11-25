@@ -179,6 +179,14 @@ export function shouldSkipIntakeForTalk(isTalk, questCandidates) {
   return !!isTalk && !(questCandidates && questCandidates.length > 0);
 }
 
+// S2 补洞：纯搭话本地合成 stance 恒 casual——辱骂/羞辱若跳过前哨会反签 +1 好感。
+// 命中敌意提示时不跳前哨，交给模型按 INTAKE_SYS 的 hostile 定义裁定。
+// 本正则只做「要不要多听一遍」的提示，绝不直接决定 stance：误报代价只是一次听意调用。
+const HOSTILE_HINT = /骂|羞辱|混蛋|废物|畜生|滚|该死|找死|威胁|宰了|杀了你|教训你|无耻|下流|阴险|黑心/;
+export function hasHostileHint(text) {
+  return HOSTILE_HINT.test(String(text || ""));
+}
+
 // WO-16G-G2 三级分流：纯搭话跳过前哨 AI 调用，本地合成听意单直接进纯函数判官。
 // 形状与 normalizeIntakeResult 输出完全一致（12 字段全 required），判官无感；
 // target 沿用上游 talkTarget 判定，查不出填「无」——judgeTurn 按白名单照常裁小额社交事实。

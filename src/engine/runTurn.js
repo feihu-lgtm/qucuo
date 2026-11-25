@@ -17,7 +17,7 @@ import { buildCausalBudgetInput } from "../domain/rules/judge/budgetInput.js";
 import { getInnerRoom } from "../domain/rules/map/innerMap.js";
 import { resolveContainerContext } from "../domain/rules/world/containers.js";
 import { resolvePrepItemsForJudge, buildPrepMaterialBlock } from "../domain/rules/prep/prepConsumption.js";
-import { buildIntakeUserContent, normalizeIntakeResult, synthesizeTalkIntake, shouldSkipIntakeForTalk } from "./turn/intakeTurn.js";
+import { buildIntakeUserContent, normalizeIntakeResult, synthesizeTalkIntake, shouldSkipIntakeForTalk, hasHostileHint } from "./turn/intakeTurn.js";
 import { buildExtractionCfg } from "../domain/rules/prompt/structuredCallCfg.js";
 import { verifySealAndMaterialize } from "../domain/rules/effects/sealVerifier.js";
 import { buildJudgeRuleBlock, buildGroupTalkRuleBlock, parseGroupTalkSeal } from "../domain/rules/judge/judgeRuleBlock.js";
@@ -311,7 +311,7 @@ async function runTurnSteps(ctx, cmd, opts) {
           }],
           proposals: [],
         };
-      } else if (shouldSkipIntakeForTalk(isTalk, questCandidates)) {
+      } else if (shouldSkipIntakeForTalk(isTalk, questCandidates) && !hasHostileHint(cmd)) {
         intakeResult = synthesizeTalkIntake(cmd, deps.talkTarget);
       } else {
         const intakeContent = buildIntakeUserContent({

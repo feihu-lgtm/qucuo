@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildIntakeUserContent, normalizeIntakeResult, synthesizeTalkIntake, shouldSkipIntakeForTalk } from "./intakeTurn.js";
+import { hasHostileHint, buildIntakeUserContent, normalizeIntakeResult, synthesizeTalkIntake, shouldSkipIntakeForTalk } from "./intakeTurn.js";
 import { getPromptDef } from "../../domain/rules/prompt/registry.js";
 import { INTAKE_JSON_SCHEMA } from "../../domain/rules/judge/intakeSchema.js";
 
@@ -231,5 +231,17 @@ describe("buildIntakeUserContent WO-16G 喂料", () => {
       questProgress: { heifengzhai_2_meimeidexiaoxi: { status: "completed" } },
     });
     expect(unlockedOut).toContain("w(西→黑风寨)");
+  });
+});
+
+describe("S2 hasHostileHint 敌意提示", () => {
+  it("辱骂/羞辱/威胁类文本命中", () => {
+    expect(hasHostileHint("当众羞辱你这黑心掌柜")).toBe(true);
+    expect(hasHostileHint("你这个混蛋")).toBe(true);
+    expect(hasHostileHint("再啰嗦就宰了你")).toBe(true);
+  });
+  it("平常搭话不误报", () => {
+    expect(hasHostileHint("掌柜的近来可好")).toBe(false);
+    expect(hasHostileHint("请问去雪山怎么走")).toBe(false);
   });
 });
