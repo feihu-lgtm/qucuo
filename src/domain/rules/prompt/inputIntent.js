@@ -99,25 +99,17 @@ export function isGiftInput(rawInput) {
 // WO-16F-F2c：交易/问价是硬交互意向——「问问老孙价格」带明显交互动词，
 // 不能因「问问」二字被当免费纯搭话吞掉（判官链下 turn.intake 根本不跑，
 // trade 动作从源头消失）。词面保守：只排明显交互动词，元问题/复杂否定先不做。
-const TRADE_RE = /买|卖|交易|问价|价格|价钱|多少钱|开价|拿货看看|什么货|进货|出货/;
-// 「买卖」的话题用法：所有格（村里的买卖）或闲谈动词引出（聊聊/谈谈买卖）——
-// 此时它是谈资不是交易请求；而「做笔买卖」的买卖是交易本体，不能剥。
-const TRADE_TOPIC_RE = /(?:的买卖|(?:聊|谈|说|唠|讲|听)[^，。！？]{0,6}买卖)/;
+// 保守口径（Review 词面打地鼠收口裁决）：只认无歧义动作线索——
+// 买/卖（动词）/交易/问价/多少钱/开价/拿货看看/什么货/进货/出货；
+// 名词性 买卖/价格/价钱 单独出现一概不算（先剥除再测），宁可漏判走搭话也不误判白耗回合。
+const TRADE_RE = /买|卖|交易|问价|多少钱|开价|拿货看看|什么货|进货|出货/;
+const TRADE_NOUN_RE = /买卖|价格|价钱/g;
 export function isTradeInput(rawInput) {
   const input = (rawInput || "").trim();
   if (!input) return false;
   // 元问题排除：「价格是什么/什么叫交易」这类概念问答不是交易意向。
   if (/(是什么|什么意思|什么叫)/.test(input)) return false;
-  if (!TRADE_RE.test(input)) return false;
-  // 话题用法且买卖是唯一线索→非意向（「聊聊村里的买卖」白耗一回合 Review 修）；
-  // 「做笔买卖」不属话题用法，保留命中。
-  if (TRADE_TOPIC_RE.test(input) && !TRADE_RE.test(input.replace(/买卖/g, ""))) return false;
-  // 生意状况问询（买卖怎么样/如何/好不好）是寒暄不是交易请求——
-  // 此时若买卖是唯一线索同样非意向；「做笔买卖怎么样」含交易本体句式不在此例……
-  // 保守起见只在无「做/谈笔」等交易本体字样的情况下排除。
-  if (/买卖[^，。！？]{0,4}(怎么样|如何|好不好|行吗)/.test(input) && !/做|谈笔|来笔/.test(input)
-    && !TRADE_RE.test(input.replace(/买卖/g, ""))) return false;
-  return true;
+  return TRADE_RE.test(input.replace(TRADE_NOUN_RE, ""));
 }
 
 export function classifyIntent(rawInput) {
