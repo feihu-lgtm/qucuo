@@ -29,8 +29,14 @@ describe("saves file 档整包与 local 兼容", () => {
     expect(loadSlot(id)?.preset?.id).toBe("p");
     await new Promise((r) => setTimeout(r, 30));
     const after = await getAllProseChunks();
-    expect(after.length).toBe(before); // 同 id put 幂等不增生
+    // 导入段落 id 加确定性导入戳（防跨设备分叉互覆）：新增一份副本、原段不动
+    expect(after.length).toBe(before + 1);
     expect(after.some((c) => c.id === "P1_1")).toBe(true);
+    expect(after.some((c) => c.id.startsWith("P1_1_imp"))).toBe(true);
+    // 重复导入同一文件幂等（后缀确定性 put 覆盖自身，不增生）
+    importSave(text);
+    await new Promise((r) => setTimeout(r, 30));
+    expect((await getAllProseChunks()).length).toBe(before + 1);
   });
 
   it("local 默认档行为不变：exportSave 同步单快照、importSave 兼容 v1 裸包", async () => {

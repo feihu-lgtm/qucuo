@@ -236,7 +236,19 @@ export function importSave(jsonText) {
   // v2 整包：原文段落库一并还原（fire-and-forget 静默降级——段落库是增量层，
   // 还原失败不阻断存档导入本身；put 按 id 幂等，重复导入不增生）。
   if (Array.isArray(data?.prose) && data.prose.length) {
-    void import("./proseStore.js").then(({ addProseChunks }) => addProseChunks(data.prose)).catch(() => {});
+    // 跨设备导入防互覆（Review）：段落 id/branchId 由共享分支+turn+seq 派生，
+    // 两台设备各玩一段后 id 必然撞号——原样 put 会把本机段落覆成别机故事。
+    // 导入一律重挂到独立导入分支、id 加导入戳后缀：不覆盖本机任何现有段落，
+    // 重复导入同一文件仍幂等（后缀确定性）。
+    // branchId 保留原值——导入存档的谱系里就是这些分支，换 id 已防覆盖；
+    // 重挂人造分支反而让段落对召回全部不可见。
+    const stamp = `imp${(snap.savedAt || 0).toString(36)}`;
+    const rewritten = data.prose
+      .filter((c) => c && typeof c.id === "string")
+      .map((c) => ({ ...c, id: `${c.id}_${stamp}` }));
+    if (rewritten.length) {
+      void import("./proseStore.js").then(({ addProseChunks }) => addProseChunks(rewritten)).catch(() => {});
+    }
   }
   return id;
 }
