@@ -34,7 +34,7 @@ export function resolveShadowJudgeEnabled(apiCfg) {
 const aggregates = new Map(); // epoch -> { turns, match, singleOnly, judgeOnly, bothDiff, byCategory }
 export function shadowAggregates(epoch = "default") {
   if (!aggregates.has(epoch)) {
-    aggregates.set(epoch, { turns: 0, match: 0, gaps: 0, judgeExtra: 0, byCategory: {} });
+    aggregates.set(epoch, { turns: 0, match: 0, gaps: 0, judgeExtra: 0, byCategory: {}, samples: [] });
   }
   return aggregates.get(epoch);
 }
@@ -42,7 +42,10 @@ export function _resetShadowAggregates() {
   aggregates.clear();
 }
 
-function recordAggregate(epoch, result) {
+// WO-16D-M1 single_only 原话采样：每 epoch 最多 20 句，只记 cmd+类目——
+// 绝不记叙事正文/API key。这份清单是 WO-16F 判官规则补全的需求来源（roadmap 二.3）。
+const SAMPLE_CAP = 20;
+function recordAggregate(epoch, result, cmd = "") {
   const agg = shadowAggregates(epoch);
   agg.turns += 1;
   if (!result.hasGap && !result.judgeExtra) agg.match += 1;
@@ -57,6 +60,9 @@ function recordAggregate(epoch, result) {
     if (v.verdict === "match") continue;
     agg.byCategory[cat] = agg.byCategory[cat] || { single_only: 0, judge_only: 0, both_diff: 0 };
     agg.byCategory[cat][v.verdict] = (agg.byCategory[cat][v.verdict] || 0) + 1;
+    if (v.verdict === "single_only" && agg.samples.length < SAMPLE_CAP && cmd) {
+      agg.samples.push({ cat, cmd: String(cmd).slice(0, 60) });
+    }
   }
 }
 
@@ -155,7 +161,7 @@ export async function runShadowJudge({
     const proj = projectFacts(verdict?.facts || []);
     const result = compareCategories(diffOut, proj);
     if (isStale?.() || epochGuard?.()) return null;
-    recordAggregate(epoch, result);
+    recordAggregate(epoch, result, cmd);
     // 结构化 trace：verdicts 原样进 fields，TraceViewer 按类目渲染含 excluded 盲区；
     // detail 单行摘要供复制文本用。
     trace?.("shadow", "影子对账", {
