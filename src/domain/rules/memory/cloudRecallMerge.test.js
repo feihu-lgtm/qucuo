@@ -95,6 +95,16 @@ describe("mergeCloudProseEntries 合并", () => {
     expect(out).toHaveLength(3);
     expect(out.every((e) => e.ids[0].startsWith("L"))).toBe(true);
   });
+  it("锚段与邻段同文本时块内重复段只留一份（Review 修）", () => {
+    const hit = mkHit({
+      rawText: "相同的段落。",
+      neighbors: [{ chunkId: "n1", turn: 12, witnesses: ["*"], rawText: "相同的段落。", seq: 4 }],
+    });
+    const out = mergeCloudProseEntries([], [hit], { viewer: "主角", topK: 5 });
+    expect(out).toHaveLength(1);
+    expect(out[0].text.split("相同的段落。").length - 1).toBe(1);
+  });
+
   it("云端互去重：两条相同文本只留一条", () => {
     const h1 = mkHit({ chunkId: "c1" });
     const h2 = mkHit({ chunkId: "c2" });

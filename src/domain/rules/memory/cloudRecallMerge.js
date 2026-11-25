@@ -74,14 +74,19 @@ export function mergeCloudProseEntries(localEntries, cloudHits, { viewer = "", t
   for (const hit of cloudHits || []) {
     const entry = cloudHitToEntry(hit, viewer);
     if (!entry) continue;
-    const paras = entry.text.split("\n").filter((p) => {
+    // 逐段 check-and-register 同一遍完成（Review 修）：锚段与邻段文本相同时，
+    // 组内重复段也要剥——先查再登的两段式会让块内重复段双活，白吃场记板预算。
+    const paras = [];
+    for (const p of entry.text.split("\n")) {
       const norm = normalizeProseText(p);
-      return norm && !seen.has(`${entry.turn}::${norm}`);
-    });
+      if (!norm) continue;
+      const key = `${entry.turn}::${norm}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      paras.push(p);
+    }
     if (!paras.length) continue;
-    const deduped = { ...entry, text: paras.join("\n") };
-    register(entry.turn, entry.text);
-    kept.push(deduped);
+    kept.push({ ...entry, text: paras.join("\n") });
   }
   return [...local, ...kept].slice(0, topK);
 }
