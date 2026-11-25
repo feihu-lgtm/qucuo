@@ -24,6 +24,7 @@ import {
   outerArrival as outerArrivalLogic,
 } from "../../features/map/logic.js";
 import { rollMovementEvents } from "../../features/map/encounter.js";
+import { resolveSnowInteraction } from "../../features/quest/snowLeopard.js";
 import { roadNameGuard } from "../../domain/rules/map/encounter.js";
 import { turnMonitor, withTurnContext } from "../../infra/turnMonitor.js";
 import { getGroundItems, removeGroundItems } from "../../domain/rules/map/groundScope.js";
@@ -305,6 +306,19 @@ export async function resolveIntent(cmd, env) {
   // 谁都不再出手、不推进任何进行中的事。
   if (!isTalk && intent.code === "LOOK") {
     collectNote += `\n[系统裁决：本轮仅是查看/端详，只描述被看对象此刻的所见现状（场景则写眼前所见，目标则写其容貌装束、气色伤势、当下举止）。任何人都不出手、不推进或续写进行中的打斗与事件，除认出在场人物外无其他状态变化。]`;
+  }
+
+  // WO-16C-snow：自由文本「给雪豹挠痒/喂雪豹吃肉」确定性替代层——
+  // 双调用判官链里旧提取断档，改由系统在叙事前经统一边界落定（否定/假设/
+  // 询问不误触发、无肉不触发、flag 已有不重复），prompt 只接"已结算"说明。
+  if (!isTalk && !isSettle) {
+    const snowHit = resolveSnowInteraction({
+      questProgress, flags, inv, room, innerRoomName, char,
+    }, cmd);
+    if (snowHit) {
+      applyLocal({ changes: snowHit.changes, logs: snowHit.logs }, "snowInteraction");
+      collectNote += snowHit.note;
+    }
   }
 
   // 复合句（括号/多断句）：段标注透传给模型 + 硬行动配额一句一个；

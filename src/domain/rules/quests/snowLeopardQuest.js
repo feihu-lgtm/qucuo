@@ -20,17 +20,17 @@ export function snowLeopardPresent(state) {
 }
 
 export function filterSnowModelFlags(flags = [], state) {
-  const allowed = snowQuestActive(state) && snowLeopardPresent(state);
-  return flags.filter((flag) => typeof flag === "string" && (
-    !flag.startsWith("snow_") || (allowed && ["snow_spirit_meat", "snow_spirit_scratch"].includes(flag))
-  ));
+  // WO-16C-snow：全部 snow 旗标（meat/scratch/medicine/trusted/灵性）均由系统
+  // 确定性结算——模型输出一律剥除，不再存在"允许 AI 补旗"的窗口，杜绝双通道。
+  void state;
+  return flags.filter((flag) => typeof flag === "string" && !flag.startsWith("snow_"));
 }
 
 export function snowLeopardNote(state) {
   if (!snowQuestActive(state) || !snowLeopardPresent(state)) return "";
   const flags = state.flags || [];
-  if (state.settleKind === "gift" && state.settleNpc === "雪豹") return '\n[收复雪豹·赠礼] 只判断这次礼物是否为肉：是肉才在delta.flags_add中加入snow_spirit_meat；非肉则拒吃并讲个短笑话。该赠礼结算的flags_add只允许snow_spirit_meat，不得加入挠痒、信任或其他旗标；物品已由系统扣除，不得重复处理。';
-  return `\n[收复雪豹] 雪豹无主，只接受有灵之人，七灵得五才可信任，邀请入队与信任由系统结算，不得由AI发flag。玩家赠送或自由叙述喂食雪豹时，由你判断是否为肉：是肉才在delta.flags_add加入snow_spirit_meat；非肉则拒吃，写一个短笑话，它只吃肉。${!flags.includes("snow_spirit_scratch") ? "与雪豹说话或在附近时，写它坐立不安、像母鸡一样蹲着，原来身上发痒；玩家实际替它挠痒时，才在delta.flags_add加入snow_spirit_scratch。鱼定村村民及旁白被问及雪豹时，可暗示它想让人挠痒。" : ""}${!flags.includes("snow_spirit_medicine") ? "它前爪有陈年旧伤，走动时微跛；送药可治，由系统结算。" : "前爪旧伤已愈，不再跛行。"}本任务AI只可添加snow_spirit_meat、snow_spirit_scratch，其他灵性与阶段旗标一概由系统判定。`;
+  if (state.settleKind === "gift" && state.settleNpc === "雪豹") return '\n[收复雪豹·赠礼] 礼物是否为肉、是否接受、灵性旗标已由系统结算完毕（肉食才会记 snow_spirit_meat）。你只写它吃下或拒吃的反应——非肉它拒吃，可讲个短笑话。禁写任何 snow 旗标、禁重复扣除或返还物品。';
+  return `\n[收复雪豹] 雪豹无主，只接受有灵之人，七灵得五才可信任。喂食/挠痒/送药/信任/入队全部由系统确定性结算并发旗标，AI 一律不得写任何 snow 旗标、不得扣减或产出物品。${!flags.includes("snow_spirit_scratch") ? "与雪豹说话或在附近时，写它坐立不安、像母鸡一样蹲着，原来身上发痒；鱼定村村民及旁白被问及雪豹时，可暗示它想让人挠痒。玩家实际替它挠痒时系统自会落账，你只管顺势叙述。" : ""}${!flags.includes("snow_spirit_medicine") ? "它前爪有陈年旧伤，走动时微跛；送药可治，由系统结算。" : "前爪旧伤已愈，不再跛行。"}`;
 }
 
 export function snowLeopardHint(state) {

@@ -52,3 +52,67 @@ export function snowMeatGift(state, npc, item) {
   if (tags.length) return tags.some((tag) => SNOW_MEAT_TAGS.has(tag)) && SNOW_MEAT_RE.test(name);
   return SNOW_MEAT_RE.test(name);
 }
+
+// ── WO-16C-snow：自由文本「挠痒/喂食」确定性判定 ──
+// 双调用判官链里 p={}，旧提取 delta.flags_add 断档——挠痒/自由喂肉改由
+// 系统在叙事前确定性落定，不靠模型自证。保守识别：否定/假设/询问一律不触发。
+
+// 询问/假设/条件句整句豁免——宁可漏判不可误触发
+const SNOW_UNCERTAIN_RE = /[吗呢嘛？?]|要不要|如果|假如|若是|要不|是不是|能不能|可不可以|该不该/;
+// 否定词紧贴动作（4 字内）视为否定
+const snowNegated = (cmd, verb) => new RegExp(`[不别没莫勿未休].{0,3}${verb}`).test(cmd);
+
+export function isSnowMeatItem(item) {
+  const name = typeof item === "string" ? item : item?.name || "";
+  if (!name) return false;
+  const entry = CATALOG_INDEX[name] || (typeof item === "object" ? item : null);
+  const tags = entry?.tags || [];
+  if (tags.includes("肉食")) return true;
+  if (tags.length) return tags.some((tag) => SNOW_MEAT_TAGS.has(tag)) && SNOW_MEAT_RE.test(name);
+  return SNOW_MEAT_RE.test(name);
+}
+
+// 返回 null（不触发）或 { kind:"scratch"|"feed", changes, logs, note }
+export function resolveSnowInteraction(state, cmd) {
+  if (!cmd || typeof cmd !== "string") return null;
+  if (!snowQuestActive(state) || !snowLeopardPresent(state)) return null;
+  if (SNOW_UNCERTAIN_RE.test(cmd)) return null;
+  if (!cmd.includes("雪豹") && !/挠|搔|喂/.test(cmd)) return null;
+  const flags = state.flags || [];
+
+  // 挠痒：明确给雪豹挠痒（或「挠痒」且雪豹在场唯一语境）
+  if (!flags.includes("snow_spirit_scratch") && !snowNegated(cmd, "[挠搔抓]")) {
+    const scratchHit = /(给|替|帮|为)?雪豹.{0,4}(挠|搔|抓)|(挠|搔|抓).{0,4}雪豹/.test(cmd)
+      || ((/(挠|搔|抓)痒/.test(cmd) || /挠一?挠|搔一?搔/.test(cmd)) && cmd.includes("雪豹"));
+    if (scratchHit) {
+      return {
+        kind: "scratch",
+        changes: { flags: (f) => [...new Set([...(f || []), "snow_spirit_scratch"])] },
+        logs: [{ t: "sys", text: "  ※ 你替雪豹挠开了痒痒，它眯起金瞳，喉间滚出低低的呜声。（灵性·挠痒痒 已落账）" }],
+        note: "\n[系统裁决：玩家替雪豹挠痒已结算，snow_spirit_scratch 已落账。顺势叙述这一过程即可，禁重复写任何 snow 旗标、禁再结算一遍。]",
+      };
+    }
+  }
+
+  // 喂食：明确喂雪豹 + 背包真有肉食——消耗一件肉（按 id 精确），写 snow_spirit_meat
+  if (!flags.includes("snow_spirit_meat") && !snowNegated(cmd, "喂")) {
+    const feedHit = /喂(食|了|一口|点)?雪豹|给雪豹(喂|吃|丢|抛|递)|喂雪豹|拿.{0,4}(喂|给).{0,4}雪豹/.test(cmd);
+    if (feedHit) {
+      const inv = state.inv || [];
+      const meatIndex = inv.findIndex((entry) => isSnowMeatItem(entry));
+      if (meatIndex === -1) return null; // 无肉不触发，叙事自由发挥
+      const meat = inv[meatIndex];
+      const meatName = typeof meat === "string" ? meat : meat?.name || "肉";
+      return {
+        kind: "feed",
+        changes: {
+          flags: (f) => [...new Set([...(f || []), "snow_spirit_meat"])],
+          inv: (list) => (list || []).filter((entry, i) => i !== meatIndex),
+        },
+        logs: [{ t: "sys", text: `  ※ 雪豹衔起「${meatName}」三两口吞下，金瞳里透出几分满足。（灵性·吃好了 已落账）` }],
+        note: `\n[系统裁决：玩家喂雪豹吃「${meatName}」已结算——肉食一件已消耗、snow_spirit_meat 已落账。顺势叙述进食过程即可，禁重复扣物、禁写任何 snow 旗标。]`,
+      };
+    }
+  }
+  return null;
+}
