@@ -393,9 +393,12 @@ async function runTurnSteps(ctx, cmd, opts) {
       claimedMilestones: live.claimedMilestones,
       effectiveSpecialNow: deps.effectiveSpecialNow,
     };
+    // 涌现校验必须以模型原始正文为准——系统补锚短句（patchedScreen）不能替模型
+    // 完成「正文真实出现」的登场证据，所以在补写发生前先存一份原文。
+    const rawNarrative = narrativeText || rawFull;
     const verified = verifySealAndMaterialize({
       sealText: sealParts?.sealText || "",
-      screenText: narrativeText || rawFull,
+      screenText: rawNarrative,
       verdict: judgeVerdict,
       anchorIds: (sealParts?.anchors || []).map((a) => a.id),
       state: stateForFacts,
@@ -422,7 +425,7 @@ async function runTurnSteps(ctx, cmd, opts) {
     // 涌现过渡复接：SEAL 申报的传闻/登场经五路校验后接回 p——recordRumors、
     // materializeEmergence、fixateNpcs、writeRoom 原管线接管；数值仍由系统侧定量。
     const emergenceCheck = validateEmergenceSeal(verified.sealData, {
-      screenText: verified.screenText,
+      screenText: rawNarrative,
       varTree: live.varTree || deps.varTree || {},
       roomNpcs: (live.room || deps.room)?.npcs || [],
       playerName: (live.char || deps.char)?.name || "",

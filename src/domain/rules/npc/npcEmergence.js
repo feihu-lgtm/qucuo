@@ -110,6 +110,9 @@ export function validateEmergenceSeal(sealData, {
     const description = typeof rawEmerged.description === "string" ? rawEmerged.description.trim() : "";
     if (!name || !rumors[name]) {
       notes.push(`登场申报「${name || "?"}」无对应传闻，丢弃`);
+    } else if (name.length > MAX_NAME_LEN || name.includes("雪豹") || excluded.has(name)) {
+      // 与传闻申报同一套排除：旧存档可能有脏传闻，登场校验不能指望册子天然干净
+      notes.push(`登场申报「${name}」命中排除名单（玩家/在场/同伴雪豹/驻场/超长），丢弃`);
     } else if (!String(screenText || "").includes(name)) {
       notes.push(`登场申报「${name}」未在正文登场，丢弃`);
     } else if (!description || description.length > 40 || /\d/.test(description)) {
