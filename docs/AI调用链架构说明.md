@@ -107,6 +107,51 @@ flowchart LR
 | 账本写入 | `commitRound` + `applyPatches` | 保留统一写入口，新增事实账本先编译后提交。 |
 | 结算回合 | 多数功能先改系统值再让 AI 补描写 | 全部过渡到「事实行先落、正文后补」。 |
 
+
+## 5.1 关键契约速查
+
+### 契约 B：`turn.intake` 听意单
+
+形状冻结：`{ read, refIds, actions, proposals }`。
+- `read`：不超过 40 字，拆清代词与意图核心。
+- `refIds`：玩家援引的场记板条目 ID。
+- `actions[]`：`kind/target/itemId/direction/stance`；kind 为封闭枚举，direction 为 `n/s/e/w/none`。
+- `proposals[]`：玩家声称可促成的发现或交易，`fit` 分 `natural/stretch/absurd`。
+
+原则：小模型只选择系统喂入的候选，不允许自造 ID；`normalizeIntakeResult` 不合形制就降级为空听意单。
+
+### 契约 C：`JudgeVerdict` 判官定案单
+
+形状：`{ causalTier, pacingWords, facts, warrants, allowSpontaneousPact, reactionGuides, notes, budget }`。
+- `facts[]`：十二律铁案，ID 形如 `F<turn>_<seq>`。
+- `warrants[]`：空白天机券，ID 形如 `W<turn>_<seq>`，只给额度、品类、来源，不给最终名字。
+- `reactionGuides[]`：按 NPC 拆知情/不知情反应约束。
+- `budget`：`maxQuality/maxPointBudget/remainingDailyQuota`。
+
+### 尾章：`---SEAL---` 微账章
+
+正文 streaming 中事实锚点写作 `⟦F42_1⟧`，上屏前剥除；检测到 `
+---SEAL---` 后屏幕冻结，后续只进尾章缓冲。尾章 JSON 只负责填空：`fills`、可选 `spontaneousPact`、可选 `respondedNpcs`。它不能新增未经判官裁定的事实。
+
+### 落账四件套
+
+`materializeFacts` 只输出，不直接写 store：
+- `changes`：背包/房间/角色/武学/修为等切片；
+- `patches`：好感、契约、伙伴、场景等深写 patch；
+- `receipts`：UI 落账卡数据；
+- `logs`：事实短句。
+
+`commitRound` 是唯一统一提交点；`companionState` patch 必须走 `setCompanionState`，不能静默丢弃。
+
+## 5.2 当前施工状态看板
+
+| 工单 | 状态 | 当前事实 |
+|---|---|---|
+| WO-01～WO-12 | 已合并 | 地基、场记板、因果授信、编译器、十二律、前哨判官都在 main。 |
+| WO-13 | 施工中 | PR 已开：web 默认 `judgePipelineEnabled=true`；CLI 老录制默认 false。因 entries/containers/prepItems/floatingItems 还没宿主喂入，很多回合会 no-op 退化，不能当成旧提取已替换。 |
+| WO-14 | 已合并 | `EffectReceiptCard` 已消费 receipts；按钮仍翻成文本指令进 act，不是结构化直写。 |
+| WO-15+ | 未开始 | 旧提取层删除必须等 WO-13/14 稳定后再做。 |
+
 ## 6. 已确认的设计取舍
 
 这些是实现时对手册字面的修正，后续文档与代码都应按这里的口径，不再按旧稿字面理解：
