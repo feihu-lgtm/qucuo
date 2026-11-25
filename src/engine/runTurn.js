@@ -305,6 +305,33 @@ async function runTurnSteps(ctx, cmd, opts) {
         judgeVerdict,
         playerName: (liveNow.char || deps.char)?.name || "主角",
       });
+
+      // ── WO-16F-F2a 装备/用物/拾取最小确定性路由 ──
+      // intake 三类 kind（equip/use_item/take）在叙事生成前由 app 层注入的
+      // executeJudgeRoutes 确定性结算（复用 stepEffect/applyResult 同一套账，
+      // 引擎只调句柄不反引 features）。回执摘要追加进判官铁律块——主叙事必须
+      // 照写系统已发生事实，找不到物件/结算失败的绝不许写成成功。
+      // 群聊回合根本不激活判官（上方闸门），settle/GM/单调用不受影响；
+      // executor 缺失（测试/直调）时只 trace 不签成功。
+      const judgeRoutes = (intakeResult.actions || []).filter((a) => ["equip", "use_item", "take"].includes(a?.kind));
+      if (judgeRoutes.length) {
+        if (typeof ctx.executeJudgeRoutes === "function") {
+          try {
+            const outcome = ctx.executeJudgeRoutes(judgeRoutes) || null;
+            const receipts = (outcome?.receipts || []).filter(Boolean);
+            if (receipts.length) {
+              deps.routeReceipts = receipts;
+              deps.judgeRuleBlock += "\n\n【系统已结算·路由回执】以下事实已由系统确定性结算，正文必须照写，不得编造相反结果：\n"
+                + receipts.map((r) => `· ${r.text}`).join("\n");
+              trace("判官管线", "pass", `路由结算 ${receipts.filter((r) => r.ok).length}/${receipts.length} 成功：${receipts.map((r) => `${r.kind}${r.ok ? "✓" : "✗"}`).join("、")}`);
+            }
+          } catch (routeError) {
+            trace("判官管线", "fail", `路由结算异常（不阻断回合）：${routeError?.message || routeError}`);
+          }
+        } else {
+          trace("判官管线", "warn", `equip/use_item/take 路由 ${judgeRoutes.length} 条无 executor（直调/测试环境），未结算`);
+        }
+      }
       trace("判官管线", "pass", `intake ${intakeResult.actions?.length || 0} 动作/${intakeResult.proposals?.length || 0} 提议 → facts ${judgeVerdict.facts.length} 条/warrants ${judgeVerdict.warrants.length} 张（tier ${judgeVerdict.causalTier}）`);
     } catch (error) {
       trace("判官管线", "fail", `前哨听意异常降级：${error?.message || error}`);
