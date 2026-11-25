@@ -110,10 +110,16 @@ export async function runShadowJudge({
     const result = compareCategories(diffOut, proj);
     if (isStale?.() || epochGuard?.()) return null;
     recordAggregate(epoch, result);
-    trace?.("shadow", result.hasGap ? "block" : "pass",
-      Object.entries(result.verdicts)
+    // 结构化 trace：verdicts 原样进 fields，TraceViewer 按类目渲染含 excluded 盲区；
+    // detail 单行摘要供复制文本用。
+    trace?.("shadow", "影子对账", {
+      kind: "shadow",
+      status: result.hasGap ? "block" : "pass",
+      detail: Object.entries(result.verdicts)
         .filter(([, v]) => v.verdict !== "match")
-        .map(([cat, v]) => `${cat}:${v.verdict}`).join("；") || "各类目一致");
+        .map(([cat, v]) => `${cat}:${v.verdict}`).join("；") || "各类目一致",
+      verdicts: result.verdicts,
+    });
     return result;
   } catch (_) {
     return null; // 静默——影子绝不能影响主链

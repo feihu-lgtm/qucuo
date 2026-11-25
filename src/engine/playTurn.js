@@ -102,7 +102,7 @@ export async function playTurn(ctx, cmd, opts = {}) {
         visibleNpcs: presence.visibleNpcsForAI,
         epoch: String(turnCtx.proseEpoch ?? "default"),
         isStale: turnCtx.isStale, epochGuard: turnCtx.proseEpochGuard,
-        trace: (layer, status, detail) => turnMonitor.add(trace, layer, status, typeof detail === "string" ? { detail } : detail),
+        trace: (layer, label, fields) => turnMonitor.add(trace, layer, label, fields),
       }).catch(() => { /* 影子异常静默 */ });
     }
     return finalized;
