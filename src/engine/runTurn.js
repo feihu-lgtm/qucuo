@@ -22,6 +22,7 @@ import { verifySealAndMaterialize } from "../domain/rules/effects/sealVerifier.j
 import { buildJudgeRuleBlock, buildGroupTalkRuleBlock, parseGroupTalkSeal } from "../domain/rules/judge/judgeRuleBlock.js";
 import { collectDeferredIntents, deferredIntentReceipt, deferredFailureReceipt, DEFERRED_INTENT_KINDS } from "../domain/rules/judge/deferredIntents.js";
 import { inferAppeaseStance } from "../domain/rules/npc/appeaseStance.js";
+import { resolveFloatingItems } from "../domain/rules/judge/floatingRelics.js";
 import { writeTurnProse } from "./act/proseWrite.js";
 import { addProseChunks as proseChunkSink } from "./ports/recallBlock.js";
 import { random } from "../utils/rng.js";
@@ -334,6 +335,13 @@ async function runTurnSteps(ctx, cmd, opts) {
         containerPlace,
         questCandidates,
         pickupJudgment: deps.pickupJudgment || null,
+        // WO-22B-P2 悬空秘宝注入：按当前据点地域+现世日+唯一锁过滤——
+        // 非合规地域/未到 earliestDay/已落定（placed）一律不注入，第三关复用现有掷骰。
+        floatingItems: resolveFloatingItems({
+          place: deps.room?.name || "",
+          day: Math.floor(timeNow / 24) + 1,
+          relicState: vtNow?.世界?.悬空秘宝,
+        }),
         // WO-16E：授信输入由 buildCausalBudgetInput 装配（runTurn/shadow 同一入口），
         // 不再硬编码 riskLevel:0——tension 读 encounter 势力字段、risk 按动作兜底、
         // 每日搜刮配额读 varTree 账本跨日归零。

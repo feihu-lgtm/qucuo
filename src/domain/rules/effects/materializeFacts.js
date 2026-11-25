@@ -27,6 +27,7 @@ import { systemAffectionDelta, systemAffectionPin, hasNoAffectionTrack } from ".
 import { createHeartLedgerEntry, capHeartLedgerEntries, dedupeHeartLedgerId } from "../memory/npcLedger.js";
 import { INITIAL_FAVORABILITY } from "../npc/npcAwareness.js";
 import { readDailyLootUsed } from "../judge/budgetInput.js";
+import { relicById } from "../judge/floatingRelics.js";
 import { CATALOG_INDEX } from "../../data/items/catalog.js";
 
 const PLAYER = "player";
@@ -140,6 +141,17 @@ export function materializeFacts(state, facts, compiledWarrants) {
         if (lookupCompiled(compiledWarrants, fact)) warrantLootCount += 1;
         receipts.push({ kind: "grant_item", factId: fact.id || "", item: { ...item } });
         logs.push({ t: "item", text: `  获得 ${item.name}${item.quality ? `（${item.quality}）` : ""}` });
+        // WO-22B-P2 唯一锁最小扩展：GRANT 的 itemId 命中悬空秘宝登记 id 时，
+        // 写 varTree.世界.悬空秘宝[id] = { placed, droppedAt, turn }——之后注入侧
+        // 不再放行，世间无第二件。碎片（fragment_ 前缀）不命中登记表，天然不锁。
+        const relic = fact.itemId ? relicById(fact.itemId) : null;
+        if (relic) {
+          patches.push({
+            op: "merge", path: ["varTree", "世界", "悬空秘宝", relic.id],
+            value: () => ({ placed: true, droppedAt: state.room?.name || "", turn }),
+            factId: fact.id,
+          });
+        }
         break;
       }
 

@@ -489,8 +489,14 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
       if (floating) {
         facts.push({
           id: factId, op: "GRANT_ITEM", itemId: floating.id || "", itemName: floating.name || "悬空之物",
+          // WO-22B-P2：真品详情随事实下传（与预设物同口径）——materialize 兜底不写
+          // 「来历成谜」；itemId 即登记表 id，materializeFacts 据此写 placed/唯一锁。
+          ...(floating.desc ? { desc: floating.desc } : {}),
+          ...(floating.quality ? { quality: floating.quality } : {}),
+          ...(floating.category ? { category: floating.category } : {}),
           from: action.target, to: "player", witnesses: ["主角"],
         });
+        notes.push(`${action.target}里竟翻出传说中的「${floating.name}」——悬空秘宝落定，世间再无第二件`);
         granted = true;
         break;
       }
@@ -515,15 +521,32 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
       break;
     }
     if (!granted) {
-      // 不达标降级：残页线索——不给实物，只给一条往后的线头
-      const clue = `${action.target}里只翻出一角残页，字迹模糊，似乎指向别处`;
-      facts.push({
-        id: nextFactId(), op: "ALTER_WORLD_SCENE", place,
-        sceneKey: place, key: "clue", value: clue,
-        detail: clue,
-        witnesses: ["主角"],
-      });
-      notes.push(`${action.target}无所获，降级为残页线索`);
+      // WO-22B-P2 差一截降级（阈值沿用现有「未达标即降级」语义，不新造玄学）：
+      // 本地域有未定悬空秘宝时，降级不止一句空话——真落一页残页实物
+      // （GRANT_ITEM 残页，非神兵不占天机券），notes 批注真品去向线头；
+      // 无秘宝在视野时维持原 ALTER_WORLD_SCENE 通用降级不变。
+      const floatingInScope = Array.isArray(envelope.floatingItems)
+        ? envelope.floatingItems.find((it) => it && !it.placed) : null;
+      if (floatingInScope) {
+        facts.push({
+          id: nextFactId(), op: "GRANT_ITEM",
+          itemId: `fragment_${floatingInScope.id}`, itemName: "残页",
+          quality: "白", category: "misc",
+          desc: `一角残页，字迹模糊，隐约是「${floatingInScope.name}」相关的零碎记载——真品不在这里。`,
+          from: action.target, to: "player", witnesses: ["主角"],
+        });
+        notes.push(`${action.target}差一截——只翻出残页，真品「${floatingInScope.name}」去向线头：${floatingInScope.hint || "别处"}`);
+      } else {
+        // 不达标降级：残页线索——不给实物，只给一条往后的线头
+        const clue = `${action.target}里只翻出一角残页，字迹模糊，似乎指向别处`;
+        facts.push({
+          id: nextFactId(), op: "ALTER_WORLD_SCENE", place,
+          sceneKey: place, key: "clue", value: clue,
+          detail: clue,
+          witnesses: ["主角"],
+        });
+        notes.push(`${action.target}无所获，降级为残页线索`);
+      }
     }
   }
   // 坍缩事实统一段尾签发（理由见上）：每个本回合翻过的容器一条。
