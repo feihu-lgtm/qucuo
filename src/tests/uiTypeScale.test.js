@@ -1,6 +1,6 @@
 // 字号护栏：UI 里的 font-size 只能取 tokens.css 的 --fs-* 阶梯，不许再写裸 px。
 // em/vh 这类相对单位是有意随容器缩放的（赌石牌面、日志里的房间标题），不算在内。
-// 用「只许变少」的账本记数：新写的代码一旦又写裸 px，数量超线就报错。
+// 存量已全部迁完：新写的代码一旦又写裸 px 就报错。
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
@@ -8,9 +8,8 @@ import path from "node:path";
 const ROOT = path.resolve(__dirname, "..");
 const SCAN_DIRS = ["ui", "utils/theme.js"];
 
-// 迁移基线：只许下调。剩下 5 处在 LocationModule / VersionHistoryPanel，
-// 工作区里另一批未提交改动正改写这几行，跟着那批改动一起清零。
-const KNOWN_FONT_LITERALS = 5;
+// 迁移已清零，裸 px 一处都不许再有。
+const KNOWN_FONT_LITERALS = 0;
 
 function walk(entry, out = []) {
   const abs = path.join(ROOT, entry);
