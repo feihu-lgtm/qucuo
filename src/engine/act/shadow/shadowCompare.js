@@ -60,18 +60,22 @@ export function compareCategories(diffOut, proj) {
         const dv = dNum[k] || 0, pv = pNum[k] || 0;
         if (dv === 0 && pv === 0) continue;
         anyActive = true;
-        if (dv === pv) continue;
+        if (dv === pv) { sub[k] = { single: dv, judge: pv, verdict: "match" }; continue; }
+        // WO-16D-M2：每个数值 sub 各自记方向——同回合 hp both_diff + money single_only
+        // 不再被一级 verdict 优先级坍缩掩盖，报告/聚合并存 sub 明细。
+        const subVerdict = pv === 0 ? "single_only" : dv === 0 ? "judge_only" : "both_diff";
         if (pv === 0) anySingle = true;
         else if (dv === 0) anyJudge = true;
         else anyDiff = true;
-        sub[k] = { single: dv, judge: pv };
+        sub[k] = { single: dv, judge: pv, verdict: subVerdict };
       }
-      // 全部子项相等（含非零相等）才算 match；有差异才按方向归类
+      // 全部子项相等（含非零相等）才算 match；有差异才按方向归类。
+      // 一级 verdict 继续作摘要（single_only>both_diff>judge_only 优先级），
+      // 但混合方向必须读 sub——formatVerdictLine/聚合报告同口径。
       const anyMismatch = anySingle || anyJudge || anyDiff;
       verdicts[cat] = (!anyActive || !anyMismatch)
         ? { verdict: "match" }
-        : { verdict: anySingle ? "single_only" : anyDiff ? "both_diff" : "judge_only", single: dNum, judge: pNum };
-      void sub;
+        : { verdict: anySingle ? "single_only" : anyDiff ? "both_diff" : "judge_only", single: dNum, judge: pNum, sub };
       continue;
     }
     if (cat === "quest") {
@@ -88,10 +92,17 @@ export function compareCategories(diffOut, proj) {
     }
     verdicts[cat] = { verdict: compareListPair(d[cat], proj[cat]), single: d[cat], judge: proj[cat] };
   }
-  const active = Object.values(verdicts).filter((v) => v.verdict !== "excluded" && v.verdict !== "match");
+  // WO-16D-M2：quest 类目 reference-only——questProgress 状态驱动推进可能非本回合
+  // 判官签发（flags/收集件经其他通道先齐），系统归因不可靠，不计入 gaps 缺口汇总；
+  // verdicts 仍照常产出供 UI/Markdown 展示，人工甄别。
+  const active = Object.entries(verdicts)
+    .filter(([cat, v]) => cat !== "quest" && v.verdict !== "excluded" && v.verdict !== "match")
+    .map(([, v]) => v);
+  const questV = verdicts.quest;
   return {
     verdicts,
     hasGap: active.some((v) => v.verdict === "single_only" || v.verdict === "both_diff"),
-    judgeExtra: active.some((v) => v.verdict === "judge_only"),
+    judgeExtra: active.some((v) => v.verdict === "judge_only")
+      || !!(questV && questV.verdict === "judge_only"),
   };
 }

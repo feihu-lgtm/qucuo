@@ -45,7 +45,8 @@ export function _resetShadowAggregates() {
 // WO-16D-M1 single_only 原话采样：每 epoch 最多 20 句，只记 cmd+类目——
 // 绝不记叙事正文/API key。这份清单是 WO-16F 判官规则补全的需求来源（roadmap 二.3）。
 const SAMPLE_CAP = 20;
-function recordAggregate(epoch, result, cmd = "") {
+// 导出供 M2 聚合口径测试直探（生产路径仍只在 runShadowJudge 内部调用）。
+export function recordAggregate(epoch, result, cmd = "") {
   const agg = shadowAggregates(epoch);
   agg.turns += 1;
   if (!result.hasGap && !result.judgeExtra) agg.match += 1;
@@ -60,8 +61,16 @@ function recordAggregate(epoch, result, cmd = "") {
     if (v.verdict === "match") continue;
     agg.byCategory[cat] = agg.byCategory[cat] || { single_only: 0, judge_only: 0, both_diff: 0 };
     agg.byCategory[cat][v.verdict] = (agg.byCategory[cat][v.verdict] || 0) + 1;
-    if (v.verdict === "single_only" && agg.samples.length < SAMPLE_CAP && cmd) {
-      agg.samples.push({ cat, cmd: String(cmd).slice(0, 60) });
+    // WO-16D-M2 采样去重：同一 epoch 同一句 cmd 只占一个名额——一句触发多类目
+    // 时合并进 cats 数组，不再重复占位挤掉别的样本（上限 20 句仍指去重后的句数）。
+    if (v.verdict === "single_only" && cmd) {
+      const key = String(cmd).slice(0, 60);
+      const existing = agg.samples.find((s) => s.cmd === key);
+      if (existing) {
+        if (!existing.cats.includes(cat)) existing.cats.push(cat);
+      } else if (agg.samples.length < SAMPLE_CAP) {
+        agg.samples.push({ cat, cats: [cat], cmd: key });
+      }
     }
   }
 }
