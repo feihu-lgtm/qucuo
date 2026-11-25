@@ -11,6 +11,7 @@ import { backfillInBackground, insertWhenIdle, newBackfillKey } from "../../engi
 import { askStoryteller, hasApiKey } from "../../engine/ports/storyteller.js";
 import { createTurnStaleCheck } from "./useUndo.js";
 import { setFactSummary } from "../../domain/rules/prompt/knowledge.js";
+import { useNemesisEpithet } from "./useNemesisEpithet.js";
 
 export function consumeDuelRequest(result, {
   opts = {}, isStale, isTalk, interactMode, recognize,
@@ -87,8 +88,9 @@ export function useForcedDuelNpc({ forcedDuelNpc, setDuelingNpc, setForcedDuelNp
 export function useDuel({
   act, addLog, duelPending, setActiveTarget, setDuelPending, setDuelingNpc,
   duelingNpc, pendingQuestBranch, noteAction, jotNote, aiSummarizeFact, setPendingQuestBranch,
-  captureUndo, turnGenerationRef, narrator, interactMode,
+  captureUndo, turnGenerationRef, narrator, interactMode, apiCfg,
 }) {
+  const { maybeGrantEpithets } = useNemesisEpithet({ apiCfg });
   // WO-16F-F2c：skipCaptureUndo 可选——判官链叙事后接续的交互是同一玩家回合的
   // 后续，不是新动作，绝不能覆盖本回合开头的撤销检查点；按钮老路默认照旧捕获。
   const handleNpcDuel = useCallback((npc, { skipCaptureUndo = false } = {}) => applyResult(featureCtx(), async () => {
@@ -148,7 +150,14 @@ export function useDuel({
     }
     noteAction("duel");
     setDuelingNpc(null);
+    // WO-23C1：结算前后宿敌谱快照——首次入谱/tier 晋升且 epithet 空者
+    // 后台排一次 AI 赐号（系统定何时赐，AI 只起名；失败静默不阻塞）。
+    const rosterBefore = gameStore.getState().varTree?.世界?.宿敌谱 || {};
     applyResult(featureCtx(), result);
+    try {
+      const rosterAfter = gameStore.getState().varTree?.世界?.宿敌谱 || {};
+      maybeGrantEpithets(rosterBefore, rosterAfter);
+    } catch { /* 赐号链路异常绝不阻塞结算 */ }
     if (result.factId && !finishedNpc) aiSummarizeFact(result.factId, result.cue);
     if (finishedNpc) {
       // 系统事实行立刻落日志；描写在后台补，不走 act，玩家不用等。

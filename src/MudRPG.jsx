@@ -306,7 +306,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const duelHandlers = commandScheduler.wrapHandlers("useDuel", useDuel({
     act, addLog, duelPending, setActiveTarget, setDuelPending, setDuelingNpc,
     duelingNpc, pendingQuestBranch, noteAction, jotNote, aiSummarizeFact, setPendingQuestBranch,
-    captureUndo, turnGenerationRef, interactMode,
+    captureUndo, turnGenerationRef, interactMode, apiCfg,
   }));
 
   // 拜师学艺：好感度≥40 + 完成该NPC专属支线任务，两个条件同时满足才能学到技能。
