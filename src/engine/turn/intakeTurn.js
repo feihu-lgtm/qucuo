@@ -9,7 +9,7 @@ import { validateJsonSchema } from "../../utils/schemaValidate.js";
 // 组装喂给小模型的现场材料（纯函数）：
 //   最近两轮对话 + 在场角色与随身物 ID + 可引用场记板条目头。
 // 条目头只给【id】+ publicText 前 40 字，小模型只需选 ID 不需读全文。
-export function buildIntakeUserContent({ playerInput, recentTurns = [], npcs = [], entries = [] } = {}) {
+export function buildIntakeUserContent({ playerInput, recentTurns = [], npcs = [], entries = [], questCandidates = [] } = {}) {
   const lines = [];
   lines.push(`玩家这句话：「${playerInput || ""}」`);
   if (recentTurns.length) {
@@ -32,7 +32,14 @@ export function buildIntakeUserContent({ playerInput, recentTurns = [], npcs = [
       lines.push(`【${entry.id}】${String(entry.publicText || "").slice(0, 40)}`);
     }
   }
-  lines.push('输出扁平 JSON：read（≤40字拆清代词与意图核心）、refIds、actions、proposals；无则空数组/空串，禁编造不在场的角色与物件。');
+  if (questCandidates.length) {
+    lines.push("本回合可推进任务候选（quest_advance 只能从这里挑，禁自编 flag）：");
+    for (const c of questCandidates) {
+      lines.push(`· 《${c.title}》questId=${c.questId} flag=${c.flag}——${c.stageBrief}`);
+    }
+    lines.push("玩家这句话若真把某件事说动/做到了位，就在 proposals 里提 {kind:\"quest_advance\",questId,flag,claim,fit}；没到位就不提，宁可少提。");
+  }
+  lines.push('输出扁平 JSON：read（≤40字拆清代词与意图核心）、refIds、actions、proposals；无则空数组/空串，禁编造不在场的角色与物件。proposals 的 questId/flag 为必填键：非 quest_advance 提议一律填空串。');
   return lines.join("\n");
 }
 

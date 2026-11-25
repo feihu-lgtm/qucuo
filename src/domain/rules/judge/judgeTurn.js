@@ -110,6 +110,21 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
 
   // ── 第二步：赠礼/赔罪/求教收拒裁决 ──
   const actions = Array.isArray(intakeResult.actions) ? intakeResult.actions : [];
+  // 任务交付去重预扫：quest_advance 提议命中带 deliver 的合法候选时，同目标同物的
+  // give 动作必须压制——交付件归属由 questFlagRule 任务通道扣件结算，赠礼通道再转
+  // 一次就是双扣件+虚假好感（村2 糌粑→老孙：交差不是送礼）。
+  const questCandidatesPre = Array.isArray(envelope.questCandidates) ? envelope.questCandidates : [];
+  const proposalsPre = Array.isArray(intakeResult.proposals) ? intakeResult.proposals : [];
+  const deliverClaims = proposalsPre
+    .filter((p) => p?.kind === "quest_advance")
+    .map((p) => questCandidatesPre.find((c) => c.questId === p.questId && c.flag === p.flag))
+    .filter((c) => c?.deliver)
+    .map((c) => c.deliver);
+  const isDeliverGive = (action, item) => deliverClaims.some((d) => {
+    if (action.target !== d.to) return false;
+    const iname = item?.name || action.itemId || "";
+    return !!iname && (iname === d.item || iname.includes(d.item) || d.item.includes(iname));
+  });
   let anyAccepted = false;
   // WO-16A 搭话开闸：talkOnly 回合（纯搭话）判官只产小额社交事实——
   // 严禁因搭话误搬物品：give/inspect_container 等硬事实整条拦截，只留 notes 痕迹。
@@ -147,6 +162,10 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
 
     if (action.kind === "give") {
       const item = inv.find((it) => it?.id === action.itemId || it?.name === action.itemId);
+      if (isDeliverGive(action, item)) {
+        notes.push(`${action.target}的${item?.name || "物件"}走任务交付通道结算，赠礼动作去重压制`);
+        continue;
+      }
       const prefer = giftPreference(npc);
       const preferHit = prefer && item?.category === prefer ? 0.15 : 0;
       const weight = item ? computeGiftWeight(npc, item) : null;
@@ -288,6 +307,29 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
       });
       notes.push(`${action.target}无所获，降级为残页线索`);
     }
+  }
+
+  // ── B1 任务推进扩展律：quest_advance 白名单核验 ──
+  // 候选只能由系统 helper（questAdvanceCandidates）现场生成并进 envelope；
+  // 小模型提议的 questId+flag 必须精确命中本轮候选，自编/提前阶段/错地点一律
+  // 安静丢弃——叙事到位判定归 intake 提议，上下文合法性归判官裁决。
+  const questCandidates = Array.isArray(envelope.questCandidates) ? envelope.questCandidates : [];
+  const signedQuestFlags = new Set();
+  for (const proposal of proposals) {
+    if (proposal?.kind !== "quest_advance") continue;
+    const hit = questCandidates.find((c) => c.questId === proposal.questId && c.flag === proposal.flag);
+    if (!hit) {
+      notes.push(`任务推进提议未过白名单（${proposal.questId || "?"}/${proposal.flag || "?"}），丢弃`);
+      continue;
+    }
+    if (signedQuestFlags.has(hit.flag)) continue;
+    signedQuestFlags.add(hit.flag);
+    facts.push({
+      id: nextFactId(), op: "ADVANCE_QUEST",
+      questId: hit.questId, flag: hit.flag, questTitle: hit.title,
+      // 「主角」是判官全链统一的系统主角代号（talk/give/sealVerifier 同口径），不用玩家实名
+      witnesses: ["主角"],
+    });
   }
 
   // ── WO-16C 移动拾取条件券：rollMovementEvents 系统掷中的路遇拾取，只签空白

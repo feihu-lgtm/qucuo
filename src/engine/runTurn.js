@@ -17,6 +17,7 @@ import { buildIntakeUserContent, normalizeIntakeResult } from "./turn/intakeTurn
 import { verifySealAndMaterialize } from "../domain/rules/effects/sealVerifier.js";
 import { random } from "../utils/rng.js";
 import { validateEmergenceSeal } from "../domain/rules/npc/npcEmergence.js";
+import { questAdvanceCandidates } from "../domain/rules/quests/questAdvanceCandidates.js";
 import { getPresentNpcs } from "../domain/rules/prompt/promptRefs.js";
 
 const MAX_AUTO_RETRY = 2;
@@ -186,12 +187,25 @@ async function runTurnSteps(ctx, cmd, opts) {
   if (deps.apiCfg?.judgePipelineEnabled && deps.apiCfg?.extractionEnabled && !isSettle) {
     try {
       const visibleNpcs = preparedPrompt.visibleNpcsForAI || preparedPrompt.visibleNpcs || deps.room?.npcs || [];
+      // B1 任务推进候选：只能由系统 helper 现场生成——小模型挑候选、
+      // 判官白名单核验，全流程无模型自编 flag 的通道。
+      const liveNow = ctx.getGameState?.() || {};
+      const questCandidates = questAdvanceCandidates({
+        questProgress: liveNow.questProgress || deps.questProgress || {},
+        flags: liveNow.flags || deps.flags || [],
+        varTree: deps.varTree || ctx.memory?.varTreeLatest || {},
+        char: liveNow.char || deps.char || {},
+        room: deps.room || {}, inv: liveNow.inv || deps.inv || [],
+        innerRoomName: liveNow.innerRoomName ?? deps.innerRoomName ?? null,
+        questTriggerMode: deps.apiCfg?.questTriggerMode || "prompt",
+      });
       const intakeContent = buildIntakeUserContent({
         playerInput: cmd,
         recentTurns: convo.slice(-4).map((m) => (m.role === "user" ? { user: m.content } : { engine: m.content }))
           .reduce((acc, cur) => { if (cur.user) acc.push({ user: cur.user, engine: "" }); else if (acc.length) acc[acc.length - 1].engine = cur.engine; return acc; }, []),
         npcs: visibleNpcs,
         entries: [],
+        questCandidates,
       });
       const intakeRes = await withAI("turn.intake", { userContent: intakeContent, cfg: deps.apiCfg }, { ai, apiCfg: deps.apiCfg, throwOnError: false });
       if (ctx.isStale?.()) return { stale: true };
@@ -201,6 +215,7 @@ async function runTurnSteps(ctx, cmd, opts) {
         turn: timeNow, day: Math.floor(timeNow / 24) + 1, place: deps.room?.name || "",
         npcs: visibleNpcs, varTree: deps.varTree || ctx.memory?.varTreeLatest || {},
         inv: deps.inv || [], entries: [], talkOnly: isTalk,
+        questCandidates,
         pickupJudgment: deps.pickupJudgment || null,
         budget: { riskLevel: 0, luck: deps.char?.special?.气运 ?? 0 },
       }, intakeResult, { rng: random });

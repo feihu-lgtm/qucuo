@@ -4,6 +4,7 @@ import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { getCurrentStage, isQuestGateOpen, canBypassExclusive } from "../../domain/rules/quests/questEngine.js";
 import { getBuildingsForLocation } from "../../domain/data/buildings/qucuoBuildings.js";
 import { hasInnerMap, getDistrictAnchor, isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
+import { isAtQuestPlace } from "../../domain/rules/quests/questPlace.js";
 import { roadEncounterFor } from "../../domain/data/encounters/roadEncounters.js";
 import { getPresentNpcs } from "../../domain/rules/prompt/promptRefs.js";
 import { activeCompanion, activeCompanionKey, COMPANION_LORE, unlockedCompanions, stationedCompanions } from "../../domain/rules/companion/companion.js";
@@ -37,7 +38,14 @@ const placeLabel = (stage) => {
 // AI 要把这当成一场真交锋来演：只有玩家的话在理、把对方驳倒/说动时，
 // 才在 flags_add 吐出成功 flag 推进；玩家词不达意、被反驳、气势输了，
 // 就让对方继续刁难，不给过。
-export function buildQuestStageNote({ questProgress, flags, varTree, char, room, inv, pendingQuestBranch, visibleNpcs, convo, settleNpc, cmd, innerRoomName, questTriggerMode }) {
+// 判官双调用下模型是否还承担任务旗举证：必须与 runTurn 判官真实激活闸同源——
+// judgePipelineEnabled && extractionEnabled && 非 settle 回合。settle 回合不走判官，
+// 若仍提示「系统自会判定」，任务旗/旧通道的提示与现实再次矛盾（终审 blocker）。
+export function shouldSuppressModelFlags(apiCfg, settleish) {
+  return !!(apiCfg?.judgePipelineEnabled && apiCfg?.extractionEnabled) && !settleish;
+}
+
+export function buildQuestStageNote({ questProgress, flags, varTree, char, room, inv, pendingQuestBranch, visibleNpcs, convo, settleNpc, cmd, innerRoomName, questTriggerMode, suppressModelFlags }) {
   const describeFlag = (f) => Array.isArray(f) ? f.map(x => `"${x}"`).join("/或") + "（按玩家实际选择的分支，只加其中一个）" : `"${f}"`;
   const noteLines = [];
   for (const quest of QUCUO_QUESTS) {
@@ -74,28 +82,46 @@ export function buildQuestStageNote({ questProgress, flags, varTree, char, room,
         if (stage.choices?.length && (questTriggerMode !== "script" || allCombat(stage))) {
           noteLines.push(`《${quest.title}》当前阶段：${stage.description}——这一步的推进由玩家在任务面板抉择（${stage.choices.map(c => c.label).join("／")}），叙事最多写到撞见此景，不要替玩家抉择，也不要在 flags_add 里加这一阶段的 flag`);
         } else if (stage.choices?.length) {
-          noteLines.push(`《${quest.title}》当前阶段：${stage.description}——玩家抉择后，在 flags_add 加入${describeFlag(stage.completionFlag)}`);
+          noteLines.push(suppressModelFlags
+            ? `《${quest.title}》当前阶段：${stage.description}——玩家抉择后把情景自然写出即可，推进与否系统自会判定`
+            : `《${quest.title}》当前阶段：${stage.description}——玩家抉择后，在 flags_add 加入${describeFlag(stage.completionFlag)}`);
+        } else if (suppressModelFlags) {
+          // 判官双调用：推进由 intake quest_advance 提议 + judgeTurn 白名单签发，
+          // 模型不再需要（也不应）往 flags_add 吐任务旗——提示只剩场景上下文。
+          noteLines.push(`《${quest.title}》当前阶段：${stage.description}——把这一步的到场情景自然写出即可，推进与否系统自会判定`);
         } else {
           noteLines.push(`《${quest.title}》当前阶段：${stage.description}——叙事推进到此处后，在 flags_add 加入${describeFlag(stage.completionFlag)}`);
         }
       }
     } else {
-      // 未开始的任务：只在第一阶段真正可达的地方提示——stage.giver===null 的
-      // 阶段靠 requireLocation 落地（李若由的任务在天都镇镇口对质，不在小栈），
-      // 其余照旧要 giver 在场。
+      // 「这里」判定与任务面板（useGameUi）同源：requireLocation 存在只看地点不看
+      // giver——giver 不在场玩家也要能撞上该撞的事；无锚点有 giver 才要 giver 在场；
+      // 无锚点无 giver 走 stage.at。旧 needsGiver/giverHere 口径（有 giver 就要在场）
+      // 与面板矛盾——锚定任务在 panel 能开、叙事/判官候选却被误挡。
       const first = quest.stages[0];
       const needsGiver = first.giver !== null && quest.giver;
-      const anchored = !!first.requireLocation;
       const flagWorthy = (Array.isArray(first.completionFlag) ? first.completionFlag.length : !!first.completionFlag) || first.choices?.length;
-      // 无地点锚点又无 giver 的全局任务不在此提示（旧口径：giver 在场才提示）
-      const giverHere = !needsGiver || room.npcs.some(n => n.name === quest.giver);
-      if (flagWorthy && (anchored || needsGiver) && atStagePlace(first, room, innerRoomName) && giverHere) {
+      const rlFirst = first.requireLocation;
+      // deliver 收件人在场也算「这里」（面板同口径）——真正该交付的地方不能没有入口
+      const deliverHereFirst = !!first.deliver?.to && room.npcs.some(
+        (n) => n.name === first.deliver.to && isNpcVisibleInInnerRoom(room.name, innerRoomName, n),
+      );
+      const hereFirst = rlFirst
+        ? atStagePlace(first, room, innerRoomName)
+        : quest.giver
+          ? room.npcs.some(n => n.name === quest.giver && isNpcVisibleInInnerRoom(room.name, innerRoomName, n)) || deliverHereFirst
+          : isAtQuestPlace(first.at, room.name, innerRoomName) || deliverHereFirst;
+      if (flagWorthy && hereFirst) {
         if (first.choices?.length && (questTriggerMode !== "script" || allCombat(first))) {
           noteLines.push(`《${quest.title}》在此可开启——这一步的推进由玩家在任务面板抉择，叙事最多写到撞见此景，不要在 flags_add 加这一阶段的 flag`);
         } else {
-          noteLines.push(needsGiver
-            ? `${quest.giver}可引出《${quest.title}》——若玩家与其互动触及此事，在 flags_add 加入${describeFlag(first.completionFlag)}`
-            : `《${quest.title}》在此地可开启——玩家触及此事时，在 flags_add 加入${describeFlag(first.completionFlag)}`);
+          noteLines.push(suppressModelFlags
+            ? (needsGiver
+              ? `${quest.giver}可引出《${quest.title}》——玩家与其互动触及此事时自然写出演进，开启与否系统自会判定`
+              : `《${quest.title}》在此地可开启——玩家触及此事时自然写出演进，开启与否系统自会判定`)
+            : (needsGiver
+              ? `${quest.giver}可引出《${quest.title}》——若玩家与其互动触及此事，在 flags_add 加入${describeFlag(first.completionFlag)}`
+              : `《${quest.title}》在此地可开启——玩家触及此事时，在 flags_add 加入${describeFlag(first.completionFlag)}`));
         }
       }
     }

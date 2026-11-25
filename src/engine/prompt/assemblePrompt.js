@@ -1,4 +1,5 @@
 import { snowLeopardNote } from "../../domain/rules/quests/snowLeopardQuest.js";
+import { shouldSuppressModelFlags } from "./roundNotes.js";
 import { buildMainStatePrompt, renderPromptTemplate } from "../../domain/rules/prompt/promptRefs.js";
 
 const ATTEMPT_LABELS = {
@@ -75,7 +76,10 @@ export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo)
     convo, preset, visibleNpcs: presence.visibleNpcs, room, cmd, isTalk,
     questProgress, varTree, time, companionState, nsfwOn, npcState: input.npcState, lockedDestName,
   }) || {};
-  const questStageNote = input.buildQuestStageNote?.({ questProgress, flags, varTree, char, room, inv, pendingQuestBranch, visibleNpcs: presence.visibleNpcs, convo, settleNpc: opts.settleNpc, cmd, innerRoomName, questTriggerMode: apiCfg.questTriggerMode }) || "";
+  const questStageNote = input.buildQuestStageNote?.({ questProgress, flags, varTree, char, room, inv, pendingQuestBranch, visibleNpcs: presence.visibleNpcs, convo, settleNpc: opts.settleNpc, cmd, innerRoomName, questTriggerMode: apiCfg.questTriggerMode,
+    // 判官双调用模式下模型不再承担任务旗举证——与判官真实激活闸同源：
+    // settle 回合（opts.settle/ctx.isSettle，settleNpc 为伴生信号）不走判官，不压下
+    suppressModelFlags: shouldSuppressModelFlags(apiCfg, !!(opts.settle || input.isSettle || opts.settleNpc)) }) || "";
   const forcedEventNote = input.buildForcedEventNote?.(opts.forcedEvent, opts.forcedEventNpc, apiCfg.targetWordCount) || "";
   const arrivalNote = input.buildArrivalNote?.({ isTalk, movingDir, lockedDestName, outerDepart, room }) || "";
   const encounterNote = input.encounter
