@@ -359,6 +359,15 @@ describe("WO-16H-H2 首字超时接主循环（叙事流式）", () => {
     expect(final.text).not.toContain("SEAL");
   });
 
+  it("五类过渡句经玩家原话可选出（label 永不含关键词）", async () => {
+    const { timeoutFallbackLine } = await import("../../domain/rules/clapboard/timeoutFallback.js");
+    expect(timeoutFallbackLine({ kind: "无法判定，交由本次调用自行裁量 我要打坐调息", npc: null, place: "" })).toBe("你闭目收拢喘息，四下静了下来。");
+    expect(timeoutFallbackLine({ kind: "日常闲聊 我想拜师求教", npc: { name: "才旦" } })).toBe("才旦上下打量你，没立刻点头。");
+    expect(timeoutFallbackLine({ kind: "调查/搜索/事件行动 翻翻这口箱柜", npc: null, place: "" })).toBe("你伸手往里探去，指尖碰着些灰土。");
+    // 查看类原话不触发搜刮假动作
+    expect(timeoutFallbackLine({ kind: "查看/环顾 查看一下四周", npc: null, place: "" })).toBe("风雪掠过檐角，四下里静了一瞬。");
+  });
+
   it("首字快到时：不插过渡句直接流式上屏", async () => {
     const h = streamHarness();
     const d = streamDeps({

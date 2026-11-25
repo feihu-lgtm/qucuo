@@ -29,9 +29,17 @@ export function firstTokenBudgetFor(cfg) {
 // personality 不在场册就用 brief 兜底；place 取当前房间名。
 function fallbackFeed(d) {
   const roomNpcs = d.room?.npcs || [];
-  const hit = (d.talkTarget && roomNpcs.find((n) => n?.name === d.talkTarget)) || roomNpcs[0] || null;
+  // 搭话对象优先：对象不在在场名册（离场/名册滞后）时也不能随便抓在场首位顶替——
+  // 过渡句会念错人名；用 talkTarget 名字本身（personality 不可得就空着降级通用句）。
+  const hit = (d.talkTarget && roomNpcs.find((n) => n?.name === d.talkTarget))
+    || (d.talkTarget ? { name: d.talkTarget, personality: "" } : null)
+    || roomNpcs[0] || null;
   return {
-    kind: d.intent?.label || "",
+    // 类别匹配源必须带玩家原话：路由器 label（日常闲聊/调查搜索事件行动…）不含
+    // 拜师/搜刮/敷药/打坐/邀伴任何关键词，单看 label 五类过渡句永远选不出。
+    // 「查看类不走搜刮」由 keys 侧保证（不含看/查），玩家原话里写了翻找/箱柜
+    // 本就该算搜刮语义，不算误配。
+    kind: `${d.intent?.label || ""} ${d.cmd || ""}`,
     npc: hit ? { name: hit.name || "", personality: hit.personality || hit.brief || "" } : null,
     place: d.room?.name || "",
   };
