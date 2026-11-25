@@ -112,6 +112,7 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
     notes.push(`前提未裁，暂不结算：${a.kind}${a.target && a.target !== "无" ? `→${a.target}` : ""}（${a.condition}：${a.condition_text || "未述"}）`);
   }
   const actions = rawActions.filter((a) => !(a?.condition && a.condition !== "无"));
+  const signedRestKeys = new Set(); // WO-16F-F1 本 verdict 调息去重
   // 任务交付去重预扫：quest_advance 提议命中带 deliver 的合法候选时，同目标同物的
   // give 动作必须压制——交付件归属由 questFlagRule 任务通道扣件结算，赠礼通道再转
   // 一次就是双扣件+虚假好感（村2 糌粑→老孙：交差不是送礼）。
@@ -170,10 +171,12 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
         if (amt <= 0) { notes.push("破费数额超出囊中银两，不签发"); continue; }
         facts.push({ id: nextFactId(), op: "CHANGE_VITALS_SILVER", moneyDelta: -amt, witnesses: wit });
       } else if (outcome === "调息") {
-        // 同一游戏时辰只签一次——varTree 记账防重。
-        const restKey = `rest_${turn}`;
-        const done = (varTree?.世界?.调息账 || []).includes(restKey);
+        // 同一游戏时辰只签一次——时辰两回合一档（restKey 按 watch=turn/2 取整），
+        // varTree 记账跨回合防重 + 本 verdict 内 signedRest 去重（快照同读）。
+        const restKey = `rest_${Math.floor(turn / 2)}`;
+        const done = (varTree?.世界?.调息账 || []).includes(restKey) || signedRestKeys.has(restKey);
         if (done) { notes.push("本时辰已调息过，幂等跳过"); continue; }
+        signedRestKeys.add(restKey);
         facts.push({
           id: nextFactId(), op: "CHANGE_VITALS_SILVER",
           hpDelta: Math.round(maxHp * 0.10), witnesses: wit,
@@ -232,7 +235,9 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
         // carry 仅作卡牌数据末位兼容；暂取数组首件（确定性起步，后续可按珍惜度/随机选）。
         const carried = Array.isArray(target.carriedItems) ? target.carriedItems : [];
         const carry = (carried.length ? carried : (Array.isArray(target.carry) ? target.carry : []))
-          .filter((it) => it && it.name);
+          // 已易手/掉落/卖出的物件记录仍挂在 carriedItems 上——过滤后再选，
+          // 否则首件被取走后后续偷窃永远选到死记录。
+          .filter((it) => it && it.name && !it.taken && !it.dropped && !it.sold);
         if (carry.length) {
           const item = carry[0];
           facts.push({
