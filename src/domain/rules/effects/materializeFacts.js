@@ -201,6 +201,15 @@ export function materializeFacts(state, facts, compiledWarrants) {
 
       // ── 5. PROGRESS_CULTIVATION：修为增减 / 武学 stage 推进 ──
       case "PROGRESS_CULTIVATION": {
+        // WO-16F-F1 调息同时辰幂等：restKey 落 varTree.世界.调息账，判官下回合据此跳过。
+        if (fact.restKey) {
+          patches.push({
+            op: "merge",
+            path: ["varTree", "世界", "调息账"],
+            value: (prev) => [...(Array.isArray(prev) ? prev : []), fact.restKey].slice(-24),
+            factId: fact.id,
+          });
+        }
         if (fact.expDelta) { exp = Math.max(0, exp + fact.expDelta); expDirty = true; }
         if (fact.potDelta) { pot = Math.max(0, pot + fact.potDelta); potDirty = true; }
         if (fact.neigongDelta && char) {
@@ -360,6 +369,15 @@ export function materializeFacts(state, facts, compiledWarrants) {
             }
           }
           if (result.note) logs.push({ t: "sys", text: `  ${result.note}` });
+        }
+        // WO-16F-F1 steal 败露生气标记：按现有 varTree 生气状态最小字段落账。
+        if (fact.anger && fact.anger.active) {
+          patches.push({
+            op: "set",
+            path: ["varTree", "角色", fact.npc, "生气状态"],
+            value: { active: true, reason: fact.anger.reason || "", turnsLeft: fact.anger.turnsLeft ?? 3, attempts: [] },
+            factId: fact.id,
+          });
         }
         if (fact.ledgerKind) {
           // WO-21B 写侧收口：心账写径必须走 createHeartLedgerEntry——新写只允许
