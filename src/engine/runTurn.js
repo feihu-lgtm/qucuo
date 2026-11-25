@@ -272,6 +272,8 @@ async function runTurnSteps(ctx, cmd, opts) {
         turn: timeNow, day: Math.floor(timeNow / 24) + 1, place: deps.room?.name || "",
         npcs: visibleNpcs, varTree: vtNow,
         inv: deps.inv || [], entries: [], talkOnly: isTalk,
+        // WO-16F-F1：steal/free_act 检定与伤损/破费定量要读玩家属性与气血银两。
+        char: liveNow.char || deps.char || {},
         containers: containerView,
         containerPlace,
         questCandidates,

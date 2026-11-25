@@ -112,6 +112,7 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
     notes.push(`前提未裁，暂不结算：${a.kind}${a.target && a.target !== "无" ? `→${a.target}` : ""}（${a.condition}：${a.condition_text || "未述"}）`);
   }
   const actions = rawActions.filter((a) => !(a?.condition && a.condition !== "无"));
+  const signedRestKeys = new Set(); // WO-16F-F1 本 verdict 调息去重
   // 任务交付去重预扫：quest_advance 提议命中带 deliver 的合法候选时，同目标同物的
   // give 动作必须压制——交付件归属由 questFlagRule 任务通道扣件结算，赠礼通道再转
   // 一次就是双扣件+虚假好感（村2 糌粑→老孙：交差不是送礼）。
@@ -132,6 +133,134 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
   // 严禁因搭话误搬物品：give/inspect_container 等硬事实整条拦截，只留 notes 痕迹。
   const talkOnly = !!envelope.talkOnly;
   for (const action of actions) {
+    // ── WO-16F-F1 free_act 按 outcome+risk 查表签发（target 常为「无」，先于此处理）──
+    // 检定/区间随机只用传入 rng；公式见 docs/PR：伤损 -maxHp×{低.05,中.12,高.25}、
+    // 身法/体魄检定（attr+rng()×6 ≥ 6）减半；得财 T0 2-10/T1 10-40/T2 40-120 且须
+    // 有 fit 非 absurd 的对应 proposal；调息同时辰幂等；修习按 tier 定 potDelta。
+    if (action.kind === "free_act") {
+      if (talkOnly) { notes.push(`纯搭话回合不结算free_act`); continue; }
+      const outcome = action.outcome || "无";
+      const risk = action.risk || "无";
+      const ch = envelope.char || {};
+      const sp = ch.special || {};
+      const maxHp = Array.isArray(ch.hp) ? (ch.hp[1] ?? 100) : 100;
+      const money = ch.money ?? 0;
+      const tierRank = { T0: 0, T1: 1, T2: 2 }[budget.tier] ?? 0;
+      const ck = (attr) => ((sp[attr] ?? 5) + roll() * 6) >= 6; // 属性检定：身法/体魄
+      const wit = ["主角"];
+      if (outcome === "伤损") {
+        const ratio = risk === "高" ? 0.25 : risk === "中" ? 0.12 : 0.05;
+        let dmg = Math.round(maxHp * ratio);
+        const halved = ck("身法") || ck("体魄");
+        if (halved) dmg = Math.max(1, Math.round(dmg / 2));
+        facts.push({ id: nextFactId(), op: "CHANGE_VITALS_SILVER", hpDelta: -dmg, witnesses: wit });
+        notes.push(`伤损签发：-${dmg} 气血（risk ${risk}${halved ? "，检定减半" : ""}）`);
+      } else if (outcome === "得财") {
+        // 只有 proposal fit 非 absurd 才签——玩家随口「发财」不落银两。
+        const fitProp = proposalsPre.find((pp) => pp && pp.fit && pp.fit !== "absurd");
+        if (!fitProp) { notes.push("得财无 fit 合规 proposal，不签发"); continue; }
+        const ranges = [[2, 10], [10, 40], [40, 120]][tierRank];
+        const amt = ranges[0] + Math.floor(roll() * (ranges[1] - ranges[0] + 1));
+        facts.push({ id: nextFactId(), op: "CHANGE_VITALS_SILVER", moneyDelta: amt, witnesses: wit });
+        notes.push(`得财签发：+${amt} 银两（tier ${budget.tier}）`);
+      } else if (outcome === "破费") {
+        // 玩家原话写明数额才签，且不超过现有银两；没写数额不签。
+        const m = String(action.text || "").match(/(\d+)\s*(?:两|银|钱)/);
+        if (!m) { notes.push("破费未写明数额，不签发"); continue; }
+        const amt = Math.min(parseInt(m[1], 10), money);
+        if (amt <= 0) { notes.push("破费数额超出囊中银两，不签发"); continue; }
+        facts.push({ id: nextFactId(), op: "CHANGE_VITALS_SILVER", moneyDelta: -amt, witnesses: wit });
+      } else if (outcome === "调息") {
+        // 同一游戏时辰只签一次——时辰两回合一档（restKey 按 watch=turn/2 取整），
+        // varTree 记账跨回合防重 + 本 verdict 内 signedRest 去重（快照同读）。
+        const restKey = `rest_${Math.floor(turn / 2)}`;
+        const done = (varTree?.世界?.调息账 || []).includes(restKey) || signedRestKeys.has(restKey);
+        if (done) { notes.push("本时辰已调息过，幂等跳过"); continue; }
+        signedRestKeys.add(restKey);
+        facts.push({
+          id: nextFactId(), op: "CHANGE_VITALS_SILVER",
+          hpDelta: Math.round(maxHp * 0.10), witnesses: wit,
+        });
+        facts.push({
+          id: nextFactId(), op: "PROGRESS_CULTIVATION", potDelta: 1,
+          reason: "调息养气", witnesses: wit, restKey,
+        });
+      } else if (outcome === "修习") {
+        const pot = [1, 2, 3][tierRank];
+        facts.push({ id: nextFactId(), op: "PROGRESS_CULTIVATION", potDelta: pot, reason: "修习精进", witnesses: wit });
+      } else if (outcome === "受寒中毒") {
+        // schema 只有合并枚举——按玩家原话关键词分流寒/毒，两者兼有并列签两条。
+        const text = String(action.text || "");
+        const cold = /寒|冷|冻|受风/.test(text);
+        const poison = /毒|中毒/.test(text);
+        if (!cold && !poison) { notes.push("寒热毒型不明，不签发"); continue; }
+        if (cold) {
+          facts.push({
+            id: nextFactId(), op: "APPLY_CONDITION",
+            attr: "身法", val: -1, negative: true, durationTurns: 12, reason: "受寒", witnesses: wit,
+          });
+        }
+        if (poison) {
+          facts.push({
+            id: nextFactId(), op: "APPLY_CONDITION",
+            attr: "体魄", val: -1, negative: true, durationTurns: 12, reason: "中毒", witnesses: wit,
+          });
+        }
+      } else if (outcome === "醉酒") {
+        facts.push({
+          id: nextFactId(), op: "APPLY_CONDITION", attr: "智谋", val: -1, negative: true,
+          durationTurns: 6, reason: "醉酒", witnesses: wit,
+        });
+      }
+      // 服用/无/其他：不签。
+      continue;
+    }
+
+    // ── WO-16F-F1 steal 按表裁定 ──
+    // 检定 = 身法+智谋+rng()×6 对 警觉难度 4+修正；性情含 精明/多疑/阴鸷 +2，
+    // 在场人数每多一人（除目标外）+1。成功且目标身携有物签 TRANSFER_ITEM
+    // （npc→player 取其 carry 首件）；失败签 MUTATE_SOCIAL 怨 -6 并置生气标记。
+    if (action.kind === "steal") {
+      if (talkOnly) { notes.push(`纯搭话回合不结算steal`); continue; }
+      const target = findNpc(npcs, action.target);
+      if (!target) { notes.push(`偷窃目标 ${action.target || "无名"} 不在场，不签发`); continue; }
+      const ch2 = envelope.char || {};
+      const sp2 = ch2.special || {};
+      const sneaky = /精明|多疑|阴鸷/.test(target.personality || "") ? 2 : 0;
+      const crowd = Math.max(0, npcs.length - 1);
+      const check = (sp2.身法 ?? 5) + (sp2.智谋 ?? 5) + roll() * 6;
+      const difficulty = 4 + sneaky + crowd;
+      if (check >= difficulty) {
+        // 真实 room NPC 物件在 carriedItems（materializeFacts/roomNpcs/attireSync 同口径），
+        // carry 仅作卡牌数据末位兼容；暂取数组首件（确定性起步，后续可按珍惜度/随机选）。
+        const carried = Array.isArray(target.carriedItems) ? target.carriedItems : [];
+        const carry = (carried.length ? carried : (Array.isArray(target.carry) ? target.carry : []))
+          // 已易手/掉落/卖出的物件记录仍挂在 carriedItems 上——过滤后再选，
+          // 否则首件被取走后后续偷窃永远选到死记录。
+          .filter((it) => it && it.name && !it.taken && !it.dropped && !it.sold);
+        if (carry.length) {
+          const item = carry[0];
+          facts.push({
+            id: nextFactId(), op: "TRANSFER_ITEM",
+            itemId: item.id || "", itemName: item.name,
+            from: target.name, to: "player", witnesses: ["主角"],
+          });
+          notes.push(`偷窃得手：${target.name}的「${item.name}」（检定${check.toFixed(1)}≥${difficulty}）`);
+        } else {
+          notes.push(`${target.name}身无一物，偷窃无获`);
+        }
+      } else {
+        facts.push({
+          id: nextFactId(), op: "MUTATE_SOCIAL", npc: target.name,
+          affectionDelta: -6, ledgerKind: "怨", reason: "偷窃败露",
+          witnesses: ["主角", target.name],
+          anger: { active: true, reason: "偷窃败露", turnsLeft: 3 },
+        });
+        notes.push(`偷窃败露：${target.name}结怨（检定${check.toFixed(1)}<${difficulty}）`);
+      }
+      continue;
+    }
+
     const npc = findNpc(npcs, action.target);
     if (!npc) continue;
     const aff = affectionOf(varTree, npc.name);
