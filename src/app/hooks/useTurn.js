@@ -57,6 +57,11 @@ export function useTurn({
     // 天机落账卡结构化动作：系统边界确定性执行——按 id 寻址、不经 intent
     // 识别（行动识别关闭同样生效），写账走 applyResult 统一边界，不绕 commitRound。
     if (rawCmd && typeof rawCmd === "object" && rawCmd.type === "effectReceipt") {
+      // 走调度队列排队执行：叙事回合进行中点落账卡，不得插队 captureUndo
+      // 把回合前检查点替换成半截回合的快照（回滚会落成半成品状态）。
+      if (!opts.schedulerManaged) {
+        return dispatchCommand("effectReceipt", () => actRef.current(rawCmd, extraReplies, { ...opts, schedulerManaged: true }), { displayText: `落账·${rawCmd.name || rawCmd.op}` });
+      }
       const result = receiptActionResult(gameStore.getState(), rawCmd);
       if (!result) return;
       captureUndo();

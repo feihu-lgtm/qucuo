@@ -115,3 +115,22 @@ describe("幂等 explicit-on 重复派发", () => {
     expect(receiptActionResult(st2, { type: "effectReceipt", op: "consume", kind: "grant_item", factId: "F2_3", itemId: "it_new222" })).toBeNull();
   });
 });
+
+describe("factId 绑定：旧 receipt 不吃补发新件", () => {
+  it("provenance.factId 不一致的同名同 id 件寻址落空", () => {
+    const st = baseState();
+    // 图鉴物 id 确定性复用：旧件已吃，新补发的同号件带不同 factId
+    st.inv = [{ id: "it_cat_abc", name: "祛瘴花茶", category: "misc", consumable: { hpRestore: 0.1 }, provenance: { factId: "F99_1" } }];
+    const res = receiptActionResult(st, { type: "effectReceipt", op: "consume", kind: "grant_item", factId: "F10_1", itemId: "it_cat_abc" });
+    expect(res).toBeNull(); // F10_1 的旧 receipt 吃不到 F99_1 补发的件
+    const ok = receiptActionResult(st, { type: "effectReceipt", op: "consume", kind: "grant_item", factId: "F99_1", itemId: "it_cat_abc" });
+    expect(ok).toBeTruthy(); // 本回执的件照常吃
+  });
+
+  it("无 provenance 的老件放行兼容", () => {
+    const st = baseState();
+    st.inv = [{ id: "it_legacy", name: "铁剑", category: "weapon", quality: "白", equipped: false }];
+    const res = receiptActionResult(st, { type: "effectReceipt", op: "equip", kind: "grant_item", factId: "F10_2", itemId: "it_legacy" });
+    expect(res?.changes?.inv).toBeTypeOf("function");
+  });
+});
