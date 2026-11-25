@@ -316,15 +316,13 @@ export function isCompanionUnlockedByName(companionState, name) {
 }
 
 // 换出战队友：把目标置 active，其余一律置 false（互斥）。
-// 留守在别处的队友换上出战位即算唤回（清 stationed）——人得在身边才能上场。
+// 留守在别处的队友不在这里接回：switchCompanion 先拒绝，人得当面唤回（有重逢那一幕）才能上场。
 // key 传 null 表示谁都不带。
 export function setActiveCompanion(companionState, key) {
   const next = { ...companionState };
   for (const k of allCompanionKeys(next)) {
     if (!next[k]) continue;
-    const entry = { ...next[k], active: k === key };
-    if (k === key) delete entry.stationed;
-    next[k] = entry;
+    next[k] = { ...next[k], active: k === key };
   }
   return next;
 }

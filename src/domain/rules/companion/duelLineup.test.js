@@ -43,11 +43,12 @@ describe("每位冒险者的随从都随主人入队，是两个人", () => {
     expect(duelAllies(suActive, companionNpcEntry(cs, xianKey)).map((a) => a.key)).toEqual([suKey]);
   });
 
-  it("留守在别处的随从换上出战位即算唤回", () => {
+  it("留守在别处的随从不能隔空换上出战位，接回来才行", async () => {
+    const { switchCompanion } = await import("../../../features/companion/logic.js");
     const cs = stationCompanion(recruit(byName("史燕")), "imported_阿财", { roomName: "客栈" });
-    const deployed = setActiveCompanion(cs, "imported_阿财");
-    expect(deployed.imported_阿财).toMatchObject({ active: true });
-    expect(deployed.imported_阿财.stationed).toBeUndefined();
+    expect(switchCompanion({ companionState: cs }, "imported_阿财").changes).toBeUndefined();
+    const back = switchCompanion({ companionState: unstationCompanion(cs, "imported_阿财") }, "imported_阿财");
+    expect(back.changes.companionState(unstationCompanion(cs, "imported_阿财")).imported_阿财.active).toBe(true);
   });
 
   it("开口方式按类型：机关人偶与哑巴随从不开口、灵兽不说人话、剑灵与人能说话", () => {

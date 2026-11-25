@@ -20,9 +20,11 @@ export function usePlayerActionHandlers({ noteAction, setInnerRoomName, seaRetur
   }, { feature: "narrator.comfort" }), [captureUndo, noteAction]);
 
   const handleSwitchCompanion = useCallback((key) => applyResult(featureCtx(), () => {
-    captureUndo();
-    applyResult(featureCtx(), switchCompanion(gameStore.getState(), key));
-    noteAction("companionSwitch");
+    const result = switchCompanion(gameStore.getState(), key);
+    // 被拒（留守在别处）只有提示没有 changes：不占撤销点
+    if (result.changes) captureUndo();
+    applyResult(featureCtx(), result);
+    if (result.changes) noteAction("companionSwitch");
   }, { feature: "companion.switchCompanion" }), [captureUndo, noteAction]);
 
   const handleResolveTrauma = useCallback(() => applyResult(featureCtx(), () => {

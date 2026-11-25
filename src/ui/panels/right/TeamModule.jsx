@@ -39,7 +39,7 @@ export default function TeamModule({ zoneTheme, companionState, varTree, onSwitc
             {/* 换出战：点整行左侧区域 */}
             <div
               onClick={() => onSwitchCompanion?.(isOn ? null : slot.key)}
-              title={isOn ? "点一下让他留守" : `换 ${slot.label} 出战`}
+              title={isOn ? "点一下换下出战位" : stationedAt ? `${slot.label}留守在${stationedAt.roomName || stationedAt.district}，先去接回来` : `换 ${slot.label} 出战`}
               style={{
                 flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, cursor: "pointer",
                 padding: "6px 8px", borderRadius: 0,
