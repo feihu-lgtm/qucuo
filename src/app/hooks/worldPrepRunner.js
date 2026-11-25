@@ -17,8 +17,11 @@ export function unlootedContainerNames(state) {
     varTree: state?.varTree,
     roomDefLookup: getInnerRoom,
   });
+  // #523 Review 裁决：有预设物的容器首翻必中预设+即坍缩（judgeTurn 第一关），
+  // 备料物永远到不了玩家手里——这类容器从备料候选根上排除，
+  // 不生成注定无法兑现的 clue。
   return Object.entries(containerView || {})
-    .filter(([, c]) => c && c.collapsed !== true)
+    .filter(([, c]) => c && c.collapsed !== true && !(Array.isArray(c.presetItems) && c.presetItems.length))
     .map(([name]) => name);
 }
 
