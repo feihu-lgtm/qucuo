@@ -191,27 +191,24 @@ describe("元朵朵入队：铁伯作为随从伙伴一并入队", () => {
     expect(unit.hp[1]).toBeGreaterThan(0);
   });
 
-  it("落盘：房里的铁伯一并带走，并写一句入队日志；别的 OC 不带随从", () => {
+  it("落盘：房里的铁伯一并带走，随从入队交给结算叙事由 AI 写；别的 OC 不带随从", () => {
     const state = makeState({ room: { name: "鱼定村", npcs: [{ name: "元朵朵" }, { name: "铁伯" }, { name: "路人" }] } });
     const res = recruitOC(state, DUODUO, "hire", { offer: hirePriceFor(DUODUO) });
     const out = applyRecruit(state, DUODUO, res.effect);
     expect(out.changes.room({ npcs: state.room.npcs }).npcs.map((n) => n.name)).toEqual(["路人"]);
-    expect(out.logs[0].text).toContain("铁伯");
+    expect(out.logs).toBeUndefined();
+    expect(out.settle).toMatch(/随从机关人偶铁伯（.+）也随主人一并入队/);
     const plain = recruitOC(makeState(), ADVENTURER, "hire", { offer: 240 });
     expect(Object.keys(plain.effect.companionState)).toEqual(["imported_小鱼儿"]);
   });
 
-  it("留守/唤回主仆同进同出：留守铁伯即留下整组，组里有人出战则拒绝", () => {
+  it("主人和随从各自留守、各自唤回；出战位上的那个不能留守", () => {
     const cs = recruit().effect.companionState;
-    // 朵朵出战中：整组拒绝
-    expect(stationCompanion(cs, "imported_铁伯", { roomName: "客栈" })).toBe(cs);
-    const swapped = { ...cs, snowLeopard: { unlocked: true, active: false, data: { name: "雪豹" } } };
-    const benched = setActiveCompanion(swapped, "snowLeopard");
-    const stationed = stationCompanion(benched, "imported_铁伯", { district: "鱼定村", roomId: "客栈", roomName: "客栈", since: 7 });
+    expect(stationCompanion(cs, "imported_元朵朵", { roomName: "客栈" })).toBe(cs);
+    const stationed = stationCompanion(cs, "imported_铁伯", { district: "鱼定村", roomId: "客栈", roomName: "客栈", since: 7 });
     expect(stationed["imported_铁伯"].stationed.roomName).toBe("客栈");
-    expect(stationed["imported_元朵朵"].stationed.since).toBe(7);
-    const back = unstationCompanion(stationed, "imported_元朵朵");
+    expect(stationed["imported_元朵朵"].stationed).toBeUndefined();
+    const back = unstationCompanion(stationed, "imported_铁伯");
     expect(back["imported_铁伯"].stationed).toBeUndefined();
-    expect(back["imported_元朵朵"].stationed).toBeUndefined();
   });
 });

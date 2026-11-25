@@ -68,20 +68,27 @@ describe("companionChatterTick：评价玩家活动，AI 优先 + 兜底", () =>
     expect(chatterFallback(pearl, () => 0.99, "NONE")).toMatch(/“/);
   });
 
-  it("没化形的真兽只出声不调用 AI", async () => {
-    const ask = vi.fn();
-    const out = await companionChatterTick({ companionState: mkCs({ panda: c("墨团", { beast: true }) }), activity: {}, ask, rng: () => 0, memory: createChatterMemory() });
-    expect(ask).not.toHaveBeenCalled();
-    expect(out.line).toMatch(/呜|尾巴/);
+  it("不会说人话的同伴也走 AI，提示词写清开口方式", async () => {
+    const cases = [
+      ["墨团", { beast: true }, /灵兽/],
+      ["铁伯", { mute: true }, /机关造物/],
+      ["哑奴", { voice: "silent" }, /哑巴/],
+    ];
+    for (const [name, slot, rule] of cases) {
+      const ask = vi.fn(async () => "（比划了一下。）");
+      const cs = mkCs({ k: { ...c(name, { beast: slot.beast }), ...slot } });
+      const out = await companionChatterTick({ companionState: cs, activity: {}, ask, rng: () => 0, memory: createChatterMemory() });
+      expect(ask, name).toHaveBeenCalledOnce();
+      expect(ask.mock.calls[0][0], name).toMatch(rule);
+      expect(out).toEqual({ speaker: name, line: "（比划了一下。）" });
+    }
   });
 
-  it("铁伯（mute 机关人偶）只出机括声，不调用 AI", async () => {
-    const ask = vi.fn();
-    const cs = mkCs({ imported_铁伯: { ...c("铁伯"), mute: true } });
-    const out = await companionChatterTick({ companionState: cs, activity: {}, ask, rng: () => 0, memory: createChatterMemory() });
-    expect(ask).not.toHaveBeenCalled();
-    expect(out.speaker).toBe("铁伯");
-    expect(out.line).toMatch(/机括|发条|黄玉/);
+  it("没配 API 时：兽与机关用旧兜底句，哑巴随从不插话", async () => {
+    const tick = (slot) => companionChatterTick({ companionState: mkCs({ k: slot }), activity: {}, rng: () => 0, memory: createChatterMemory() });
+    expect((await tick(c("墨团", { beast: true }))).line).toMatch(/呜|尾巴/);
+    expect((await tick({ ...c("铁伯"), mute: true })).line).toMatch(/机括|发条/);
+    expect(await tick({ ...c("哑奴"), voice: "silent" })).toBeNull();
   });
 
   it("没人随行/概率未中 → null", async () => {
@@ -155,5 +162,24 @@ describe("companionReunionLine：留守时长+好感演开口第一句", () => {
 
   it("未解锁槽位 → null", async () => {
     expect(await companionReunionLine({ companionState: {}, slotKey: "a", favor: 0, now: 0 })).toBeNull();
+  });
+});
+
+describe("冒险者和随从入队后两个人都会插话", () => {
+  it("主人与随从都在插话池里，开口方式按随从类型", async () => {
+    const { unlockImportedCompanion, unlockFollowerCompanion } = await import("../../domain/rules/companion/companion.js");
+    const { ADVENTURER_POOL } = await import("../../domain/data/dungeon/adventurers.js");
+    const { ADVENTURER_POOL_IP } = await import("../../domain/data/dungeon/adventurersIP.js");
+    const pool = [...ADVENTURER_POOL, ...ADVENTURER_POOL_IP];
+    const voices = {};
+    for (const followerName of ["铁伯", "阿财", "哑奴", "醉花"]) {
+      const owner = pool.find((a) => a.follower.name === followerName);
+      const cs = unlockFollowerCompanion(unlockImportedCompanion({}, { name: owner.name, levelCap: 1 }), owner);
+      const chatters = eligibleChatters(cs);
+      expect(chatters.map((w) => w.name).sort()).toEqual([owner.name, followerName].sort());
+      voices[followerName] = chatters.find((w) => w.name === followerName).voice;
+    }
+    expect(voices).toEqual({ 铁伯: "mechanical", 阿财: "beast", 哑奴: "silent", 醉花: "human" });
+    expect(chatterFallback({ voice: "silent" }, () => 0)).toBeNull();
   });
 });

@@ -9,6 +9,7 @@ import { generateNpcMoveset } from "../npc/npcMovesets.js";
 import { ensureNpcCombatData } from "../npc/npcGeneration.js";
 import { MOVE_TYPE } from "../combat/moveTypes.js";
 import { ADVENTURER_POOL_IP } from "../../data/dungeon/adventurersIP.js";
+import { ADVENTURER_POOL } from "../../data/dungeon/adventurers.js";
 
 const DUODUO = ADVENTURER_POOL_IP.find((a) => a.name === "元朵朵");
 
@@ -93,5 +94,16 @@ describe("migrateLegacySnapshot：旧档里房间里的 OC", () => {
     const once = migrateLegacySnapshot(snap(genericDuoduo()));
     expect(twice.room.npcs[0].moveset.map((m) => m.name)).toEqual(once.room.npcs[0].moveset.map((m) => m.name));
     expect(Object.keys(twice.companionState).sort()).toEqual(Object.keys(once.companionState).sort());
+  });
+});
+
+describe("migrateCompanionState：旧档里已入队的其他冒险者补上随从", () => {
+  it("史燕入队时还没有随从槽 → 补建阿财（灵兽、不说人话）", () => {
+    const SHIYAN = [...ADVENTURER_POOL, ...ADVENTURER_POOL_IP].find((a) => a.name === "史燕");
+    const old = unlockImportedCompanion({}, { name: "史燕", levelCap: SHIYAN.levelCap ?? 1 });
+    const cs = migrateCompanionState(old);
+    const slot = Object.values(cs).find((c) => c.servantOf === "imported_史燕");
+    expect(slot).toMatchObject({ label: "阿财", active: false, voice: "beast", cannotSpeak: true });
+    expect(migrateCompanionState(cs)).toBe(cs);
   });
 });

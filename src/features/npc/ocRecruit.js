@@ -141,10 +141,10 @@ export function recruitOC(state, adventurer, route, ctx = {}) {
     brief: adventurer.brief || adventurer.fullBio || adventurer.title,
     signatureMoves: ocSignatureMoves(adventurer),
   };
-  // 带 joinParty 的随从（元朵朵的铁伯）随主人一并入队，作为独立伙伴槽，主人仍是出战位
+  // 主人的随从（铁伯、阿财、醉花……）作为另一个伙伴一并入队，主人仍是出战位
   const withOwner = unlockImportedCompanion(state?.companionState || {}, npc);
   const companionState = unlockFollowerCompanion(withOwner, adventurer);
-  const followerName = adventurer.follower?.joinParty && companionState !== withOwner ? adventurer.follower.name : null;
+  const followerName = companionState !== withOwner ? adventurer.follower.name : null;
   return {
     ok: true,
     effect: {
@@ -172,8 +172,15 @@ export function applyRecruit(state, adventurer, effect) {
         npcs: removeNpc(prev.npcs, (entry) => entry.name === adventurer.name || (!!effect.followerName && entry.name === effect.followerName)),
       }),
     },
-    ...(effect.followerName ? { logs: [{ t: "sys", text: `  ${effect.followerName}关节咔哒一响，推着家当跟在${adventurer.name}身后一并入了队。` }] } : {}),
-    settle: `与${adventurer.name}击掌为誓，自此结伴同行`,
+    // 随从一并入队不写固定句：把随从是谁、什么来历交给结算叙事，由 AI 写这一幕
+    settle: `与${adventurer.name}击掌为誓，自此结伴同行${followerSettleNote(effect.followerName && adventurer.follower)}`,
     settleOptions: { settleNpc: adventurer.name, settleKind: "companion_invite", settleBeast: false },
   };
+}
+
+// 结算里只交代事实（随从是谁、什么来历），这一幕怎么写交给 AI
+function followerSettleNote(follower) {
+  if (!follower) return "";
+  const kind = follower.type ? `随从${follower.type}` : "随从";
+  return `；${kind}${follower.name}（${follower.desc || follower.type}）也随主人一并入队，从此同在队中`;
 }

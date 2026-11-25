@@ -1,5 +1,5 @@
 import { npcAffectionLabel } from "../../../domain/rules/prompt/mvu.js";
-import { unlockedCompanions, activeCompanionKey } from "../../../domain/rules/companion/companion.js";
+import { unlockedCompanions, activeCompanionKey, companionNpcEntry } from "../../../domain/rules/companion/companion.js";
 import { INNER_MAP, getDistrictAnchor, getPublicInnerRoomNames } from "../../../domain/rules/map/innerMap.js";
 import { setActiveNpcMenu } from "../../../store/sessionUiStore.js";
 
@@ -31,7 +31,6 @@ export default function TeamModule({ zoneTheme, companionState, varTree, onSwitc
         )}
       </div>
       {unlockedCompanions(companionState).map(slot => {
-        const data = companionState[slot.key].data;
         const isOn = activeKey === slot.key;
         const stationedAt = companionState[slot.key].stationed;
         const aff = varTree.角色?.[slot.label]?.好感度;
@@ -40,7 +39,7 @@ export default function TeamModule({ zoneTheme, companionState, varTree, onSwitc
             {/* 换出战：点整行左侧区域 */}
             <div
               onClick={() => onSwitchCompanion?.(isOn ? null : slot.key)}
-              title={isOn ? "点一下让他留守" : `换 ${slot.label} 出战`}
+              title={isOn ? "点一下换下出战位" : stationedAt ? `${slot.label}留守在${stationedAt.roomName || stationedAt.district}，先去接回来` : `换 ${slot.label} 出战`}
               style={{
                 flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, cursor: "pointer",
                 padding: "6px 8px", borderRadius: 0,
@@ -87,9 +86,10 @@ export default function TeamModule({ zoneTheme, companionState, varTree, onSwitc
                 )}
               </select>
             )}
-            {/* 互动菜单：单独一个入口，免得跟"换出战"抢点击 */}
+            {/* 互动菜单：单独一个入口，免得跟"换出战"抢点击。互动对象跟左栏名单同一份
+                companionNpcEntry（带 cannotSpeak 等），不会说话的队友点交谈走不通人言的分支 */}
             <span
-              onClick={() => setActiveNpcMenu({ ...data, brief: BRIEF[slot.key] || slot.label })}
+              onClick={() => setActiveNpcMenu(companionNpcEntry(companionState, slot.key, BRIEF[slot.key] ? { brief: BRIEF[slot.key] } : {}))}
               title="细看/切磋/送礼等"
               style={{
                 cursor: "pointer", fontSize: "var(--fs-2xs)", color: zoneTheme.accentDim,

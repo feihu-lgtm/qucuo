@@ -18,6 +18,15 @@ export function findAdventurerByName(name) {
   return FULL_POOL.find((a) => a.name === name) || null;
 }
 
+// 随从重名（素商、仙音各有一只「青鸟」）：入队槽位 key 要带主人名才不会互相覆盖。
+const FOLLOWER_NAME_COUNT = FULL_POOL.reduce((counts, a) => {
+  if (a.follower?.name) counts.set(a.follower.name, (counts.get(a.follower.name) || 0) + 1);
+  return counts;
+}, new Map());
+export function isSharedFollowerName(name) {
+  return (FOLLOWER_NAME_COUNT.get(name) || 0) > 1;
+}
+
 // 主人 level 按 levelCap 折算（1-5 档），随从强度取 0.6 档
 const ownerPower = (owner) => Math.max(1, Math.round((owner.levelCap ?? 3) * 0.6));
 
