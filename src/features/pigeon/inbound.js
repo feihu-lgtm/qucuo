@@ -157,7 +157,9 @@ export function applyInboundLetter(state, letter, content, opts = {}) {
         const 世界 = { ...(previous?.世界 || {}) };
         世界.来信待发 = (世界.来信待发 || []).filter((pending) => pending.id !== id);
         世界.来信箱 = [
-          { id, npcName, content: text, turn: letter.arriveTime, read: false },
+          // pactMeta 透传（WO-22B-P1）：契约信的事由/期限/酬谢随信入箱，
+          // 供 P4 来信 prompt 换块与 UI 取用；非契约信无此字段不污染旧形状。
+          { id, npcName, content: text, turn: letter.arriveTime, read: false, ...(letter.pactMeta ? { pactMeta: letter.pactMeta } : {}) },
           ...(世界.来信箱 || []),
         ].slice(0, LETTER_TUNE.maxInbox);
         return registerFact({ ...previous, 角色: chars, 世界 }, fact, letter.arriveTime);
