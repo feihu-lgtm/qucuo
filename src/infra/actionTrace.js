@@ -11,7 +11,8 @@ export function startTrace(cmd, raw, options) {
 }
 
 export function step(turn, label, status, detail, layer = "domain", fields = {}) {
-  if (turn) turnMonitor.add(turn, layer, label, { status, detail, ...fields });
+  const safeFields = fields.structured ? { ...fields, structured: traceSnapshot(fields.structured) } : fields;
+  if (turn) turnMonitor.add(turn, layer, label, { status, detail, ...safeFields });
 }
 
 // 结构化排障字段进 trace 前的安全快照：保留判官/听意/尾章全字段形状，
