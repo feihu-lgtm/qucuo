@@ -127,7 +127,7 @@ export function createTurnContext({ plan, env }) {
         getGambleSession: io.getGambleSession, setGambleSession: io.setGambleSession,
         appendDayMaterial: io.appendDayMaterial,
         setVarTree, setRoom, setGambleNegotiation, setInv, setChar, setDao, setExp, setPot,
-        setSkills, setFlags: io.setFlags, setMapData, setTime, setPendingQuestBranch, setConvo, setCompanionState: io.setCompanionState,
+        setSkills, setFlags: io.setFlags, setMapData, setTime, setPendingQuestBranch, setConvo, setCompanionState: io.setCompanionState, setClaimedMilestones: io.setClaimedMilestones,
       }),
   };
 }

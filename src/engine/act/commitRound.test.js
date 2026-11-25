@@ -332,3 +332,47 @@ it("materialized patches 里的 companionState 路径经 commitPatches 落盘不
   // 同批 varTree patch 照常落
   expect(state.varTree?.角色?.才旦?.好感度).toBe(3);
 });
+
+// WO-13 复审必修②：changes.claimedMilestones 不丢 + receipts 挂落账日志项（LogEntry/EffectReceiptCard 可消费）。
+it("materialized changes.claimedMilestones 经 applyPostResult setters 落盘", () => {
+  const state = baseState();
+  const { deps } = makeDeps(state, {}, {
+    materialized: {
+      changes: { claimedMilestones: new Set(["根骨蜕凡"]) },
+      logs: [],
+      patches: [],
+      receipts: [],
+    },
+  });
+  commitRound(deps);
+  expect(state.claimedMilestones instanceof Set ? [...state.claimedMilestones] : state.claimedMilestones).toContain("根骨蜕凡");
+});
+
+it("materialized.receipts 挂在末条落账日志项上，LogEntry 可消费形状保留", () => {
+  const state = baseState();
+  const receipt = { kind: "grant_item", factId: "F1_1", item: { name: "裂风豹骨哨", quality: "蓝" } };
+  const { deps, logs } = makeDeps(state, {}, {
+    materialized: {
+      changes: {},
+      logs: [{ t: "item", text: "  获得 裂风豹骨哨（蓝）" }],
+      patches: [],
+      receipts: [receipt],
+    },
+  });
+  commitRound(deps);
+  const carrier = logs.find((l) => Array.isArray(l.receipts) && l.receipts.length);
+  expect(carrier).toBeTruthy();
+  expect(carrier.receipts[0].kind).toBe("grant_item");
+  expect(carrier.receipts[0].item.name).toBe("裂风豹骨哨");
+});
+
+it("materialized 无日志但有 receipts 时单独补一条天机落账行携带", () => {
+  const state = baseState();
+  const receipt = { kind: "grant_item", factId: "F1_1", item: { name: "残页" } };
+  const { deps, logs } = makeDeps(state, {}, {
+    materialized: { changes: {}, logs: [], patches: [], receipts: [receipt] },
+  });
+  commitRound(deps);
+  const carrier = logs.find((l) => Array.isArray(l.receipts) && l.receipts.length);
+  expect(carrier?.text).toContain("天机落账");
+});
