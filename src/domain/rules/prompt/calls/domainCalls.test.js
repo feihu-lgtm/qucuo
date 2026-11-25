@@ -43,9 +43,9 @@ ${keysDesc}
 
 【输出格式与隐藏判定】
 只输出一个 JSON 对象（玩家只看到 line 字段，其余系统用），不要任何别的文字：
-{"line":"你这句台词（≤30字，纯口语）","hit":"戳中的key的id或null","guardDrop":0到50的整数,"yield":true或false}
+{"line":"你这句台词（≤30字，纯口语）","hit":"戳中的key的id或空串\"\"","guardDrop":0到50的整数,"yield":true或false}
 - line：就是这个人说出口的话本身，不写引导语、不带引号。
-- hit：玩家的话【只要方向对、沾到某个未戳中突破口的边】就填那个 id，不要求字字精准；纯空谈、硬来、重复已戳中的，才填 null。判定宁松勿严——别让玩家好几轮一个都不中。
+- hit：玩家的话【只要方向对、沾到某个未戳中突破口的边】就填那个 id，不要求字字精准；纯空谈、硬来、重复已戳中的，才填空串 ""。判定宁松勿严——别让玩家好几轮一个都不中。
 - guardDrop：这话让你放下多少戒备。一般讲理/寒暄给 5~15；说得真诚、投机、示弱、给足好处、或说到你情绪痛点上，给 30~50；胡搅蛮缠、冒犯你，给 0。
 - yield：只有当【累计戳中数 ≥ ${persuade.resistance}】且你这句是松口答应时，才 true；否则 false。
 当前累计已戳中：${hitKeyIds.length} / 需要 ${persuade.resistance}。`;
@@ -100,8 +100,8 @@ describe("domainCalls parity with legacy requests", () => {
       });
       // WO-03 原生 schema：hit 枚举 = 本场 key id 全集 + null
       expect(opts.modelOptions.schema.name).toBe("persuasion_turn");
-      expect(opts.modelOptions.schema.schema.properties.hit.enum).toEqual(["k1", "k2", "k3", null]);
-      expect(opts.modelOptions.schema.schema.properties.hit.type).toEqual(["string", "null"]);
+      expect(opts.modelOptions.schema.schema.properties.hit.enum).toEqual(["k1", "k2", "k3", ""]);
+      expect(opts.modelOptions.schema.schema.properties.hit.type).toBe("string");
       expect(opts.modelOptions.schema.schema.required).toEqual(["line", "hit", "guardDrop", "yield"]);
     }
   });
