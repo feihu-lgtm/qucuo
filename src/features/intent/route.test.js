@@ -34,4 +34,16 @@ describe("shouldRecognize", () => {
   it("skips quest steps whose event the system already decided", () => {
     expect(shouldRecognize(cfg, "❢ 村3·藏汉两姓的婚事", { forcedEvent: "鱼定大娘拉住你", keepUndo: true })).toBe(false);
   });
+
+  it("WO-16G-G2 裁决A：判官链激活时整链绕过 intent.classify，单调用老路不受影响", () => {
+    const judgeCfg = { ...cfg, judgePipelineEnabled: true, extractionEnabled: true };
+    // 复合自由行动——判官链下不再走行动识别闸（turn.intake 单链承担拆句）
+    expect(shouldRecognize(judgeCfg, "先看看四周，然后把刀送给才旦，再跟他聊聊")).toBe(false);
+    expect(shouldRecognize(judgeCfg, "沿着溪边四处走走")).toBe(false);
+    // 单开关缺一——老路保留
+    expect(shouldRecognize({ ...cfg, judgePipelineEnabled: true, extractionEnabled: false }, "沿着溪边四处走走")).toBe(true);
+    expect(shouldRecognize({ ...cfg, judgePipelineEnabled: false, extractionEnabled: true }, "沿着溪边四处走走")).toBe(true);
+    // 本地直达本就不识别——两路一致
+    expect(shouldRecognize(judgeCfg, "n")).toBe(false);
+  });
 });

@@ -86,6 +86,99 @@ describe("stale turn handling", () => {
 });
 
 describe("runTurn", () => {
+  it("WO-16G-G2：判官链下复合自由行动 turn.intake 恰好一次、全程无 intent.classify", async () => {
+    const calls = [];
+    const callOpts = [];
+    const intakeJson = JSON.stringify({
+      read: "送刀再闲聊", refIds: [],
+      actions: [
+        { kind: "give", target: "才旦", item: "霜牙短刀", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "送刀" },
+        { kind: "talk", target: "才旦", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "闲聊" },
+      ],
+      proposals: [],
+    });
+    const ai = {
+      async chat(messages, chatOpts) {
+        const all = String(chatOpts?.systemPrompt || "") + "\n" + (messages || []).map((m) => String(typeof m === "string" ? m : (m?.content ?? m?.text ?? ""))).join("\n");
+        calls.push(all);
+        callOpts.push(chatOpts);
+        if (all.includes("听意员")) return { text: intakeJson };
+        return { text: '正文叙事一句。\n---SEAL---\n{"fills":{},"respondedNpcs":[],"spontaneousPact":null}' };
+      },
+    };
+    const varTree = { 角色: {} };
+    const deps = {
+      convo: [], addLog: vi.fn(), setConvo: vi.fn(),
+      apiCfg: { extractionEnabled: true, judgePipelineEnabled: true, streamEnabled: false, maxTokens: 4000, model: "main-x", extractionModel: "extract-y" },
+      intent: { code: "UNKNOWN", label: "无法判定" },
+      room: { name: "鱼定村", npcs: [{ name: "才旦" }], items: [], exits: [] },
+      inv: [{ id: "it_x", name: "霜牙短刀", category: "weapon" }],
+      char: { hp: [80, 100], special: { 气运: 5 } }, skills: [],
+      varTree, memory: { varTreeLatest: varTree, recall: { lastAiText: "" } },
+      gm: false, flags: [],
+      narrator: initialNarratorState(), narratorStage: initialNarratorState().stage,
+      scenario: "测试剧本", preset: { scenario: "测试剧本" },
+      charBodyProfile: emptyBodyProfile(), charName: "少侠",
+      dao: { karma: 0, jie: 0 }, questProgress: {}, companionState: {},
+      time: 1, getTimeStr: () => "卯时",
+      hasInnerMap: () => false, describeEquipment: () => "", describeTodayForAI: () => "",
+      visibleNpcsCount: 1, npcLoreBlockWithQuest: "",
+      isTalk: false,
+      ai,
+    };
+    const turn = await runTurn(deps, "把霜牙短刀送给才旦，再跟他聊聊家常");
+
+    expect(turn).toBeTruthy();
+    // 前哨听意恰好一次——串行双调用已消除
+    expect(calls.filter((c) => c.includes("听意员"))).toHaveLength(1);
+    // 旧行动识别器（intent.classify）全程零调用
+    expect(calls.filter((c) => c.includes("行动识别器"))).toHaveLength(0);
+    // WO-16G-G2 模型口径钉住：前哨走提取链模型（extractionModel 优先于主模型）且关思考
+    const intakeIdx = calls.findIndex((c) => c.includes("听意员"));
+    expect(callOpts[intakeIdx]?.cfg?.model).toBe("extract-y");
+    expect(callOpts[intakeIdx]?.cfg?.thinkingMode).toBe("off");
+    // 主叙事仍用主模型——提取链口径不影响主调用
+    const mainIdx = calls.findIndex((c, i) => i !== intakeIdx && c.length > 100);
+    if (mainIdx >= 0) expect(callOpts[mainIdx]?.cfg?.model ?? "main-x").toBe("main-x");
+  });
+
+  it("WO-16G-G2：纯搭话跳过前哨——零 intake 调用，判官 talkOnly 照常", async () => {
+    const calls = [];
+    const ai = {
+      async chat(messages, chatOpts) {
+        const all = String(chatOpts?.systemPrompt || "") + "\n" + (messages || []).map((m) => String(typeof m === "string" ? m : (m?.content ?? ""))).join("\n");
+        calls.push(all);
+        return { text: '才旦笑着应了。\n---SEAL---\n{"fills":{},"respondedNpcs":[],"spontaneousPact":null}' };
+      },
+    };
+    const varTree = { 角色: {} };
+    const deps = {
+      convo: [], addLog: vi.fn(), setConvo: vi.fn(),
+      apiCfg: { extractionEnabled: true, judgePipelineEnabled: true, streamEnabled: false, maxTokens: 4000 },
+      intent: { code: "TALK_CASUAL", label: "日常闲聊" },
+      room: { name: "鱼定村", npcs: [{ name: "才旦" }], items: [], exits: [] },
+      inv: [], char: { hp: [80, 100], special: { 气运: 5 } }, skills: [],
+      varTree, memory: { varTreeLatest: varTree, recall: { lastAiText: "" } },
+      gm: false, flags: [],
+      narrator: initialNarratorState(), narratorStage: initialNarratorState().stage,
+      scenario: "测试剧本", preset: { scenario: "测试剧本" },
+      charBodyProfile: emptyBodyProfile(), charName: "少侠",
+      dao: { karma: 0, jie: 0 }, questProgress: {}, companionState: {},
+      time: 1, getTimeStr: () => "卯时",
+      hasInnerMap: () => false, describeEquipment: () => "", describeTodayForAI: () => "",
+      visibleNpcsCount: 1, npcLoreBlockWithQuest: "",
+      isTalk: true, talkTarget: "才旦",
+      ai,
+    };
+    const turn = await runTurn(deps, "才旦，最近可好？");
+    expect(turn).toBeTruthy();
+    // 纯搭话：前哨零调用——听意单本地合成
+    expect(calls.filter((c) => c.includes("听意员"))).toHaveLength(0);
+    // 判官链仍激活：talk 对象系统推导照常（respondedNpcs 来源）
+    expect(turn.derivedRespondedNpcs).toEqual(["才旦"]);
+    expect(turn.judgePipelineActive).toBe(true);
+  });
+
   it("normalizes and returns a duel request for an NPC present in the room", async () => {
     const npc = { name: "才旦" };
     const commit = vi.fn();

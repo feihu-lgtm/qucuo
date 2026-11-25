@@ -17,7 +17,8 @@ import { buildCausalBudgetInput } from "../domain/rules/judge/budgetInput.js";
 import { getInnerRoom } from "../domain/rules/map/innerMap.js";
 import { resolveContainerContext } from "../domain/rules/world/containers.js";
 import { renderJudgeVerdict, renderCausalBudget } from "../domain/rules/judge/judgeTurn.js";
-import { buildIntakeUserContent, normalizeIntakeResult } from "./turn/intakeTurn.js";
+import { buildIntakeUserContent, normalizeIntakeResult, synthesizeTalkIntake } from "./turn/intakeTurn.js";
+import { buildExtractionCfg } from "../domain/rules/prompt/structuredCallCfg.js";
 import { verifySealAndMaterialize } from "../domain/rules/effects/sealVerifier.js";
 import { writeTurnProse } from "./act/proseWrite.js";
 import { addProseChunks as proseChunkSink } from "./ports/recallBlock.js";
@@ -215,26 +216,37 @@ async function runTurnSteps(ctx, cmd, opts) {
       const { containerPlace, containerView, openContainers } = resolveContainerContext({
         districtName: deps.room?.name, innerRoomName: innerRoomNow, varTree: vtNow, roomDefLookup: getInnerRoom,
       });
-      const intakeContent = buildIntakeUserContent({
-        playerInput: cmd,
-        recentTurns: convo.slice(-4).map((m) => (m.role === "user" ? { user: m.content } : { engine: m.content }))
-          .reduce((acc, cur) => { if (cur.user) acc.push({ user: cur.user, engine: "" }); else if (acc.length) acc[acc.length - 1].engine = cur.engine; return acc; }, []),
-        npcs: visibleNpcs,
-        entries: [],
-        questCandidates,
-        containers: openContainers,
-        // WO-16G PR-G1 喂料同源：房间/内层/任务进度/背包直传，清单口径全在
-        // buildIntakeUserContent 内部——shadow 传的是同一组参数名，两处不得各写。
-        room: deps.room || {}, innerRoomName: innerRoomNow,
-        questProgress: liveNow.questProgress || deps.questProgress || {},
-        flags: liveNow.flags || deps.flags || [],
-        inv: liveNow.inv || deps.inv || [],
-        char: liveNow.char || deps.char || {},
-        varTree: vtNow,
-      });
-      const intakeRes = await withAI("turn.intake", { userContent: intakeContent, cfg: deps.apiCfg }, { ai, apiCfg: deps.apiCfg, throwOnError: false, epoch: String(ctx.proseEpoch ?? "default") });
-      if (ctx.isStale?.()) return { stale: true };
-      const intakeResult = normalizeIntakeResult(intakeRes?.data);
+      // WO-16G-G2 三级分流：纯搭话跳过前哨——本地合成听意单直接进纯函数判官，
+      // 零次 AI 调用（底稿 4.2：面板按钮和简单指令直接进纯函数判官）。talkOnly 白名单
+      // 路径（WO-16A）不变；target 沿用现有 talkTarget 上游判定，查不出填「无」。
+      // 复合自由行动不是 isTalk，仍走一次 turn.intake。
+      let intakeResult;
+      if (isTalk) {
+        intakeResult = synthesizeTalkIntake(cmd, deps.talkTarget);
+      } else {
+        const intakeContent = buildIntakeUserContent({
+          playerInput: cmd,
+          recentTurns: convo.slice(-4).map((m) => (m.role === "user" ? { user: m.content } : { engine: m.content }))
+            .reduce((acc, cur) => { if (cur.user) acc.push({ user: cur.user, engine: "" }); else if (acc.length) acc[acc.length - 1].engine = cur.engine; return acc; }, []),
+          npcs: visibleNpcs,
+          entries: [],
+          questCandidates,
+          containers: openContainers,
+          // WO-16G PR-G1 喂料同源：房间/内层/任务进度/背包直传，清单口径全在
+          // buildIntakeUserContent 内部——shadow 传的是同一组参数名，两处不得各写。
+          room: deps.room || {}, innerRoomName: innerRoomNow,
+          questProgress: liveNow.questProgress || deps.questProgress || {},
+          flags: liveNow.flags || deps.flags || [],
+          inv: liveNow.inv || deps.inv || [],
+          char: liveNow.char || deps.char || {},
+          varTree: vtNow,
+        });
+        // WO-16G-G2：前哨走提取链模型口径（玩家给双调用/提取链选的 extractionModel 优先），
+        // 不再是主模型直传——#451 审查指出的前哨模型口径在此钉住。buildExtractionCfg 自带关思考。
+        const intakeRes = await withAI("turn.intake", { userContent: intakeContent, cfg: buildExtractionCfg("INTAKE", deps.apiCfg) }, { ai, apiCfg: deps.apiCfg, throwOnError: false, epoch: String(ctx.proseEpoch ?? "default") });
+        if (ctx.isStale?.()) return { stale: true };
+        intakeResult = normalizeIntakeResult(intakeRes?.data);
+      }
       const timeNow = getGameStateTime(ctx, deps);
       judgeVerdict = judgeTurn({
         turn: timeNow, day: Math.floor(timeNow / 24) + 1, place: deps.room?.name || "",
@@ -260,7 +272,8 @@ async function runTurnSteps(ctx, cmd, opts) {
       // 本轮玩家对话对象——不再依赖叙事模型在 SEAL/JSON 里自证。SEAL 字段仅在
       // 推导为空时兜底（低可信过渡，见 docs），不得用于 pact 自证。
       const derivedTalk = (intakeResult.actions || [])
-        .filter((a) => a?.kind === "talk" && typeof a.target === "string" && a.target)
+        // 「无」是 schema 缺省哨兵不是对象名——本地合成/模型都可能在无对象时填它，必须排除
+        .filter((a) => a?.kind === "talk" && typeof a.target === "string" && a.target && a.target !== "无")
         .map((a) => a.target);
       deps.derivedRespondedNpcs = [...new Set(derivedTalk)];
       deps.judgePipelineActive = true;

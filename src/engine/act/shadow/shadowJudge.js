@@ -5,6 +5,7 @@
 // stale/epoch 丢弃；异常静默；不阻塞回合；route 与 intake 同价不声称省钱。
 import { withAI } from "../../ports/withAI.js";
 import { buildIntakeUserContent, normalizeIntakeResult } from "../../turn/intakeTurn.js";
+import { buildExtractionCfg } from "../../../domain/rules/prompt/structuredCallCfg.js";
 import { judgeTurn } from "../../../domain/rules/judge/judgeTurn.js";
 import { buildCausalBudgetInput } from "../../../domain/rules/judge/budgetInput.js";
 import { getInnerRoom } from "../../../domain/rules/map/innerMap.js";
@@ -112,7 +113,8 @@ export async function runShadowJudge({
     // intake 指标桶（withAI 在 stale 时提前返回、不 recordIntakeMetric），
     // epoch 缺失会把所有影子样本混进 default 桶污染按档隔离的报表。
     const shadowStale = () => Boolean(isStale?.() || epochGuard?.());
-    const intakeRes = await withAI("turn.intake", { userContent: intakeContent, cfg: apiCfg }, { ai, apiCfg, throwOnError: false, epoch, isStale: shadowStale });
+    // WO-16G-G2：影子与真实判官同一模型口径——提取链模型，不能各写一份。
+    const intakeRes = await withAI("turn.intake", { userContent: intakeContent, cfg: buildExtractionCfg("INTAKE", apiCfg) }, { ai, apiCfg, throwOnError: false, epoch, isStale: shadowStale });
     if (isStale?.() || epochGuard?.()) return null;
     const intakeResult = normalizeIntakeResult(intakeRes?.data);
     const verdict = judgeTurn({
