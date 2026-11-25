@@ -59,7 +59,7 @@ export function createTurnContext({ plan, env }) {
     varTree: memory.varTree ?? getGameState?.()?.varTree, gm, isSettle, isTalk, intent, apiCfg, narrator, room, time,
     scenario: preset.scenario, budgetInstruction: prepared.budgetInstruction,
     npcLoreBlockWithQuest: prepared.npcLoreBlockWithQuest || "",
-    visibleNpcsCount: prepared.visibleNpcsCount || 0, charName: char.name, charBodyProfile: char.bodyProfile,
+    visibleNpcsCount: prepared.visibleNpcsCount || 0, visibleNpcNames: (prepared.visibleNpcsForAI || []).map((n) => n?.name ?? n).filter(Boolean), charName: char.name, charBodyProfile: char.bodyProfile,
     pickupJudgment, cmd: prepared.cmd || env.cmd, convo, nsfwOn,
     ctx: prepared.ctx, recallBlock: memory.recallBlock || "", reunionBlock: prepared.reunionBlock || "",
     infoDomainBlock: memory.infoDomainBlock || "", hist: prepared.hist, mainConvo: prepared.mainConvo,
