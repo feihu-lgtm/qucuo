@@ -27,9 +27,10 @@ function parseInscription(res) {
   try { return JSON.parse(cleanJsonString(js))?.inscription || ""; } catch { return ""; }
 }
 
-// 来历原文：初审裁决——全库扫 rawText 无谱系/turn/witnesses 口径会串线泄密，
-// 本单完全不传 originText（宁可无来历）；prompt 侧已钉死「无来历不得编造」。
-// 后续如需化用原文，须先按 recall/visibility 同口径（谱系+turn+见证者+剥心理）做精确检索再恢复。
+// WO-23D3 来历原文合规召回：filterVisibleChunks/visibleTextFor 同口径
+// （谱系+turn+witnesses+按 viewer 剥心理），器物名精确子串取最早获得段，取不到传空。
+import { getAllProseChunks } from "../../engine/ports/recallBlock.js";
+import { findInscriptionOrigin } from "../../domain/rules/items/inscribeOrigin.js";
 export function useInscribeWeapon({ apiCfg, addLog }) {
   return useCallback(async (item) => {
     if (!item?.id) return;
@@ -42,10 +43,16 @@ export function useInscribeWeapon({ apiCfg, addLog }) {
       return;
     }
     const ledgerEntry = state0.varTree?.世界?.器物谱?.[item.id] || {};
+    const chunks = await getAllProseChunks().catch(() => []);
+    if (stale()) return;
+    const originText = findInscriptionOrigin(chunks, {
+      itemName: item.name, viewer: state0.char?.name || "",
+      currentTurn: state0.time || 0, lineage: state0.proseLineage || null,
+    });
     const payload = {
       name: item.name, category: item.category,
       wins: ledgerEntry.wins || 0, nemesisKills: ledgerEntry.nemesisKills || 0,
-      originText: "", inscribeCfg: inscribeModelCfg(apiCfg),
+      originText, inscribeCfg: inscribeModelCfg(apiCfg),
     };
     const playerName = state0.char?.name || "";
     let inscription = "";
