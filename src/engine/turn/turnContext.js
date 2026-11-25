@@ -50,7 +50,7 @@ export function createTurnContext({ plan, env }) {
     pendDir, outerDepart, pickupJudgment, collectGranted,
   } = plan;
   // apiCfg/gm/isStale 挂在 env 顶层（hook 注入），不进 state。
-  const { isStale, _trace, apiCfg, gm } = env;
+  const { isStale, _trace, apiCfg, gm, proseEpochGuard, proseSink } = env;
 
   // 本回合开始时的 varTree：store 直读即为最新（zustand 写读同步）。
   const preActVarTree = getGameState?.()?.varTree ?? {};
@@ -77,6 +77,9 @@ export function createTurnContext({ plan, env }) {
     isTalk,
     isSettle,
     isStale,
+    proseEpochGuard,
+    proseSink,
+    talkTarget,
     _trace,
     pending: env.pending,
     prompt: createPromptContext({

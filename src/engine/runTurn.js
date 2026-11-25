@@ -15,6 +15,8 @@ import { judgeTurn } from "../domain/rules/judge/judgeTurn.js";
 import { renderJudgeVerdict, renderCausalBudget } from "../domain/rules/judge/judgeTurn.js";
 import { buildIntakeUserContent, normalizeIntakeResult } from "./turn/intakeTurn.js";
 import { verifySealAndMaterialize } from "../domain/rules/effects/sealVerifier.js";
+import { writeTurnProse } from "./act/proseWrite.js";
+import { addProseChunks as proseChunkSink } from "./ports/recallBlock.js";
 import { random } from "../utils/rng.js";
 import { validateEmergenceSeal } from "../domain/rules/npc/npcEmergence.js";
 import { getPresentNpcs } from "../domain/rules/prompt/promptRefs.js";
@@ -134,6 +136,7 @@ async function runTurnSteps(ctx, cmd, opts) {
       lastAiText: preparedPrompt.lastAiText || ctx.memory.recall.lastAiText,
       varTreeLatest: ctx.memory.varTreeLatest,
       recentTexts: [hist],
+      viewer: ctx.prompt?.char?.name || ctx.char?.name || "主角",
     });
     [knowledgeTurn, recall] = await Promise.all([
       runKnowledgeTurn({
@@ -486,6 +489,28 @@ async function runTurnSteps(ctx, cmd, opts) {
       memoryText = `${target ? `玩家对${target}说` : "玩家说"}：${String(cmd).slice(0, 30)}`.slice(0, 50);
     }
     if (memoryText) p = { ...p, memory: memoryText };
+  }
+
+  // WO-18 原文段落写挂：尾章定稿后把最终上屏正文（含系统补锚短句）切进段落库。
+  // fire-and-forget 增量层，护栏按存档代次（ctx.proseEpochGuard）不按回合 stale。
+  {
+    const liveNow = ctx.getGameState?.() || {};
+    const roomNow = liveNow.room || deps.room || {};
+    writeTurnProse({
+      narrativeText,
+      turn: getGameStateTime(ctx, deps),
+      location: roomNow.name || "",
+      playerName: (liveNow.char || deps.char)?.name || deps.charName || "主角",
+      roomNpcNames: (roomNow.npcs || []).map((n) => n?.name).filter(Boolean),
+      isTalk: !!isTalk,
+      talkTarget: ctx.talkTarget || "",
+      anchoredFacts: [
+        ...(judgeVerdict?.facts || []).map((f) => f?.id).filter(Boolean),
+        ...(sealParts?.anchors || []).map((a) => a?.id).filter(Boolean),
+      ],
+      guard: ctx.proseEpochGuard,
+      addChunks: ctx.proseSink || proseChunkSink,
+    });
   }
 
   return {

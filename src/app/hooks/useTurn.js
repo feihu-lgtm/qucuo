@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef } from "react";
-import { gameActions, gameStore, subscribeGameReplaced } from "../../store/gameStore.js";
+import { gameActions, gameStore, subscribeGameReplaced, getGameEpoch, isGameEpochStale } from "../../store/gameStore.js";
 import { snapshotIntentPending } from "../../store/intentPendingStore.js";
 import { applyResult } from "../../features/run.js";
 import { parseLocalCommand } from "../../engine/localCommands.js";
@@ -149,8 +149,10 @@ export function useTurn({
     }
     if (!opts.keepUndo) captureUndo(_trace);
 
+    const turnEpoch = getGameEpoch();
     const env = {
       cmd, opts, extraReplies, interactMode: effMode, apiCfg, gm, _trace, isStale,
+      proseEpochGuard: () => isGameEpochStale(turnEpoch),
       pending: snapshotIntentPending(),
       state: {
         ...gameStore.getState(),

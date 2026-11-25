@@ -127,7 +127,9 @@ export function usePrivateTalk({
               scope: "whisper",
               userInput: content,
               lastReply: _lastReply,
-            });
+                      // 视角仍是玩家本人：私聊对象是旁白，回忆可见性按玩家见证口径过滤
+          viewer: gameStore.getState().char?.name || "主角",
+        });
       if (_whisperGate.lit.length || _whisperGate.dark.length) {
         traceStep(_wt, "世界书·总纲", "info",
           `🟢${_whisperGate.lit.join("、") || "无"}　⚫灭:${_whisperGate.dark.join("、") || "无"}`);
