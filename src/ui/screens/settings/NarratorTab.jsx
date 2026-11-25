@@ -9,7 +9,7 @@ import { inputStyle, labelStyle, sectionStyle, btnStyle } from "./styles.js";
 export default function NarratorTab({ cfg, patch, narrator, setNarrator }) {
   return (
     <div>
-      <div style={{ fontSize: "11px", color: "var(--text-dim)", marginBottom: 10 }}>
+      <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 10 }}>
         旁白是唯一被设计成打破信息隔离的角色——好感度只决定她"怎么讲"，不决定她"知道什么"。
         这里的改动即时生效，并随存档一起保存。
       </div>
@@ -39,7 +39,7 @@ export default function NarratorTab({ cfg, patch, narrator, setNarrator }) {
             <span key={key}
               onClick={() => setNarrator?.(n => ({ ...n, affection: v }))}
               style={{
-                cursor: "pointer", textAlign: "center", padding: "4px 2px", borderRadius: 0, fontSize: "10px",
+                cursor: "pointer", textAlign: "center", padding: "4px 2px", borderRadius: 0, fontSize: "var(--fs-2xs)",
                 color: active ? "var(--bg-panel)" : "var(--ink-sage)",
                 background: active ? "var(--accent)" : "var(--bg-panel)",
                 border: "1px solid var(--border)",
@@ -49,7 +49,7 @@ export default function NarratorTab({ cfg, patch, narrator, setNarrator }) {
           );
         })}
       </div>
-      <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginTop: 6 }}>
+      <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginTop: 6 }}>
         这五档同时作用于叙事文风与私聊语气（narrator.js 的 narratorVoicePrompt）。
         &lt;45 档的原文就写着"简短回应几句""语气冷淡、公事公办"——私聊回复短不一定是 bug，
         也可能只是她还没被养熟。
@@ -73,7 +73,7 @@ export default function NarratorTab({ cfg, patch, narrator, setNarrator }) {
                   confessed: stage === "cheat" ? true : stage === "flirting" ? false : n.confessed,
                 }))}
                 style={{
-                  ...btnStyle, fontSize: "11px",
+                  ...btnStyle, fontSize: "var(--fs-xs)",
                   color: on ? "var(--bg-panel)" : "var(--accent)",
                   background: on ? "var(--accent)" : "var(--bg-panel)",
                 }}>
@@ -82,13 +82,13 @@ export default function NarratorTab({ cfg, patch, narrator, setNarrator }) {
             );
           })}
         </div>
-        <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginTop: 6 }}>
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginTop: 6 }}>
           正常玩法里阶段由剧情推进（好感满 100 → 点粉色感叹号告白 → 私聊累积 8 次宕机），
           这里是调试用的强制切换。宕机在游戏内不可逆，从这里能掰回来。
         </div>
         {(narrator?.stage === "cheat" || narrator?.confessed) && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
-            <span style={{ fontSize: "11px", color: "var(--text-dim)", flex: 1 }}>记忆碎片（累积到 8 触发宕机）</span>
+            <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", flex: 1 }}>记忆碎片（累积到 8 触发宕机）</span>
             <input
               type="number" min="0" max="8" value={narrator?.memoryFragments ?? 0}
               onChange={e => {
@@ -116,8 +116,8 @@ export default function NarratorTab({ cfg, patch, narrator, setNarrator }) {
                 background: cur ? "var(--ink-tier-bg)" : "transparent",
                 border: `1px solid ${cur ? "var(--accent)" : "transparent"}`,
               }}>
-                <span style={{ width: 16, color: cur ? "var(--accent)" : "var(--ink-faint)", fontSize: "10px" }}>{cur ? "▶" : ""}</span>
-                <span style={{ flex: 1, fontSize: "11px", color: cur ? "var(--ink-tier-text)" : "var(--text-dim)" }}>
+                <span style={{ width: 16, color: cur ? "var(--accent)" : "var(--ink-faint)", fontSize: "var(--fs-2xs)" }}>{cur ? "▶" : ""}</span>
+                <span style={{ flex: 1, fontSize: "var(--fs-xs)", color: cur ? "var(--ink-tier-text)" : "var(--text-dim)" }}>
                   {t.label}
                   <span style={{ color: "var(--text-dim)", marginLeft: 6 }}>
                     {t.key === "awake" ? "≥90" : `${t.min}–${AFFECTION_TIERS[AFFECTION_TIERS.indexOf(t) + 1].min}`}
@@ -131,12 +131,12 @@ export default function NarratorTab({ cfg, patch, narrator, setNarrator }) {
                   }}
                   style={{ ...inputStyle, width: 70 }}
                 />
-                <span style={{ fontSize: "11px", color: "var(--text-dim)" }}>字</span>
+                <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)" }}>字</span>
               </div>
             );
           })}
         </div>
-        <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginTop: 6 }}>
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginTop: 6 }}>
           ▶ 是当前好感度所在档。冷淡期她本就没什么话，篇幅跟着好感度一起解锁，
           与文风、攻略档位同一条曲线。允许±30% 浮动；冷漠期的打断式回绝与宕机后的
           空壳应答不受此值影响，仍是一句话。
@@ -154,9 +154,9 @@ export default function NarratorTab({ cfg, patch, narrator, setNarrator }) {
             }}
             style={{ ...inputStyle, width: 100 }}
           />
-          <span style={{ fontSize: "11px", color: "var(--text-dim)" }}>tok（与 API 配置里那一项是同一个值）</span>
+          <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)" }}>tok（与 API 配置里那一项是同一个值）</span>
         </div>
-        <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginTop: 4 }}>
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginTop: 4 }}>
           这是 token 不是字数。带思考的模型思考 token 与正文共用这个额度，
           给小了会出现"话说一半停在逗号上"。
         </div>
@@ -171,7 +171,7 @@ export default function NarratorTab({ cfg, patch, narrator, setNarrator }) {
           placeholder={"写在这里的内容只会注入私聊通道，主叙事看不到。\n适合放：她的来历、她对玩家的私下看法、想让她一直记住的梗、\n以及任何你希望她在私聊里知道、但不该影响正常剧情叙事的设定。\n留空则完全不注入这一段。"}
           style={{ ...inputStyle, minHeight: 110, resize: "vertical", lineHeight: 1.6 }}
         />
-        <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginTop: 4 }}>
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginTop: 4 }}>
           当前 {(cfg.narratorLorebook || "").length} 字。这段拼在私聊 system prompt 里，
           会占用上下文，别写太长。
         </div>

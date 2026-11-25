@@ -74,7 +74,7 @@ export default function CenterControlRows({
       style={{
         ...chromeBtn(zoneTheme, { active }),
         width: "100%", height: 35, minHeight: 35, justifyContent: "flex-start",
-        padding: "0 10px", fontFamily: "inherit", fontSize: "12px", flexShrink: 0,
+        padding: "0 10px", fontFamily: "inherit", fontSize: "var(--fs-sm)", flexShrink: 0,
       }}
     >{label}</button>
   );
@@ -94,7 +94,7 @@ export default function CenterControlRows({
           style={{
             ...chromeBtn(zoneTheme, { active: selected }),
             flex: 1, minWidth: 0, height: 35, minHeight: 35, justifyContent: "flex-start",
-            padding: "0 10px", fontFamily: "inherit", fontSize: "12px",
+            padding: "0 10px", fontFamily: "inherit", fontSize: "var(--fs-sm)",
           }}
         >{name}</button>
         <button
@@ -109,7 +109,7 @@ export default function CenterControlRows({
           }}
           style={{
             ...chromeBtn(zoneTheme, { active: false }),
-            height: 35, minHeight: 35, padding: "0 8px", fontFamily: "inherit", fontSize: "11px",
+            height: 35, minHeight: 35, padding: "0 8px", fontFamily: "inherit", fontSize: "var(--fs-xs)",
           }}
         >拾取</button>
       </div>
@@ -224,7 +224,7 @@ export default function CenterControlRows({
           padding: "6px 14px", display: "flex", alignItems: "center", gap: 8, flexShrink: 0,
           borderTop: `1px solid ${zoneTheme.border}`, flexWrap: "wrap",
         }}>
-          <span style={{ color: zoneTheme.textDim, fontSize: "10px", flexShrink: 0 }}>人选：</span>
+          <span style={{ color: zoneTheme.textDim, fontSize: "var(--fs-2xs)", flexShrink: 0 }}>人选：</span>
           <span
             className="mobile-touch-target mobile-person-chip"
             onClick={() => { setActiveTarget(null); setTalkTarget(null); }}

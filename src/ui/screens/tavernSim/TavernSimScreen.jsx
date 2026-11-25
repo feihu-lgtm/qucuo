@@ -92,7 +92,7 @@ export default function TavernSimScreen({ onExit }) {
 
       {/* ── 顶栏 ── */}
       <div style={S.topbar(zoneTheme)}>
-        <span style={{ color: zoneTheme.accent, fontSize: 15 }}>🍶 醉三江</span>
+        <span style={{ color: zoneTheme.accent, fontSize: "var(--fs-lg)" }}>🍶 醉三江</span>
         <span style={S.chip(zoneTheme)}>{LEVEL_NAMES[sim.level]}</span>
         <span style={S.chip(zoneTheme)}>第 {sim.day} 日 · {TICK_LABELS[sim.tick]}</span>
         <span style={S.chip(zoneTheme)}>💰 {sim.funds} 两</span>

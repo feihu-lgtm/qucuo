@@ -158,7 +158,7 @@ export default function LootCard({ entry }) {
           )}
           <div className="loot-body" style={{ margin: T.inset }}>
             <div className="loot-banner" style={{ background: T.banner, color: T.bannerText }}>
-              <span style={{ fontSize: 13 }}>{isDuel ? T.icon : "🤫"}</span>
+              <span style={{ fontSize: "var(--fs-md)" }}>{isDuel ? T.icon : "🤫"}</span>
               <span>{T.label}</span>
               <span style={{ opacity: .78, letterSpacing: ".08em", fontWeight: 400 }}>· {T.sub}</span>
             </div>

@@ -409,6 +409,14 @@ describe("NPC duel settlement logic", () => {
     expect(result.logs.at(-1).text).toBe("　◈ 你 切磋 师父 · 战斗结算");
   });
 
+  it("keeps the duel outcome in a long recap note instead of cutting it mid-sentence", () => {
+    const battleLog = Array.from({ length: 6 }, (_, i) => ({
+      round: i + 1, playerMove: { name: "野球拳" }, npcMove: { name: "连环腿" }, result: { damageToA: 7, damageToB: 3 },
+    }));
+    const result = settleNpcDuel(makeState(), { name: "师父", levelCap: 1 }, { outcome: "lose", battleLog });
+    expect(result.recapNote).toBe("在玉泉寨与师父切磋6回合，落败。");
+  });
+
   it("never re-awards an item stolen during the duel", () => {
     const item = { id: "carry-1", name: "铜铃", category: "misc", quality: "白" };
     const npc = { name: "师父", levelCap: 1, carriedItems: [item] };

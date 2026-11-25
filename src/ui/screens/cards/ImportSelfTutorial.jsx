@@ -43,13 +43,13 @@ export default function ImportSelfTutorial({ accent, onClose }) {
           borderBottom: `1px solid color-mix(in srgb, ${accent} 20%, transparent)`,
         }}>
           <img src={S("ui/scroll_ic.webp")} alt="" style={{ width: 22, height: 22, opacity: .9 }} />
-          <span style={{ color: "var(--tutorial-title)", fontSize: 16, letterSpacing: 3, textShadow: "0 1px 4px var(--black)" }}>
+          <span style={{ color: "var(--tutorial-title)", fontSize: "var(--fs-lg)", letterSpacing: 3, textShadow: "0 1px 4px var(--black)" }}>
             导入角色卡当自己
           </span>
         </div>
 
         <div style={{ padding: "16px 18px", overflowY: "auto" }}>
-          <div style={{ fontSize: 12, color: "var(--tutorial-time)", lineHeight: 1.8, marginBottom: 14 }}>
+          <div style={{ fontSize: "var(--fs-sm)", color: "var(--tutorial-time)", lineHeight: 1.8, marginBottom: 14 }}>
             这条流程把一张角色卡变成<b style={{ color: "var(--paper)" }}>你自己</b>的开局：AI 扫出卡里所有主要人物，
             你挑一位<b style={{ color: accent }}>当主角亲自主控</b>，其余的都能成为江湖里的 NPC。
             体貌、初始武学、装备全交给 AI 扫，你只管挑与改。
@@ -61,12 +61,12 @@ export default function ImportSelfTutorial({ accent, onClose }) {
                 <span style={{
                   flexShrink: 0, width: 26, height: 26, borderRadius: "50%",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 13, color: accent, border: `1px solid color-mix(in srgb, ${accent} 47%, transparent)`,
+                  fontSize: "var(--fs-md)", color: accent, border: `1px solid color-mix(in srgb, ${accent} 47%, transparent)`,
                   background: "rgba(212,168,83,.10)",
                 }}>{s.ic}</span>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, color: "var(--paper)", marginBottom: 2 }}>{s.t}</div>
-                  <div style={{ fontSize: 11, color: "var(--ink-muted)", lineHeight: 1.7 }}>{s.d}</div>
+                  <div style={{ fontSize: "var(--fs-md)", color: "var(--paper)", marginBottom: 2 }}>{s.t}</div>
+                  <div style={{ fontSize: "var(--fs-xs)", color: "var(--ink-muted)", lineHeight: 1.7 }}>{s.d}</div>
                 </div>
               </div>
             ))}
@@ -74,10 +74,10 @@ export default function ImportSelfTutorial({ accent, onClose }) {
         </div>
 
         <div style={{ padding: "12px 18px", borderTop: `1px solid color-mix(in srgb, ${accent} 13%, transparent)`, display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ flex: 1, fontSize: 10, color: "var(--ink-text-dim)" }}>随时可在标题栏「教程」重看这一页。</span>
+          <span style={{ flex: 1, fontSize: "var(--fs-2xs)", color: "var(--ink-text-dim)" }}>随时可在标题栏「教程」重看这一页。</span>
           <span onClick={onClose}
             style={{
-              cursor: "pointer", userSelect: "none", fontSize: 13, padding: "7px 20px", borderRadius: 0,
+              cursor: "pointer", userSelect: "none", fontSize: "var(--fs-md)", padding: "7px 20px", borderRadius: 0,
               color: "var(--bg-deep)", fontWeight: 700, letterSpacing: 1,
               background: `linear-gradient(180deg, ${accent}, var(--gamble-za))`,
               border: `1px solid ${accent}`, boxShadow: "0 2px 8px rgba(0,0,0,.4)",

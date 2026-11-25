@@ -5,9 +5,11 @@ import {
 } from "./ocRecruit.js";
 import {
   unlockImportedCompanion, stationCompanion, unstationCompanion,
-  stationedCompanions, stationedNpcsFor, activeCompanionKey,
+  stationedCompanions, stationedNpcsFor, activeCompanionKey, setActiveCompanion,
 } from "../../domain/rules/companion/companion.js";
 import { inviteCompanion } from "./inviteCompanion.js";
+import { buildLeopardUnit } from "../../domain/rules/combat/teamUnits.js";
+import { ADVENTURER_POOL_IP } from "../../domain/data/dungeon/adventurersIP.js";
 
 const ADVENTURER = {
   id: "adv_xiaoyuer",
@@ -160,5 +162,56 @@ describe("ocMenuRoutes 菜单出现条件", () => {
     const r = recruitOC(makeState(), ADVENTURER, "favor");
     expect(r.ok).toBe(false);
     expect(r.reason).toContain("好感");
+  });
+});
+
+describe("元朵朵入队：铁伯作为随从伙伴一并入队", () => {
+  const DUODUO = ADVENTURER_POOL_IP.find((a) => a.name === "元朵朵");
+  const recruit = () => recruitOC(
+    makeState({ room: { name: "鱼定村", npcs: [{ name: "元朵朵" }, { name: "铁伯" }] } }),
+    DUODUO, "hire", { offer: hirePriceFor(DUODUO) },
+  );
+
+  it("companionState 多一个 imported_铁伯：随行、不抢出战位、挂 servantOf、机关人偶不开口", () => {
+    const r = recruit();
+    expect(r.ok).toBe(true);
+    const cs = r.effect.companionState;
+    expect(cs["imported_元朵朵"]).toMatchObject({ unlocked: true, active: true });
+    expect(cs["imported_铁伯"]).toMatchObject({ unlocked: true, active: false, servantOf: "imported_元朵朵", mute: true, label: "铁伯" });
+    expect(activeCompanionKey(cs)).toBe("imported_元朵朵");
+    expect(cs["imported_铁伯"].stationed).toBeUndefined();
+  });
+
+  it("铁伯是防御型队友：体魄高、有盾甲防御招、可装配成团战单位", () => {
+    const tie = recruit().effect.companionState["imported_铁伯"].data;
+    expect(tie.moveset.map((m) => m.name)).toEqual(expect.arrayContaining(["铁臂横扫", "精钢盾甲"]));
+    expect(tie.profile.moveWeights.防御).toBeGreaterThan(tie.profile.moveWeights.攻击);
+    const unit = buildLeopardUnit(tie);
+    expect(unit.name).toBe("铁伯");
+    expect(unit.hp[1]).toBeGreaterThan(0);
+  });
+
+  it("落盘：房里的铁伯一并带走，并写一句入队日志；别的 OC 不带随从", () => {
+    const state = makeState({ room: { name: "鱼定村", npcs: [{ name: "元朵朵" }, { name: "铁伯" }, { name: "路人" }] } });
+    const res = recruitOC(state, DUODUO, "hire", { offer: hirePriceFor(DUODUO) });
+    const out = applyRecruit(state, DUODUO, res.effect);
+    expect(out.changes.room({ npcs: state.room.npcs }).npcs.map((n) => n.name)).toEqual(["路人"]);
+    expect(out.logs[0].text).toContain("铁伯");
+    const plain = recruitOC(makeState(), ADVENTURER, "hire", { offer: 240 });
+    expect(Object.keys(plain.effect.companionState)).toEqual(["imported_小鱼儿"]);
+  });
+
+  it("留守/唤回主仆同进同出：留守铁伯即留下整组，组里有人出战则拒绝", () => {
+    const cs = recruit().effect.companionState;
+    // 朵朵出战中：整组拒绝
+    expect(stationCompanion(cs, "imported_铁伯", { roomName: "客栈" })).toBe(cs);
+    const swapped = { ...cs, snowLeopard: { unlocked: true, active: false, data: { name: "雪豹" } } };
+    const benched = setActiveCompanion(swapped, "snowLeopard");
+    const stationed = stationCompanion(benched, "imported_铁伯", { district: "鱼定村", roomId: "客栈", roomName: "客栈", since: 7 });
+    expect(stationed["imported_铁伯"].stationed.roomName).toBe("客栈");
+    expect(stationed["imported_元朵朵"].stationed.since).toBe(7);
+    const back = unstationCompanion(stationed, "imported_元朵朵");
+    expect(back["imported_铁伯"].stationed).toBeUndefined();
+    expect(back["imported_元朵朵"].stationed).toBeUndefined();
   });
 });

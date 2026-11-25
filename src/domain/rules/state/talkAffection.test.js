@@ -50,9 +50,11 @@ describe("聊天好感裁决 · clamp 与跳过", () => {
     expect(r.reason).toContain("无好感轨道");
     expect(r.state.varTree.角色.铁伯.好感度).toBe(10);
   });
-  it("无裁决参数（无 API/非搭话路径）：沿用旧 ±15 钳制，静默兼容", () => {
+  it("无裁决参数（无 API/非搭话路径）：单次限幅 ±5，_.set 换算成同样限幅的增量", () => {
     const r = apply(vt(), add("角色.阿妙.好感度", 12), { talkRange: undefined, affectionSkip: undefined });
-    expect(r.state.varTree.角色.阿妙.好感度).toBe(62);
+    expect(r.state.varTree.角色.阿妙.好感度).toBe(55);
+    const s = applyWrite({ varTree: vt() }, { op: "set", path: "角色.阿妙.好感度", value: 90 }, { source: "mvu" });
+    expect(s.state.varTree.角色.阿妙.好感度).toBe(55);
   });
 });
 

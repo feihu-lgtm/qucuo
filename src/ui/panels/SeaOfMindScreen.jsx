@@ -35,10 +35,10 @@ export default function SeaOfMindScreen({
       padding: "10px 16px",
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-        <span style={{ color: "var(--mind-gold)", fontSize: 12 }}>⟡ 她蜷在沙发角落里</span>
+        <span style={{ color: "var(--mind-gold)", fontSize: "var(--fs-sm)" }}>⟡ 她蜷在沙发角落里</span>
         <span style={{ flex: 1 }} />
         {onClose && (
-          <span onClick={onClose} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: 10 }}>▾ 收起</span>
+          <span onClick={onClose} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "var(--fs-2xs)" }}>▾ 收起</span>
         )}
       </div>
 
@@ -48,12 +48,10 @@ export default function SeaOfMindScreen({
           const done = spoken.includes(k.key);
           const isNext = next?.key === k.key;
           return (
-            <span key={k.key} style={{
-              fontSize: 10.5, padding: "2px 9px", borderRadius: 0,
-              color: done ? "var(--clay)" : isNext ? "var(--mind-gold)" : "var(--mind-locked)",
-              border: `1px solid ${done ? "var(--ink-accent)" : isNext ? "var(--gold-deep)" : "var(--mind-locked-edge)"}`,
-              background: done ? "rgba(138,196,138,.08)" : "transparent",
-            }}>
+            <span key={k.key} style={{ fontSize: "var(--fs-xs)", padding: "2px 9px", borderRadius: 0,
+            color: done ? "var(--clay)" : isNext ? "var(--mind-gold)" : "var(--mind-locked)",
+            border: `1px solid ${done ? "var(--ink-accent)" : isNext ? "var(--gold-deep)" : "var(--mind-locked-edge)"}`,
+            background: done ? "rgba(138,196,138,.08)" : "transparent", }}>
               {done ? "✓ " : isNext ? "◦ " : "· "}
               {done || isNext ? k.title : "？？？"}
             </span>
@@ -72,7 +70,7 @@ export default function SeaOfMindScreen({
               title={spec.needItem ? `需要「${spec.needItem}」` : ""}
               style={{
                 cursor: "pointer", userSelect: "none",
-                fontSize: 11, padding: "4px 11px", borderRadius: 0,
+                fontSize: "var(--fs-xs)", padding: "4px 11px", borderRadius: 0,
                 // 越级/缺物**不置灰也不禁用**——玩家该被允许试，然后从她的反应里
                 // 知道时候未到。置灰等于把机制摊开，那一段的手感就没了。
                 color: gate.ok ? "var(--mind-gate-ok)" : "var(--text-dim)",
@@ -82,7 +80,7 @@ export default function SeaOfMindScreen({
             >
               {spec.label}
               {spec.needItem && !invNames.includes(spec.needItem) && (
-                <span style={{ fontSize: 9, color: "var(--mind-missing)", marginLeft: 3 }}>（缺）</span>
+                <span style={{ fontSize: "var(--fs-2xs)", color: "var(--mind-missing)", marginLeft: 3 }}>（缺）</span>
               )}
             </span>
           );
@@ -96,7 +94,7 @@ export default function SeaOfMindScreen({
           style={{
             marginTop: 9, padding: "7px 10px", borderRadius: 0, cursor: "pointer",
             border: "1px solid var(--mind-button-edge)", background: "rgba(232,200,106,.13)",
-            color: "var(--mind-button-text)", fontSize: 11.5, textAlign: "center",
+            color: "var(--mind-button-text)", fontSize: "var(--fs-sm)", textAlign: "center",
           }}
         >
           ⟡ 跟她说那句她自己说不出口的话
@@ -105,7 +103,7 @@ export default function SeaOfMindScreen({
 
       {/* 引导：只在她还没开口时提一句，且不提数值 */}
       {!resolvable && (
-        <div style={{ marginTop: 7, fontSize: 10, color: zoneTheme.textDim, lineHeight: 1.7 }}>
+        <div style={{ marginTop: 7, fontSize: "var(--fs-2xs)", color: zoneTheme.textDim, lineHeight: 1.7 }}>
           {/* 只给感受与方向，不报数值、不列门槛清单——什么时候该做什么让玩家从她的
               反应里摸。但"心防够了却因为方式不对开不了下一条"这种情况必须给个方向，
               否则玩家会以为卡住了（他会一直说话，而说话正是推不动那一条的原因）。 */}

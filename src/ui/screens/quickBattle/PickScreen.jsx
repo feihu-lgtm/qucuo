@@ -79,11 +79,11 @@ function TeamBar({ label, ids, candidates, active, onClick, onRemove, accent }) 
         borderRadius: 0, transition: "border-color .2s",
       }}
     >
-      <div style={{ fontSize: 13, letterSpacing: 2, color: accent, marginBottom: 8 }}>
-        {label}（{ids.length}）{active && <span style={{ color: "var(--parchment)", fontSize: 11 }}> · 挑选中</span>}
+      <div style={{ fontSize: "var(--fs-md)", letterSpacing: 2, color: accent, marginBottom: 8 }}>
+        {label}（{ids.length}）{active && <span style={{ color: "var(--parchment)", fontSize: "var(--fs-xs)" }}> · 挑选中</span>}
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {ids.length === 0 && <span style={{ color: "var(--qb-border)", fontSize: 12 }}>还没人上阵</span>}
+        {ids.length === 0 && <span style={{ color: "var(--qb-border)", fontSize: "var(--fs-sm)" }}>还没人上阵</span>}
         {ids.map(id => {
           const c = candidates.find(x => x.id === id);
           if (!c) return null;
@@ -92,7 +92,7 @@ function TeamBar({ label, ids, candidates, active, onClick, onRemove, accent }) 
               title="点击移出"
               style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px",
                 background: "rgba(0,0,0,.35)", border: `1px solid ${tierColor(c.levelCap)}`,
-                borderRadius: 0, fontSize: 12, color: "var(--qb-text)", cursor: "pointer" }}>
+                borderRadius: 0, fontSize: "var(--fs-sm)", color: "var(--qb-text)", cursor: "pointer" }}>
               {c.name} <span style={{ color: "var(--qb-border)" }}>✕</span>
             </div>
           );
@@ -135,13 +135,13 @@ function CandidateCard({ c, picked, disabled, accent, onClick }) {
       {/* 底部名条 */}
       <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "4px 6px",
         background: "linear-gradient(0deg, rgba(0,0,0,.92) 0%, rgba(0,0,0,.55) 60%, transparent 100%)" }}>
-        <div style={{ fontSize: 13, color: "var(--qb-text)", fontWeight: "bold", textShadow: "0 1px 2px var(--black)" }}>{c.name}</div>
-        <div style={{ fontSize: 9.5, color: tierColor(c.levelCap), letterSpacing: 1 }}>
+        <div style={{ fontSize: "var(--fs-md)", color: "var(--qb-text)", fontWeight: "bold", textShadow: "0 1px 2px var(--black)" }}>{c.name}</div>
+        <div style={{ fontSize: "var(--fs-2xs)", color: tierColor(c.levelCap), letterSpacing: 1 }}>
           {tierName(c.levelCap)}品{c.beast ? " · 兽" : ""}
         </div>
       </div>
       {picked && <div style={{ position: "absolute", top: 4, right: 4, width: 20, height: 20, borderRadius: "50%",
-        background: accent, color: "var(--white)", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}>✓</div>}
+        background: accent, color: "var(--white)", fontSize: "var(--fs-md)", display: "flex", alignItems: "center", justifyContent: "center" }}>✓</div>}
     </button>
   );
 }

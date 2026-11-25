@@ -1,9 +1,11 @@
-// 把现有 AI 端口包装成行动识别的 classifier 端口（形状仿 Jev：一问一答、选项+概率），
-// 以后换成 Jev 或专用分类模型，只需另写一个同形状的实现。
-// 识别调用：关思考、要 JSON、输出预算 ≥1024；回复被长度截断时抛 IntentTruncatedError，不静默回落。
-import { SYSTEM_PROMPT, renderPrompt, parseChoice, probsFromLogprobs, argmax, extractJson } from "../../domain/rules/intent/prompts.js";
+// 把现有 AI 端口包装成行动识别的 classifier 端口：整句一次调用，返回 { actions }，
+// 以后换成专用分类模型，只需另写一个同形状的实现。
+// 识别调用（经 withAI 统一出口）：关思考、要 JSON、输出预算 ≥1024；回复被长度截断时抛 IntentTruncatedError，不静默回落。
+import { SYSTEM_PROMPT, renderPrompt, extractJson } from "../../domain/rules/intent/prompts.js";
+import { ensureUnifiedCalls } from "../../domain/rules/prompt/calls/unifiedCalls.js";
+import { withAI } from "../ports/withAI.js";
 
-const LABELS = { compound: "行动识别·复合", split: "行动识别·拆分", kind: "行动识别·类别", target: "行动识别·对象", item: "行动识别·物品", direction: "行动识别·方向" };
+const LABEL = "行动识别·整句";
 const LENGTH_REASONS = new Set(["length", "max_tokens", "MAX_TOKENS"]);
 export const INTENT_TRUNCATED = "INTENT_TRUNCATED";
 
@@ -19,31 +21,23 @@ function finishReasonOf(response) {
 }
 
 export function createAiClassifier(ai, { model, cfg, temperature = 0, maxTokens = 1024, onResponse } = {}) {
-  async function ask(question, vars, options) {
-    const prompt = renderPrompt(question, { ...vars, options });
-    const startedAt = Date.now();
-    const modelOptions = { temperature, maxTokens, jsonOnly: true, disableThinking: true, thinkingBudget: 0, logprobs: true, topLogprobs: 5 };
-    const reply = await ai.chat([{ role: "user", content: prompt }], {
-      systemPrompt: SYSTEM_PROMPT, callLabel: LABELS[question] || "行动识别", stream: false,
-      temperature, maxTokens, modelOptions,
-      ...(model ? { model } : {}), ...(cfg ? { cfg: { ...cfg, thinkingMode: "off" } } : {}),
-    });
-    const response = typeof reply === "string" ? { text: reply } : reply || {};
-    const finishReason = finishReasonOf(response);
-    onResponse?.({ question, text: response.text ?? "", finishReason, usage: response.usage ?? response.raw?.usage ?? null, ms: Date.now() - startedAt });
-    if (LENGTH_REASONS.has(String(finishReason))) throw new IntentTruncatedError(question, response.text ?? "", finishReason);
-    return response;
-  }
   return {
-    async decide(question, vars, options) {
-      const response = await ask(question, vars, options);
-      const fromLogprobs = probsFromLogprobs(response.logprobs || response.raw?.choices?.[0]?.logprobs, options);
-      if (fromLogprobs) return { choice: argmax(fromLogprobs), probs: fromLogprobs, source: "logprobs" };
-      return { ...parseChoice(response.text, options), source: "stated" };
-    },
-    async split(vars) {
-      const response = await ask("split", vars, []);
-      return extractJson(response.text)?.parts || [];
+    // 整句只发这一次请求；回复不是合法 JSON 时返回空行动列表，由闸门回落自由行动。
+    async recognize(vars) {
+      ensureUnifiedCalls();
+      const prompt = renderPrompt("recognize", vars);
+      const startedAt = Date.now();
+      const modelOptions = { temperature, maxTokens, jsonOnly: true, disableThinking: true, thinkingBudget: 0 };
+      const response = await withAI(
+        "intent.classify",
+        { systemPrompt: SYSTEM_PROMPT, prompt, callLabel: LABEL, maxTokens, cfg },
+        { ai, apiCfg: cfg, stream: false, model, temperature, maxTokens, callLabel: LABEL, modelOptions },
+      );
+      const finishReason = finishReasonOf(response);
+      onResponse?.({ question: "recognize", text: response.text ?? "", finishReason, usage: response.usage ?? response.raw?.usage ?? null, ms: Date.now() - startedAt });
+      if (LENGTH_REASONS.has(String(finishReason))) throw new IntentTruncatedError("recognize", response.text ?? "", finishReason);
+      const json = extractJson(response.text);
+      return Array.isArray(json?.actions) ? json : { actions: [], parseFailed: true };
     },
   };
 }

@@ -21,7 +21,7 @@ import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { listCharacters } from "../../domain/rules/prompt/mvu.js";
 import { getTimeStr } from "../../utils/mudHelpers.js";
 import { getPipelineEntries, getTraceLog } from "../../infra/actionTrace.js";
-import { duelAlly, isCompanionUnlockedByName } from "../../domain/rules/companion/companion.js";
+import { duelLineup, isCompanionUnlockedByName } from "../../domain/rules/companion/companion.js";
 import { OC_BY_NAME } from "../../domain/rules/npc/npcCarry.js";
 import { ocMenuRoutes } from "../../features/npc/ocRecruit.js";
 import ErrorBoundary from "../components/ErrorBoundary.jsx";
@@ -236,16 +236,17 @@ export default function GlobalOverlays({
       />
       );
     }},
-    { show: duelingNpc, render: () => (
+    { show: duelingNpc, render: () => {
+      // 1v1 还是团战统一由 duelLineup 裁决：己方=出战伙伴+同主仆组随从（朵朵+铁伯），
+      // 敌方=对手+其随从（打元朵朵时铁伯陪着迎战）；玩家无伙伴时单挑两人也走团战。
+      // 对手就是出战伙伴本人时没有己方上场，走 1v1。
+      const lineup = duelLineup(companionState, duelingNpc);
+      return (
       <ErrorBoundary label="切磋界面" onReset={resetDuel}>
-      {duelAlly(companionState, duelingNpc) ? (
-        // 有队友出战：2v2团战（玩家+队友 vs 当前对手）；对手就是这位队友时走下面的 1v1。
-        // 【改成读通用出战位】此前写死 companionState.snowLeopard.data，
-        // 明日香入队后带的是她、这里却仍取雪豹（雪豹此时 active=false、data 可能还在），
-        // 结果会出现"带着明日香却是雪豹上场"。单槽互斥，activeCompanion 保证只有一个。
+      {lineup.team ? (
         <TeamDuelScreen
-          enemies={[duelingNpc]}
-          leopardData={duelAlly(companionState, duelingNpc).data}
+          enemies={lineup.enemies}
+          companions={lineup.allies.map(a => a.data)}
           playerChar={{ ...char, special: effectiveSpecialNow }}
           pendingCombatBuff={char.pendingCombatBuff}
           playerInv={inv}
@@ -267,7 +268,7 @@ export default function GlobalOverlays({
         />
       )}
       </ErrorBoundary>
-    )},
+    );}},
   ];
 
   return (

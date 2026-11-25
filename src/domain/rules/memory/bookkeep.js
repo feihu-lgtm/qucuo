@@ -141,7 +141,11 @@ ${ledgerBlock || "（无）"}`;
   });
 
   definePrompt("call", "bookkeep.turn", {
+    group: "async",
     label: "回合记账",
+    execution: "async_background",
+    route: "extraction",
+    reviewDesc: "提取 ≤50 字客观 memory 与在场 NPC 增量旧账，不合法名单自动剔除",
     tokenLimitKey: "extraction",
     defaultMaxTokens: 1200,
     join: "",

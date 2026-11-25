@@ -40,17 +40,17 @@ export default function LoreScreen({ varTree, time = 0, turnToStr, zoneTheme, on
       <div style={card} onClick={e => e.stopPropagation()}>
         {/* 顶栏 */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 20px", borderBottom: `1px solid ${border}`, background: `linear-gradient(180deg, ${bgPanel}, transparent)` }}>
-          <span style={{ fontSize: 18, color: accent, fontWeight: "bold", letterSpacing: 2 }}>📖 见闻录</span>
-          <span style={{ fontSize: 11, color: textDim }}>江湖之事，谁人知晓，几时淡忘</span>
+          <span style={{ fontSize: "var(--fs-lg)", color: accent, fontWeight: "bold", letterSpacing: 2 }}>📖 见闻录</span>
+          <span style={{ fontSize: "var(--fs-xs)", color: textDim }}>江湖之事，谁人知晓，几时淡忘</span>
           <span style={{ flex: 1 }} />
-          <span onClick={onClose} style={{ cursor: "pointer", color: textDim, fontSize: 13, padding: "2px 8px" }}>✕ 收起</span>
+          <span onClick={onClose} style={{ cursor: "pointer", color: textDim, fontSize: "var(--fs-md)", padding: "2px 8px" }}>✕ 收起</span>
         </div>
 
         {/* Tab 切换 */}
         <div style={{ display: "flex", gap: 4, padding: "10px 20px 0" }}>
           {[["account", "事实账本", facts.length], ["notes", "记忆碎片", notes?.length]].map(([k, label, n]) => (
             <span key={k} onClick={() => setTab(k)}
-              style={{ cursor: "pointer", padding: "6px 16px", borderRadius: 0, fontSize: 13,
+              style={{ cursor: "pointer", padding: "6px 16px", borderRadius: 0, fontSize: "var(--fs-md)",
                 color: tab === k ? "var(--bg-panel)" : accent, background: tab === k ? accent : "transparent",
                 border: `1px solid ${tab === k ? accent : border}`, borderBottom: "none", fontWeight: tab === k ? "bold" : "normal" }}>
               {label}{n != null ? ` · ${n}` : ""}
@@ -80,7 +80,7 @@ export default function LoreScreen({ varTree, time = 0, turnToStr, zoneTheme, on
 }
 
 function Empty({ text, textDim }) {
-  return <div style={{ textAlign: "center", color: textDim, fontSize: 13, padding: "48px 20px", lineHeight: 2 }}>{text}</div>;
+  return <div style={{ textAlign: "center", color: textDim, fontSize: "var(--fs-md)", padding: "48px 20px", lineHeight: 2 }}>{text}</div>;
 }
 
 // 一条事实：什么时候 · 什么事 · 谁知道(怎么知道的·何时) · 能记多少(传闻淡忘倒计时)
@@ -89,33 +89,33 @@ function FactCard({ fact, time, fmtTurn, accent, border, bgPanel, textDim }) {
   return (
     <div style={{ background: bgPanel, border: `1px solid ${border}`, borderRadius: 0, padding: "12px 14px", marginBottom: 10 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 6 }}>
-        <span style={{ fontSize: 10.5, color: accent, flexShrink: 0 }}>{fmtTurn(fact.诞生回合 || 0)}</span>
-        {fact.标签 && <span style={{ fontSize: 9.5, color: textDim, border: `1px solid ${border}`, borderRadius: 0, padding: "0 5px" }}>{fact.标签}</span>}
+        <span style={{ fontSize: "var(--fs-xs)", color: accent, flexShrink: 0 }}>{fmtTurn(fact.诞生回合 || 0)}</span>
+        {fact.标签 && <span style={{ fontSize: "var(--fs-2xs)", color: textDim, border: `1px solid ${border}`, borderRadius: 0, padding: "0 5px" }}>{fact.标签}</span>}
       </div>
-      <div style={{ fontSize: 14, color: "var(--lore-summary)", lineHeight: 1.7, marginBottom: 8 }}>{fact.摘要 || "（此事尚无定论）"}</div>
+      <div style={{ fontSize: "var(--fs-base)", color: "var(--lore-summary)", lineHeight: 1.7, marginBottom: 8 }}>{fact.摘要 || "（此事尚无定论）"}</div>
       {/* 谁知道 */}
       <div style={{ borderTop: `1px dashed ${border}`, paddingTop: 8 }}>
-        <div style={{ fontSize: 10, color: textDim, marginBottom: 5 }}>谁知道这事（{knowers.length} 人）</div>
+        <div style={{ fontSize: "var(--fs-2xs)", color: textDim, marginBottom: 5 }}>谁知道这事（{knowers.length} 人）</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {knowers.length === 0 && <span style={{ fontSize: 11, color: textDim }}>无人知晓</span>}
+          {knowers.length === 0 && <span style={{ fontSize: "var(--fs-xs)", color: textDim }}>无人知晓</span>}
           {knowers.map(([name, info]) => {
             const 途 = info.途径 || "剧本";
             const 会淡忘 = 途 === "传闻" && fact.忘却回合数 != null;
             const 剩余 = 会淡忘 ? (info.得知回合 + fact.忘却回合数 - time) : null;
             return (
               <span key={name} title={`${途径说明[途] || 途}｜${fmtTurn(info.得知回合 || 0)}得知${会淡忘 ? `｜再过约 ${Math.max(0, 剩余)} 回合若无人再提便淡忘` : "｜记牢不忘"}`}
-                style={{ fontSize: 11, padding: "2px 8px", borderRadius: 0, background: "rgba(255,255,255,0.02)",
+                style={{ fontSize: "var(--fs-xs)", padding: "2px 8px", borderRadius: 0, background: "rgba(255,255,255,0.02)",
                   border: `1px solid color-mix(in srgb, ${途径色[途] || border} 33%, transparent)`, color: "var(--text)", display: "inline-flex", alignItems: "center", gap: 5 }}>
                 <span>{name}</span>
-                <span style={{ fontSize: 9, color: 途径色[途] || textDim }}>{途}</span>
-                {会淡忘 && <span style={{ fontSize: 9, color: 剩余 <= 10 ? "var(--lore-amber)" : textDim }}>◷{Math.max(0, 剩余)}</span>}
+                <span style={{ fontSize: "var(--fs-2xs)", color: 途径色[途] || textDim }}>{途}</span>
+                {会淡忘 && <span style={{ fontSize: "var(--fs-2xs)", color: 剩余 <= 10 ? "var(--lore-amber)" : textDim }}>◷{Math.max(0, 剩余)}</span>}
               </span>
             );
           })}
         </div>
         {/* 传闻演变说明 */}
         {knowers.some(([, i]) => (i.途径 || "") === "传闻") && (
-          <div style={{ fontSize: 9.5, color: textDim, marginTop: 6, fontStyle: "italic" }}>
+          <div style={{ fontSize: "var(--fs-2xs)", color: textDim, marginTop: 6, fontStyle: "italic" }}>
             ◷ 传闻会随时日淡忘；同处一地时，知情者也可能把它讲给旁人（越传越广，或悄然湮没）。
           </div>
         )}
@@ -130,15 +130,15 @@ function NoteCard({ note, fmtTurn, accent, border, bgPanel, textDim }) {
   return (
     <div style={{ background: bgPanel, border: `1px solid ${border}`, borderRadius: 0, padding: "10px 14px", marginBottom: 8 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 5 }}>
-        <span style={{ fontSize: 10.5, color: accent }}>{fmtTurn(note.turn || 0)}</span>
-        <span style={{ fontSize: 9.5, padding: "0 6px", borderRadius: 0, border: `1px solid ${border}`, color: priv ? "var(--lore-private)" : "var(--clay)" }}>
+        <span style={{ fontSize: "var(--fs-xs)", color: accent }}>{fmtTurn(note.turn || 0)}</span>
+        <span style={{ fontSize: "var(--fs-2xs)", padding: "0 6px", borderRadius: 0, border: `1px solid ${border}`, color: priv ? "var(--lore-private)" : "var(--clay)" }}>
           {priv ? "私己心事" : "公开见闻"}
         </span>
-        {note.requiredFlag && <span style={{ fontSize: 9, color: textDim }}>🔒需机缘</span>}
+        {note.requiredFlag && <span style={{ fontSize: "var(--fs-2xs)", color: textDim }}>🔒需机缘</span>}
       </div>
-      <div style={{ fontSize: 13.5, color: "var(--lore-note-text)", lineHeight: 1.7 }}>{note.text}</div>
+      <div style={{ fontSize: "var(--fs-md)", color: "var(--lore-note-text)", lineHeight: 1.7 }}>{note.text}</div>
       {note.entities?.length > 0 && (
-        <div style={{ fontSize: 9.5, color: textDim, marginTop: 5 }}>牵涉：{note.entities.join("、")}</div>
+        <div style={{ fontSize: "var(--fs-2xs)", color: textDim, marginTop: 5 }}>牵涉：{note.entities.join("、")}</div>
       )}
     </div>
   );

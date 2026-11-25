@@ -329,6 +329,36 @@ describe("runTurn", () => {
     expect(result.mvuCommands).toHaveLength(1);
   });
 
+  it("deduplicates _prefetchedRecall against rendered hist rather than raw mainConvo", async () => {
+    const requests = [];
+    const ai = createMockAi(['{"output":["风过石阶。"],"delta":{}}'], {
+      onRequest: (messages) => requests.push(messages),
+    });
+    const ctx = createPlayTurnContext(ai, vi.fn());
+    ctx.apiCfg.contextWindow = 2;
+    ctx.convo = [
+      { role: "user", content: "早先往事" },
+      { role: "assistant", content: "已被滑动窗口裁掉的旧记忆" },
+      { role: "user", content: "刚才动作" },
+      { role: "assistant", content: "还留在当前历史里的近况" },
+    ];
+    ctx._prefetchedRecall = Promise.resolve({
+      recallInfo: {
+        visible: [
+          { tier: "strong", text: "已被滑动窗口裁掉的旧记忆", meta: { turn: 1 } },
+          { tier: "strong", text: "还留在当前历史里的近况", meta: { turn: 3 } },
+        ],
+      },
+      recallBlock: "\n\n[往事]\n· （第1回合）已被滑动窗口裁掉的旧记忆\n· （第3回合）还留在当前历史里的近况",
+    });
+
+    await runTurn(ctx, "继续往里走");
+
+    const serialized = JSON.stringify(requests[0]);
+    expect(serialized).toContain("（第1回合）已被滑动窗口裁掉的旧记忆");
+    expect(serialized).not.toContain("（第3回合）还留在当前历史里的近况");
+  });
+
   it.each([
     [404, 1],
     [401, 1],

@@ -24,6 +24,7 @@ import { deposit } from "../../features/bank/logic.js";
 import { applyResult } from "../../features/run.js";
 import { defaultPreset } from "../../domain/rules/prompt/presetSystem.js";
 import { LEGACY_DEFAULT_CONTENT } from "../../domain/rules/prompt/presetLegacy.js";
+import { resetPromptOverrides, setPromptOverride } from "../../domain/rules/prompt/registry.js";
 
 const legacySnapshotPreset = {
   ...defaultPreset(),
@@ -83,7 +84,10 @@ describe("callMainOnce 组装黄金快照", () => {
       getItem: () => JSON.stringify({ presets: [legacySnapshotPreset], activeIndex: 0 }),
     });
   });
-  afterEach(() => { vi.unstubAllGlobals(); });
+  afterEach(() => {
+    resetPromptOverrides();
+    vi.unstubAllGlobals();
+  });
 
   it.each([true, false])("permits only meat credit in an active leopard gift settlement (%s)", async (active) => {
     await callMainOnce(null, false, makeDeps({ isSettle: true, settleKind: "gift", settleNpc: "雪豹", snowLeopardContext: active ? "[收复雪豹] 在场" : "" }));
@@ -246,5 +250,35 @@ describe("callMainOnce 组装黄金快照", () => {
     const layers = d._trace.nodes.map(s => s.label);
     expect(layers).toContain("Prompt注入");
     expect(layers).toContain("调用模式");
+  });
+
+  it("私聊 recall 关灯不影响主回合远景/召回，user_recall 关灯才关闭", async () => {
+    setPromptOverride("recall", { mode: "off" });
+    const dKeep = makeDeps({
+      varTree: { 角色: {}, 世界: { 日总结: [{ label: "第1天", text: "初入鱼定村" }] } },
+      recallBlock: "\n\n[往事] 昨夜雪山相遇",
+    });
+    await callMainOnce(null, false, dKeep);
+    const msgKeep = JSON.stringify(callModel.mock.calls[0][2]);
+    expect(msgKeep).toContain("昨夜雪山相遇");
+    expect(msgKeep).toContain("初入鱼定村");
+
+    callModel.mockClear();
+    setPromptOverride("user_recall", { mode: "off" });
+    await callMainOnce(null, false, dKeep);
+    const msgOff = JSON.stringify(callModel.mock.calls[0][2]);
+    expect(msgOff).not.toContain("昨夜雪山相遇");
+    expect(msgOff).not.toContain("初入鱼定村");
+  });
+
+  it("body_gate 蓝灯可在移动回合强制点亮体貌公开层", async () => {
+    setPromptOverride("body_gate", { mode: "blue" });
+    const d = makeDeps({
+      intent: { code: "MOVE", label: "移动" },
+      charBodyProfile: { ...emptyBodyProfile(), hair: "乌发及腰" },
+    });
+    await callMainOnce(null, false, d);
+    const sysMove = JSON.stringify(callModel.mock.calls[0][1]);
+    expect(sysMove).toContain("乌发及腰");
   });
 });

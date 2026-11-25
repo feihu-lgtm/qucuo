@@ -153,8 +153,8 @@ export function buildArrivalNote({ isTalk, movingDir, lockedDestName, outerDepar
 // 数据覆盖，故移动轮不过滤、用原名单，入场描述另由 arrivalNote 负责；只有非移动
 // （原地互动/look）才按内层房间可见性过滤。
 // 雪豹随行（与作者确认：跟随不设留守，形影不离，内层箱庭也跟进去，不需要单独
-// 追踪位置——它的"坐标"恒等于玩家当前坐标）。雪豹不进 room.npcs、不出现在
-// "此地之人"UI列表（右栏有独立的队伍栏专门展示它），但必须让叙事能"看见"它
+// 追踪位置——它的"坐标"恒等于玩家当前坐标）。雪豹不进 room.npcs；「此地」UI 列表
+// 由 peopleRoster 按 companionState 另把随行队友并进去显示，但叙事要"看见"它
 // 在场——所以只在这里、喂给AI的 visibleNpcsForAI 里追加它，其余下游
 // （matchNpcLore 在场判定、NPC 认知隔离等）复用同一份列表，天然把雪豹当成
 // 一个真实在场的角色对待，不用另开一条"伙伴专属"的叙事通道。
@@ -163,7 +163,7 @@ export function buildPresence({ isTalk, lockedDestName, room, innerRoomName, com
   const visibleNpcs = (!isTalk && lockedDestName)
     ? npcs
     : getPresentNpcs({ room, innerRoomName });
-  // 随行队友并入喂给AI的在场名单（不影响「此地之人」的UI列表——那是本地人口）。
+  // 随行队友并入喂给AI的在场名单（room.npcs 只存本地人口，不写队友）。
   // 【改成读通用出战位】此前这里写死只认雪豹，明日香入队后 AI 压根不知道她跟着，
   // 叙事里她就凭空消失了。现在读 activeCompanion（单槽互斥，同时只有一个）。
   const comp = activeCompanion(companionState);

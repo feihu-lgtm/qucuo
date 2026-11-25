@@ -83,7 +83,7 @@ export const FIELD = Object.freeze({
 
 const ordinaryGift = [3, 5];
 const affectionRules = {
-  mvu: { maxDelta: 15, daily: 12 },
+  mvu: { maxDelta: 15, perTurn: 5, daily: 12 },
   firstMeeting: [0, 20],
   gift: { 白: ordinaryGift, 绿: [5, 7], 蓝: [7, 10], 紫: [10, 13], 橙: [12, 15], 红: [14, 15] },
   learn: { ordinary: [2, 4, 3], master: [4, 8, 6] },

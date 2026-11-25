@@ -70,7 +70,7 @@ export default function Placement({ value, onChange, accent, npc, apiCfg, why, r
         <span onClick={askAiPlace} title="让 AI 按人设判断该驻场还是游走，据点只能从本作地图里选"
           style={{
             cursor: busy ? "wait" : "pointer", userSelect: "none",
-            fontSize: 11, padding: "4px 11px", borderRadius: 0, whiteSpace: "nowrap",
+            fontSize: "var(--fs-xs)", padding: "4px 11px", borderRadius: 0, whiteSpace: "nowrap",
             display: "inline-flex", alignItems: "center", gap: 5,
             color: busy ? "var(--ink-sage)" : "var(--tutorial-move)",
             border: `1px solid ${busy ? "var(--music-idle-icon)" : "var(--temple-full)"}`,
@@ -85,14 +85,14 @@ export default function Placement({ value, onChange, accent, npc, apiCfg, why, r
       {pl.mode === "resident" && (
         <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
           <label style={{ flex: 1 }}>
-            <span style={{ display: "block", fontSize: 10.5, color: "var(--ink-muted)", marginBottom: 3 }}>据点</span>
+            <span style={{ display: "block", fontSize: "var(--fs-xs)", color: "var(--ink-muted)", marginBottom: 3 }}>据点</span>
             <select value={pl.district || ""} onChange={e => set({ district: e.target.value || null, innerRoom: null })} style={selStyle}>
               <option value="" style={{ background: "var(--bg-deep)" }}>（未选，等同不落地）</option>
               {DISTRICTS.map(d => <option key={d} value={d} style={{ background: "var(--bg-deep)" }}>{d}</option>)}
             </select>
           </label>
           <label style={{ flex: 1 }}>
-            <span style={{ display: "block", fontSize: 10.5, color: "var(--ink-muted)", marginBottom: 3 }}>
+            <span style={{ display: "block", fontSize: "var(--fs-xs)", color: "var(--ink-muted)", marginBottom: 3 }}>
               常在哪间{rooms.length ? "" : "（无内层）"}
             </span>
             <select value={pl.innerRoom || ""} disabled={!rooms.length}
@@ -105,7 +105,7 @@ export default function Placement({ value, onChange, accent, npc, apiCfg, why, r
       )}
       {pl.mode === "wander" && (
         <div style={{ marginTop: 8 }}>
-          <div style={{ fontSize: 10.5, color: "var(--ink-muted)", marginBottom: 4 }}>出现在哪些据点 · 点一下加二十五，满了归零</div>
+          <div style={{ fontSize: "var(--fs-xs)", color: "var(--ink-muted)", marginBottom: 4 }}>出现在哪些据点 · 点一下加二十五，满了归零</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8 }}>
             {DISTRICTS.map(d => {
               const w = pl.weights?.[d] || 0;
@@ -117,7 +117,7 @@ export default function Placement({ value, onChange, accent, npc, apiCfg, why, r
                   set({ weights: next });
                 }}
                   style={{
-                    cursor: "pointer", fontSize: 10.5, padding: "3px 8px", borderRadius: 0,
+                    cursor: "pointer", fontSize: "var(--fs-xs)", padding: "3px 8px", borderRadius: 0,
                     border: `1px solid ${w > 0 ? accent : "var(--bg-card)"}`,
                     background: w > 0 ? `rgba(212,168,83,${0.06 + w / 500})` : "transparent",
                     color: w > 0 ? "var(--paper)" : "var(--ink-text-dim)",
@@ -125,7 +125,7 @@ export default function Placement({ value, onChange, accent, npc, apiCfg, why, r
               );
             })}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--ink-muted)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "var(--fs-xs)", color: "var(--ink-muted)" }}>
             <span>时辰</span>
             <input type="number" min={0} max={23} value={pl.timeSlot[0]}
               onChange={e => set({ timeSlot: [Number(e.target.value), pl.timeSlot[1]] })}
@@ -134,7 +134,7 @@ export default function Placement({ value, onChange, accent, npc, apiCfg, why, r
             <input type="number" min={0} max={23} value={pl.timeSlot[1]}
               onChange={e => set({ timeSlot: [pl.timeSlot[0], Number(e.target.value)] })}
               style={{ ...selStyle, width: 52 }} />
-            <span style={{ fontSize: 10, color: "var(--ink-text-dim)" }}>（0-23 时，跨夜请分两次入册）</span>
+            <span style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-text-dim)" }}>（0-23 时，跨夜请分两次入册）</span>
           </div>
         </div>
       )}
@@ -148,13 +148,11 @@ export default function Placement({ value, onChange, accent, npc, apiCfg, why, r
           boxShadow: "0 2px 6px rgba(0,0,0,.45)",
           display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap",
         }}>
-          <span style={{
-            fontSize: 9, color: "var(--good)", border: "1px solid var(--skill-learned)",
-            borderRadius: 0, padding: "0 4px", flexShrink: 0,
-          }}>AI 荐位</span>
-          <span style={{ fontSize: 10.5, lineHeight: 1.6, color: "var(--map-title-text)" }}>{why}</span>
+          <span style={{ fontSize: "var(--fs-2xs)", color: "var(--good)", border: "1px solid var(--skill-learned)",
+          borderRadius: 0, padding: "0 4px", flexShrink: 0, }}>AI 荐位</span>
+          <span style={{ fontSize: "var(--fs-xs)", lineHeight: 1.6, color: "var(--map-title-text)" }}>{why}</span>
           {rejected && (
-            <span style={{ fontSize: 10, color: "var(--qb-status-edge)" }}>
+            <span style={{ fontSize: "var(--fs-2xs)", color: "var(--qb-status-edge)" }}>
               · 它给的据点不在本作地图里，已退回不落地，请自己选
             </span>
           )}

@@ -156,7 +156,7 @@ export function BidderCarousel({ bidders, carouselIdx, setCarouselIdx, touchRef,
         touchRef.current.active = false;
         if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1); // 左滑下一张、右滑上一张
       }}>
-      <div style={{ color: "var(--parchment)", fontSize: 12, marginBottom: 6, letterSpacing: 1 }}>
+      <div style={{ color: "var(--parchment)", fontSize: "var(--fs-sm)", marginBottom: 6, letterSpacing: 1 }}>
         买家 {carouselIdx + 1} / {bidders.length} · 左右滑动看下一位
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", justifyContent: "center" }}>
@@ -174,10 +174,10 @@ export function BidderCarousel({ bidders, carouselIdx, setCarouselIdx, touchRef,
             <img src={FRAME} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} />
           </div>
           <div style={{ textAlign: "center", marginTop: 8 }}>
-            <div style={{ color: "var(--gold-light)", fontSize: 16, letterSpacing: 2 }}>{cur.name}</div>
-            <div style={{ color: "var(--ink-bronze)", fontSize: 11 }}>{ROLE_BY_NAME[cur.name] || ""}</div>
-            <div style={{ color: "var(--ink-gold-soft)", fontSize: 15, margin: "6px 0" }}>出价 {offerLabel(cur)}</div>
-            <div style={{ color: "var(--qb-text-dim)", fontSize: 11, lineHeight: 1.7, maxHeight: "8vh", overflowY: "auto" }}>{cur.bio}</div>
+            <div style={{ color: "var(--gold-light)", fontSize: "var(--fs-lg)", letterSpacing: 2 }}>{cur.name}</div>
+            <div style={{ color: "var(--ink-bronze)", fontSize: "var(--fs-xs)" }}>{ROLE_BY_NAME[cur.name] || ""}</div>
+            <div style={{ color: "var(--ink-gold-soft)", fontSize: "var(--fs-lg)", margin: "6px 0" }}>出价 {offerLabel(cur)}</div>
+            <div style={{ color: "var(--qb-text-dim)", fontSize: "var(--fs-xs)", lineHeight: 1.7, maxHeight: "8vh", overflowY: "auto" }}>{cur.bio}</div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
             <button onClick={() => sellTo(cur)} style={{ ...carBtn, background: "linear-gradient(180deg,var(--ink-brass-lit),var(--gamble-sell-bottom))", color: "var(--gamble-sell-text)" }}>
@@ -217,13 +217,13 @@ export function SkinModal({ changKouLabel, skinLabel, text, loading, onClose }) 
       <div style={{ maxWidth: "min(560px, 82vw)", background: "var(--gamble-panel)", border: "1px solid var(--ink-brass)",
         borderRadius: 0, padding: "22px 26px", boxShadow: "0 12px 40px rgba(0,0,0,.7)" }}
         onClick={(e) => e.stopPropagation()}>
-        <div style={{ color: "var(--gold-light)", fontSize: 15, letterSpacing: 2, marginBottom: 12 }}>
+        <div style={{ color: "var(--gold-light)", fontSize: "var(--fs-lg)", letterSpacing: 2, marginBottom: 12 }}>
           相石 · {changKouLabel} · {skinLabel}
         </div>
-        <div style={{ color: "var(--qb-text-dim)", fontSize: 13.5, lineHeight: 2, whiteSpace: "pre-wrap" }}>
+        <div style={{ color: "var(--qb-text-dim)", fontSize: "var(--fs-base)", lineHeight: 2, whiteSpace: "pre-wrap" }}>
           {text || (loading ? "老师傅眯眼端详，指腹在皮壳上缓缓摩挲……" : "（相石不语）")}
         </div>
-        <div style={{ color: "var(--ink-brass)", fontSize: 11, marginTop: 12, letterSpacing: 1 }}>
+        <div style={{ color: "var(--ink-brass)", fontSize: "var(--fs-xs)", marginTop: 12, letterSpacing: 1 }}>
           看皮只断表象，种水深浅终归要刀下见真章 · 点空白处收起
         </div>
       </div>
@@ -267,7 +267,7 @@ export function PanelBtn({ img, kind, big, disabled, done, grade, crack, onClick
   return (
     <div onClick={disabled ? undefined : onClick}
       style={{ position: "relative", height: 52, minWidth: big ? 160 : 120, display: "flex", alignItems: "center", justifyContent: "center",
-        cursor: disabled ? "default" : "pointer", color: doneColor, fontSize: 13, fontWeight: "bold",
+        cursor: disabled ? "default" : "pointer", color: doneColor, fontSize: "var(--fs-md)", fontWeight: "bold",
         textShadow: kind === "paper" ? "0 1px 0 rgba(255,255,255,.3)" : "0 1px 2px var(--black)",
         backgroundImage: `url(${img})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
         filter: done ? "brightness(.8)" : "none", padding: "0 20px",

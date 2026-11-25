@@ -50,9 +50,9 @@ export default class ErrorBoundary extends React.Component {
           position: "fixed", inset: 0, zIndex: 9999,
           background: "rgba(10,12,20,0.96)", color: "var(--error-text)",
           display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-          padding: 24, fontFamily: "monospace", fontSize: 13, lineHeight: 1.6,
+          padding: 24, fontFamily: "monospace", fontSize: "var(--fs-md)", lineHeight: 1.6,
         }}>
-          <div style={{ fontSize: 16, color: "var(--error-title)", marginBottom: 12 }}>
+          <div style={{ fontSize: "var(--fs-lg)", color: "var(--error-title)", marginBottom: 12 }}>
             ⚠ {this.props.label || "界面"}出错了（已拦截，未黑屏）
           </div>
           <div style={{
@@ -62,12 +62,12 @@ export default class ErrorBoundary extends React.Component {
             <div style={{ color: "var(--error-message)", marginBottom: 8 }}>{msg}</div>
             {stack && (
               <pre style={{
-                whiteSpace: "pre-wrap", fontSize: 11, color: "var(--error-stack)",
+                whiteSpace: "pre-wrap", fontSize: "var(--fs-xs)", color: "var(--error-stack)",
                 maxHeight: 220, overflowY: "auto", margin: 0,
               }}>{stack}</pre>
             )}
           </div>
-          <div style={{ color: "var(--error-hint)", fontSize: 11, marginBottom: 14 }}>
+          <div style={{ color: "var(--error-hint)", fontSize: "var(--fs-xs)", marginBottom: 14 }}>
             把上面这段错误发给作者，就能定位到具体是哪一行崩的。
           </div>
           <button type="button" onClick={this.handleDownloadDebugBundle} style={{

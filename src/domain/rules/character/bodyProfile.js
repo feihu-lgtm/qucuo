@@ -103,16 +103,16 @@ const PUBLIC_KEYS = [
  */
 export function gateBodyProfile(profile, ctx = {}) {
   if (!profile) return { text: "", lit: [], dark: [] };
-  const { scope, nsfw, scanText = "", whisper = false } = ctx;
+  const { scope, nsfw, scanText = "", whisper = false, forcePublic = false } = ctx;
 
   const lit = [], dark = [];
   const written = (fields) => fields.filter(f => (profile[f.key] || "").trim());
 
   // 公开层：近距离互动的场合亮（战斗/对话/查看/创造，以及私聊），赶路与结算轮灭。
-  // 另开关键词通道：玩家主动提相貌衣着时，哪怕在赶路轮也亮。
+  // 另开关键词通道与总控台蓝灯通道。
   const hitKey = PUBLIC_KEYS.find(k => scanText.includes(k));
   const publicByScope = whisper || scope === "full" || scope === "talk";
-  const publicOn = publicByScope || !!hitKey;
+  const publicOn = forcePublic || publicByScope || !!hitKey;
   const publicWritten = written(PUBLIC_FIELDS);
 
   // 私密层：只认 ■ 模式，关着就灭——关键词点不亮，场合也点不亮。

@@ -62,7 +62,7 @@ export default function NarrativeLogFeed({
   }
 
   return (
-    <div data-testid="narrative-log" style={{ display: hidden ? "none" : "block", flex: 1, padding: "20px 32px", overflowY: "auto", overflowX: "hidden", fontSize: "15px", lineHeight: "var(--lh-narrative)", letterSpacing: "0.3px" }}>
+    <div data-testid="narrative-log" style={{ display: hidden ? "none" : "block", flex: 1, padding: "20px 32px", overflowY: "auto", overflowX: "hidden", fontSize: "var(--fs-lg)", lineHeight: "var(--lh-narrative)", letterSpacing: "0.3px" }}>
       {groups.map((g, gi) => {
         if (g.skeleton) return <NarrativeSkeleton key={`skeleton-${gi}`} />;
         if (g.standalone) {
@@ -99,14 +99,14 @@ export default function NarrativeLogFeed({
                 }}
                 onClick={toggleCollapse}
               >
-                <span style={{ color: zoneTheme.accentDim, fontSize: "10px", flexShrink: 0, width: 10 }}>
+                <span style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-2xs)", flexShrink: 0, width: 10 }}>
                   {canCollapse ? (collapsed ? "▶" : "▼") : ""}
                 </span>
                 <div style={{ flex: 1 }}>
                   <LogEntry entry={g.cmd} color={clr[g.cmd.t] || clr.desc} onAction={act} isDayMode={isDayMode} />
                 </div>
                 {collapsed && (
-                  <span style={{ color: zoneTheme.accentDim, fontSize: "10px", flexShrink: 0 }}>
+                  <span style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-2xs)", flexShrink: 0 }}>
                     +{replyCount}条
                   </span>
                 )}
@@ -133,7 +133,7 @@ export default function NarrativeLogFeed({
               <span key={i} style={{ width: 4, height: 4, borderRadius: "50%", background: zoneTheme.accent, animation: `pulse 0.8s ease-in-out ${i * 0.2}s infinite` }} />
             ))}
           </span>
-          {queueCount > 0 && <span style={{ color: zoneTheme.accentDim, fontSize: "10.5px" }}>排队中 {queueCount}</span>}
+          {queueCount > 0 && <span style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-xs)" }}>排队中 {queueCount}</span>}
         </div>
       )}
       {pendingTalks > 0 && <div style={{ color: "var(--pink)", animation: "pulse 1.2s ease-in-out infinite" }}>  {pendingTalks} 条对话处理中...</div>}

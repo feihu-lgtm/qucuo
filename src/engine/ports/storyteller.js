@@ -21,13 +21,19 @@ function ensureStorytellerPrompt() {
     text: (ctx) => ctx.user || "",
   });
   definePrompt("call", "storyteller.flavor", {
+    group: "async",
     label: (ctx) => ctx.callLabel || "说书润色",
+    execution: "async_background",
+    route: "light",
     tier: "flavor",
+    reviewDesc: "flavor 档强制关闭思考并剥除 <thinking> 标签，失败静默落回模板正文",
     defaultMaxTokens: (ctx) => ctx.maxTokens ?? 800,
     join: "",
     blocks: ["storyteller.sys", "storyteller.user"],
   });
 }
+
+ensureStorytellerPrompt();
 
 // 当前配置里有没有可用的 key。判断从宽：有凭证即认为可用，
 // 真正能不能通只有发出去才知道，失败自然走降级。

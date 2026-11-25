@@ -1,9 +1,9 @@
-// 金鸟金蛋：UTC+8 日界 / 加权奖池各档 / 物品带价入行囊 / 兜底句 / 卡券强开档。
+// 金鸟金蛋：游戏日界（time/24）/ 加权奖池各档 / 物品带价入行囊 / 兜底句 / 卡券强开档。
 import { describe, it, expect } from "vitest";
 import { claimGoldenEgg } from "./goldenEgg.js";
 import {
   GOLDEN_EGG_POOL, GOLDEN_EGG_STATE_KEY, INTIMATE_TICKET_NAME,
-  eggAlreadyClaimed, eggDayKey, eggFallbackLine, eggReactionPrompt, eggTier, rollGoldenEgg,
+  eggAlreadyClaimed, eggGameDay, eggFallbackLine, eggReactionPrompt, eggTier, rollGoldenEgg,
 } from "../../domain/rules/npc/goldenEgg.js";
 import { intimateTicketNote } from "../../domain/rules/npc/intimacy.js";
 import { CATALOG_INDEX } from "../../domain/data/items/catalog.js";
@@ -21,16 +21,20 @@ const rngFor = (id) => {
   throw new Error(`unknown pool id ${id}`);
 };
 
-describe("eggDayKey / 日界", () => {
-  it("UTC+8 日界：同一天内被拦，跨界可领", () => {
-    // UTC 2026-11-23 15:59 → UTC+8 还是 11-23；16:01 → UTC+8 已是 11-24。
-    const before = Date.UTC(2026, 10, 23, 15, 59);
-    const after = Date.UTC(2026, 10, 23, 16, 1);
-    expect(eggDayKey(before)).toBe("2026-11-23");
-    expect(eggDayKey(after)).toBe("2026-11-24");
-    const npcState = { [GOLDEN_EGG_STATE_KEY]: { lastDate: eggDayKey(before) } };
-    expect(eggAlreadyClaimed(npcState, before)).toBe(true);
-    expect(eggAlreadyClaimed(npcState, after)).toBe(false);
+describe("eggGameDay / 日界", () => {
+  it("游戏日 = floor(time/24)：同日被拦，过了 24 的整数倍可再领", () => {
+    expect(eggGameDay(0)).toBe(0);
+    expect(eggGameDay(23.5)).toBe(0);
+    expect(eggGameDay(24)).toBe(1);
+    const npcState = { [GOLDEN_EGG_STATE_KEY]: { lastDay: eggGameDay(30) } };
+    expect(eggAlreadyClaimed(npcState, 30)).toBe(true);
+    expect(eggAlreadyClaimed(npcState, 47.9)).toBe(true);
+    expect(eggAlreadyClaimed(npcState, 48)).toBe(false);
+  });
+
+  it("旧档按真实日期存的 lastDate 不挡今天", () => {
+    const npcState = { [GOLDEN_EGG_STATE_KEY]: { lastDate: "2026-11-23" } };
+    expect(eggAlreadyClaimed(npcState, 30)).toBe(false);
   });
 });
 
@@ -40,20 +44,27 @@ describe("claimGoldenEgg", () => {
     expect(res.logs[0].t).toBe("err");
   });
 
-  it("同日重复领被拦，不动状态", () => {
-    const now = Date.UTC(2026, 10, 23, 2, 0);
-    const state = { npcState: { [GOLDEN_EGG_STATE_KEY]: { lastDate: eggDayKey(now) } } };
-    const res = claimGoldenEgg(state, duoduo, { now });
+  it("同一游戏日重复领被拦，不动状态", () => {
+    const state = { time: 30, npcState: { [GOLDEN_EGG_STATE_KEY]: { lastDay: 1 } } };
+    const res = claimGoldenEgg(state, duoduo);
     expect(res.claimed).toBe(true);
     expect(res.changes).toBeUndefined();
     expect(res.logs.map((l) => l.text).join("")).toContain("一天只来一趟");
   });
 
+  it("时间推进过下一个 24 的整数倍后可再领，之前不行", () => {
+    const first = claimGoldenEgg({ time: 30 }, duoduo, { rng: rngFor("coin_small") });
+    const npcState = first.changes.npcState({});
+    expect(claimGoldenEgg({ time: 47, npcState }, duoduo).claimed).toBe(true);
+    const next = claimGoldenEgg({ time: 48, npcState }, duoduo, { rng: rngFor("coin_small") });
+    expect(next.claimed).toBeUndefined();
+    expect(next.prize).toBeTruthy();
+  });
+
   it("开奖写 npcState 签到日（存档链字段，读档不丢）", () => {
-    const now = Date.UTC(2026, 10, 24, 9, 0);
-    const res = claimGoldenEgg({}, duoduo, { now, rng: rngFor("coin_small") });
+    const res = claimGoldenEgg({ time: 57 }, duoduo, { rng: rngFor("coin_small") });
     const next = res.changes.npcState({});
-    expect(next[GOLDEN_EGG_STATE_KEY].lastDate).toBe(eggDayKey(now));
+    expect(next[GOLDEN_EGG_STATE_KEY].lastDay).toBe(2);
   });
 
   it("银两档直加钱", () => {

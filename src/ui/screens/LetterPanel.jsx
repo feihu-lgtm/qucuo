@@ -27,7 +27,7 @@ export default function LetterPanel({ zoneTheme, onClose, inline }) {
       <Header name={`信件${letters.length ? `（${letters.length}）` : ""} · 信鸽 ${pigeons} 只`} zoneTheme={zoneTheme} onClose={onClose} />
       <div className="mobile-overlay-content" style={{ padding: 16 }}>
         {!letters.length && (
-          <div style={{ color: "var(--text-dim)", fontSize: 11 }}>
+          <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)" }}>
             还没有收到过信。与你结识的人，想起你时便会托鸽子捎话来。
           </div>
         )}
@@ -42,12 +42,12 @@ export default function LetterPanel({ zoneTheme, onClose, inline }) {
                     padding: "6px 10px", border: `1px solid ${open?.id === l.id ? zoneTheme.accentDim : zoneTheme.border}`,
                     background: open?.id === l.id ? "var(--bg-panel)" : "transparent",
                   }}>
-                  <span style={{ color: open?.id === l.id ? "var(--text)" : "var(--text-dim)", fontSize: 12, flexShrink: 0 }}>
+                  <span style={{ color: open?.id === l.id ? "var(--text)" : "var(--text-dim)", fontSize: "var(--fs-sm)", flexShrink: 0 }}>
                     ✉ {l.npcName}
                   </span>
-                  {!l.read && <span style={{ color: zoneTheme.accentDim, fontSize: 9 }}>未读</span>}
+                  {!l.read && <span style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-2xs)" }}>未读</span>}
                   <span style={{
-                    color: "var(--text-dim)", fontSize: 11, flex: 1,
+                    color: "var(--text-dim)", fontSize: "var(--fs-xs)", flex: 1,
                     overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                   }}>{l.content}</span>
                 </div>
@@ -56,7 +56,7 @@ export default function LetterPanel({ zoneTheme, onClose, inline }) {
             {open && (
               <div style={{ padding: "10px 12px", background: "var(--bg-panel)", border: `1px solid ${zoneTheme.border}` }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                  <span style={{ color: zoneTheme.accentDim, fontSize: 12 }}>「{open.npcName} 来信」</span>
+                  <span style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-sm)" }}>「{open.npcName} 来信」</span>
                   <Btn
                     label={pigeons > 0 ? "回信" : "回信（缺信鸽）"}
                     zoneTheme={zoneTheme}
@@ -64,9 +64,9 @@ export default function LetterPanel({ zoneTheme, onClose, inline }) {
                     onClick={() => reply(open.npcName)}
                   />
                 </div>
-                <div style={{ color: "var(--text)", fontSize: 12.5, lineHeight: 1.8, whiteSpace: "pre-wrap" }}>{open.content}</div>
+                <div style={{ color: "var(--text)", fontSize: "var(--fs-md)", lineHeight: 1.8, whiteSpace: "pre-wrap" }}>{open.content}</div>
                 {pigeons <= 0 && (
-                  <div style={{ color: "var(--text-dim)", fontSize: 10.5, marginTop: 6 }}>没有信鸽可回——来信时鸽子会留下一只，或去驿站买。</div>
+                  <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", marginTop: 6 }}>没有信鸽可回——来信时鸽子会留下一只，或去驿站买。</div>
                 )}
               </div>
             )}

@@ -8,11 +8,11 @@ export default function ModelPicker({ target, modelPickerTarget, modelStatus, mo
   return (
     <>
       {modelStatus === "error" && (
-        <div style={{ fontSize: "10.5px", color: "var(--red-soft)", marginTop: 3, marginLeft: indent || undefined }}>✗ 检测失败：{modelErr}</div>
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--red-soft)", marginTop: 3, marginLeft: indent || undefined }}>✗ 检测失败：{modelErr}</div>
       )}
       {modelList && modelList.length > 0 && (
         <div style={{ marginTop: indent ? 4 : 6, marginLeft: indent || undefined, maxHeight: 140, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 0 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", fontSize: "10px", color: "var(--ink-text-dim)", borderBottom: "1px solid var(--bg-slate)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", fontSize: "var(--fs-2xs)", color: "var(--ink-text-dim)", borderBottom: "1px solid var(--bg-slate)" }}>
             <span>{apiType === API_TYPES.ANTHROPIC
               ? (shortHeader ? "静态清单" : "Anthropic 官方无公开模型列表接口，以下是已知模型的静态清单")
               : (shortHeader ? `共 ${modelList.length} 个，点击选用` : `共 ${modelList.length} 个模型，点击选用`)}</span>
@@ -25,7 +25,7 @@ export default function ModelPicker({ target, modelPickerTarget, modelStatus, mo
               key={m}
               onClick={() => onPick(m)}
               style={{
-                padding: "5px 8px", cursor: "pointer", fontSize: "11.5px",
+                padding: "5px 8px", cursor: "pointer", fontSize: "var(--fs-sm)",
                 color: m === current ? "var(--accent)" : "var(--text-dim)",
                 background: m === current ? "var(--ink-select-bg)" : "transparent",
                 borderBottom: "1px solid var(--bg-slate)",

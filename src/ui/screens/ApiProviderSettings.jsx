@@ -76,7 +76,7 @@ export default function ApiProviderSettings({
           <input id="vertex-project" style={inputStyle} value={cfg.vertexProject || ""} onChange={e => patch({ vertexProject: e.target.value })} />
           <label htmlFor="vertex-location" style={fieldLabel}>位置</label>
           <input id="vertex-location" style={inputStyle} value={cfg.vertexLocation ?? "global"} onChange={e => patch({ vertexLocation: e.target.value })} placeholder="global" />
-          <div style={{ fontSize: "11px", color: "var(--text-dim)", marginTop: 4 }}>
+          <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginTop: 4 }}>
             每个浏览器只保存一份 ADC，导入新文件会替换旧的
             <br />
             凭证不会随配置、存档或报告导出。仅在信任的设备上使用。
@@ -119,7 +119,7 @@ export default function ApiProviderSettings({
                       type="button"
                       onClick={() => patch({ endpoint: alt.url })}
                       aria-pressed={cfg.endpoint === alt.url}
-                      style={{ ...chromeBtn(zoneTheme, { active: cfg.endpoint === alt.url }), padding: "3px 8px", fontSize: "10.5px" }}
+                      style={{ ...chromeBtn(zoneTheme, { active: cfg.endpoint === alt.url }), padding: "3px 8px", fontSize: "var(--fs-xs)" }}
                     >{alt.label}</button>
                   ))}
                 </div>
@@ -128,11 +128,11 @@ export default function ApiProviderSettings({
             <>
               <label style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 5, cursor: "pointer" }}>
                 <input type="checkbox" checked={!!cfg.openaiAutoComplete} onChange={e => patch({ openaiAutoComplete: e.target.checked })} style={{ cursor: "pointer" }} />
-                <span style={{ fontSize: "11px", color: "var(--text-dim)" }}>
+                <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)" }}>
                   自动补全地址（补上 /v1/chat/completions）
                 </span>
               </label>
-              <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginTop: 3 }}>
+              <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginTop: 3 }}>
                 {cfg.openaiAutoComplete
                   ? "已开启：地址缺路径时自动补 /v1/chat/completions。填的是完整/非标准路径的家请关掉，否则可能补出 404。"
                 : "默认不补：填什么就原样发什么。多数中转站需要填完整地址（含 /chat/completions）。若你的家只给了 base 地址，可勾上让它自动补。"}
@@ -141,7 +141,7 @@ export default function ApiProviderSettings({
               )}
               <label style={fieldLabel}>CORS 代理地址（可选）</label>
               <input id="api-cors-proxy" style={inputStyle} value={cfg.corsProxy || ""} onChange={e => patch({ corsProxy: e.target.value })} placeholder="例如 https://your-proxy.com/?url=" />
-              <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginTop: 3 }}>
+              <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginTop: 3 }}>
                 如果目标 API 不支持浏览器直连（CORS 报错），可以填一个中转代理服务的地址前缀。
               </div>
             </div>
@@ -149,7 +149,7 @@ export default function ApiProviderSettings({
           <div style={labelStyle}>API Key</div>
           <input id="api-key" style={inputStyle} type="password" value={cfg.apiKey || ""} onChange={e => patch({ apiKey: e.target.value })} placeholder="sk-..." />
           {provider.corsProxyRequired && !String(cfg.corsProxy || "").trim() && (
-            <div role="status" style={{ color: "var(--accent)", fontSize: "10.5px", marginTop: 5 }}>
+            <div role="status" style={{ color: "var(--accent)", fontSize: "var(--fs-xs)", marginTop: 5 }}>
               此厂商不允许浏览器直连，请在下方填 CORS 代理
             </div>
           )}

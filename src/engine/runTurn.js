@@ -5,6 +5,7 @@ import { callExtraction } from "./ports/extraction.js";
 import { step as traceStep } from "../infra/actionTrace.js";
 import { PHASE, turnMonitor } from "../infra/turnMonitor.js";
 import { runKnowledgeTurn, runRecall } from "./act/memoryLayer.js";
+import { formatRecallEntries } from "./ports/recallBlock.js";
 import { buildHistBlock, histBlockSavings } from "../domain/rules/memory/histWindow.js";
 import { bindTurnAi, createWebAi } from "./ports/ai.js";
 import { assemblePrompt } from "./prompt/assemblePrompt.js";
@@ -51,7 +52,7 @@ function withPresenceTrace(ctx) {
     const { room } = args;
     traceStep(ctx._trace, "在场名单", "info", `喂给AI ${visibleNpcs.length} 人${visibleNpcs.length ? "：" + visibleNpcs.map(n => n.name).join("、") : "（无人）"}${room.npcs.length !== visibleNpcs.length ? `（据点共${room.npcs.length}人，按内层房间过滤掉${room.npcs.length - visibleNpcs.length}人）` : ""}`);
     if (visibleNpcsForAI.length > visibleNpcs.length) {
-      traceStep(ctx._trace, "伙伴随行", "info", `${visibleNpcsForAI.at(-1).name}随行在场，已并入喂给AI的在场名单（不影响此地之人UI列表）`);
+      traceStep(ctx._trace, "伙伴随行", "info", `${visibleNpcsForAI.at(-1).name}随行在场，已并入喂给AI的在场名单`);
     }
     return presence;
   };
@@ -122,6 +123,7 @@ async function runTurnSteps(ctx, cmd, opts) {
       ...ctx.memory.recall,
       lastAiText: preparedPrompt.lastAiText || ctx.memory.recall.lastAiText,
       varTreeLatest: ctx.memory.varTreeLatest,
+      recentTexts: [hist],
     });
     [knowledgeTurn, recall] = await Promise.all([
       runKnowledgeTurn({
@@ -132,6 +134,9 @@ async function runTurnSteps(ctx, cmd, opts) {
       recallPromise,
     ]);
     if (ctx.isStale?.()) return { stale: true };
+    if (ctx._prefetchedRecall && recall?.recallInfo) {
+      recall = formatRecallEntries(recall.recallInfo, { recentTexts: [hist] });
+    }
   }
   const memoryDeps = {
     varTree: knowledgeTurn?.kTree,

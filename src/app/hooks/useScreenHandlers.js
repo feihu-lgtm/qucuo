@@ -61,19 +61,21 @@ export function useScreenHandlers({
     applyResult(featureCtx(), giftNpc(gameStore.getState(), npc, item));
   }, { feature: "npc.giftNpc" }), [captureUndo]);
 
+  // 撤销只有一格：被拒绝、什么都没改的操作不能抢先存撤销点，否则会把上一步真改动的
+  // 撤销点顶掉，玩家点「回滚一步」只回到原地（判定结果先算，有 changes 才存）。
   const handleInviteCompanion = useCallback((npc) => applyResult(featureCtx(), () => {
-    captureUndo();
     const result = inviteCompanion(gameStore.getState(), npc);
     if (!result.changes) return;
+    captureUndo();
     setActiveTarget(npc.name);
     applyResult(featureCtx(), result);
   }, { feature: "npc.inviteCompanion" }), [captureUndo]);
 
   // 元朵朵·金鸟金蛋：开奖卡片落定后，她的临场反应走 AI 后台补写（无 API 兜底句）
   const handleGoldenEgg = useCallback((npc) => applyResult(featureCtx(), () => {
-    captureUndo();
-    setActiveTarget(npc.name);
     const res = claimGoldenEgg(gameStore.getState(), npc);
+    if (res.changes) captureUndo();
+    setActiveTarget(npc.name);
     applyResult(featureCtx(), res);
     if (res.prize) duoduoEggReaction(res.prize, res.tier, { addLog });
   }, { feature: "npc.goldenEgg" }), [captureUndo]);
@@ -82,10 +84,10 @@ export function useScreenHandlers({
   const handleOcRecruit = useCallback((npc, route) => applyResult(featureCtx(), () => {
     const adv = OC_BY_NAME[npc.name];
     if (!adv) return;
-    captureUndo();
     // hire 路的按钮即全价档价（菜单文案已标出价多少），offer 不传会被当 0 必拒
     const res = recruitOC(gameStore.getState(), adv, route, route === "hire" ? { offer: hirePriceFor(adv) } : {});
     if (!res.ok) { addLog([{ t: "sys", text: `  ${res.reason}` }]); return; }
+    captureUndo();
     setActiveTarget(npc.name);
     applyResult(featureCtx(), applyRecruit(gameStore.getState(), adv, res.effect));
   }, { feature: "npc.ocRecruit" }), [captureUndo]);
@@ -147,9 +149,11 @@ export function useScreenHandlers({
   }, { feature: "npc.tradeWithNpc" }), [captureUndo]);
 
   const handleNpcLearnSkill = useCallback((npc) => applyResult(featureCtx(), () => {
-    captureUndo();
     const result = learnNpcSkillLogic(gameStore.getState(), npc);
-    if (result.changes) setActiveTarget(npc.name);
+    if (result.changes) {
+      captureUndo();
+      setActiveTarget(npc.name);
+    }
     applyResult(featureCtx(), result);
   }, { feature: "npc.learnNpcSkill" }), [captureUndo]);
 

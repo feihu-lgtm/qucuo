@@ -10,11 +10,31 @@ import { ENGINE_IDENTITY, ISOLATION, MAP_LAW, CATALOG_TAIL, buildTalkItemRule } 
 import { buildSeaOfMindRule } from "../narrator/seaOfMind.js";
 import { makeBlock } from "./tavernMapping.js";
 import { ADULT_HUMAN_FORM, isHumanFormCompanion } from "../companion/companionSlots.js";
+import { getPromptOverrides } from "./registry.js";
+
+function applyPresetControlOverrides(preset, ov) {
+  if (!preset || (!ov.preset_genrules && !ov.preset_wenfeng)) return preset;
+  const mapById = { genrules: ov.preset_genrules, wenfeng: ov.preset_wenfeng };
+  const prompts = (preset.prompts || []).map((entry) => {
+    const patch = mapById[entry.id];
+    if (!patch || typeof patch.text !== "string") return entry;
+    return { ...entry, content: patch.text };
+  });
+  const order = (preset.order || []).map((item) => {
+    const patch = mapById[item.id];
+    if (!patch) return item;
+    if (patch.mode === "off") return { ...item, enabled: false };
+    if (patch.mode === "blue") return { ...item, enabled: true };
+    return item;
+  });
+  return { ...preset, prompts, order };
+}
 
 
 // narrativeOnly=true：提取层模式下主调用只输出散文，去掉 JSON 格式要求和 MVU 指令。
 // 返回 SillyTavern 13 位置风格的 system 消息数组，每条带 tavernBlock/tavernLabel。
 export function buildSysBase(targetWordCount, narratorState, scenario, budgetInstruction, embeddingEnabled, npcLoreBlock, narrativeOnly = false, scope = "full", opts = {}) {
+  const ov = getPromptOverrides();
   const giftWeight = (template) => renderPromptTemplate(template, opts, { trace: opts.onPromptRefMissing }).text;
   // memory 摘要统一用玩家角色名字第三人称叙述，不用"你/我/玩家"这几种代词混着写——
   // 事实账本(knowledge.js)的摘要要在多处被复用（旁白全知视角、其他NPC传闻转述、飞鸽书信
@@ -32,7 +52,11 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
   const isSettle = scope === "settle";
   // 物件志（绿灯·批四）：只有"这一轮真可能发出物品"才挂——移动拾取判定命中、战斗（掉落）、
   // 创造模式（凭空发物）。寻常行动轮 AI 本就不该平白发物，挂了反而诱它发。
-  const wantCatalog = scope === "full" && opts.mayGrantItem !== false;
+  const wantCatalog = ov.catalog?.mode === "off"
+    ? false
+    : ov.catalog?.mode === "blue"
+      ? true
+      : scope === "full" && opts.mayGrantItem !== false;
   // 对话档不挂物件志（那本表是给"凭空发物"的轮次用的，对话轮挂了纯烧上下文），
   // 但对白里确实可能有物品往来——改挂一条轻规矩，让模型只从"玩家背包"和 ctx 里
   // 那位 NPC 的〔身携:…〕两个来源取物，不许现编。见 enginePrompts.TALK_ITEM_RULE。
@@ -152,16 +176,41 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
 
   // 预设系统负责的部分：文体/通用规则/剧本设定的拼装顺序和内容，可由用户在设置面板里自由编辑，
   // 完整兼容酒馆格式导入。scenario 通过 marker 占位符注入，不需要在这里手动拼接。
-  const preset = Object.hasOwn(opts, "activePreset") ? opts.activePreset : getActivePreset();
+  const basePreset = Object.hasOwn(opts, "activePreset") ? opts.activePreset : getActivePreset();
+  const preset = applyPresetControlOverrides(basePreset, ov);
   // scenario 绿灯（批三）：世界观总纲按"关键词 OR 状态"分条点灯，见 worldbook.js gateScenario。
   // 蓝灯段（地理概要/地图铁律/好感度规则）常驻；专项段（拓扑路线/契诃夫之枪/路途遭遇/
   // 装备掉落）只在玩家或上轮回复提到、或该 scope 确需时才亮。opts.gateCtx 不传则不裁剪。
-  const gated = opts.gateCtx
-    ? gateScenario(scenario, { ...opts.gateCtx, scope, wantMvu: wantMvu && !narrativeOnly })
-    : { text: scenario, lit: [], dark: [] };
+  const rawScenario = ov.preset_scenario?.mode === "off"
+    ? ""
+    : typeof ov.preset_scenario?.text === "string"
+      ? ov.preset_scenario.text
+      : scenario;
+  const gated = ov.preset_scenario?.mode === "off"
+    ? { text: "", lit: [], dark: [] }
+    : ov.preset_scenario?.mode === "blue"
+      ? { text: rawScenario, lit: ["总控台蓝灯全亮"], dark: [] }
+      : opts.gateCtx
+        ? gateScenario(rawScenario, { ...opts.gateCtx, scope, wantMvu: wantMvu && !narrativeOnly })
+        : { text: rawScenario, lit: [], dark: [] };
   if (opts.onGateReport) opts.onGateReport(gated);
   // 13 位置拆分：scenario / charDescription 由各自的独立块承载，这里不再填进预设占位符，避免重复。
   const presetContent = assemblePrompt(preset, { scenario: "", charDescription: "" });
+  const baseVoiceBlock = ov.voice?.mode === "off"
+    ? ""
+    : narratorVoicePrompt(narratorState, opts.onPromptRefMissing);
+  const voiceSupplement = ov.voice?.mode !== "off" && typeof ov.voice?.text === "string"
+    ? ov.voice.text.trim()
+    : "";
+  const voiceBlock = baseVoiceBlock && voiceSupplement
+    ? `${baseVoiceBlock}\n${voiceSupplement}`
+    : baseVoiceBlock || voiceSupplement;
+  const npcLoreText = ov.npc_lore?.mode === "off" ? "" : (npcLoreBlock || "");
+  const effectiveLenNote = ov.length?.mode === "off"
+    ? ""
+    : typeof ov.length?.text === "string"
+      ? ov.length.text
+      : (lenNote.startsWith("篇幅要求：") ? lenNote : `篇幅要求：${lenNote}`);
 
   // 各分支的 JSON schema / 叙事指令，与旧模板字符串完全一致。
   const schemaBlock = narrativeOnly
@@ -193,14 +242,14 @@ JSON后若需维护角色/世界状态变量，另起一行独立输出 <mvu> �
   const messages = [
     // 不变的段排在最前（身份+旁白声线+预设文体），好吃上接口的前缀缓存；
     // 每轮随输入变的篇幅要求放到 Author's Note（酒馆里本就是逐轮导向位）。
-    makeBlock("main", `${ENGINE_IDENTITY}\n${narratorVoicePrompt(narratorState, opts.onPromptRefMissing)}`),
-    makeBlock("worldInfoBefore", `${presetContent}${npcLoreBlock || ""}`),
+    makeBlock("main", voiceBlock ? `${ENGINE_IDENTITY}\n${voiceBlock}` : `${ENGINE_IDENTITY}\n`),
+    makeBlock("worldInfoBefore", `${presetContent}${npcLoreText}`),
     makeBlock("charDescription", `玩家角色：${playerName}。气血、内外功、物品等状态由系统维护，你只叙事，不擅自改状态。`),
     makeBlock("charPersonality", `旁白语气由「Main Prompt」声线控制，保持统一。`),
     makeBlock("scenario", gated.text),
     makeBlock("worldInfoAfter", `${wantCatalog ? `── 曲措乡物件志（叙事引用规范）──\n${describeCatalogForAI()}\n${CATALOG_TAIL}\n` : ""}${wantTalkItemRule ? `${buildTalkItemRule(narrativeOnly)}\n` : ""}${inSeaOfMind ? `${buildSeaOfMindRule()}\n\n` : ""}${wantIsolation ? `${ISOLATION}\n` : ""}\n\n${MAP_LAW}`),
     makeBlock("persona", `玩家以第一人称「我」扮演 ${playerName}，你是说书人/Gamemaster。`),
-    makeBlock("authorsNote", lenNote.startsWith("篇幅要求：") ? lenNote : `篇幅要求：${lenNote}`),
+    makeBlock("authorsNote", effectiveLenNote),
     makeBlock("exampleStart", "<START>"),
   ];
 

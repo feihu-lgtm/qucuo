@@ -66,7 +66,7 @@ export default function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
     <div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 7, minHeight: 22 }}>
         {!carry.length && (
-          <span style={{ fontSize: 10.5, color: "var(--ink-text-dim)" }}>
+          <span style={{ fontSize: "var(--fs-xs)", color: "var(--ink-text-dim)" }}>
             未指定 · 运行时按 {TIERS[levelCap]?.label}档 从四池随机抽
           </span>
         )}
@@ -78,14 +78,14 @@ export default function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
             <span key={nm + i}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 5,
-                fontSize: 10.5, padding: "3px 4px 3px 8px", borderRadius: 0,
+                fontSize: "var(--fs-xs)", padding: "3px 4px 3px 8px", borderRadius: 0,
                 border: `1px solid ${open ? "var(--ink-warn)" : custom ? "var(--service-hint)" : "var(--service-card-edge)"}`,
                 background: custom ? "rgba(120,180,130,.10)" : "rgba(212,168,83,.10)", color: "var(--paper)",
               }}>
               <span onClick={() => setDetailItem(open ? null : c)} title="点看详情"
                 style={{ cursor: "pointer" }}>{custom ? "⚒ " : ""}{nm}</span>
               <span onClick={() => { del(nm); if (open) setDetailItem(null); }} title="移除这件"
-                style={{ cursor: "pointer", color: "var(--lore-amber)", fontSize: 11, padding: "0 2px" }}>✕</span>
+                style={{ cursor: "pointer", color: "var(--lore-amber)", fontSize: "var(--fs-xs)", padding: "0 2px" }}>✕</span>
             </span>
           );
         })}
@@ -111,7 +111,7 @@ export default function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
         <span onClick={() => { setForging(f => !f); if (!draft) setDraft(blankDraft(cat, levelCap)); }}
           title="造一件百物录里没有的东西"
           style={{
-            cursor: "pointer", fontSize: 10.5, padding: "4px 10px", borderRadius: 0, whiteSpace: "nowrap",
+            cursor: "pointer", fontSize: "var(--fs-xs)", padding: "4px 10px", borderRadius: 0, whiteSpace: "nowrap",
             border: `1px solid ${forging ? "var(--green-soft)" : "var(--border-deep)"}`,
             color: forging ? "var(--green-soft)" : "var(--ink-muted)",
           }}>⚒ 新造一件</span>
@@ -127,7 +127,7 @@ export default function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
           玩家没法知道自己看的是全部还是一角 */}
       <div style={{
         display: "flex", alignItems: "center", gap: 6, padding: "3px 8px",
-        fontSize: 9.5, color: "var(--ink-text-dim)", background: "rgba(0,0,0,.3)",
+        fontSize: "var(--fs-2xs)", color: "var(--ink-text-dim)", background: "rgba(0,0,0,.3)",
         border: "1px solid var(--bg-card)", borderBottom: "none", borderRadius: 0,
       }}>
         <span>百物录 {CATALOG.length} 件</span>
@@ -140,7 +140,7 @@ export default function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
         maxHeight: "min(38vh, 380px)", overflowY: "auto",
         border: "1px solid var(--bg-card)", borderRadius: "0 0 3px 3px", background: "rgba(0,0,0,.22)",
       }}>
-        {!list.length && <div style={{ padding: 8, fontSize: 10.5, color: "var(--ink-text-dim)" }}>没有匹配的物件</div>}
+        {!list.length && <div style={{ padding: 8, fontSize: "var(--fs-xs)", color: "var(--ink-text-dim)" }}>没有匹配的物件</div>}
         {list.map(e => {
           const on = has(e.name);
           const tier = TIERS.find(t => t.label === e.quality);
@@ -149,14 +149,14 @@ export default function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
               title={e.desc ? e.desc.slice(0, 60) : undefined}
               style={{
                 display: "flex", alignItems: "center", gap: 6, padding: "4px 8px",
-                cursor: "pointer", fontSize: 10.5,
+                cursor: "pointer", fontSize: "var(--fs-xs)",
                 background: on ? "rgba(212,168,83,.10)" : "transparent",
                 borderBottom: "1px solid var(--gamble-panel)",
               }}>
               <span style={{ color: on ? "var(--ink-warn)" : "var(--gamble-button-edge)", width: 10 }}>{on ? "◉" : "○"}</span>
               <span style={{ color: tier?.color || "var(--quest-stage-desc)", width: 14 }}>{e.quality || "—"}</span>
               <span style={{ color: "var(--ink-text)", flex: 1 }}>{e.name}</span>
-              <span style={{ color: "var(--muted)", fontSize: 9.5 }}>{e.category}</span>
+              <span style={{ color: "var(--muted)", fontSize: "var(--fs-2xs)" }}>{e.category}</span>
             </div>
           );
         })}

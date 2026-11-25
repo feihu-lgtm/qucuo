@@ -2548,7 +2548,9 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     follower: {
       type: "机关人偶",
       name: "铁伯",
-      desc: "高瘦老仆型墨家机关人偶，精铁紫檀造，慈祥老者面嵌黄玉目，行走带金属机括声；无通灵只按宠溺回路行动，肚膛藏银票替她结账，遇险展四肢精钢盾甲护主，宠而不占有，机器爷爷。", slot: "mount", sellable: false, cherish: 100 , intimacy: { forbidden: true }},
+      desc: "高瘦老仆型墨家机关人偶，精铁紫檀造，慈祥老者面嵌黄玉目，行走带金属机括声；无通灵只按宠溺回路行动，肚膛藏银票替她结账，遇险展四肢精钢盾甲护主，宠而不占有，机器爷爷。", slot: "mount", sellable: false, cherish: 100 , intimacy: { forbidden: true },
+      joinParty: "tank", // 朵朵入队时铁伯作为独立伙伴一并入队（防御型，见 companion.js FOLLOWER_PRESETS）
+    },
     kungfu: {
       school: "元家钞能力诀",
       moves: [

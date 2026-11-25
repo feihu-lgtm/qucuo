@@ -8,25 +8,23 @@ export const SAVE_KEY = "qucuo_tavern_sim_v1";
 export function Btn({ label, onClick, disabled, zoneTheme, secondary }) {
   return (
     <span onClick={disabled ? undefined : onClick}
-      style={{
-        fontSize: 12, padding: "4px 12px", borderRadius: 0, cursor: disabled ? "not-allowed" : "pointer",
-        color: disabled ? "var(--tavern-disabled-text)" : secondary ? zoneTheme.accentDim : zoneTheme.bg,
-        background: disabled ? "var(--tavern-disabled-bg)" : secondary ? "transparent" : zoneTheme.accent,
-        border: `1px solid ${disabled ? "var(--tavern-disabled-edge)" : secondary ? zoneTheme.border : zoneTheme.accent}`,
-        opacity: disabled ? 0.5 : 1, userSelect: "none", whiteSpace: "nowrap",
-      }}>{label}</span>
+      style={{ fontSize: "var(--fs-sm)", padding: "4px 12px", borderRadius: 0, cursor: disabled ? "not-allowed" : "pointer",
+      color: disabled ? "var(--tavern-disabled-text)" : secondary ? zoneTheme.accentDim : zoneTheme.bg,
+      background: disabled ? "var(--tavern-disabled-bg)" : secondary ? "transparent" : zoneTheme.accent,
+      border: `1px solid ${disabled ? "var(--tavern-disabled-edge)" : secondary ? zoneTheme.border : zoneTheme.accent}`,
+      opacity: disabled ? 0.5 : 1, userSelect: "none", whiteSpace: "nowrap", }}>{label}</span>
   );
 }
 
 export function SectionTitle({ children, zoneTheme }) {
-  return <div style={{ color: zoneTheme.accentDim, fontSize: 11, margin: "12px 0 6px", borderBottom: `1px solid ${zoneTheme.border}`, paddingBottom: 3 }}>{children}</div>;
+  return <div style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-xs)", margin: "12px 0 6px", borderBottom: `1px solid ${zoneTheme.border}`, paddingBottom: 3 }}>{children}</div>;
 }
 
 // ── 样式 ─────────────────────────────────────────────────────────────
 export const S = {
   page: (t) => ({ height: "100vh", display: "flex", flexDirection: "column", background: t.bg || "var(--tavern-page-bg)", fontFamily: "inherit" }),
   topbar: (t) => ({ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderBottom: `1px solid ${t.border}`, flexWrap: "wrap" }),
-  chip: (t) => ({ color: "var(--ink-text)", fontSize: 12, border: `1px solid ${t.border}`, borderRadius: 0, padding: "3px 8px", background: "rgba(255,255,255,0.02)" }),
+  chip: (t) => ({ color: "var(--ink-text)", fontSize: "var(--fs-sm)", border: `1px solid ${t.border}`, borderRadius: 0, padding: "3px 8px", background: "rgba(255,255,255,0.02)" }),
   mainRow: { flex: 1, display: "flex", minHeight: 0, flexWrap: "wrap" },
   sceneWrap: (t) => ({ flex: "1 1 58%", minWidth: 320, padding: 12, borderRight: `1px solid ${t.border}` }),
   scene: (night) => ({
@@ -36,17 +34,17 @@ export const S = {
       : "repeating-linear-gradient(90deg, var(--ink-wood) 0px, var(--ink-wood) 46px, var(--ink-wood-mid) 46px, var(--ink-wood-mid) 48px), linear-gradient(180deg, var(--tavern-wood-top) 0%, var(--ink-wood) 55%, var(--ink-wood-dark) 100%)",
     border: "1px solid var(--ink-wood-line)",
   }),
-  zoneLabel: { fontSize: 10, color: "var(--tavern-zone-label)", letterSpacing: 2, marginTop: 1 },
+  zoneLabel: { fontSize: "var(--fs-2xs)", color: "var(--tavern-zone-label)", letterSpacing: 2, marginTop: 1 },
   side: (t) => ({ flex: "1 1 38%", minWidth: 280, display: "flex", flexDirection: "column", minHeight: 0 }),
   tabRow: (t) => ({ display: "flex", borderBottom: `1px solid ${t.border}` }),
   tab: (t, active) => ({
-    flex: 1, textAlign: "center", padding: "8px 0", fontSize: 12, cursor: "pointer", userSelect: "none",
+    flex: 1, textAlign: "center", padding: "8px 0", fontSize: "var(--fs-sm)", cursor: "pointer", userSelect: "none",
     color: active ? t.accent : "var(--ink-moss)", borderBottom: active ? `2px solid ${t.accent}` : "2px solid transparent",
   }),
   row: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" },
   box: (t) => ({ border: `1px solid ${t.border}`, borderRadius: 0, padding: "8px 10px", marginBottom: 8, background: "rgba(255,255,255,0.02)" }),
   logPanel: (t) => ({ height: 130, flex: "0 0 130px", minHeight: 0, overflowY: "auto", borderTop: `1px solid ${t.border}`, padding: "8px 14px", background: "rgba(0,0,0,0.25)" }),
-  token: () => ({ fontSize: 20, marginTop: 2 }),
+  token: () => ({ fontSize: "var(--fs-xl)", marginTop: 2 }),
 };
 
 // CSS 动效：明灭灯笼 / 呼吸浮动 / 气泡 / 跑堂游走 / 灶台蒸汽

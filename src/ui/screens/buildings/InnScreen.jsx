@@ -27,7 +27,7 @@ export default function InnScreen({ building, char, skills, time, varTree, flags
       <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
         <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
         <div style={{ padding: 16 }}>
-          <p style={{ color: zoneTheme.text, marginBottom: 12, fontSize: 13 }}>{building.desc}</p>
+          <p style={{ color: zoneTheme.text, marginBottom: 12, fontSize: "var(--fs-md)" }}>{building.desc}</p>
           <div style={{ color: "var(--ink-text-dim)", marginBottom: 12 }}>
             气血 {hp}/{maxHp} · 银两 {money} 两 · 每两回 {healPerLiang} 点气血
           </div>
@@ -57,7 +57,7 @@ export default function InnScreen({ building, char, skills, time, varTree, flags
     <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
       <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
       <div style={{ padding: 16 }}>
-        <p style={{ color: zoneTheme.text, marginBottom: 12, fontSize: 13 }}>{building.desc}</p>
+        <p style={{ color: zoneTheme.text, marginBottom: 12, fontSize: "var(--fs-md)" }}>{building.desc}</p>
         <div style={{ color: "var(--ink-text-dim)", marginBottom: 16 }}>
           气血 {hp}/{maxHp} · 银两 {money} 两
         </div>
@@ -80,7 +80,7 @@ export default function InnScreen({ building, char, skills, time, varTree, flags
           )}
           <Btn label="关闭" zoneTheme={zoneTheme} secondary onClick={onClose} />
         </div>
-        <div style={{ color: "var(--ink-text-dim)", fontSize: 11, marginTop: 12 }}>
+        <div style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)", marginTop: 12 }}>
           住宿后气血回满，时间推进一天（24单位）
         </div>
       </div>

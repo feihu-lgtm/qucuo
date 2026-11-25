@@ -24,10 +24,10 @@ export default function TeahouseScreen({ building, char, flags, time, zoneTheme,
     <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
       <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
       <div style={{ padding: 16 }}>
-        <div style={{ color: "var(--ink-text-dim)", fontSize: 11, marginBottom: 12 }}>
+        <div style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)", marginBottom: 12 }}>
           {building.desc}
         </div>
-        <div style={{ color: "var(--ink-text-dim)", marginBottom: 14, fontSize: 11 }}>
+        <div style={{ color: "var(--ink-text-dim)", marginBottom: 14, fontSize: "var(--fs-xs)" }}>
           银两 {money} 两 · 每次听消息花 {COST} 两
         </div>
         <Btn
@@ -39,7 +39,7 @@ export default function TeahouseScreen({ building, char, flags, time, zoneTheme,
             onListenRumor(RUMORS[idx], COST);
           }}
         />
-        <div style={{ color: "var(--building-desc)", fontSize: 10, marginTop: 12 }}>
+        <div style={{ color: "var(--building-desc)", fontSize: "var(--fs-2xs)", marginTop: 12 }}>
           江湖消息真假参半，听个热闹，说不定能有用。
         </div>
       </div>

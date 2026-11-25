@@ -27,18 +27,18 @@ export default function GamblingScreen({ building, char, flags, time, zoneTheme,
     <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
       <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
       <div style={{ padding: 16 }}>
-        <div style={{ color: "var(--ink-text-dim)", marginBottom: 10, fontSize: 11 }}>
+        <div style={{ color: "var(--ink-text-dim)", marginBottom: 10, fontSize: "var(--fs-xs)" }}>
           银两 {money} 两 · 气运 {luck}/10 · 每日一次
         </div>
 
         {alreadyGambled && (
-          <div style={{ color: "var(--red-soft)", marginBottom: 12, fontSize: 12 }}>今日已赌过，明日再来。</div>
+          <div style={{ color: "var(--red-soft)", marginBottom: 12, fontSize: "var(--fs-sm)" }}>今日已赌过，明日再来。</div>
         )}
 
         <div style={{ display: "flex", gap: 0, marginBottom: 12, borderBottom: `1px solid ${zoneTheme.border}` }}>
           {[["money", "赌银两"], ["item", "抽物品（100两）"]].map(([id, label]) => (
             <span key={id} onClick={() => setMode(id)}
-              style={{ padding: "6px 14px", fontSize: 11, cursor: "pointer", userSelect: "none",
+              style={{ padding: "6px 14px", fontSize: "var(--fs-xs)", cursor: "pointer", userSelect: "none",
                 color: mode === id ? zoneTheme.accent : zoneTheme.accentDim,
                 borderBottom: mode === id ? `2px solid ${zoneTheme.accent}` : "2px solid transparent" }}
             >{label}</span>
@@ -47,17 +47,17 @@ export default function GamblingScreen({ building, char, flags, time, zoneTheme,
 
         {mode === "money" && (
           <>
-            <div style={{ color: "var(--ink-text-dim)", fontSize: 11, marginBottom: 8 }}>
+            <div style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)", marginBottom: 8 }}>
               赔 {odds.lose}% · 平 {odds.tie}% · 赢 {odds.win}%（概率按气运线性插值）
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-              <span style={{ color: "var(--ink-text)", fontSize: 12 }}>押注：</span>
+              <span style={{ color: "var(--ink-text)", fontSize: "var(--fs-sm)" }}>押注：</span>
               <input
                 type="number" value={bet} min={10} max={Math.min(maxBet, money)}
                 onChange={e => setBet(Math.max(10, Math.min(Number(e.target.value), maxBet, money)))}
-                style={{ width: 80, background: "var(--bg-ink)", border: `1px solid ${zoneTheme.border}`, borderRadius: 0, color: "var(--ink-text)", fontSize: 12, padding: "3px 6px" }}
+                style={{ width: 80, background: "var(--bg-ink)", border: `1px solid ${zoneTheme.border}`, borderRadius: 0, color: "var(--ink-text)", fontSize: "var(--fs-sm)", padding: "3px 6px" }}
               />
-              <span style={{ color: "var(--ink-text-dim)", fontSize: 11 }}>两（最多 {maxBet}）</span>
+              <span style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)" }}>两（最多 {maxBet}）</span>
             </div>
             <Btn
               label={`押注 ${bet} 两`}
@@ -70,7 +70,7 @@ export default function GamblingScreen({ building, char, flags, time, zoneTheme,
 
         {mode === "item" && (
           <>
-            <div style={{ color: "var(--ink-text-dim)", fontSize: 11, marginBottom: 12 }}>
+            <div style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)", marginBottom: 12 }}>
               固定花100两，按气运随机抽一件物品（气运越高品质越好）
             </div>
             <Btn
@@ -82,7 +82,7 @@ export default function GamblingScreen({ building, char, flags, time, zoneTheme,
           </>
         )}
 
-        <div style={{ color: "var(--building-desc)", fontSize: 10, marginTop: 14 }}>
+        <div style={{ color: "var(--building-desc)", fontSize: "var(--fs-2xs)", marginTop: 14 }}>
           {building.desc}
         </div>
       </div>

@@ -24,10 +24,10 @@ export function MoveButton({ move, disabled, zoneTheme, onClick, onInspect }) {
       {/* 右上角"察看"：点它只看详情、不出招 */}
       <span onClick={(e) => { e.stopPropagation(); onInspect?.(); }}
         title="详细察看"
-        style={{ position: "absolute", top: 2, right: 5, fontSize: "11px", color: zoneTheme.textDim, cursor: "pointer" }}>ⓘ</span>
-      <div style={{ fontSize: "10px", color }}>{TYPE_ICON[move.type]} {move.quality}</div>
-      <div style={{ fontSize: "13px", color: zoneTheme.text, marginTop: 2 }}>{move.name}</div>
-      <div style={{ fontSize: "10px", color: zoneTheme.textDim, marginTop: 2 }}>耗能{move.energyCost}</div>
+        style={{ position: "absolute", top: 2, right: 5, fontSize: "var(--fs-xs)", color: zoneTheme.textDim, cursor: "pointer" }}>ⓘ</span>
+      <div style={{ fontSize: "var(--fs-2xs)", color }}>{TYPE_ICON[move.type]} {move.quality}</div>
+      <div style={{ fontSize: "var(--fs-md)", color: zoneTheme.text, marginTop: 2 }}>{move.name}</div>
+      <div style={{ fontSize: "var(--fs-2xs)", color: zoneTheme.textDim, marginTop: 2 }}>耗能{move.energyCost}</div>
     </div>
   );
 }

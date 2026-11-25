@@ -22,7 +22,7 @@ function renderNodeTitle(node) {
   return (
     <span>
       {prefix} · <span className={cls}>{adv.name}</span>
-      <span style={{ fontSize: 10.5, color: "var(--text-dim)", marginLeft: 6 }}>
+      <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginLeft: 6 }}>
         {adv.title} · {adv.archetypeLabel}
       </span>
     </span>
@@ -49,11 +49,11 @@ export default function DungeonNodeView({
         : "负伤脱身 · 银两折半保命";
     return (
       <div style={cardStyle(zoneTheme)}>
-        <div style={{ color: zoneTheme.accent, fontSize: 13, marginBottom: 6 }}>{title}</div>
-        <div style={{ fontSize: 12, color: "var(--text-dim)", marginBottom: 8 }}>
+        <div style={{ color: zoneTheme.accent, fontSize: "var(--fs-md)", marginBottom: 6 }}>{title}</div>
+        <div style={{ fontSize: "var(--fs-sm)", color: "var(--text-dim)", marginBottom: 8 }}>
           已探节点 {run.clearedNodes} 处 · 剩余气血 {Math.max(1, run.hp[0])}/{run.hp[1]}
         </div>
-        <div style={{ fontSize: 12, lineHeight: 1.7, marginBottom: 10 }}>
+        <div style={{ fontSize: "var(--fs-sm)", lineHeight: 1.7, marginBottom: 10 }}>
           <div>银两：+{settled.money} 两</div>
           <div>江湖经验：+{settled.exp} · 武学潜能：+{settled.pot}</div>
           <div>
@@ -75,17 +75,17 @@ export default function DungeonNodeView({
     return (
       <div style={cardStyle(zoneTheme)}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-          <span style={{ color: zoneTheme.accent, fontSize: 13 }}>{renderNodeTitle(node)}</span>
-          <span style={{ fontSize: 10.5, color: zoneTheme.accentDim }}>
+          <span style={{ color: zoneTheme.accent, fontSize: "var(--fs-md)" }}>{renderNodeTitle(node)}</span>
+          <span style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accentDim }}>
             [{NODE_BADGE[node.type] || "节点"}]
           </span>
         </div>
         {node.adventurer && (
-          <div style={{ fontSize: 11, color: zoneTheme.textDim, marginBottom: 6 }}>
+          <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.textDim, marginBottom: 6 }}>
             {node.adventurer.personality}
           </div>
         )}
-        <div style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.6, marginBottom: 10 }}>
+        <div style={{ fontSize: "var(--fs-sm)", color: "var(--text)", lineHeight: 1.6, marginBottom: 10 }}>
           {node.desc}
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -101,7 +101,7 @@ export default function DungeonNodeView({
               >
                 <div>{choice.label}</div>
                 {choice.stat && (
-                  <div style={{ fontSize: 10.5, color: zoneTheme.textDim, marginTop: 2 }}>
+                  <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.textDim, marginTop: 2 }}>
                     检定：{choice.stat}（当前 {statVal} / 难度 {choice.dc ?? 5} · 胜算 {rate}%）
                   </div>
                 )}
@@ -119,25 +119,25 @@ export default function DungeonNodeView({
         <div style={{
           ...cardStyle(zoneTheme),
           borderStyle: "dashed",
-          fontSize: 11.5,
+          fontSize: "var(--fs-sm)",
           color: zoneTheme.textDim,
           lineHeight: 1.6,
         }}>
           {narration}
         </div>
       )}
-      <div style={{ fontSize: 11.5, color: zoneTheme.textDim, marginBottom: 6 }}>
+      <div style={{ fontSize: "var(--fs-sm)", color: zoneTheme.textDim, marginBottom: 6 }}>
         选择前方去路：
       </div>
       {(run.choices || []).map((node) => (
         <div key={node.nodeId} style={cardStyle(zoneTheme)}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-            <span style={{ color: zoneTheme.accent, fontSize: 12.5 }}>{renderNodeTitle(node)}</span>
-            <span style={{ fontSize: 10.5, color: zoneTheme.accentDim }}>
+            <span style={{ color: zoneTheme.accent, fontSize: "var(--fs-md)" }}>{renderNodeTitle(node)}</span>
+            <span style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accentDim }}>
               {NODE_BADGE[node.type] || "节点"}
             </span>
           </div>
-          <div style={{ fontSize: 11.5, color: "var(--text-dim)", lineHeight: 1.55, marginBottom: 8 }}>
+          <div style={{ fontSize: "var(--fs-sm)", color: "var(--text-dim)", lineHeight: 1.55, marginBottom: 8 }}>
             {node.desc}
           </div>
           <button

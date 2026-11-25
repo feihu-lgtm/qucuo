@@ -27,7 +27,7 @@ const BuildingScreens = lazy(async () => {
 });
 
 function ScreenFallback({ zoneTheme }) {
-  return <div style={{ padding: "12px 16px", fontSize: 11.5, color: zoneTheme.textDim }}>载入中…</div>;
+  return <div style={{ padding: "12px 16px", fontSize: "var(--fs-sm)", color: zoneTheme.textDim }}>载入中…</div>;
 }
 
 export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNote, setVarTree }) {
@@ -84,7 +84,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
   const tab = (key, label) => (
     <span key={key} className="mobile-touch-target" onClick={() => setCraftTab(key)}
       style={{
-        cursor: "pointer", padding: "2px 12px", fontSize: 11.5, borderRadius: 0,
+        cursor: "pointer", padding: "2px 12px", fontSize: "var(--fs-sm)", borderRadius: 0,
         color: craftTab === key ? zoneTheme.bg : zoneTheme.accent,
         background: craftTab === key ? zoneTheme.accent : "transparent",
         border: `1px solid ${craftTab === key ? zoneTheme.accent : zoneTheme.border}`,
@@ -137,16 +137,16 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
       <IntentConfirmBar zoneTheme={zoneTheme} />
       {duelPending && (
         <div style={{ flexShrink: 0, padding: "10px 16px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(196,80,68,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ color: "var(--text)", fontSize: "12px", flex: 1 }}>是否与「{duelPending.name}」正式切磋？一旦开打，就要见真章了。</span>
-          <span onClick={duelHandlers.confirmDuel} style={{ cursor: "pointer", fontSize: "11.5px", padding: "4px 12px", borderRadius: 0, color: "var(--ink-bg-panel)", background: "var(--red-soft)", border: "1px solid var(--red-soft)" }}>确认切磋</span>
-          <span onClick={duelHandlers.cancelDuel} style={{ cursor: "pointer", fontSize: "11.5px", padding: "4px 12px", borderRadius: 0, color: "var(--text-dim)", border: "1px solid var(--ink-edge-quest)" }}>算了</span>
+          <span style={{ color: "var(--text)", fontSize: "var(--fs-sm)", flex: 1 }}>是否与「{duelPending.name}」正式切磋？一旦开打，就要见真章了。</span>
+          <span onClick={duelHandlers.confirmDuel} style={{ cursor: "pointer", fontSize: "var(--fs-sm)", padding: "4px 12px", borderRadius: 0, color: "var(--ink-bg-panel)", background: "var(--red-soft)", border: "1px solid var(--red-soft)" }}>确认切磋</span>
+          <span onClick={duelHandlers.cancelDuel} style={{ cursor: "pointer", fontSize: "var(--fs-sm)", padding: "4px 12px", borderRadius: 0, color: "var(--text-dim)", border: "1px solid var(--ink-edge-quest)" }}>算了</span>
         </div>
       )}
 
       {(activeBuilding || tradingShop) && buildingPanelMinimized && (
         <div
           onClick={() => setBuildingPanelMinimized(false)}
-          style={{ flexShrink: 0, padding: "6px 16px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(255,255,255,0.03)", cursor: "pointer", fontSize: 11.5, color: "var(--info)", display: "flex", alignItems: "center", gap: 6 }}
+          style={{ flexShrink: 0, padding: "6px 16px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(255,255,255,0.03)", cursor: "pointer", fontSize: "var(--fs-sm)", color: "var(--info)", display: "flex", alignItems: "center", gap: 6 }}
         >
           <span>▸ {activeBuilding?.name || tradingShop?.shopName}（已最小化，点击展开）</span>
         </div>
@@ -167,7 +167,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
           {/* 最小化入口：跟每个面板自己的"× 关闭"平级，点击收起渲染区但保留 activeBuilding 状态 */}
           <div className="mobile-building-minimize"
             onClick={() => setBuildingPanelMinimized(true)}
-            style={{ padding: "4px 16px", fontSize: 10.5, color: "var(--text-dim)", cursor: "pointer", textAlign: "right" }}
+            style={{ padding: "4px 16px", fontSize: "var(--fs-xs)", color: "var(--text-dim)", cursor: "pointer", textAlign: "right" }}
           >
             ▾ 最小化
           </div>

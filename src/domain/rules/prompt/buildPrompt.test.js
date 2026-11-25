@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { definePrompt, getPromptDef, listPromptDefs, resetPromptRegistryForTest } from "./registry.js";
-import { buildPrompt } from "./buildPrompt.js";
+import {
+  definePrompt, getPromptDef, getPromptOverridePersistError, getPromptOverrides, listPromptDefs,
+  resetPromptOverrides, resetPromptRegistryForTest, setPromptOverride, subscribePromptOverrides,
+} from "./registry.js";
+import { buildPrompt, estimatePromptTokens } from "./buildPrompt.js";
 
 describe("prompt registry & buildPrompt", () => {
   beforeEach(() => {
@@ -118,5 +121,277 @@ describe("prompt registry & buildPrompt", () => {
 
     const noHistory = buildPrompt("multiTurn", { say: "单轮开场" });
     expect(noHistory.messages).toEqual([{ role: "user", content: "单轮开场" }]);
+  });
+
+  it("supports 6-slot assembly, slots breakdown, and token estimation", () => {
+    definePrompt("block", "s.sys", { slot: "sys", text: "世界设定" });
+    definePrompt("block", "s.note", { slot: "authorsNote", text: "作者注" });
+    definePrompt("block", "s.hist", { slot: "history", text: "旧回合" });
+    definePrompt("block", "s.inchat", { slot: "inChat", text: "当前状态" });
+    definePrompt("block", "s.user", { slot: "user", text: "玩家行动" });
+    definePrompt("block", "s.prefill", { slot: "prefill", text: "{" });
+    definePrompt("call", "sixSlot", {
+      blocks: ["s.sys", "s.note", "s.hist", "s.inchat", "s.user", "s.prefill"],
+    });
+
+    const built = buildPrompt("sixSlot");
+    expect(built.system).toBe("世界设定\n\n作者注");
+    expect(built.messages).toEqual([
+      { role: "user", content: "旧回合" },
+      { role: "user", content: "当前状态" },
+      { role: "user", content: "玩家行动" },
+      { role: "assistant", content: "{" },
+    ]);
+    expect(built.slots).toEqual({
+      sys: "世界设定",
+      authorsNote: "作者注",
+      history: "旧回合",
+      inChat: "当前状态",
+      user: "玩家行动",
+      prefill: "{",
+    });
+    expect(built.tokenEstimate).toBeGreaterThan(0);
+    expect(estimatePromptTokens([{ content: "中文" }], [{ content: "abcd" }])).toBe(4);
+  });
+
+  it("applies global control overrides (blue/green/off) and protects engine blocks", () => {
+    definePrompt("block", "gated", { slot: "sys", when: (ctx) => ctx.hit, text: "绿灯正文" });
+    definePrompt("block", "hard", { slot: "sys", editable: "engine", text: "引擎铁律" });
+    definePrompt("call", "c", { join: "|", blocks: ["gated", "hard"] });
+
+    setPromptOverride("gated", { mode: "blue", text: "强制常驻" });
+    setPromptOverride("hard", { mode: "off" });
+    expect(getPromptOverrides().gated).toEqual({ mode: "blue", text: "强制常驻" });
+
+    const builtBlue = buildPrompt("c", { hit: false });
+    expect(builtBlue.system).toBe("强制常驻|引擎铁律");
+    expect(builtBlue.blocks.map((b) => [b.id, b.lit, b.reason])).toEqual([
+      ["gated", true, "总控台蓝灯"],
+      ["hard", true, "蓝灯常驻"],
+    ]);
+
+    setPromptOverride("gated", { mode: "off" });
+    expect(buildPrompt("c", { hit: true }).system).toBe("引擎铁律");
+
+    setPromptOverride("gated", { mode: "green", text: null });
+    expect(buildPrompt("c", { hit: true }).system).toBe("绿灯正文|引擎铁律");
+    expect(buildPrompt("c", { hit: false }).system).toBe("引擎铁律");
+
+    resetPromptOverrides();
+    expect(getPromptOverrides()).toEqual({});
+  });
+
+  it("ignores mode: off on the sole sys block of a call while allowing off when multiple sys blocks exist", () => {
+    definePrompt("block", "sole.sys", { slot: "sys", text: "唯一系统规则" });
+    definePrompt("block", "sole.user", { slot: "user", text: "用户输入" });
+    definePrompt("call", "soleCall", { blocks: ["sole.sys", "sole.user"] });
+
+    setPromptOverride("sole.sys", { mode: "off", text: "覆盖但不可灭" });
+    const builtSole = buildPrompt("soleCall");
+    expect(builtSole.system).toBe("覆盖但不可灭");
+    expect(builtSole.blocks[0]).toMatchObject({ id: "sole.sys", lit: true, reason: "唯一系统块不可关闭" });
+
+    definePrompt("block", "extra.sys", { slot: "sys", text: "第二个系统块" });
+    definePrompt("call", "multiSysCall", { join: "|", blocks: ["sole.sys", "extra.sys"] });
+    const builtMulti = buildPrompt("multiSysCall");
+    expect(builtMulti.system).toBe("第二个系统块");
+    expect(builtMulti.blocks[0]).toMatchObject({ id: "sole.sys", lit: false, reason: "总控台关闭" });
+  });
+
+  it("rebases on persisted localStorage overrides before writing and syncs storage events", () => {
+    const store = new Map();
+    const listeners = new Map();
+    vi.stubGlobal("localStorage", {
+      getItem: (k) => (store.has(k) ? store.get(k) : null),
+      setItem: (k, v) => { store.set(k, String(v)); },
+      removeItem: (k) => { store.delete(k); },
+    });
+    vi.stubGlobal("window", {
+      addEventListener: (type, fn) => {
+        if (!listeners.has(type)) listeners.set(type, new Set());
+        listeners.get(type).add(fn);
+      },
+      removeEventListener: (type, fn) => {
+        listeners.get(type)?.delete(fn);
+      },
+    });
+
+    const notified = [];
+    const unsub = subscribePromptOverrides(() => notified.push(getPromptOverrides()));
+    try {
+      setPromptOverride("blockA", { mode: "blue" });
+      // 模拟另一个标签页在 localStorage 中写入了 blockB，同时保留 blockA
+      const fromOtherTab = {
+        version: 1,
+        overrides: { blockA: { mode: "blue" }, blockB: { mode: "off", text: "另一页设置" } },
+      };
+      store.set("qucuo_prompt_overrides_v1", JSON.stringify(fromOtherTab));
+
+      const afterLocalWrite = setPromptOverride("blockC", { mode: "off" });
+      expect(afterLocalWrite).toEqual({
+        blockA: { mode: "blue" },
+        blockB: { mode: "off", text: "另一页设置" },
+        blockC: { mode: "off" },
+      });
+
+      // 模拟跨标签页 storage 事件触发同步
+      store.set("qucuo_prompt_overrides_v1", JSON.stringify({
+        version: 1,
+        overrides: { blockRemote: { text: "远程修改" } },
+      }));
+      for (const fn of listeners.get("storage") || []) {
+        fn({ key: "qucuo_prompt_overrides_v1" });
+      }
+      expect(getPromptOverrides()).toEqual({ blockRemote: { text: "远程修改" } });
+      expect(notified.at(-1)).toEqual({ blockRemote: { text: "远程修改" } });
+    } finally {
+      unsub();
+      resetPromptOverrides();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("keeps in-memory edits and surfaces persist error when localStorage throws QuotaExceededError", () => {
+    const oldSaved = JSON.stringify({
+      version: 1,
+      overrides: { voice: { text: "旧语气覆盖" } },
+    });
+    let quotaFull = true;
+    const store = new Map([["qucuo_prompt_overrides_v1", oldSaved]]);
+    vi.stubGlobal("localStorage", {
+      getItem: (k) => (store.has(k) ? store.get(k) : null),
+      setItem: (k, v) => {
+        if (quotaFull) {
+          const err = new Error("QuotaExceededError: storage full");
+          err.name = "QuotaExceededError";
+          throw err;
+        }
+        store.set(k, String(v));
+      },
+      removeItem: (k) => { store.delete(k); },
+    });
+
+    try {
+      const saved = setPromptOverride("voice", { text: "新语气补充" });
+      expect(saved.voice).toEqual({ text: "新语气补充" });
+      expect(getPromptOverridePersistError()).toContain("QuotaExceededError");
+      // 后续读取不能被旧磁盘值覆盖
+      expect(getPromptOverrides().voice).toEqual({ text: "新语气补充" });
+
+      quotaFull = false;
+      setPromptOverride("catalog", { mode: "blue" });
+      expect(getPromptOverridePersistError()).toBeNull();
+      expect(getPromptOverrides()).toEqual({
+        voice: { text: "新语气补充" },
+        catalog: { mode: "blue" },
+      });
+    } finally {
+      resetPromptRegistryForTest();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  describe("cross-tab pending edits", () => {
+    const KEY = "qucuo_prompt_overrides_v1";
+    function stubStorage(initial = {}) {
+      const state = { quotaFull: false };
+      const store = new Map();
+      if (Object.keys(initial).length) store.set(KEY, JSON.stringify({ version: 1, overrides: initial }));
+      const listeners = new Set();
+      vi.stubGlobal("localStorage", {
+        getItem: (k) => (store.has(k) ? store.get(k) : null),
+        setItem: (k, v) => {
+          if (state.quotaFull) {
+            const err = new Error("QuotaExceededError: storage full");
+            err.name = "QuotaExceededError";
+            throw err;
+          }
+          store.set(k, String(v));
+        },
+        removeItem: (k) => {
+          if (state.quotaFull) throw new Error("QuotaExceededError: storage locked");
+          store.delete(k);
+        },
+      });
+      vi.stubGlobal("window", {
+        addEventListener: (type, fn) => { if (type === "storage") listeners.add(fn); },
+        removeEventListener: (type, fn) => { if (type === "storage") listeners.delete(fn); },
+      });
+      const persisted = () => JSON.parse(store.get(KEY) || "{\"overrides\":{}}").overrides;
+      // 模拟另一个标签页成功写入存储并广播 storage 事件
+      const writeFromOtherTab = (overrides) => {
+        store.set(KEY, JSON.stringify({ version: 1, overrides }));
+        for (const fn of [...listeners]) fn({ key: KEY });
+      };
+      return { state, persisted, writeFromOtherTab };
+    }
+
+    it("keeps pending edits and the warning when another tab saves a different block, then merges both on recovery", () => {
+      const tabs = stubStorage();
+      const notified = [];
+      const unsub = subscribePromptOverrides(() => notified.push(getPromptOverrides()));
+      try {
+        tabs.state.quotaFull = true;
+        setPromptOverride("voice", { text: "太长的补充" });
+        expect(getPromptOverridePersistError()).toContain("QuotaExceededError");
+
+        tabs.writeFromOtherTab({ catalog: { mode: "off" } });
+        expect(getPromptOverrides()).toEqual({ catalog: { mode: "off" }, voice: { text: "太长的补充" } });
+        expect(notified.at(-1)).toEqual({ catalog: { mode: "off" }, voice: { text: "太长的补充" } });
+        expect(getPromptOverridePersistError()).toContain("QuotaExceededError");
+
+        tabs.state.quotaFull = false;
+        setPromptOverride("facts", { mode: "blue" });
+        expect(getPromptOverridePersistError()).toBeNull();
+        expect(tabs.persisted()).toEqual({
+          catalog: { mode: "off" },
+          voice: { text: "太长的补充" },
+          facts: { mode: "blue" },
+        });
+      } finally {
+        unsub();
+        resetPromptRegistryForTest();
+        vi.unstubAllGlobals();
+      }
+    });
+
+    it("retries from the latest persisted map without a subscriber, so another tab's save is not rolled back", () => {
+      const tabs = stubStorage();
+      try {
+        tabs.state.quotaFull = true;
+        setPromptOverride("voice", { text: "太长的补充" });
+        tabs.state.quotaFull = false;
+        // 另一个标签页保存了 catalog，本页没有订阅者，收不到 storage 事件
+        tabs.writeFromOtherTab({ catalog: { mode: "blue" } });
+        setPromptOverride("voice", { text: "短补充" });
+        expect(tabs.persisted()).toEqual({ catalog: { mode: "blue" }, voice: { text: "短补充" } });
+      } finally {
+        resetPromptRegistryForTest();
+        vi.unstubAllGlobals();
+      }
+    });
+
+    it("reapplies pending deletes and resets over the latest persisted map", () => {
+      const tabs = stubStorage({ voice: { mode: "off", text: "旧补充" }, facts: { mode: "off" } });
+      try {
+        tabs.state.quotaFull = true;
+        setPromptOverride("voice", { text: null });
+        setPromptOverride("facts", { mode: null });
+        expect(getPromptOverrides()).toEqual({ voice: { mode: "off" } });
+        tabs.writeFromOtherTab({ voice: { mode: "off", text: "旧补充" }, facts: { mode: "off" }, recall: { mode: "blue" } });
+        expect(getPromptOverrides()).toEqual({ voice: { mode: "off" }, recall: { mode: "blue" } });
+
+        resetPromptOverrides();
+        expect(getPromptOverrides()).toEqual({});
+        expect(getPromptOverridePersistError()).toContain("QuotaExceededError");
+        tabs.state.quotaFull = false;
+        setPromptOverride("catalog", { mode: "blue" });
+        expect(getPromptOverridePersistError()).toBeNull();
+        expect(tabs.persisted()).toEqual({ catalog: { mode: "blue" } });
+      } finally {
+        resetPromptRegistryForTest();
+        vi.unstubAllGlobals();
+      }
+    });
   });
 });

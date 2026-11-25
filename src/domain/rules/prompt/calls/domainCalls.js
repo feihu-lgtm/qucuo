@@ -69,7 +69,11 @@ ${keysDesc}
   });
 
   definePrompt("call", "persuasion.turn", {
+    group: "sync",
     label: (ctx) => `说服（${ctx.persuade.who}）`,
+    execution: "sync_pipeline",
+    route: "primary",
+    reviewDesc: "剥离末尾 JSON 行解析 hit/guardDrop/yield，台词限制 ≤30 字不泄底",
     tokenLimitKey: "persuasion",
     defaultMaxTokens: 2000,
     history: (ctx) => ctx.history || [],
@@ -110,7 +114,11 @@ ${FORGE_EFFECT_WHITELIST}
   });
 
   definePrompt("call", "forge.design", {
+    group: "sync",
     label: (ctx) => `${ctx.craft?.shop || "铁匠铺"}定制设计`,
+    execution: "sync_pipeline",
+    route: "extraction",
+    reviewDesc: "解析 3 方案 JSON 并裁剪名称/类别/词条白名单，品质与数值全由系统掷骰",
     tokenLimitKey: "extraction",
     defaultMaxTokens: 2000,
     cfg: (_apiCfg, ctx) => ctx.forgeCfg,

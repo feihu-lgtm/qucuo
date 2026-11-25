@@ -18,29 +18,29 @@ export function Scene({ sim, night, zoneTheme }) {
 
       {/* 后墙设施：大号 emoji + 文字标签，一眼认得出是什么 */}
       <div style={{ position: "absolute", left: `${ZONES.stove.x}%`, top: `${ZONES.stove.y}%`, textAlign: "center" }}>
-        <div style={{ fontSize: 30 }}>🍳</div>
+        <div style={{ fontSize: "var(--fs-2xl)" }}>🍳</div>
         <div className="ts-steam"><i /><i /><i /></div>
         <div style={S.zoneLabel}>灶台</div>
         {staff.cook && <div style={S.token()} title={`厨子 ${staff.cook.name}`}>👨‍🍳</div>}
       </div>
       <div style={{ position: "absolute", left: `${ZONES.cellar.x}%`, top: `${ZONES.cellar.y}%`, textAlign: "center" }}>
-        <div style={{ fontSize: 26 }}>🍶🍶🍶</div>
+        <div style={{ fontSize: "var(--fs-2xl)" }}>🍶🍶🍶</div>
         <div style={S.zoneLabel}>酒架</div>
       </div>
       <div style={{ position: "absolute", left: `${ZONES.ledger.x}%`, top: `${ZONES.ledger.y}%`, textAlign: "center" }}>
-        <div style={{ fontSize: 26 }}>🧮</div>
+        <div style={{ fontSize: "var(--fs-2xl)" }}>🧮</div>
         <div style={S.zoneLabel}>账台</div>
         {staff.accountant && <div style={S.token()} title={`账房 ${staff.accountant.name}`}>🤓</div>}
       </div>
       <div style={{ position: "absolute", left: `${ZONES.counter.x}%`, top: `${ZONES.counter.y}%`, textAlign: "center" }}>
-        <div style={{ fontSize: 26 }}>🛎</div>
+        <div style={{ fontSize: "var(--fs-2xl)" }}>🛎</div>
         <div style={S.zoneLabel}>柜台</div>
         {staff.manager && <div style={S.token()} title={`掌柜 ${staff.manager.name}`}>🎩</div>}
       </div>
 
       {/* 灯笼 ×2（CSS 明灭） */}
-      <div className="ts-lantern" style={{ position: "absolute", left: "46%", top: "1%", fontSize: 22 }}>🏮</div>
-      <div className="ts-lantern" style={{ position: "absolute", left: "66%", top: "1%", fontSize: 22 }}>🏮</div>
+      <div className="ts-lantern" style={{ position: "absolute", left: "46%", top: "1%", fontSize: "var(--fs-xl)" }}>🏮</div>
+      <div className="ts-lantern" style={{ position: "absolute", left: "66%", top: "1%", fontSize: "var(--fs-xl)" }}>🏮</div>
 
       {/* 堂中桌子：CSS 画木桌，比暗色 emoji 显眼 */}
       {SEAT_COORDS.slice(0, sim.seats.length).map((c, i) => (
@@ -58,7 +58,7 @@ export function Scene({ sim, night, zoneTheme }) {
       {/* 护院站门口 */}
       {sim.guards.map((g, i) => (
         <div key={g.name} title={`护院 ${g.name}（技 ${g.skill}）`}
-          style={{ position: "absolute", left: `${ZONES.door.x + 6 + i * 6}%`, top: `${ZONES.door.y - 10}%`, fontSize: 24 }}>
+          style={{ position: "absolute", left: `${ZONES.door.x + 6 + i * 6}%`, top: `${ZONES.door.y - 10}%`, fontSize: "var(--fs-2xl)" }}>
           🗡
         </div>
       ))}
@@ -74,15 +74,15 @@ export function Scene({ sim, night, zoneTheme }) {
             position: "absolute", left: `${atDoor.x}%`, top: `${atDoor.y}%`,
             transition: "left 1.4s ease, top 1.4s ease", textAlign: "center", zIndex: 2,
           }}>
-            <div className="ts-breathe" style={{ fontSize: 26 }}>{seat.glyph}</div>
+            <div className="ts-breathe" style={{ fontSize: "var(--fs-2xl)" }}>{seat.glyph}</div>
             {seat.phase === "eating" && <div className="ts-bubble">{seat.banter}</div>}
           </div>
         );
       })}
 
       {/* 门口与招牌 */}
-      <div style={{ position: "absolute", left: `${ZONES.door.x - 1}%`, top: `${ZONES.door.y - 2}%`, fontSize: 26, opacity: 0.85 }}>🚪</div>
-      <div style={{ position: "absolute", left: `${ZONES.door.x}%`, top: `${ZONES.door.y + 8}%`, fontSize: 12, color: "var(--tavern-door-label)", letterSpacing: 2 }}>
+      <div style={{ position: "absolute", left: `${ZONES.door.x - 1}%`, top: `${ZONES.door.y - 2}%`, fontSize: "var(--fs-2xl)", opacity: 0.85 }}>🚪</div>
+      <div style={{ position: "absolute", left: `${ZONES.door.x}%`, top: `${ZONES.door.y + 8}%`, fontSize: "var(--fs-sm)", color: "var(--tavern-door-label)", letterSpacing: 2 }}>
         — 醉三江 —
       </div>
       {/* 昼夜罩 */}

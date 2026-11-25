@@ -51,6 +51,6 @@ export const BODY_PRIVATE = [
 export const selStyle = {
   boxSizing: "border-box", width: "100%", background: "rgba(0,0,0,.4)",
   border: "1px solid var(--border-deep)", borderRadius: 0, padding: "5px 7px",
-  color: "var(--paper)", fontSize: 11.5, outline: "none", fontFamily: "inherit",
+  color: "var(--paper)", fontSize: "var(--fs-sm)", outline: "none", fontFamily: "inherit",
   textAlign: "center", textAlignLast: "center",
 };

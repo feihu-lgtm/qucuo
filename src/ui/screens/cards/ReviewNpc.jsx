@@ -39,7 +39,7 @@ export default function ReviewNpc({ npc, onPatch, accent, dropped, apiCfg, cardI
       <div style={{ display: "flex", gap: 14 }}>
         <div style={{ flexShrink: 0, textAlign: "center" }}>
           <JadeTier value={cap} size={54} withSelect onChange={v => onPatch({ levelCap: v })} />
-          <div style={{ fontSize: 10, color: "var(--ink-muted)", marginTop: 5 }}>
+          <div style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-muted)", marginTop: 5 }}>
             品阶<Src source={n.source} why={n.levelCapWhy} />
           </div>
         </div>
@@ -68,7 +68,7 @@ export default function ReviewNpc({ npc, onPatch, accent, dropped, apiCfg, cardI
         {n.entryFromAi
           ? <Src source="ai" why="按本作格式重写过" />
           : <Src source="fallback" />}
-        <span style={{ fontSize: 10, color: (n.entry || "").length > LORE_MAX ? "var(--ink-error-text)" : "var(--ink-muted)", marginLeft: 6 }}>
+        <span style={{ fontSize: "var(--fs-2xs)", color: (n.entry || "").length > LORE_MAX ? "var(--ink-error-text)" : "var(--ink-muted)", marginLeft: 6 }}>
           {(n.entry || "").length}/{LORE_MAX} 字
         </span>
       </>}>
@@ -103,7 +103,7 @@ export default function ReviewNpc({ npc, onPatch, accent, dropped, apiCfg, cardI
         {(n.milestones || []).map((m, mi) => (
           <div key={m.threshold} style={{ marginBottom: 9, paddingBottom: 8, borderBottom: "1px dashed var(--bg-card)" }}>
             <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
-              <span style={{ width: 26, fontSize: 12, color: accent, flexShrink: 0 }}>{m.threshold}</span>
+              <span style={{ width: 26, fontSize: "var(--fs-sm)", color: accent, flexShrink: 0 }}>{m.threshold}</span>
               <input value={m.title} placeholder="标题"
                 onChange={e => onPatch({ milestones: n.milestones.map((x, j) => j === mi ? { ...x, title: e.target.value.slice(0, 8) } : x) })}
                 style={{ ...selStyle, width: 76 }} />
@@ -114,7 +114,7 @@ export default function ReviewNpc({ npc, onPatch, accent, dropped, apiCfg, cardI
             <textarea rows={2} value={(m.text || []).join("\n")}
               placeholder="领取这段剧情时玩家会读到的正文，一行一句。留空则领取后无内容"
               onChange={e => onPatch({ milestones: n.milestones.map((x, j) => j === mi ? { ...x, text: e.target.value.split("\n").map(t => t.trim()).filter(Boolean) } : x) })}
-              style={{ ...selStyle, textAlign: "left", fontSize: 10.5, lineHeight: 1.7, color: "var(--ink-text)", resize: "vertical" }} />
+              style={{ ...selStyle, textAlign: "left", fontSize: "var(--fs-xs)", lineHeight: 1.7, color: "var(--ink-text)", resize: "vertical" }} />
           </div>
         ))}
         <Note tone="info">这两段是玩家在「人物关系」页手动领取时读到的固定剧情，本作原有角色全是手写的。AI 给的是草稿，值得你自己润一遍。</Note>
@@ -141,7 +141,7 @@ export default function ReviewNpc({ npc, onPatch, accent, dropped, apiCfg, cardI
           onChange={v => onPatch({ neigong: v })} />
         <StatRow label="外功" value={waigong} max={100} step={1} width={30}
           onChange={v => onPatch({ waigong: v })} />
-        <div style={{ fontSize: 10, color: "var(--ink-text-dim)", marginTop: 4, lineHeight: 1.7 }}>
+        <div style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-text-dim)", marginTop: 4, lineHeight: 1.7 }}>
           {TIERS[cap]?.label}档的基准是 {TIER_NEIGONG[cap]}。
           气血由内功与体魄算出：<span style={{ color: "var(--ink-warn)" }}>{maxHp}</span>
           {atk != null ? <>；出手威力由外功算出：<span style={{ color: "var(--ink-warn)" }}>{atk}</span></> : null}
@@ -183,7 +183,7 @@ export default function ReviewNpc({ npc, onPatch, accent, dropped, apiCfg, cardI
       {dropped?.length ? (
         <Section title="卡里没被导入的东西" dim>
           {dropped.map((d, i) => (
-            <div key={i} style={{ fontSize: 10.5, color: "var(--bug-dim-dark)", lineHeight: 1.8 }}>
+            <div key={i} style={{ fontSize: "var(--fs-xs)", color: "var(--bug-dim-dark)", lineHeight: 1.8 }}>
               <Src source="drop" /> {d}
             </div>
           ))}

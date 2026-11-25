@@ -16,21 +16,21 @@ export default function ServiceScreen({ building, char, time, flags, zoneTheme, 
     <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
       <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
       <div style={{ padding: 16 }}>
-        <div style={{ color: "var(--ink-text-dim)", marginBottom: 12, fontSize: 11 }}>
+        <div style={{ color: "var(--ink-text-dim)", marginBottom: 12, fontSize: "var(--fs-xs)" }}>
           银两 {money} 两
         </div>
-        <div style={{ color: "var(--ink-text-dim)", fontSize: 11, marginBottom: 10 }}>
+        <div style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)", marginBottom: 10 }}>
           {building.desc}
         </div>
 
         {visibleMenu.map(item => (
           <div key={item.name} style={{ marginBottom: 10, padding: "10px 12px", background: "var(--bg-ink)", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-              <span style={{ color: "var(--ink-text)", fontSize: 13 }}>{item.name}</span>
-              <span style={{ color: "var(--gold-bright)", fontSize: 12 }}>{item.price} 两</span>
+              <span style={{ color: "var(--ink-text)", fontSize: "var(--fs-md)" }}>{item.name}</span>
+              <span style={{ color: "var(--gold-bright)", fontSize: "var(--fs-sm)" }}>{item.price} 两</span>
             </div>
-            <div style={{ color: "var(--ink-text-dim)", fontSize: 11, marginBottom: 6 }}>{item.desc}</div>
-            <div style={{ color: "var(--service-hint)", fontSize: 10, marginBottom: 6 }}>
+            <div style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)", marginBottom: 6 }}>{item.desc}</div>
+            <div style={{ color: "var(--service-hint)", fontSize: "var(--fs-2xs)", marginBottom: 6 }}>
               +{item.buff} {item.val} · 持续 {item.duration} 时间单位
             </div>
             <Btn
@@ -46,7 +46,7 @@ export default function ServiceScreen({ building, char, time, flags, zoneTheme, 
           <div style={{ marginTop: 16, borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 12 }}>
             <div
               onClick={onEnterBasement}
-              style={{ color: "var(--service-dismiss)", fontSize: 11, cursor: "pointer", opacity: 0.6 }}
+              style={{ color: "var(--service-dismiss)", fontSize: "var(--fs-xs)", cursor: "pointer", opacity: 0.6 }}
             >
               ∿ 往里走走…
             </div>
@@ -66,19 +66,19 @@ export function BasementScreen({ char, time, zoneTheme, onClose, inline, onOrder
     <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
       <Header name="素斋地下室" zoneTheme={zoneTheme} onClose={onClose} />
       <div style={{ padding: 16 }}>
-        <div style={{ color: "var(--service-note)", fontSize: 12, marginBottom: 12 }}>
+        <div style={{ color: "var(--service-note)", fontSize: "var(--fs-sm)", marginBottom: 12 }}>
           嗯…这里和楼上大不一样。香气扑鼻，烛光昏黄，不问来路，不问因由。
         </div>
-        <div style={{ color: "var(--ink-text-dim)", marginBottom: 12, fontSize: 11 }}>
+        <div style={{ color: "var(--ink-text-dim)", marginBottom: 12, fontSize: "var(--fs-xs)" }}>
           银两 {money} 两（消耗功德，在此用餐 karma -2）
         </div>
         {menu.map(item => (
           <div key={item.name} style={{ marginBottom: 10, padding: "10px 12px", background: "var(--ink-cocoa-panel)", borderRadius: 0, border: `1px solid var(--service-card-edge)` }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-              <span style={{ color: "var(--service-item-name)", fontSize: 13 }}>{item.name}</span>
+              <span style={{ color: "var(--service-item-name)", fontSize: "var(--fs-md)" }}>{item.name}</span>
               <span style={{ color: "var(--gold-bright)" }}>{item.price} 两</span>
             </div>
-            <div style={{ color: "var(--service-item-desc)", fontSize: 11, marginBottom: 6 }}>{item.desc}</div>
+            <div style={{ color: "var(--service-item-desc)", fontSize: "var(--fs-xs)", marginBottom: 6 }}>{item.desc}</div>
             <Btn
               label="点这个"
               disabled={money < item.price}

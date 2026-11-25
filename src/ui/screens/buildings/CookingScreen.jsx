@@ -140,8 +140,8 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
       <div className="mobile-overlay-header" style={{ position: "relative", margin: "14px 16px 0", padding: "10px 18px",
         backgroundImage: `url(${UI("bar_wood.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
         display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ color: "var(--ink-cream-bright)", fontSize: 15, fontWeight: "bold", letterSpacing: 3, textShadow: "0 1px 2px var(--black)" }}>
-          🔥 烹饪台 <span style={{ color: "var(--ink-brass-lit)", fontSize: 11.5, fontWeight: "normal", letterSpacing: 1, marginLeft: 6 }}>{building?.name || "灶房"}</span>
+        <span style={{ color: "var(--ink-cream-bright)", fontSize: "var(--fs-lg)", fontWeight: "bold", letterSpacing: 3, textShadow: "0 1px 2px var(--black)" }}>
+          🔥 烹饪台 <span style={{ color: "var(--ink-brass-lit)", fontSize: "var(--fs-sm)", fontWeight: "normal", letterSpacing: 1, marginLeft: 6 }}>{building?.name || "灶房"}</span>
         </span>
         <span className="mobile-overlay-close" onClick={onClose} title="关闭" style={{ cursor: "pointer", width: 26, height: 26, flexShrink: 0,
           backgroundImage: `url(${UI("btn_close.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat" }} />
@@ -149,7 +149,7 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
 
       <div style={{ padding: "14px 18px 26px" }}>
         {/* ── ① 四格料槽 ── */}
-        <div style={{ color: "var(--ink-bronze)", fontSize: 11, letterSpacing: 2, marginBottom: 8 }}>料 · 调味料与食材混装（点击放入，点格取回）</div>
+        <div style={{ color: "var(--ink-bronze)", fontSize: "var(--fs-xs)", letterSpacing: 2, marginBottom: 8 }}>料 · 调味料与食材混装（点击放入，点格取回）</div>
         <div className={fx?.kind === "fail" ? "ck-shake" : undefined}
           style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, position: "relative", paddingBottom: 26 }}>
           {cookingSlots.map((s, i) => (
@@ -159,10 +159,10 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
                 backgroundImage: `url(${UI("box_wood.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
                 padding: "8% 6%", boxSizing: "border-box", textAlign: "center" }}>
-              <span style={{ position: "absolute", top: "6%", left: "10%", fontSize: 9.5, color: "var(--ink-brass-dim)", letterSpacing: 1 }}>料{i + 1}</span>
+              <span style={{ position: "absolute", top: "6%", left: "10%", fontSize: "var(--fs-2xs)", color: "var(--ink-brass-dim)", letterSpacing: 1 }}>料{i + 1}</span>
               {s
-                ? <span style={{ color: "var(--ink-cream-bright)", fontSize: 12.5, fontWeight: "bold", lineHeight: 1.35, textShadow: "0 1px 2px var(--black)" }}>{s}</span>
-                : <span style={{ color: "var(--ink-wood-edge)", fontSize: 11 }}>空</span>}
+                ? <span style={{ color: "var(--ink-cream-bright)", fontSize: "var(--fs-md)", fontWeight: "bold", lineHeight: 1.35, textShadow: "0 1px 2px var(--black)" }}>{s}</span>
+                : <span style={{ color: "var(--ink-wood-edge)", fontSize: "var(--fs-xs)" }}>空</span>}
             </div>
           ))}
           {/* 灶膛火苗：料槽之下，开火成功时蹿高 */}
@@ -176,7 +176,7 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
         </div>
 
         {/* ── ② 技法槽 ── */}
-        <div style={{ color: "var(--ink-bronze)", fontSize: 11, letterSpacing: 2, margin: "14px 0 8px" }}>技法 · 五选一</div>
+        <div style={{ color: "var(--ink-bronze)", fontSize: "var(--fs-xs)", letterSpacing: 2, margin: "14px 0 8px" }}>技法 · 五选一</div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {TECHNIQUE_IDS.map(tid => {
             const t = TECHNIQUES[tid];
@@ -188,17 +188,17 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
                 title={t.desc}
                 style={{ position: "relative", cursor: "pointer", padding: "7px 16px", minWidth: 58, textAlign: "center",
                   backgroundImage: `url(${UI(sel ? "bar_paper.webp" : "bar_wood.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
-                  color: sel ? "var(--ink-wood-deep)" : "var(--ink-tan)", fontSize: 13, fontWeight: "bold", letterSpacing: 2,
+                  color: sel ? "var(--ink-wood-deep)" : "var(--ink-tan)", fontSize: "var(--fs-md)", fontWeight: "bold", letterSpacing: 2,
                   opacity: usable ? 1 : 0.45, textShadow: sel ? "0 1px 0 rgba(255,255,255,.3)" : "0 1px 2px var(--black)" }}>
                 {t.icon} {tid}
-                {!usable && <span style={{ position: "absolute", top: -5, right: -3, fontSize: 9, color: "var(--ink-amber)" }}>需蒸笼</span>}
+                {!usable && <span style={{ position: "absolute", top: -5, right: -3, fontSize: "var(--fs-2xs)", color: "var(--ink-amber)" }}>需蒸笼</span>}
               </div>
             );
           })}
         </div>
 
         {/* ── ③ 炊具槽 ── */}
-        <div style={{ color: "var(--ink-bronze)", fontSize: 11, letterSpacing: 2, margin: "14px 0 8px" }}>炊具 · 囊中所有（{cookwares.length}/{COOKWARE.length}）</div>
+        <div style={{ color: "var(--ink-bronze)", fontSize: "var(--fs-xs)", letterSpacing: 2, margin: "14px 0 8px" }}>炊具 · 囊中所有（{cookwares.length}/{COOKWARE.length}）</div>
         <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
           {cookwares.map(cw => {
             const sel = cookwareId === cw.id;
@@ -207,15 +207,15 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
                 className="ck-chip" title={cw.desc}
                 style={{ flexShrink: 0, cursor: "pointer", padding: "7px 14px", textAlign: "center",
                   backgroundImage: `url(${UI(sel ? "bar_paper.webp" : "bar_wood.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
-                  color: sel ? "var(--ink-wood-deep)" : "var(--ink-tan)", fontSize: 12, fontWeight: "bold",
+                  color: sel ? "var(--ink-wood-deep)" : "var(--ink-tan)", fontSize: "var(--fs-sm)", fontWeight: "bold",
                   textShadow: sel ? "0 1px 0 rgba(255,255,255,.3)" : "0 1px 2px var(--black)" }}>
-                <span style={{ color: sel ? "var(--cooking-selected)" : (QUAL_COLOR[cw.quality] || "var(--ink-text)"), marginRight: 5, fontSize: 11 }}>●</span>
+                <span style={{ color: sel ? "var(--cooking-selected)" : (QUAL_COLOR[cw.quality] || "var(--ink-text)"), marginRight: 5, fontSize: "var(--fs-xs)" }}>●</span>
                 {cw.name}{cw.canSteam ? " ♨" : ""}
               </div>
             );
           })}
         </div>
-        <div style={{ color: "var(--ink-brass-edge)", fontSize: 10.5, marginTop: 4, lineHeight: 1.6, fontStyle: "italic" }}>{cookware.desc}</div>
+        <div style={{ color: "var(--ink-brass-edge)", fontSize: "var(--fs-xs)", marginTop: 4, lineHeight: 1.6, fontStyle: "italic" }}>{cookware.desc}</div>
 
         {/* ── ④ 预测卷轴 ── */}
         <div style={{ position: "relative", margin: "18px 0 4px", aspectRatio: "482/130",
@@ -227,36 +227,36 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
                 transform: "translate(-50%,-50%)", objectFit: "contain", opacity: 0.85, pointerEvents: "none" }} />
               {fx.freestyle ? (
                 <>
-                  <div style={{ position: "relative", color: "var(--ink-ember-deep)", fontSize: 16, fontWeight: "bold", letterSpacing: 3 }}>妙手偶得！</div>
-                  <div style={{ position: "relative", color: "var(--ink-ember-edge)", fontSize: 11, marginTop: 2 }}>灶神即兴赐名，最小化看这段小总结</div>
+                  <div style={{ position: "relative", color: "var(--ink-ember-deep)", fontSize: "var(--fs-lg)", fontWeight: "bold", letterSpacing: 3 }}>妙手偶得！</div>
+                  <div style={{ position: "relative", color: "var(--ink-ember-edge)", fontSize: "var(--fs-xs)", marginTop: 2 }}>灶神即兴赐名，最小化看这段小总结</div>
                 </>
               ) : (
                 <>
-                  <div style={{ position: "relative", color: "var(--ink-ember-deep)", fontSize: 16, fontWeight: "bold", letterSpacing: 3 }}>「{fx.dish.name}」出锅！</div>
-                  <div style={{ position: "relative", color: "var(--ink-ember-edge)", fontSize: 11, marginTop: 2 }}>香气四溢，趁热收进囊中</div>
+                  <div style={{ position: "relative", color: "var(--ink-ember-deep)", fontSize: "var(--fs-lg)", fontWeight: "bold", letterSpacing: 3 }}>「{fx.dish.name}」出锅！</div>
+                  <div style={{ position: "relative", color: "var(--ink-ember-edge)", fontSize: "var(--fs-xs)", marginTop: 2 }}>香气四溢，趁热收进囊中</div>
                 </>
               )}
             </div>
           ) : dish ? (
             <div className="ck-fadein" key={(dish.name || "free") + techniqueId + cookwareId}>
               {dish.name ? (
-                <div style={{ color: "var(--ink-wood-warm)", fontSize: 14.5, fontWeight: "bold", letterSpacing: 2 }}>可烹 · 「{dish.name}」</div>
+                <div style={{ color: "var(--ink-wood-warm)", fontSize: "var(--fs-base)", fontWeight: "bold", letterSpacing: 2 }}>可烹 · 「{dish.name}」</div>
               ) : (
-                <div style={{ color: "var(--ink-wood-warm)", fontSize: 14.5, fontWeight: "bold", letterSpacing: 2 }}>妙手偶得 · 灶神来起名</div>
+                <div style={{ color: "var(--ink-wood-warm)", fontSize: "var(--fs-base)", fontWeight: "bold", letterSpacing: 2 }}>妙手偶得 · 灶神来起名</div>
               )}
-              <div style={{ color: "var(--cooking-dish-note)", fontSize: 11, marginTop: 3 }}>
+              <div style={{ color: "var(--cooking-dish-note)", fontSize: "var(--fs-xs)", marginTop: 3 }}>
                 回血 {Math.round(dish.hpRatio * 100)}%（约 {dish.hpDelta} 点）
                 {dish.buffs.map((b, i) => <span key={i}> · {b.attr}+{b.val}（{b.turns}回合）</span>)}
                 {!dish.name && <span style={{ color: "var(--cooking-improv)" }}> · 菜名风味由灶神即兴</span>}
               </div>
             </div>
           ) : (
-            <div style={{ color: "var(--ink-brass-dim)", fontSize: 12, fontStyle: "italic" }}>
+            <div style={{ color: "var(--ink-brass-dim)", fontSize: "var(--fs-sm)", fontStyle: "italic" }}>
               {filled.length ? (techOk ? "灶神摇头——这几样凑不成一道菜，换搭配或技法。" : "此技法需换一件能蒸的炊具。") : "卷轴空着，等你下料。"}
             </div>
           )}
         </div>
-        {warn && <div className="ck-fadein" style={{ color: "var(--ink-amber)", fontSize: 11.5, textAlign: "center", marginTop: 6 }}>{warn}</div>}
+        {warn && <div className="ck-fadein" style={{ color: "var(--ink-amber)", fontSize: "var(--fs-sm)", textAlign: "center", marginTop: 6 }}>{warn}</div>}
 
         {/* ── ⑤ 开火 / 清空 ── */}
         <div style={{ display: "flex", gap: 12, justifyContent: "center", margin: "16px 0 4px" }}>
@@ -264,7 +264,7 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
             className="ck-chip"
             style={{ position: "relative", cursor: "pointer", padding: "11px 46px",
               backgroundImage: `url(${UI("btn_blank.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
-              color: "var(--cooking-button-text)", fontSize: 16, fontWeight: "bold", letterSpacing: 6,
+              color: "var(--cooking-button-text)", fontSize: "var(--fs-lg)", fontWeight: "bold", letterSpacing: 6,
               opacity: fx?.kind === "ok" ? 0.5 : 1, textShadow: "0 1px 0 rgba(255,255,255,.35)" }}>
             开 火
           </div>
@@ -273,7 +273,7 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
               className="ck-chip"
               style={{ position: "relative", cursor: "pointer", padding: "11px 22px",
                 backgroundImage: `url(${UI("btn_blank.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
-                color: "var(--cooking-button-text)", fontSize: 13, fontWeight: "bold", letterSpacing: 3,
+                color: "var(--cooking-button-text)", fontSize: "var(--fs-md)", fontWeight: "bold", letterSpacing: 3,
                 opacity: fx?.kind === "ok" ? 0.5 : 1, textShadow: "0 1px 0 rgba(255,255,255,.35)" }}>
               做好分赠流民
             </div>
@@ -282,19 +282,19 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
             className="ck-chip"
             style={{ cursor: "pointer", padding: "11px 22px", display: "flex", alignItems: "center",
               backgroundImage: `url(${UI("bar_wood.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
-              color: "var(--ink-tan)", fontSize: 12.5, letterSpacing: 2, textShadow: "0 1px 2px var(--black)" }}>
+              color: "var(--ink-tan)", fontSize: "var(--fs-md)", letterSpacing: 2, textShadow: "0 1px 2px var(--black)" }}>
             清空
           </div>
         </div>
-        <div style={{ color: "var(--ink-brass-edge)", fontSize: 10.5, textAlign: "center", marginTop: 2, fontStyle: "italic" }}>
+        <div style={{ color: "var(--ink-brass-edge)", fontSize: "var(--fs-xs)", textAlign: "center", marginTop: 2, fontStyle: "italic" }}>
           成菜的色香味写进主叙事，点上方「▾ 最小化」即可读这段小总结
         </div>
 
         {/* ── ⑥ 可用材料 ── */}
         <div style={{ borderTop: "1px solid var(--cooking-divider)", marginTop: 18, paddingTop: 14 }}>
-          <div style={{ color: "var(--ink-bronze)", fontSize: 11, letterSpacing: 2, marginBottom: 8 }}>🎒 可用材料（点击放入空料槽）</div>
+          <div style={{ color: "var(--ink-bronze)", fontSize: "var(--fs-xs)", letterSpacing: 2, marginBottom: 8 }}>🎒 可用材料（点击放入空料槽）</div>
           {mats.length === 0 ? (
-            <div style={{ color: "var(--ink-wood-edge)", fontSize: 11.5, fontStyle: "italic" }}>囊中没有食材与调味料。去铺子买、去野外捡，或从 NPC 身上顺一点。</div>
+            <div style={{ color: "var(--ink-wood-edge)", fontSize: "var(--fs-sm)", fontStyle: "italic" }}>囊中没有食材与调味料。去铺子买、去野外捡，或从 NPC 身上顺一点。</div>
           ) : (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {mats.map(m => {
@@ -305,9 +305,9 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
                     className="ck-chip"
                     style={{ cursor: usable ? "pointer" : "default", padding: "6px 13px",
                       backgroundImage: `url(${UI(left > 0 ? "bub_wood1.webp" : "bub_stone.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
-                      color: left > 0 ? "var(--ink-parchment)" : "var(--cooking-empty)", fontSize: 12, opacity: left > 0 ? 1 : 0.5,
+                      color: left > 0 ? "var(--ink-parchment)" : "var(--cooking-empty)", fontSize: "var(--fs-sm)", opacity: left > 0 ? 1 : 0.5,
                       textShadow: "0 1px 2px var(--black)" }}>
-                      {m.name} <span style={{ color: "var(--ink-brass-lit)", fontSize: 10.5 }}>×{left}</span>
+                      {m.name} <span style={{ color: "var(--ink-brass-lit)", fontSize: "var(--fs-xs)" }}>×{left}</span>
                     </div>
                 );
               })}

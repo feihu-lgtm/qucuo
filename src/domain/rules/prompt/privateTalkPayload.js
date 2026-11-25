@@ -1,5 +1,32 @@
 import { buildNarratorWhisperContext, narratorVoicePrompt, narratorWhisperLengthNote } from "../narrator/narrator.js";
 import { seaDialoguePrompt } from "../narrator/narratorQuest.js";
+import { getPromptOverrides } from "./registry.js";
+
+function pickOverride(ov, id, fallback) {
+  const rule = ov?.[id];
+  if (!rule) return fallback;
+  if (rule.mode === "off") return "";
+  if (typeof rule.text === "string") return rule.text;
+  return fallback;
+}
+
+function appendOverride(ov, id, fallback) {
+  const rule = ov?.[id];
+  if (!rule) return fallback;
+  if (rule.mode === "off") return "";
+  if (typeof rule.text === "string") {
+    const extra = rule.text.trim();
+    if (!extra) return fallback;
+    return fallback ? `${fallback}\n${extra}` : extra;
+  }
+  return fallback;
+}
+
+// 世界书正文唯一真源是 cfg.narratorLorebook（旁白设置页），总控台只管开关；
+// 这里只认 mode，历史遗留的 .text 一律忽略，避免陈旧覆盖压住设置页。
+function pickLoreOverride(ov, fallback) {
+  return ov?.narrator_lore?.mode === "off" ? "" : fallback;
+}
 
 export function buildPrivateTalkPayload({
   narrator,
@@ -20,11 +47,36 @@ export function buildPrivateTalkPayload({
   whisperGateText,
   narratorStage,
 }) {
+  const ov = getPromptOverrides();
   const promptRefEvents = [];
   const trace = (paths) => promptRefEvents.push(paths);
-  const systemPrompt = inSeaNow
-    ? `${seaDialoguePrompt({ stage: narrator.stage, comfort: seaVars.comfort, spokenKeys: seaVars.knots || [], STAGES: narratorStage })}${recallBlock}\n${narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords)}`
-    : `${buildNarratorWhisperContext(narrator.affection)}\n${narratorVoicePrompt(narrator, trace)}\n\n${worldState}${snowLeopardBlock}${factsBlock}${recallBlock}${tallyBlock}${narratorLoreBlock}${bodyWhisperText}${topicGateText}${questGateText}\n\n剧本背景设定：${whisperGateText}\n${narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords)}`;
+
+  const recallPart = pickOverride(ov, "recall", recallBlock);
+  const lengthPart = appendOverride(
+    ov,
+    "whisper_length",
+    narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords),
+  );
+
+  let systemPrompt;
+  if (inSeaNow) {
+    systemPrompt = `${seaDialoguePrompt({ stage: narrator.stage, comfort: seaVars.comfort, spokenKeys: seaVars.knots || [], STAGES: narratorStage })}${recallPart}\n${lengthPart}`;
+  } else {
+    const ctxPart = appendOverride(ov, "whisper_ctx", buildNarratorWhisperContext(narrator.affection));
+    const voicePart = appendOverride(ov, "voice", narratorVoicePrompt(narrator, trace));
+    const worldPart = pickOverride(ov, "world_state", worldState);
+    const factsPart = pickOverride(ov, "facts", factsBlock);
+    const tallyPart = pickOverride(ov, "whisper_tally", tallyBlock);
+    const lorePart = pickLoreOverride(ov, narratorLoreBlock);
+    const bodyPart = pickOverride(ov, "body_gate", bodyWhisperText);
+    const topicPart = pickOverride(ov, "topic_gate", topicGateText);
+    const questPart = pickOverride(ov, "quest_gate", questGateText);
+    const scenarioBody = pickOverride(ov, "whisper_scenario", whisperGateText);
+    const scenarioPart = scenarioBody ? `\n\n剧本背景设定：${scenarioBody}` : "";
+    const head = [ctxPart, voicePart].filter(Boolean).join("\n");
+    const middle = `${worldPart}${snowLeopardBlock}${factsPart}${recallPart}${tallyPart}${lorePart}${bodyPart}${topicPart}${questPart}`;
+    systemPrompt = `${head}\n\n${middle}${scenarioPart}\n${lengthPart}`;
+  }
 
   const talkWindow = Math.max(apiCfg.contextWindow, 20);
   const history = convo.length > talkWindow ? convo.slice(-talkWindow) : convo;

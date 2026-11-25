@@ -1,4 +1,4 @@
-import { definePrompt } from "../registry.js";
+import { definePrompt, getPromptDef } from "../registry.js";
 import { buildNpcContext } from "../../npc/npcContext.js";
 
 export function registerSideCalls() {
@@ -35,7 +35,11 @@ ${gaveGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一件礼
   });
 
   definePrompt("call", "pigeon.reply", {
+    group: "async",
     label: "飞鸽回信",
+    execution: "async_background",
+    route: "primary",
+    reviewDesc: "核对 epoch/letterId 防切档串台，截出 ⟦好感X⟧ 与回礼并在白名单内落盘",
     tokenLimitKey: "pigeonReply",
     defaultMaxTokens: 3000,
     join: "",
@@ -84,7 +88,11 @@ ${gaveGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一件礼
   });
 
   definePrompt("call", "pigeon.inbound", {
+    group: "async",
     label: "主动来信",
+    execution: "async_background",
+    route: "primary",
+    reviewDesc: "由统一 NPC 上下文拼装近况，校验 isStale 后存入信箱",
     tokenLimitKey: "pigeonReply",
     defaultMaxTokens: 3000,
     join: "",
@@ -104,7 +112,11 @@ ${gaveGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一件礼
   });
 
   definePrompt("call", "fact.summary", {
+    group: "sync",
     label: "事实摘要",
+    execution: "sync_pipeline",
+    route: "light",
+    reviewDesc: "截取首行 ≤40 字落入知识账本摘要，失败留空下回合自愈",
     tokenLimitKey: "knowledge",
     defaultMaxTokens: 120,
     join: "",
@@ -127,12 +139,20 @@ ${gaveGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一件礼
   });
 
   definePrompt("call", "fact.summaryFromRecall", {
-    label: "事实摘要",
+    group: "sync",
+    label: "旧事归纳摘要",
+    execution: "sync_pipeline",
+    route: "light",
+    reviewDesc: "严格基于召回旧事截取 ≤40 字摘要，严禁编造片段外情节",
     tokenLimitKey: "knowledge",
     defaultMaxTokens: 120,
     join: "",
     blocks: ["fact.summaryFromRecall.sys", "fact.summaryFromRecall.user"],
   });
+}
+
+export function ensureSideCalls() {
+  if (!getPromptDef("call", "fact.summary")) registerSideCalls();
 }
 
 registerSideCalls();

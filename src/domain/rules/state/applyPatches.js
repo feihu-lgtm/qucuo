@@ -49,6 +49,7 @@ export function applyPatches(state, patches, options = {}) {
       ...patch,
       ...(result.finalValue === undefined ? {} : { finalValue: result.finalValue }),
       ...(result.actualDelta == null ? {} : { actualDelta: result.actualDelta }),
+      ...(result.note ? { note: result.note } : {}),
     });
     if (result.logs?.length) logs.push(...result.logs);
   }

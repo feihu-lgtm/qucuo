@@ -18,7 +18,7 @@ export function StatRow({ label, value, min = 0, max = 10, step = 1, onChange, w
   const pct = ((value - min) / (max - min)) * 100;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-      <span style={{ width, fontSize: 11, color: "var(--quest-stage-desc)", flexShrink: 0 }}>{label}</span>
+      <span style={{ width, fontSize: "var(--fs-xs)", color: "var(--quest-stage-desc)", flexShrink: 0 }}>{label}</span>
       <div
         onClick={e => {
           if (!onChange) return;
@@ -47,13 +47,13 @@ export function StatRow({ label, value, min = 0, max = 10, step = 1, onChange, w
             style={{
               width: max > 10 ? 32 : 26, textAlign: "center", background: "rgba(0,0,0,.4)",
               border: "1px solid var(--border-deep)", borderRadius: 0, padding: "2px 0",
-              color: "var(--ink-warn)", fontSize: 11.5, outline: "none", fontFamily: "inherit",
+              color: "var(--ink-warn)", fontSize: "var(--fs-sm)", outline: "none", fontFamily: "inherit",
             }} />
           <Step onClick={() => set(value + step)} disabled={value >= max}>＋</Step>
-          {unit ? <span style={{ fontSize: 9.5, color: "var(--ink-text-dim)" }}>{unit}</span> : null}
+          {unit ? <span style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-text-dim)" }}>{unit}</span> : null}
         </span>
       ) : (
-        <span style={{ width: 26, textAlign: "right", fontSize: 11, color: "var(--ink-warn)", flexShrink: 0 }}>{value}</span>
+        <span style={{ width: 26, textAlign: "right", fontSize: "var(--fs-xs)", color: "var(--ink-warn)", flexShrink: 0 }}>{value}</span>
       )}
     </div>
   );
@@ -66,7 +66,7 @@ export function SevenDim({ special, onChange, why }) {
         <StatRow key={k} label={k} value={special?.[k] ?? 5} max={10}
           onChange={onChange ? (v => onChange({ ...special, [k]: v })) : null} />
       ))}
-      {why && <div style={{ fontSize: 10, color: "var(--ink-text-dim)", marginTop: 4, fontStyle: "italic" }}>据「{why}」</div>}
+      {why && <div style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-text-dim)", marginTop: 4, fontStyle: "italic" }}>据「{why}」</div>}
     </div>
   );
 }
@@ -76,19 +76,19 @@ export function SevenDim({ special, onChange, why }) {
 export function Src({ source, why }) {
   if (source === "fallback") {
     return <span title="AI 没抽出来，这是默认值"
-      style={{ fontSize: 9, color: "var(--ink-text-dim)", border: "1px solid var(--border-deep)", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>默认</span>;
+      style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-text-dim)", border: "1px solid var(--border-deep)", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>默认</span>;
   }
   if (source === "manual") {
     return <span title="只能你自己填，不从卡里抽"
-      style={{ fontSize: 9, color: "var(--footer-hint-text)", border: "1px solid var(--bug-edge-dark)", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>手填</span>;
+      style={{ fontSize: "var(--fs-2xs)", color: "var(--footer-hint-text)", border: "1px solid var(--bug-edge-dark)", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>手填</span>;
   }
   if (source === "drop") {
     return <span title="按规矩丢弃，不导入"
-      style={{ fontSize: 9, color: "var(--bug-dim-dark)", border: "1px solid var(--border-deep)", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>已丢</span>;
+      style={{ fontSize: "var(--fs-2xs)", color: "var(--bug-dim-dark)", border: "1px solid var(--border-deep)", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>已丢</span>;
   }
   return (
     <span title={why ? `AI 判断依据：${why}` : "AI 抽取"}
-      style={{ fontSize: 9, color: "var(--quest-success-text)", border: "1px solid var(--music-idle-icon)", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>
+      style={{ fontSize: "var(--fs-2xs)", color: "var(--quest-success-text)", border: "1px solid var(--music-idle-icon)", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>
       AI{why ? "·" + why.slice(0, 10) : ""}
     </span>
   );
@@ -102,14 +102,14 @@ export function TextField({ label, value, onChange, placeholder, rows = 1, max, 
   const common = {
     width: "100%", boxSizing: "border-box", background: "rgba(0,0,0,.35)",
     border: "1px solid var(--border-deep)", borderRadius: 0, padding: "5px 8px",
-    color: "var(--paper)", fontSize: 11.5, outline: "none", resize: "vertical",
+    color: "var(--paper)", fontSize: "var(--fs-sm)", outline: "none", resize: "vertical",
     textAlign: centered,
     fontFamily: mono ? "ui-monospace,Menlo,Consolas,monospace" : "inherit",
   };
   return (
     <label style={{ display: "block", marginBottom: 7 }}>
       {label != null && (
-        <span style={{ display: "block", fontSize: 10.5, color: "var(--ink-muted)", marginBottom: 3, textAlign: centered === "center" ? "center" : "left" }}>
+        <span style={{ display: "block", fontSize: "var(--fs-xs)", color: "var(--ink-muted)", marginBottom: 3, textAlign: centered === "center" ? "center" : "left" }}>
           {label}{max ? <span style={{ color: "var(--muted)" }}> ≤{max}字</span> : null}
         </span>
       )}
@@ -126,7 +126,7 @@ export function TextField({ label, value, onChange, placeholder, rows = 1, max, 
 
 export function Stat({ label, v }) {
   return (
-    <div style={{ display: "flex", fontSize: 11, marginBottom: 4, color: "var(--ink-muted)" }}>
+    <div style={{ display: "flex", fontSize: "var(--fs-xs)", marginBottom: 4, color: "var(--ink-muted)" }}>
       <span style={{ width: 84, flexShrink: 0 }}>{label}</span>
       <span style={{ color: "var(--ink-text)" }}>{v}</span>
     </div>
@@ -136,7 +136,7 @@ export function Stat({ label, v }) {
 export function Section({ title, children, dim }) {
   return (
     <div style={{ marginTop: 12, borderTop: "1px solid var(--bg-card)", paddingTop: 9, opacity: dim ? .55 : 1 }}>
-      <div style={{ fontSize: 11, color: "var(--ink-tan)", letterSpacing: 1, marginBottom: 7 }}>{title}</div>
+      <div style={{ fontSize: "var(--fs-xs)", color: "var(--ink-tan)", letterSpacing: 1, marginBottom: 7 }}>{title}</div>
       {children}
     </div>
   );
@@ -145,11 +145,9 @@ export function Section({ title, children, dim }) {
 export function Note({ tone = "info", children }) {
   const c = tone === "bad" ? "var(--ink-error-text)" : tone === "warn" ? "var(--tutorial-time)" : "var(--inject-user-text)";
   return (
-    <div style={{
-      fontSize: 10.5, lineHeight: 1.7, color: c, marginTop: 7,
-      padding: "6px 9px", background: "rgba(0,0,0,.3)",
-      borderLeft: `2px solid color-mix(in srgb, ${c} 40%, transparent)`, borderRadius: "0 3px 3px 0",
-    }}>{children}</div>
+    <div style={{ fontSize: "var(--fs-xs)", lineHeight: 1.7, color: c, marginTop: 7,
+    padding: "6px 9px", background: "rgba(0,0,0,.3)",
+    borderLeft: `2px solid color-mix(in srgb, ${c} 40%, transparent)`, borderRadius: "0 3px 3px 0", }}>{children}</div>
   );
 }
 
@@ -160,7 +158,7 @@ export function Btn({ children, onClick, tone = "dim", disabled, title }) {
     <span onClick={disabled ? undefined : onClick} title={title}
       style={{
         cursor: disabled ? "not-allowed" : "pointer", userSelect: "none",
-        fontSize: 12, padding: "6px 16px", borderRadius: 0, whiteSpace: "nowrap",
+        fontSize: "var(--fs-sm)", padding: "6px 16px", borderRadius: 0, whiteSpace: "nowrap",
         color: main ? "var(--bg-deep)" : warn ? "var(--tutorial-time)" : "var(--quest-stage-desc)",
         background: main ? "linear-gradient(180deg,var(--service-item-name),var(--mind-button-edge))" : "rgba(0,0,0,.3)",
         border: `1px solid ${main ? "var(--service-item-name)" : warn ? "var(--ink-wood-edge)" : "var(--border-deep)"}`,
@@ -182,7 +180,7 @@ function Pill({ label, on, onClick, title, accent }) {
     <span onClick={onClick} title={title}
       onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{
-        cursor: "pointer", userSelect: "none", fontSize: 11.5, padding: "4px 14px", borderRadius: 0,
+        cursor: "pointer", userSelect: "none", fontSize: "var(--fs-sm)", padding: "4px 14px", borderRadius: 0,
         transition: "all .14s ease",
         border: `1px solid ${on || hov ? accent : "var(--ink-brass)"}`,
         background: on ? "rgba(212,168,83,.16)" : hov ? "rgba(212,168,83,.07)" : "rgba(0,0,0,.18)",

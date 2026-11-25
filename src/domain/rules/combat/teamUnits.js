@@ -54,9 +54,11 @@ export function buildPlayerUnit({ playerChar, playerInv = [], playerMoveset = []
   };
 }
 
-// 雪豹单位：companionState.snowLeopard.data（createSnowLeopard 固化结果）→ 引擎格式。
+// 伙伴队友单位（函数名沿用"雪豹"，实际所有出战伙伴共用）：companionState.<槽>.data → 引擎格式。
+// 雪豹/珍珠已化形为人形成年女子，名字取数据里的 name（雪豹/珍珠），仍保留兽形出身的招式风味；
+// 铁伯这类随从伙伴（机关人偶）同走这条装配。
 // 注意 moveset → movesetLocal 的重命名、补 id/side/alive/statusSlots 等运行时字段，
-// 托管性格档案 SNOW_LEOPARD_PROFILE 挂在 unit.profile 上供 decideUnitMove 读取。
+// 托管性格档案挂在 unit.profile 上供 decideUnitMove 读取（缺省兜底雪豹的猛兽本能档）。
 export function buildLeopardUnit(leopardData) {
   const maxHp = leopardData.combatStats?.hp?.[1] ?? 100;
   return {

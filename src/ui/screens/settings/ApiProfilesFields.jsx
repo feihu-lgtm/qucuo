@@ -41,7 +41,7 @@ export default function ApiProfilesFields({
   return (
     <>
       <div style={{ border: "1px solid var(--border)", borderRadius: 0, padding: "8px 10px", marginBottom: 12, background: "var(--bg-panel)" }}>
-        <div style={{ fontSize: "11px", color: "var(--info)", marginBottom: 6 }}>配置管理（多套 API 配置 · 落盘导出/导入）</div>
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--info)", marginBottom: 6 }}>配置管理（多套 API 配置 · 落盘导出/导入）</div>
         <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
           <input
             style={{ ...inputStyle, flex: 1, marginBottom: 0 }}
@@ -54,7 +54,7 @@ export default function ApiProfilesFields({
         {cfgProfiles.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 6 }}>
             {cfgProfiles.map(p => (
-              <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "11px" }}>
+              <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "var(--fs-xs)" }}>
                 <span style={{ flex: 1, color: "var(--text)" }}>{p.name}
                   <span style={{ color: "var(--text-dim)", marginLeft: 6 }}>{getApiModel(p.cfg) || ""}</span>
                 </span>
@@ -69,7 +69,7 @@ export default function ApiProfilesFields({
           <span onClick={handleImportCfg} style={{ ...btnStyle, flex: 1, textAlign: "center" }}>从文件导入配置</span>
         </div>
       </div>
-      <div style={{ ...sectionStyle, background: "var(--bg-panel)", border: "1px solid var(--border)", padding: 10, fontSize: "10.5px", color: "var(--text-dim)" }}>
+      <div style={{ ...sectionStyle, background: "var(--bg-panel)", border: "1px solid var(--border)", padding: 10, fontSize: "var(--fs-xs)", color: "var(--text-dim)" }}>
         凭证保存在当前浏览器中，请勿在公共设备上导入。Vertex AI 直接连接 Google，不使用代理。
       </div>
     </>

@@ -24,7 +24,11 @@ export function registerHookCalls() {
   });
 
   definePrompt("call", "day.summary", {
+    group: "async",
     label: "日总结",
+    execution: "async_background",
+    route: "primary",
+    reviewDesc: "受 sessionEpoch 与回退令牌双重门禁保护，跨天撤销后永久作废",
     tokenLimitKey: "daySummary",
     defaultMaxTokens: 2000,
     join: "",
@@ -44,7 +48,11 @@ export function registerHookCalls() {
   });
 
   definePrompt("call", "outfit.advice", {
+    group: "async",
     label: "按体貌荐装",
+    execution: "sync_pipeline",
+    route: "light",
+    reviewDesc: "按身材预设与货架白名单挑选装备 ID，禁止自造物品",
     tokenLimitKey: "inspect",
     defaultMaxTokens: 4000,
     join: "",
@@ -86,7 +94,11 @@ export function registerHookCalls() {
   });
 
   definePrompt("call", "inspect.describe", {
+    group: "async",
     label: "查看端详",
+    execution: "async_background",
+    route: "primary",
+    reviewDesc: "纯文本 3-5 句描写来历效用，禁止改写状态与报空数值",
     tokenLimitKey: "inspect",
     defaultMaxTokens: 4000,
     modelOptions: (ctx) => ({ turn: ctx.turn }),
@@ -114,7 +126,11 @@ export function registerHookCalls() {
   });
 
   definePrompt("call", "crafting.appraise", {
+    group: "async",
     label: "赌石相石",
+    execution: "async_background",
+    route: "primary",
+    reviewDesc: "只据皮壳/场口/雾象线索写相石评语，禁止断言内部成色",
     tokenLimitKey: "inspect",
     defaultMaxTokens: 4000,
     join: "",
@@ -134,7 +150,11 @@ export function registerHookCalls() {
   });
 
   definePrompt("call", "map.prerun", {
+    group: "async",
     label: "地图预跑",
+    execution: "async_background",
+    route: "extraction",
+    reviewDesc: "批量写入当日据点到达/拾取文案，单批失败静默并在下次移动自愈",
     defaultMaxTokens: 1500,
     cfg: (apiCfg) => buildExtractionCfg("SQUARE_PRERUN", apiCfg),
     join: "",

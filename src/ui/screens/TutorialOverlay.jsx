@@ -5,10 +5,10 @@ import React from "react";
 export default function TutorialOverlay({ onClose }) {
   const note = {
     background: "rgba(14,18,26,0.96)", border: "1px solid var(--ink-brass)", borderRadius: 0,
-    padding: "12px 16px", color: "var(--paper)", fontSize: "12.5px", lineHeight: 1.7,
+    padding: "12px 16px", color: "var(--paper)", fontSize: "var(--fs-md)", lineHeight: 1.7,
     boxShadow: "0 6px 24px rgba(0,0,0,0.6)", maxWidth: 260,
   };
-  const title = { color: "var(--ember)", fontWeight: "bold", fontSize: "13px", marginBottom: 6, display: "block" };
+  const title = { color: "var(--ember)", fontWeight: "bold", fontSize: "var(--fs-md)", marginBottom: 6, display: "block" };
   return (
     <div
       className="tutorial-overlay"
@@ -17,9 +17,9 @@ export default function TutorialOverlay({ onClose }) {
         display: "flex", flexDirection: "column", fontFamily: "'Songti SC','STSong','SimSun',serif" }}
     >
       {/* 顶部提示条 */}
-      <div style={{ textAlign: "center", padding: "14px 0 8px", color: "var(--tutorial-title)", fontSize: "15px", fontWeight: "bold", letterSpacing: "1px" }}>
+      <div style={{ textAlign: "center", padding: "14px 0 8px", color: "var(--tutorial-title)", fontSize: "var(--fs-lg)", fontWeight: "bold", letterSpacing: "1px" }}>
         📖 新手教程 · 界面导览
-        <span style={{ display: "block", fontSize: "11px", color: "var(--tutorial-dim)", fontWeight: "normal", marginTop: 4 }}>点顶部收起，向下滚动查看全部内容</span>
+        <span style={{ display: "block", fontSize: "var(--fs-xs)", color: "var(--tutorial-dim)", fontWeight: "normal", marginTop: 4 }}>点顶部收起，向下滚动查看全部内容</span>
       </div>
 
       {/* 三栏说明便签，按 flex 25/55/30 的实际位置横向铺开 */}
@@ -65,10 +65,10 @@ export default function TutorialOverlay({ onClose }) {
             <div><b style={{ color: "var(--pink)" }}>◆ 私聊旁白</b>：打破第四面墙，直接和「旁白」说话，<b>不消耗回合</b>。</div>
             <div><b style={{ color: "var(--tutorial-nsfw)" }}>NSFW</b>：开关。开启后注入成人向写作规则；关闭则为常规叙事。默认关闭，按需点亮。</div>
           </div>
-          <div style={{ marginTop: 8, color: "var(--tutorial-note)", fontSize: "11.5px" }}>
+          <div style={{ marginTop: 8, color: "var(--tutorial-note)", fontSize: "var(--fs-sm)" }}>
             ➡️ <b>右栏「侠客」→「江湖」面</b>（手机用底部「左 · 中 · 右」标签切栏，点「右」后滑动切面）：<b>任务</b> 看任务进度；<b>人物关系</b> 看各角色好感；<b>见闻录</b> 看已知世界情报；<b>起居注</b> 看逐日行迹。旧布局可点「编排」勾选江湖模块。
           </div>
-          <div style={{ marginTop: 6, color: "var(--tutorial-note)", fontSize: "11.5px" }}>
+          <div style={{ marginTop: 6, color: "var(--tutorial-note)", fontSize: "var(--fs-sm)" }}>
             ⚙ <b>其他功能</b>：<b>⚙设置</b> 里配置 API 密钥、存档、字号；<b>💾存档</b>随时读写；<b>⏻主菜单</b>返回开始界面；<b>🧭全流程日志</b>看系统每一步怎么跑的（喂给 AI 的完整 prompt 和回复）。
           </div>
         </div>

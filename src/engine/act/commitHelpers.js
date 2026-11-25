@@ -1,5 +1,17 @@
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { getQuestScript } from "../../domain/data/quests/questScripts.js";
+import { unlockedCompanions } from "../../domain/rules/companion/companion.js";
+
+// 队伍里的伙伴（雪豹/导入的 OC 如元朵朵…）不在 room.npcs 里——他们随行，由
+// buildPresence 并入喂给 AI 的名单。好感度反幽灵过滤也得认他们在场，
+// 否则对随行伙伴的 _.add 好感会被当成"凭空报名字的幽灵"丢掉，玩家看不到 💗。
+export function companionNames(companionState) {
+  const names = [];
+  for (const { key, label } of unlockedCompanions(companionState)) {
+    names.push(label, companionState?.[key]?.data?.name);
+  }
+  return names.filter(Boolean);
+}
 
 // 好感度反幽灵过滤：AI 若对一个"既不在系统在场名单、也不在已知角色表"里的
 // 名字开好感度（开局旁白顺口报的假村民就是这样），把这条 MVU 指令丢掉——

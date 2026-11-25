@@ -132,4 +132,43 @@ describe("withAI", () => {
     expect(res.text).toBe("");
     expect(res.data).toBeNull();
   });
+
+  it("supports call.assemble, pre-call isStale abort, and forwards raw/logprobs/usage", async () => {
+    const onRequest = vi.fn();
+    definePrompt("call", "t.assembled", {
+      label: "总装调用",
+      assemble: (ctx) => ({
+        system: [{ tavernBlock: "main", content: ctx.sys }],
+        messages: [{ role: "user", content: ctx.q }],
+        stream: true,
+        intent: { code: "LOOK", label: "查看" },
+      }),
+    });
+
+    const staleAi = createMockAi(["never"], { onRequest });
+    const staleRes = await withAI("t.assembled", { sys: "S", q: "Q" }, {
+      ai: staleAi,
+      apiCfg: {},
+      isStale: () => true,
+    });
+    expect(onRequest).not.toHaveBeenCalled();
+    expect(staleRes.finishReason).toBe("stale");
+
+    const rawBody = { choices: [{ finish_reason: "stop" }] };
+    const logprobs = { content: [] };
+    const usage = { total_tokens: 42 };
+    const okAi = createMockAi([{ text: "结果", finishReason: "stop", raw: rawBody, logprobs, usage }], { onRequest });
+    const okRes = await withAI("t.assembled", { sys: "S", q: "Q" }, { ai: okAi, apiCfg: { model: "m" } });
+    expect(onRequest).toHaveBeenCalledWith(
+      [{ role: "user", content: "Q" }],
+      expect.objectContaining({
+        systemPrompt: [{ tavernBlock: "main", content: "S" }],
+        stream: true,
+        intent: { code: "LOOK", label: "查看" },
+      }),
+    );
+    expect(okRes.raw).toBe(rawBody);
+    expect(okRes.logprobs).toBe(logprobs);
+    expect(okRes.usage).toBe(usage);
+  });
 });

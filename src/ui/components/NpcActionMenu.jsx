@@ -62,8 +62,8 @@ export default function NpcActionMenu({ npc, zoneTheme, inv, onClose, onTalk, on
         style={{ background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: 20, width: 320, maxWidth: "90vw" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ color: zoneTheme.accent, fontSize: "14px", marginBottom: 4 }}>{npc.name}{npc.intimate ? " ♥" : ""}</div>
-        <div style={{ color: zoneTheme.textDim, fontSize: "11px", marginBottom: 16 }}>{npc.brief}</div>
+        <div style={{ color: zoneTheme.accent, fontSize: "var(--fs-base)", marginBottom: 4 }}>{npc.name}{npc.intimate ? " ♥" : ""}</div>
+        <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-xs)", marginBottom: 16 }}>{npc.brief}</div>
 
         <div className="mobile-action-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
           {ACTIONS.map((a) => (
@@ -77,14 +77,14 @@ export default function NpcActionMenu({ npc, zoneTheme, inv, onClose, onTalk, on
                 opacity: a.available ? 1 : 0.4,
               }}
             >
-              <div style={{ color: zoneTheme.accent, fontSize: "13px", marginBottom: 3 }}>{a.label}</div>
-              <div style={{ color: zoneTheme.textDim, fontSize: "10px" }}>{a.desc}</div>
+              <div style={{ color: zoneTheme.accent, fontSize: "var(--fs-md)", marginBottom: 3 }}>{a.label}</div>
+              <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-2xs)" }}>{a.desc}</div>
             </div>
           ))}
         </div>
 
         <div style={{ textAlign: "center", marginTop: 14 }}>
-          <span className="mobile-touch-target" onClick={onClose} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "11px" }}>取消</span>
+          <span className="mobile-touch-target" onClick={onClose} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "var(--fs-xs)" }}>取消</span>
         </div>
       </div>
     </div>
@@ -100,10 +100,10 @@ function GiftPicker({ npc, zoneTheme, inv, onBack, onConfirm }) {
         style={{ background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: 20, width: 320, maxWidth: "90vw", maxHeight: "70vh", overflowY: "auto" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ color: zoneTheme.accent, fontSize: "13px", marginBottom: 12 }}>送给「{npc.name}」什么？</div>
+        <div style={{ color: zoneTheme.accent, fontSize: "var(--fs-md)", marginBottom: 12 }}>送给「{npc.name}」什么？</div>
         <GiftPickerList zoneTheme={zoneTheme} onPick={onConfirm} inv={inv} />
         <div style={{ textAlign: "center", marginTop: 12 }}>
-          <span onClick={onBack} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "11px" }}>← 返回</span>
+          <span onClick={onBack} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "var(--fs-xs)" }}>← 返回</span>
         </div>
       </div>
     </div>
@@ -115,7 +115,7 @@ function GiftPicker({ npc, zoneTheme, inv, onBack, onConfirm }) {
 function GiftPickerList({ zoneTheme, onPick, inv }) {
   const list = inv || [];
   if (list.length === 0) {
-    return <div style={{ color: zoneTheme.textDim, fontSize: "12px" }}>包袱空空，没什么拿得出手的东西</div>;
+    return <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-sm)" }}>包袱空空，没什么拿得出手的东西</div>;
   }
   return (
     <div className="mobile-action-grid mobile-action-list" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -127,7 +127,7 @@ function GiftPickerList({ zoneTheme, onPick, inv }) {
             key={isObj ? it.id : i}
             className="mobile-action-choice"
             onClick={() => onPick(it)}
-            style={{ cursor: "pointer", padding: "6px 8px", borderRadius: 0, color: zoneTheme.text, fontSize: "12px", background: zoneTheme.bg }}
+            style={{ cursor: "pointer", padding: "6px 8px", borderRadius: 0, color: zoneTheme.text, fontSize: "var(--fs-sm)", background: zoneTheme.bg }}
           >
             {name}{isObj ? ` (${it.quality})` : ""}
           </div>

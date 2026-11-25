@@ -44,14 +44,14 @@ export default function ReviewRoster({
                     title={picked.has(i) ? "点掉就不加入" : "点上加入"}
                     style={{
                       cursor: "pointer", flexShrink: 0, width: 14, textAlign: "center",
-                      fontSize: 12, color: picked.has(i) ? accent : "var(--border)",
+                      fontSize: "var(--fs-sm)", color: picked.has(i) ? accent : "var(--border)",
                     }}>{picked.has(i) ? "◉" : "○"}</span>
                   <JadeTier value={n.levelCap} size={22} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ color: "var(--paper)", fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div style={{ color: "var(--paper)", fontSize: "var(--fs-sm)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {n.name}
                     </div>
-                    <div style={{ color: "var(--text-dim)", fontSize: 9.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.brief}</div>
+                    <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.brief}</div>
                   </div>
                   {(() => {
                     const pl = normalizePlacement(n.placement);
@@ -61,9 +61,9 @@ export default function ReviewRoster({
                       ? `驻·${pl.district}`
                       : `游·${Object.keys(pl.weights).length}处`;
                     return <span title={m === "resident" ? `驻场于${pl.district}` : "按权重游走"}
-                      style={{ fontSize: 9, color: accent, flexShrink: 0 }}>{label}</span>;
+                      style={{ fontSize: "var(--fs-2xs)", color: accent, flexShrink: 0 }}>{label}</span>;
                   })()}
-                  {n.source === "fallback" && <span title="全是默认值" style={{ fontSize: 9, color: "var(--text-dim)" }}>默</span>}
+                  {n.source === "fallback" && <span title="全是默认值" style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)" }}>默</span>}
                 </div>
                 );
               })}
@@ -73,7 +73,7 @@ export default function ReviewRoster({
           </div>
 
           <div style={{ flex: 6, minWidth: 0, display: "flex", flexDirection: "column" }}>
-            <Bar right={result.genre ? <span style={{ fontSize: 10, color: "var(--muted)" }}>{result.genre}</span> : null}>
+            <Bar right={result.genre ? <span style={{ fontSize: "var(--fs-2xs)", color: "var(--muted)" }}>{result.genre}</span> : null}>
               {cur ? cur.name : "过目定稿"}
             </Bar>
 
@@ -83,7 +83,7 @@ export default function ReviewRoster({
                   currentDistrict={currentDistrict}
                   onPatch={patch => patchNpc(detail, patch)} />
               ) : (
-                <div style={{ fontSize: 10.5, color: "var(--text-dim)", lineHeight: 1.9, padding: "4px 4px", textAlign: "center" }}>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", lineHeight: 1.9, padding: "4px 4px", textAlign: "center" }}>
                   在左边点一个人，逐个设置他的品阶、招式、随身物、落脚。
                 </div>
               )}
@@ -100,7 +100,7 @@ export default function ReviewRoster({
                 <Btn onClick={onBack} tone="dim">← 回名单</Btn>
                 <span onClick={toggleAll} title="一次勾上或取消全部"
                   style={{
-                    cursor: "pointer", userSelect: "none", fontSize: 11.5,
+                    cursor: "pointer", userSelect: "none", fontSize: "var(--fs-sm)",
                     padding: "6px 12px", borderRadius: 0, whiteSpace: "nowrap",
                     border: `1px solid ${allOn ? accent : "var(--ink-wood-edge)"}`,
                     background: "rgba(0,0,0,.3)",
@@ -111,7 +111,7 @@ export default function ReviewRoster({
                   equipBusy={equipBusy} equipAll={equipAll} districtNote="据点只能从本作地图里选，" />
 
                 <span style={{ flex: 1 }} />
-                <span style={{ fontSize: 11, color: "var(--qb-text-dim)", textShadow: "0 1px 2px rgba(0,0,0,.85)" }}>
+                <span style={{ fontSize: "var(--fs-xs)", color: "var(--qb-text-dim)", textShadow: "0 1px 2px rgba(0,0,0,.85)" }}>
                   入 {pickedNpcs.length}／{result.npcs.length} 人
                   {placedCount ? `（${placedCount} 人会真的出现）` : "（都只在被提到时注入）"}
                 </span>

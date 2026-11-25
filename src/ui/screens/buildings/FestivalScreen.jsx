@@ -18,9 +18,9 @@ import {
   pickMidnightEvent,
 } from "../../../domain/rules/festival/rules.js";
 
-const dim = { color: "var(--ink-text-dim)", fontSize: 11, marginBottom: 8 };
+const dim = { color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)", marginBottom: 8 };
 const sectionTitle = (zoneTheme) => ({
-  color: zoneTheme.accent, fontSize: 12, margin: "14px 0 6px",
+  color: zoneTheme.accent, fontSize: "var(--fs-sm)", margin: "14px 0 6px",
 });
 
 function windowLabel(contest, hour) {
@@ -64,7 +64,7 @@ export default function FestivalScreen({
           const isFight = contest.id === "wubi";
           return (
             <div key={contest.id} style={{ marginBottom: 10 }}>
-              <div style={{ fontSize: 12, color: "var(--ink-text)", marginBottom: 4 }}>
+              <div style={{ fontSize: "var(--fs-sm)", color: "var(--ink-text)", marginBottom: 4 }}>
                 {contest.title}（{windowLabel(contest, hour)}）
                 {isFight ? "" : ` · 魁首 ${contest.champion.name} ${contest.champion.score} 分`}
               </div>
@@ -82,11 +82,11 @@ export default function FestivalScreen({
               {betFor === contest.id && !betted && open && (
                 <div style={{ marginTop: 6 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                    <span style={{ fontSize: 11, color: "var(--ink-text-dim)" }}>注额</span>
+                    <span style={{ fontSize: "var(--fs-xs)", color: "var(--ink-text-dim)" }}>注额</span>
                     <input type="number" value={bet} min={1} max={Math.min(50, money)}
                       onChange={(e) => setBet(Math.max(1, Math.min(50, Number(e.target.value) || 1)))}
-                      style={{ width: 60, background: "var(--bg-ink)", border: `1px solid ${zoneTheme.border}`, color: "var(--ink-text)", fontSize: 11, padding: "2px 4px" }} />
-                    <span style={{ fontSize: 11, color: "var(--ink-text-dim)" }}>两（≤50，押谁点谁）</span>
+                      style={{ width: 60, background: "var(--bg-ink)", border: `1px solid ${zoneTheme.border}`, color: "var(--ink-text)", fontSize: "var(--fs-xs)", padding: "2px 4px" }} />
+                    <span style={{ fontSize: "var(--fs-xs)", color: "var(--ink-text-dim)" }}>两（≤50，押谁点谁）</span>
                   </div>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {contest.bettors.map((b) => (

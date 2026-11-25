@@ -101,22 +101,19 @@ export default function PersuasionScreen({ persuade, apiCfg, ownedFlags = [], pl
         {/* 顶栏：对手 + 表象（不泄露心结，心结要玩家自己猜） */}
         <div style={{ padding: "14px 18px 12px", borderBottom: `1px solid ${border}`, background: `linear-gradient(180deg, color-mix(in srgb, ${accent} 8%, transparent), transparent)` }}>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 17, color: text, letterSpacing: 1 }}>说服 · {p.who}</span>
-            <span style={{ fontSize: 11, color: textDim }}>言语交锋</span>
+            <span style={{ fontSize: "var(--fs-lg)", color: text, letterSpacing: 1 }}>说服 · {p.who}</span>
+            <span style={{ fontSize: "var(--fs-xs)", color: textDim }}>言语交锋</span>
           </div>
           {p.observe && (
-            <div style={{ marginTop: 6, fontSize: 12, color: textDim, lineHeight: 1.5, fontStyle: "italic" }}>
+            <div style={{ marginTop: 6, fontSize: "var(--fs-sm)", color: textDim, lineHeight: 1.5, fontStyle: "italic" }}>
               {p.observe}
             </div>
           )}
           {/* 火候提示：用戒心值给模糊的"对方松动到几分"的感觉，不预告突破口数量 */}
           <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 11, color: textDim, marginRight: 2 }}>火候</span>
-            <span style={{
-              fontSize: 11.5,
-              color: progress >= need ? accent : guard < 40 ? "color-mix(in srgb, var(--ink-brass-lit) 80%, transparent)" : textDim,
-              transition: "color 0.4s ease",
-            }}>
+            <span style={{ fontSize: "var(--fs-xs)", color: textDim, marginRight: 2 }}>火候</span>
+            <span style={{ fontSize: "var(--fs-sm)", color: progress >= need ? accent : guard < 40 ? "color-mix(in srgb, var(--ink-brass-lit) 80%, transparent)" : textDim,
+            transition: "color 0.4s ease", }}>
               {progress >= need ? "话已说透，就等他一句"
                 : guard < 15 ? "他几乎守不住了，再推一把"
                 : guard < 45 ? "他神色几动，口风软了些"
@@ -127,9 +124,9 @@ export default function PersuasionScreen({ persuade, apiCfg, ownedFlags = [], pl
           {/* 已解锁线索（戒心每降30解锁一条，按keys顺序）：这是玩家花力气破冰换来的方向指引 */}
           {unlockedHints.length > 0 && (
             <div style={{ marginTop: 8, padding: "7px 10px", background: `color-mix(in srgb, ${accent} 7%, transparent)`, border: `1px solid color-mix(in srgb, ${accent} 20%, transparent)`, borderRadius: 0 }}>
-              <div style={{ fontSize: 10, color: accent, marginBottom: 3, letterSpacing: 1 }}>你看出的心结</div>
+              <div style={{ fontSize: "var(--fs-2xs)", color: accent, marginBottom: 3, letterSpacing: 1 }}>你看出的心结</div>
               {unlockedHints.map((h, i) => (
-                <div key={i} style={{ fontSize: 11.5, color: text, lineHeight: 1.6 }}>· {h}</div>
+                <div key={i} style={{ fontSize: "var(--fs-sm)", color: text, lineHeight: 1.6 }}>· {h}</div>
               ))}
             </div>
           )}
@@ -140,23 +137,23 @@ export default function PersuasionScreen({ persuade, apiCfg, ownedFlags = [], pl
           {turns.map((x, i) => (
             <div key={i} style={{ display: "flex", justifyContent: x.who === "npc" ? "flex-start" : "flex-end" }}>
               <div style={{
-                maxWidth: "78%", padding: "8px 13px", borderRadius: 0, fontSize: 14, lineHeight: 1.5,
+                maxWidth: "78%", padding: "8px 13px", borderRadius: 0, fontSize: "var(--fs-base)", lineHeight: 1.5,
                 background: x.who === "npc" ? bg : accent,
                 color: x.who === "npc" ? text : bg,
                 border: x.who === "npc" ? `1px solid ${x.struck ? accent : border}` : "none",
                 boxShadow: x.struck ? `0 0 0 1px color-mix(in srgb, ${accent} 40%, transparent)` : "none",
               }}>
-                {x.who === "npc" && <div style={{ fontSize: 10, color: textDim, marginBottom: 2 }}>{p.who}{x.struck ? " · 语气一动" : ""}</div>}
+                {x.who === "npc" && <div style={{ fontSize: "var(--fs-2xs)", color: textDim, marginBottom: 2 }}>{p.who}{x.struck ? " · 语气一动" : ""}</div>}
                 {x.text}
               </div>
             </div>
           ))}
           {busy && (
-            <div style={{ alignSelf: "flex-start", color: textDim, fontSize: 13, padding: "4px 6px" }}>
+            <div style={{ alignSelf: "flex-start", color: textDim, fontSize: "var(--fs-md)", padding: "4px 6px" }}>
               {p.who}沉吟……
             </div>
           )}
-          {done === "yield" && <div style={{ alignSelf: "center", color: accent, fontSize: 13, marginTop: 4 }}>✓ 你把话说到了点子上，对方松口了。</div>}
+          {done === "yield" && <div style={{ alignSelf: "center", color: accent, fontSize: "var(--fs-md)", marginTop: 4 }}>✓ 你把话说到了点子上，对方松口了。</div>}
         </div>
 
         {/* 输入 + 捷径 */}
@@ -173,12 +170,12 @@ export default function PersuasionScreen({ persuade, apiCfg, ownedFlags = [], pl
                   disabled={busy}
                   style={{
                     flex: 1, background: bg, border: `1px solid ${border}`, borderRadius: 0,
-                    padding: "9px 12px", color: text, fontSize: 13, outline: "none", fontFamily: "inherit",
+                    padding: "9px 12px", color: text, fontSize: "var(--fs-md)", outline: "none", fontFamily: "inherit",
                   }}
                 />
                 <button onClick={send} disabled={busy || !input.trim()} style={{
                   background: input.trim() && !busy ? accent : border, color: bg, border: "none",
-                  borderRadius: 0, padding: "9px 16px", fontSize: 13, cursor: input.trim() && !busy ? "pointer" : "default",
+                  borderRadius: 0, padding: "9px 16px", fontSize: "var(--fs-md)", cursor: input.trim() && !busy ? "pointer" : "default",
                   fontFamily: "inherit",
                 }}>说</button>
               </div>
@@ -196,7 +193,7 @@ export default function PersuasionScreen({ persuade, apiCfg, ownedFlags = [], pl
             </>
           )}
           {done && done !== "yield" && (
-            <div style={{ textAlign: "center", color: textDim, fontSize: 12, padding: "6px 0" }}>
+            <div style={{ textAlign: "center", color: textDim, fontSize: "var(--fs-sm)", padding: "6px 0" }}>
               {done === "leave" ? "这事没谈成，改日再来。" : "事情办妥了。"}
             </div>
           )}
@@ -209,6 +206,6 @@ export default function PersuasionScreen({ persuade, apiCfg, ownedFlags = [], pl
 function chip(bc, color) {
   return {
     background: "transparent", border: `1px solid ${bc}`, color, borderRadius: 0,
-    padding: "5px 11px", fontSize: 11.5, cursor: "pointer", fontFamily: "inherit",
+    padding: "5px 11px", fontSize: "var(--fs-sm)", cursor: "pointer", fontFamily: "inherit",
   };
 }

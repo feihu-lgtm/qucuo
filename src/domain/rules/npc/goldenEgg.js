@@ -1,4 +1,4 @@
-// 元朵朵·金鸟金蛋每日签到：每自然日（UTC+8 界）一次，金鸟飞进来下一颗金蛋，
+// 元朵朵·金鸟金蛋每日签到：每游戏日（time/24 取整）一次，金鸟飞进来下一颗金蛋，
 // 开蛋加权抽奖。这里是纯数据与判定——状态读写走 features/npc/goldenEgg.js，
 // 朵朵的临场反应另走 AI 后台补写（无 API 时本文件兜底句随机挑）。
 //
@@ -35,9 +35,9 @@ export function eggTier(entry) {
   return entry.weight <= 4 ? "jackpot" : "small";
 }
 
-// UTC+8 自然日的日期串（YYYY-MM-DD）：把 now 平移 8 小时后取 UTC 日历日即可。
-export function eggDayKey(now = Date.now()) {
-  return new Date(now + 8 * 3600_000).toISOString().slice(0, 10);
+// 游戏日序号：time 以小时计，24 小时一天。time 缺失按第 0 天，不让存档异常卡死签到。
+export function eggGameDay(time) {
+  return Math.floor((Number.isFinite(time) ? time : 0) / 24);
 }
 
 // 加权抽一条奖池项。
@@ -52,10 +52,12 @@ export function rollGoldenEgg(rng = Math.random) {
 }
 
 // npcState 里存签到日的固定键——按玩家不按 NPC 实例，朵朵换房间也不重计。
+// 存 { lastDay: 游戏日序号 }；旧档里按真实日期存的 { lastDate } 没有 lastDay，视为未领，不挡今天。
 export const GOLDEN_EGG_STATE_KEY = "duoduoGoldenEgg";
 
-export function eggAlreadyClaimed(npcState, now = Date.now()) {
-  return npcState?.[GOLDEN_EGG_STATE_KEY]?.lastDate === eggDayKey(now);
+export function eggAlreadyClaimed(npcState, time) {
+  const lastDay = npcState?.[GOLDEN_EGG_STATE_KEY]?.lastDay;
+  return Number.isFinite(lastDay) && lastDay === eggGameDay(time);
 }
 
 // ── 朵朵临场反应 ─────────────────────────────────────────────────────────

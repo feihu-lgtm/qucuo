@@ -22,7 +22,11 @@ function ensureCardScanPrompt() {
     text: (ctx) => ctx.user || "",
   });
   definePrompt("call", "card.scan", {
+    group: "sync",
     label: (ctx) => ctx.callLabel || "导卡扫描",
+    execution: "sync_pipeline",
+    route: "primary",
+    reviewDesc: "parseJsonLoose 宽松解 JSON，按错误码重试或返回结构化校验错",
     defaultMaxTokens: (ctx) => ctx.maxTokens ?? 4000,
     modelOptions: (ctx) => ({
       ...(ctx.temperature != null ? { temperature: ctx.temperature } : {}),
@@ -32,6 +36,8 @@ function ensureCardScanPrompt() {
     blocks: ["card.scan.sys", "card.scan.user"],
   });
 }
+
+ensureCardScanPrompt();
 
 export async function callCardModel(
   apiCfg,

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { createCoalescedCheck, createWorldRules } from "../../engine/worldRules.js";
 import { timeAdvanceRule } from "../../domain/rules/time/rules.js";
 import { residentNpcRule } from "../../domain/rules/npc/rules.js";
+import { npcRoamRule } from "../../domain/rules/npc/roam.js";
 import { stationedFavorDecayRule, followFavorDriftRule } from "../../domain/rules/npc/intimacy.js";
 import { npcLetterRule } from "../../features/pigeon/inbound.js";
 import {
@@ -60,6 +61,7 @@ export function useWorldRulesRunner({
       worldRulesRunnerRef.current = createWorldRules([
         timeAdvanceRule,
         residentNpcRule,
+        npcRoamRule,
         stationedFavorDecayRule,
         followFavorDriftRule,
         npcLetterRule,

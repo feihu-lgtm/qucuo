@@ -31,18 +31,30 @@ export function writePath(node, [key, ...rest], value) {
   return copy;
 }
 
-function mvuAffectionDelta(state, delta, npc, { charm = 5, time = 0, giftRange, talkRange, affectionSkip }) {
+function mvuAffectionDelta(state, delta, npc, { charm = 5, time = 0, giftRange, talkRange, affectionSkip, turnStart, before }) {
   // 无好感轨道（intimacy.forbidden/兽类等）整轮跳过——好感不予变化，留裁决痕迹。
   if (affectionSkip?.has?.(npc)) return { reason: `${npc} 无好感轨道，好感度不变化` };
   if (delta > 0) delta *= 1 + (clamp(charm, 0, 10) - 5) * 0.06;
-  const { maxDelta, daily } = AFFECTION_RULES.mvu;
-  delta = clamp(Math.round(delta), -maxDelta, maxDelta);
+  const { maxDelta, perTurn, daily } = AFFECTION_RULES.mvu;
+  // 送礼/软结算自带区间（giftRange）、搭话回合自带区间（talkRange，-5~+8）各自收窄，才放到 maxDelta；
+  // 其余叙事回合 AI 单次只能动 ±perTurn，亲密/日常回合 AI 常顺手报大数，不卡住好感会一回合涨穿。
+  const cap = giftRange || talkRange ? maxDelta : perTurn;
+  delta = clamp(Math.round(delta), -cap, cap);
+  // 普通叙事回合：同一回合多条指令合计也不超 ±perTurn，以回合开始时的值为基准（同势力声誉口径）。
+  // 只按单条限幅的话，+5 再 _.set 55 能从 40 一回合涨到 50。送礼/搭话区间是各自的结算，不并进来。
+  if (!giftRange && !talkRange && typeof turnStart === "number" && typeof before === "number") {
+    const capped = clamp(delta, turnStart - perTurn - before, turnStart + perTurn - before);
+    if (capped === 0 && delta !== 0) return { reason: `${npc}本回合好感已变动到上限 ±${perTurn}` };
+    delta = capped;
+  }
   if (giftRange) delta = clamp(delta, ...giftRange);
   // 聊天语义好感（docs 工单）：搭话回合单次 clamp 小区间 -5~+8，且 0 变化不落账。
   if (talkRange) {
     delta = clamp(delta, ...talkRange);
     if (delta === 0) return { reason: "好感无实质变化" };
   }
+  // 日涨账只记真正落地的涨幅：满值封顶截掉的部分不吃当日额度（98 提 +5 只涨到 100，记 2）。
+  if (delta > 0 && typeof before === "number") delta = Math.min(delta, FIELDS[FIELD.affection].max - before);
   if (delta <= 0) return { state, delta };
   const dayStamp = Math.floor((Number(time) || 0) / 24);
   const last = state.varTree.世界?.好感日增;
@@ -96,11 +108,27 @@ export function applyWrite(state, { op, path, value }, options = {}) {
   if (mvu && affection && affectionSkip?.has?.(parts[2] || "")) {
     return reject(`${parts[2] || ""} 无好感轨道，好感度不变化`);
   }
+  // AI 不知道当前好感，_.set 好感度会绕过单次限幅直接跳值（实测 45→47 的 set 是想表达 +2）。
+  // 对已有好感度的角色，把 set 换算成"目标值−当前值"的增量，再走和 _.add 一样的限幅/日涨上限；
+  // 新角色首次声明（还没有数值）和系统声明的 allowAffectionSet（邀同行钉初始好感）照旧直接写。
+  let converted = false;
+  if (mvu && affection && op === "set" && !talkRange && !options.allowAffectionSet && typeof before === "number") {
+    op = "add";
+    value -= before;
+    converted = true;
+  }
   let actualDelta;
   if (op === "add") {
     actualDelta = value;
     if (mvu && affection) {
-      const result = mvuAffectionDelta(state, value, parts[2] || "", options);
+      const npc = parts[2] || "";
+      const now = typeof before === "number" ? before : defaultValue ?? field.default ?? 0;
+      // 回合起点：回合开始就有分值的取快照；本批次才声明的新角色取声明落定的分值
+      //（首笔就是 add 的取默认值），否则先 set 17 再 +5 +5 能一回合涨 10。
+      const snap = readPath(options.turnBase ?? state, parts);
+      if (typeof snap !== "number" && !options.turnBaselines?.has(npc)) options.turnBaselines?.set(npc, now);
+      const turnStart = typeof snap === "number" ? snap : options.turnBaselines?.get(npc);
+      const result = mvuAffectionDelta(state, value, npc, { ...options, turnStart, before: now });
       if (result.reason) return reject(result.reason);
       ({ state, delta: actualDelta } = result);
     } else if (field.maxDelta != null) {
@@ -130,15 +158,27 @@ export function applyWrite(state, { op, path, value }, options = {}) {
   if (id === FIELD.hp && Array.isArray(finalValue)) {
     finalValue = finalValue.map((amount) => typeof amount === "number" ? clamp(amount, bounds.min, bounds.max) : amount);
   }
+  if (mvu && affection && op === "set" && typeof before !== "number" && typeof finalValue === "number"
+    && !options.turnBaselines?.has(parts[2] || "")) {
+    options.turnBaselines?.set(parts[2] || "", finalValue); // 新角色首次声明的分值即本回合起点
+  }
   const withSign = actualDelta > 0 ? `+${actualDelta}` : actualDelta;
   const log = `${id}${actualDelta == null ? "" : withSign}→${finalValue}`;
   const logs = [];
-  if (mvu && affection && (op === "set" || actualDelta)) {
-    logs.push({ t: "affection", text: actualDelta == null
-      ? `  💗 ${parts[2]} 好感度 → ${finalValue}`
-      : `  💗 ${parts[2]} 好感度 ${withSign}（→ ${finalValue}）` });
+  if (mvu && affection && typeof finalValue === "number") {
+    // 玩家字幕按"实际落地的变化"写：before 取写入前的值（新角色走默认），
+    // 差值用落地值减 before，而不是 AI 提议的 actualDelta——满值封顶/回合内多条叠加时，
+    // 提议 +8 实际只涨 2，字幕却写 +8 会误导玩家。没变化就不打（"+0"没信息量）。
+    const base = typeof before === "number" ? before : defaultValue ?? field.default ?? 0;
+    const shown = finalValue - base;
+    if (shown !== 0) {
+      logs.push({ t: "affection", text: `  💗 ${parts[2]} 好感度 ${shown > 0 ? "+" : "-"}${Math.abs(shown)}（${base} → ${finalValue}）` });
+    }
   }
-  return { state: writePath(state, parts, finalValue), finalValue, actualDelta, log, logs };
+  return {
+    state: writePath(state, parts, finalValue), finalValue, actualDelta, log, logs,
+    ...(converted ? { note: "_.set 好感度已换算为增量并限幅" } : {}),
+  };
 }
 
 export function updateField(slice, write, options) {

@@ -31,7 +31,7 @@ export default function JianghuModule({ zoneTheme, isMobile }) {
         <JianghuDials zoneTheme={zoneTheme} />
       )}
       <div aria-label="声誉" title="威望是全江湖的总名声；势力声誉到「友善」起，在该势力据点买东西打折"
-        style={{ width: "100%", fontSize: 11, color: zoneTheme?.textDim, lineHeight: 1.7 }}>
+        style={{ width: "100%", fontSize: "var(--fs-xs)", color: zoneTheme?.textDim, lineHeight: 1.7 }}>
         威望 {fame}（{reputationLabel(fame)}）
         {factions.map(({ name, value, label }) => <span key={name}> · {name} {label} {value}</span>)}
       </div>

@@ -1,6 +1,10 @@
 import { useCallback } from "react";
 import { snowLeopardHint } from "../../domain/rules/quests/snowLeopardQuest.js";
-import { callModel, callModelStream } from "../../engine/ports/ai.js";
+import { bindTurnAi, createWebAi } from "../../engine/ports/ai.js";
+import { withAI } from "../../engine/ports/withAI.js";
+import { runFormattedRecall } from "../../engine/ports/recallBlock.js";
+import { ensureUnifiedCalls } from "../../domain/rules/prompt/calls/unifiedCalls.js";
+import { getPromptOverrides } from "../../domain/rules/prompt/registry.js";
 import { startTrace, step as traceStep, endTrace } from "../../infra/actionTrace.js";
 import { PHASE, turnMonitor } from "../../infra/turnMonitor.js";
 import {
@@ -14,14 +18,11 @@ import { buildWhisperStatePrompt, formatFactSummariesForPrompt } from "../../dom
 import { WHISPER_AFFECTION_RULES } from "../../domain/rules/state/fields.js";
 import { allFactSummaries } from "../../domain/rules/prompt/knowledge.js";
 import { embeddingReady } from "../../engine/ports/embeddingService.js";
-import { recallWithVisibility } from "../../engine/ports/recallWithVisibility.js";
 import { gateScenario } from "../../domain/rules/prompt/worldbook.js";
 import { describeTallyForWhisper } from "../../domain/rules/memory/tally.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
 import { gameActions, gameStore } from "../../store/gameStore.js";
-import { buildPrivateTalkPayload } from "../../domain/rules/prompt/privateTalkPayload.js";
-import { bindTurnAi, createWebAi } from "../../engine/ports/ai.js";
 import { settledToPatches } from "../../domain/rules/settle/settle.js";
 import { applyPatches } from "../../domain/rules/state/applyPatches.js";
 import { runSoftSettle } from "../../engine/ports/softSettle.js";
@@ -85,20 +86,28 @@ export function usePrivateTalk({
 
       // 向量召回：让旁白"记起"可能早已滑出对话窗口的往事（与她"记得游戏里发生一切"的设定一致）。
       // 降级安全：没开向量或召回失败则 recallInfo 为 null，这段完全不影响私聊。
+      const ov = getPromptOverrides();
       let recallInfo = null;
       let recallBlock = "";
-      if (embeddingReady(apiCfg)) {
+      if (ov.recall?.mode === "off") {
+        traceStep(_wt, "向量召回", "skip", "总控台关闭召回");
+      } else if (embeddingReady(apiCfg)) {
         const lastAiText = [...convo].reverse().find(m => m.role === "assistant")?.content || "";
         const focusEntities = Array.from(new Set([...room.npcs.map(n => n.name), ...Object.keys(gameStore.getState().varTree.角色 || {}), room.name]));
-        recallInfo = await recallWithVisibility({
-          cfg: apiCfg, queryText: content,
+        const recentTexts = convo.slice(-Math.max(apiCfg.contextWindow || 20, 20)).map((m) => m.content);
+        ({ recallInfo, recallBlock } = await runFormattedRecall({
+          apiCfg,
+          queryText: content,
           contextText: `${lastAiText}\n[当前]位置:${room.name}`,
-          focusEntities, unlockedFlags: flags, presentNames: ["旁白"], topK: 5,
-        });
+          focusEntities,
+          unlockedFlags: flags,
+          presentNames: ["旁白"],
+          topK: 5,
+          recentTexts,
+          header: "\n\n[你记得的往事，与此刻私聊相关，供你回应时自然照应，不要生硬复述]\n",
+        }));
         if (isStale()) return;
         if (recallInfo && recallInfo.visible.length) {
-          recallBlock = "\n\n[你记得的往事，与此刻私聊相关，供你回应时自然照应，不要生硬复述]\n"
-            + recallInfo.visible.map(m => `· （第${m.meta.turn}回合）${m.tier === "weak" && m.text.length > 40 ? m.text.slice(0, 40) + "…" : m.text}`).join("\n");
           traceStep(_wt, "向量召回", "pass", `召回${recallInfo.visible.length}条相关往事`);
         } else {
           traceStep(_wt, "向量召回", "skip", "已开启但本轮无相关召回结果");
@@ -113,11 +122,15 @@ export function usePrivateTalk({
       // 提到人名才亮具名人物，聊到掉落才亮装备规则。认不出标题的段落照旧常驻（蓝灯），
       // 用户改过 scenario 或换自定义预设都不会因这层分流丢内容。
       const _lastReply = [...convo].reverse().find(m => m.role === "assistant")?.content || "";
-      const _whisperGate = gateScenario(preset.scenario, {
-        scope: "whisper",
-        userInput: content,
-        lastReply: _lastReply,
-      });
+      const _whisperGate = ov.whisper_scenario?.mode === "off"
+        ? { text: "", lit: [], dark: ["总控台关闭"] }
+        : ov.whisper_scenario?.mode === "blue"
+          ? { text: preset.scenario || "", lit: preset.scenario ? ["总控台蓝灯"] : [], dark: [] }
+          : gateScenario(preset.scenario, {
+              scope: "whisper",
+              userInput: content,
+              lastReply: _lastReply,
+            });
       if (_whisperGate.lit.length || _whisperGate.dark.length) {
         traceStep(_wt, "世界书·总纲", "info",
           `🟢${_whisperGate.lit.join("、") || "无"}　⚫灭:${_whisperGate.dark.join("、") || "无"}`);
@@ -128,8 +141,12 @@ export function usePrivateTalk({
       // 绝大多数轮次用不上，常驻只会白烧上下文；但玩家一旦问起，必须有统一口径，
       // 否则模型只能现编，这局说是将门遗孤、下局说是灭门孤儿。
       const _scan = `${content}\n${_lastReply}`;
-      const _topicGate = gateWhisperTopics(_scan);
-      if (_topicGate.lit.length) {
+      const _topicGate = ov.topic_gate?.mode === "off"
+        ? { text: "", lit: [] }
+        : gateWhisperTopics(_scan, { forceAll: ov.topic_gate?.mode === "blue" });
+      if (ov.topic_gate?.mode === "off") {
+        traceStep(_wt, "私聊话题·红绿灯", "skip", "总控台关闭私聊话题");
+      } else if (_topicGate.lit.length) {
         traceStep(_wt, "私聊话题·红绿灯", "pass", `🟢${_topicGate.lit.join("、")}`);
       } else {
         traceStep(_wt, "私聊话题·红绿灯", "skip", "本轮无话题命中");
@@ -137,17 +154,26 @@ export function usePrivateTalk({
 
       // 任务线红绿灯：报出任务全名才查那一条，泛泛问只让她反问；好感度 <30 不给。
       // 全任务表二十几条线、每条四五个 stage，全量注入等于每次闲聊背一本攻略书。
-      const _questGate = gateQuestTopic(_scan, narrator.affection, QUCUO_QUESTS, questProgress);
-      if (_questGate.lit.length) {
+      const _questGate = ov.quest_gate?.mode === "off"
+        ? { text: "", lit: [] }
+        : gateQuestTopic(_scan, narrator.affection, QUCUO_QUESTS, questProgress);
+      if (ov.quest_gate?.mode === "off") {
+        traceStep(_wt, "任务线·红绿灯", "skip", "总控台关闭任务线门控");
+      } else if (_questGate.lit.length) {
         traceStep(_wt, "任务线·红绿灯", "pass", `🟢${_questGate.lit.join("、")}`);
       } else {
         traceStep(_wt, "任务线·红绿灯", "skip", "本轮没聊到任务");
       }
 
       // 体貌：私聊时公开层常亮（她一直看着你），私密层仍只认 ■ 模式。
-      const _bodyWhisper = gateBodyProfile(char.bodyProfile, {
-        whisper: true, nsfw: nsfwOn, scanText: _scan,
-      });
+      const _bodyWhisper = ov.body_gate?.mode === "off"
+        ? { text: "", lit: [], dark: ["总控台关闭"] }
+        : gateBodyProfile(char.bodyProfile, {
+            whisper: true,
+            nsfw: nsfwOn,
+            forcePublic: ov.body_gate?.mode === "blue",
+            scanText: _scan,
+          });
       if (_bodyWhisper.lit.length || _bodyWhisper.dark.length) {
         traceStep(_wt, "体貌", "info",
           `🟢${_bodyWhisper.lit.join("、") || "无"}　⚫灭:${_bodyWhisper.dark.join("、") || "无"}`);
@@ -177,7 +203,10 @@ export function usePrivateTalk({
         { includeLifetime: narrator.stage === NNPC_STAGE.RESOLVED },
       );
       const worldState = inSeaNow ? "" : buildWhisperStatePrompt(gameStore.getState(), { trace });
-      const privateTalkPayload = buildPrivateTalkPayload({
+      ensureUnifiedCalls();
+      const whisperAi = createWebAi();
+      const whisperStream = Boolean(apiCfg.streamEnabled && apiCfg.apiType !== "gemini");
+      const whisperCtx = {
         narrator,
         content,
         apiCfg,
@@ -195,56 +224,64 @@ export function usePrivateTalk({
         questGateText: _questGate.text,
         whisperGateText: _whisperGate.text,
         narratorStage: NNPC_STAGE,
-      });
-      for (const paths of privateTalkPayload.promptRefEvents) {
-        traceStep(_wt, "提示词引用缺失", "warn", paths.join("、"));
-      }
-      const { systemPrompt: sys, messages: talkMessages, maxTokens: narratorMaxTokens } = privateTalkPayload;
+        onPromptRefMissing: (paths) => traceStep(_wt, "提示词引用缺失", "warn", paths.join("、")),
+      };
 
       let text;
       // ② 内容化好感已下线：⟦好感X⟧ 不再由她写在文末，改走 narrator_affinity 软结算（AI 提议、系统裁决）。
       // softSettleEnabled 关着（回放/离线兜底）时退回固定寻常闲聊 +1。
       let affDelta = WHISPER_AFFECTION_RULES.fallback;
       let finishReason;      // 停止原因：私聊此前完全没接这个字段，撞 length 上限也毫无提示
+      let narratorMaxTokens = Math.min(apiCfg.maxTokens, apiCfg.callTokenLimits?.narratorWhisper ?? 6000);
       // 模型会照着历史里的「（旁白私聊回应）」前缀自己也写一遍，而下面存 convo 时又会
       // 再加一次，于是前缀逐轮累积成「（旁白私聊回应）（旁白私聊回应）…」。存之前先剥干净：
       // 前缀由系统负责加，模型自己写的一律不算数。
       const stripEchoPrefix = (s) => s.replace(/^(?:\s*[（(]\s*旁白私聊回应\s*[）)])+\s*/, "");
-      if (apiCfg.streamEnabled && apiCfg.apiType !== "gemini") {
-        const logIdx = { current: null };
+      let logIdx = null;
+      let onChunk;
+      if (whisperStream) {
         addLog([{ t: "narrator", text: "  「旁白」▌", streaming: true }]);
         setLog(l => {
           if (isStale()) return l;
-          logIdx.current = l.length - 1;
+          logIdx = l.length - 1;
           return l;
         });
-        const { text: streamedText, finishReason: fr } = await callModelStream(
-          apiCfg, sys, talkMessages,
-          (_delta, fullSoFar) => {
-            setLog(l => {
-              if (isStale() || logIdx.current == null) return l;
-              const copy = [...l];
-              copy[logIdx.current] = { t: "narrator", text: `  「旁白」${fullSoFar} ▌`, streaming: true };
-              return copy;
-            });
-          },
-          { maxTokens: narratorMaxTokens, recallInfo, callLabel: "私聊", turn: _wt },
-        );
-        if (isStale()) return;
-        finishReason = fr;
-        text = stripEchoPrefix(streamedText.trim()) || "……";
+        onChunk = (_delta, fullSoFar) => {
+          setLog(l => {
+            if (isStale() || logIdx == null) return l;
+            const copy = [...l];
+            copy[logIdx] = { t: "narrator", text: `  「旁白」${fullSoFar} ▌`, streaming: true };
+            return copy;
+          });
+        };
+      }
+
+      const aiRes = await withAI(
+        "narrator.whisper",
+        whisperCtx,
+        {
+          ai: whisperAi,
+          apiCfg,
+          isStale,
+          recallInfo,
+          ...(whisperStream ? { stream: true, onChunk } : {}),
+          modelOptions: { turn: _wt },
+        },
+      );
+      if (!aiRes.ok && aiRes.error) throw aiRes.error;
+      if (isStale() || aiRes.finishReason === "stale") return;
+      narratorMaxTokens = aiRes.promptMeta?.maxTokens ?? narratorMaxTokens;
+      finishReason = aiRes.finishReason;
+      text = stripEchoPrefix((aiRes.text || "").trim()) || "……";
+      if (whisperStream) {
         setLog(l => {
-          if (isStale() || logIdx.current == null) return l;
+          if (isStale() || logIdx == null) return l;
           const copy = [...l];
-          copy[logIdx.current] = { t: "narrator", text: `  「旁白」${text}`, streamed: true };
+          copy[logIdx] = { t: "narrator", text: `  「旁白」${text}`, streamed: true };
           return copy;
         });
         traceStep(_wt, "AI调用", "pass", "流式一次成功");
       } else {
-        const result = await callModel(apiCfg, sys, talkMessages, { maxTokens: narratorMaxTokens, recallInfo, callLabel: "私聊", turn: _wt });
-        if (isStale()) return;
-        finishReason = result.finishReason;
-        text = stripEchoPrefix(result.text.trim()) || "……";
         addLog([{ t: "narrator", text: `  「旁白」${text}` }]);
         traceStep(_wt, "AI调用", "pass", "非流式一次成功");
       }

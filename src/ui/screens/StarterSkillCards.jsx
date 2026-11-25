@@ -31,10 +31,10 @@ export default function StarterSkillCards({ skills, selectedId, rerolls, onSelec
               border: `1px solid ${selectedId === skill.id ? theme.accent : theme.border}`,
             }}
           >
-            <span style={{ display: "block", color: theme.accent, fontWeight: "bold", fontSize: 13 }}>{skill.name}</span>
-            <span style={{ display: "block", margin: "5px 0", fontSize: 10, color: theme.textDim }}>{typeLabel(skill)} · {skill.quality}</span>
-            <span style={{ display: "block", fontSize: 10, lineHeight: 1.5 }}>{effectLine(skill)}</span>
-            <span style={{ display: "block", marginTop: 5, fontSize: 10, lineHeight: 1.5, color: theme.textDim }}>{skill.desc}</span>
+            <span style={{ display: "block", color: theme.accent, fontWeight: "bold", fontSize: "var(--fs-md)" }}>{skill.name}</span>
+            <span style={{ display: "block", margin: "5px 0", fontSize: "var(--fs-2xs)", color: theme.textDim }}>{typeLabel(skill)} · {skill.quality}</span>
+            <span style={{ display: "block", fontSize: "var(--fs-2xs)", lineHeight: 1.5 }}>{effectLine(skill)}</span>
+            <span style={{ display: "block", marginTop: 5, fontSize: "var(--fs-2xs)", lineHeight: 1.5, color: theme.textDim }}>{skill.desc}</span>
           </button>
         ))}
       </div>

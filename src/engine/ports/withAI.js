@@ -1,5 +1,5 @@
 import { getPromptDef } from "../../domain/rules/prompt/registry.js";
-import { buildPrompt } from "../../domain/rules/prompt/buildPrompt.js";
+import { buildPrompt, estimatePromptTokens } from "../../domain/rules/prompt/buildPrompt.js";
 
 const THINKING_TAG_RE = /<thinking>[\s\S]*?<\/thinking>/g;
 
@@ -11,22 +11,44 @@ function resolveCallCfg(call, apiCfg, ctx) {
   return baseCfg;
 }
 
-// 统一 AI 调用入口：拼装提示词、解析 token 上限、执行校验与兜底
+// 统一 AI 调用入口：拼装提示词（含 6 槽位与自定义总装）、解析 token 上限、流式与路由透传、执行校验与兜底
 export async function withAI(
   callId,
   ctx = {},
-  { ai, apiCfg, overrides, isStale, stream, onChunk, throwOnError = true } = {},
+  {
+    ai,
+    apiCfg,
+    overrides,
+    isStale,
+    stream,
+    onChunk,
+    model,
+    recallInfo,
+    intent,
+    turn,
+    temperature,
+    maxTokens: optMaxTokens,
+    callLabel: optCallLabel,
+    modelOptions: optModelOptions,
+    throwOnError = true,
+  } = {},
 ) {
   const call = getPromptDef("call", callId);
   if (!call) throw new Error(`Unknown call spec: ${callId}`);
 
-  const built = buildPrompt(callId, ctx, { overrides });
+  const built = typeof call.assemble === "function"
+    ? call.assemble(ctx, { overrides })
+    : buildPrompt(callId, ctx, { overrides });
   const defaultMax = typeof call.defaultMaxTokens === "function"
     ? call.defaultMaxTokens(ctx)
     : call.defaultMaxTokens;
-  const maxTokens = (call.tokenLimitKey ? apiCfg?.callTokenLimits?.[call.tokenLimitKey] : undefined)
+  const cfg = built.cfg !== undefined ? built.cfg : resolveCallCfg(call, apiCfg, ctx);
+  const maxTokens = optMaxTokens
+    ?? (call.tokenLimitKey ? apiCfg?.callTokenLimits?.[call.tokenLimitKey] : undefined)
+    ?? built.maxTokens
     ?? defaultMax;
-  const promptMeta = { ...built, maxTokens };
+  const tokenEstimate = built.tokenEstimate ?? estimatePromptTokens(built.system, built.messages);
+  const promptMeta = { ...built, maxTokens, tokenEstimate };
 
   const failOrFallback = (reason, { text = "", finishReason, error } = {}) => {
     if (call.offline) {
@@ -54,17 +76,34 @@ export async function withAI(
     const err = new Error(!ai ? "AI port is required" : "offline_mode");
     return failOrFallback(err.message, { error: err });
   }
+  if (isStale?.()) {
+    return { ok: false, text: "", finishReason: "stale", data: null, promptMeta };
+  }
 
   try {
-    const callLabel = typeof call.label === "function" ? call.label(ctx) : call.label;
-    const cfg = resolveCallCfg(call, apiCfg, ctx);
+    const callLabel = optCallLabel ?? built.callLabel ?? (typeof call.label === "function" ? call.label(ctx) : call.label);
     const extraModelOptions = typeof call.modelOptions === "function" ? call.modelOptions(ctx) : call.modelOptions;
+    const modelOptions = {
+      ...(extraModelOptions || {}),
+      ...(optModelOptions || {}),
+      ...(maxTokens !== undefined ? { maxTokens } : {}),
+      ...(callLabel !== undefined ? { callLabel } : {}),
+    };
+    const effectiveStream = stream !== undefined ? stream : built.stream;
+    const effectiveIntent = intent !== undefined ? intent : built.intent;
+    const effectiveRecallInfo = recallInfo !== undefined ? recallInfo : built.recallInfo;
     const chatOpts = {
-      cfg,
+      ...(cfg !== undefined ? { cfg } : {}),
       systemPrompt: built.system,
-      modelOptions: { ...(extraModelOptions || {}), maxTokens, callLabel },
-      ...(stream !== undefined ? { stream } : {}),
+      modelOptions,
+      ...(effectiveStream !== undefined ? { stream: effectiveStream } : {}),
       ...(typeof onChunk === "function" ? { onChunk } : {}),
+      ...(model !== undefined ? { model } : {}),
+      ...(temperature !== undefined ? { temperature } : {}),
+      ...(optMaxTokens !== undefined ? { maxTokens: optMaxTokens } : {}),
+      ...(effectiveRecallInfo !== undefined ? { recallInfo: effectiveRecallInfo } : {}),
+      ...(effectiveIntent !== undefined ? { intent: effectiveIntent } : {}),
+      ...(turn !== undefined ? { turn } : {}),
     };
     const res = await ai.chat(built.messages, chatOpts);
     if (isStale?.()) {
@@ -72,6 +111,11 @@ export async function withAI(
     }
     const rawText = res?.text || "";
     const text = call.tier === "flavor" ? rawText.replace(THINKING_TAG_RE, "").trim() : rawText;
+    const passthrough = {
+      ...(res?.raw !== undefined ? { raw: res.raw } : {}),
+      ...(res?.logprobs !== undefined ? { logprobs: res.logprobs } : {}),
+      ...(res?.usage !== undefined ? { usage: res.usage } : {}),
+    };
     if (call.vet) {
       const vetted = call.vet(text, ctx);
       if (!vetted?.ok) {
@@ -83,6 +127,7 @@ export async function withAI(
         finishReason: res?.finishReason,
         data: "value" in vetted ? vetted.value : text,
         promptMeta,
+        ...passthrough,
       };
     }
     return {
@@ -91,6 +136,7 @@ export async function withAI(
       finishReason: res?.finishReason,
       data: text,
       promptMeta,
+      ...passthrough,
     };
   } catch (error) {
     return failOrFallback(error?.message || "ai_error", { error });

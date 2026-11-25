@@ -12,10 +12,10 @@ export default function ResultScreen({ battle, onAgain, onExit }) {
 
   return (
     <div style={sx.centerCol}>
-      <div style={{ fontSize: 40, color: win ? "var(--blue)" : "var(--qb-foe)", fontWeight: "bold", letterSpacing: 8, marginBottom: 10 }}>
+      <div style={{ fontSize: "var(--fs-3xl)", color: win ? "var(--blue)" : "var(--qb-foe)", fontWeight: "bold", letterSpacing: 8, marginBottom: 10 }}>
         {win ? "胜" : "败"}
       </div>
-      <div style={{ fontSize: 15, color: "var(--parchment)", marginBottom: 30 }}>
+      <div style={{ fontSize: "var(--fs-base)", color: "var(--parchment)", marginBottom: 30 }}>
         鏖战 {battle.round} 回合，{win ? "我方力克群雄" : "我方尽墨"}
       </div>
       <div style={{ display: "flex", gap: 40, marginBottom: 40, flexWrap: "wrap", justifyContent: "center" }}>
@@ -34,11 +34,11 @@ export default function ResultScreen({ battle, onAgain, onExit }) {
 function ResultCol({ title, names, color, empty }) {
   return (
     <div style={{ minWidth: 130 }}>
-      <div style={{ fontSize: 13, color, letterSpacing: 2, marginBottom: 8, borderBottom: `1px solid color-mix(in srgb, ${color} 27%, transparent)`, paddingBottom: 4 }}>{title}</div>
+      <div style={{ fontSize: "var(--fs-md)", color, letterSpacing: 2, marginBottom: 8, borderBottom: `1px solid color-mix(in srgb, ${color} 27%, transparent)`, paddingBottom: 4 }}>{title}</div>
       {names.length === 0 ? (
-        <div style={{ fontSize: 12, color: "var(--qb-edge)" }}>{empty}</div>
+        <div style={{ fontSize: "var(--fs-sm)", color: "var(--qb-edge)" }}>{empty}</div>
       ) : names.map((n, i) => (
-        <div key={i} style={{ fontSize: 13, color: "var(--qb-text-dim)", marginBottom: 3 }}>{n}</div>
+        <div key={i} style={{ fontSize: "var(--fs-md)", color: "var(--qb-text-dim)", marginBottom: 3 }}>{n}</div>
       ))}
     </div>
   );

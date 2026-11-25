@@ -63,15 +63,15 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
 
   return (
     <div className="mobile-overlay-root settings-root" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "var(--ink-overlay)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
-      <div className="mobile-overlay-panel mobile-settings-panel settings-panel" style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: 20, width: 520, maxWidth: "90vw", maxHeight: "85vh", overflowY: "auto", fontFamily: "inherit", fontSize: "12.5px", color: "var(--text)" }} onClick={e => e.stopPropagation()}>
+      <div className="mobile-overlay-panel mobile-settings-panel settings-panel" style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: 20, width: 520, maxWidth: "90vw", maxHeight: "85vh", overflowY: "auto", fontFamily: "inherit", fontSize: "var(--fs-md)", color: "var(--text)" }} onClick={e => e.stopPropagation()}>
 
         <div className="mobile-overlay-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <span style={{ color: "var(--accent)", fontSize: "14px" }}>
+          <span style={{ color: "var(--accent)", fontSize: "var(--fs-base)" }}>
             {tab === null ? "⚙ 游戏设置" : (
               <span style={{ cursor: "pointer" }} onClick={() => selectTab(null)}>← 返回 · <span style={{ color: "var(--text)" }}>{TAB_LABELS[tab] || ""}</span></span>
             )}
           </span>
-          <span className="mobile-overlay-close" style={{ color: "var(--text-dim)", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
+          <span className="mobile-overlay-close" style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
         </div>
         {tab === null && (
           <div className="settings-home-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 4 }}>
@@ -98,8 +98,8 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
                 }}
             onMouseEnter={e => { e.currentTarget.style.background = "var(--bg)"; e.currentTarget.style.borderColor = "var(--accent)"; }}
                 onMouseLeave={e => { e.currentTarget.style.background = "var(--bg-panel)"; e.currentTarget.style.borderColor = "var(--border)"; }}>
-                <div style={{ fontSize: "15px", color: "var(--text)", marginBottom: 6 }}>{title}</div>
-                <div style={{ fontSize: "10.5px", color: "var(--ink-sage)" }}>{sub}</div>
+                <div style={{ fontSize: "var(--fs-base)", color: "var(--text)", marginBottom: 6 }}>{title}</div>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--ink-sage)" }}>{sub}</div>
               </div>
             ))}
           </div>
@@ -110,7 +110,11 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
             Prompt 条目列表。作者要的是"只看清楚喂了什么"，两头都拿掉了——
             PresetEditor 与 PresetManager 均已删除（零引用）。 */}
         {tab === "preset" && (
-          <InjectionStructurePanel getLiveBlockText={getLiveBlockText} extractionEnabled={!!cfg.extractionEnabled} />
+          <InjectionStructurePanel
+            getLiveBlockText={getLiveBlockText}
+            extractionEnabled={!!cfg.extractionEnabled}
+            narratorLorebook={cfg.narratorLorebook || ""}
+          />
         )}
 
         {tab === "api" && <ApiTab cfg={cfg} setCfg={setCfg} patch={patch} zoneTheme={zoneTheme} st={st} />}

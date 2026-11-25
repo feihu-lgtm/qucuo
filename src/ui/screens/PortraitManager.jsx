@@ -5,11 +5,11 @@ import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 
 const btnStyle = {
   cursor: "pointer", color: "var(--accent)", padding: "4px 10px", background: "var(--bg-panel)",
-  border: "1px solid var(--border)", borderRadius: 0, fontSize: "11px", display: "inline-block",
+  border: "1px solid var(--border)", borderRadius: 0, fontSize: "var(--fs-xs)", display: "inline-block",
 };
 const inputStyle = {
   width: "100%", background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0,
-  color: "var(--text)", padding: "6px 8px", fontSize: "12px", boxSizing: "border-box", fontFamily: "inherit",
+  color: "var(--text)", padding: "6px 8px", fontSize: "var(--fs-sm)", boxSizing: "border-box", fontFamily: "inherit",
 };
 
 export default function PortraitManager({ portraits, onChange, knownNames, onClose }) {
@@ -85,22 +85,22 @@ export default function PortraitManager({ portraits, onChange, knownNames, onClo
   return (
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
       <div
-        style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: 20, width: 520, maxWidth: "92vw", maxHeight: "85vh", overflowY: "auto", fontSize: "12.5px", color: "var(--text)" }}
+        style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: 20, width: 520, maxWidth: "92vw", maxHeight: "85vh", overflowY: "auto", fontSize: "var(--fs-md)", color: "var(--text)" }}
         onClick={e => e.stopPropagation()}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-          <span style={{ color: "var(--accent)", fontSize: "14px" }}>立绘管理</span>
-          <span style={{ color: "var(--text-dim)", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
+          <span style={{ color: "var(--accent)", fontSize: "var(--fs-base)" }}>立绘管理</span>
+          <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
         </div>
-        <div style={{ fontSize: "11px", color: "var(--text-dim)", marginBottom: 14 }}>
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 14 }}>
           为旁白、主角本人、或任意已登场角色导入立绘图片，建议比例 9:16（竖版）。
           图片保存在浏览器本地存储中，不会上传到任何服务器。
         </div>
 
         <div style={{ border: "1px solid var(--border)", borderRadius: 0, padding: 10, marginBottom: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: comfyCfg.enabled ? 8 : 0 }}>
-            <span style={{ color: "var(--accent)", fontSize: "12px" }}>⚡ ComfyUI 云端自动生成</span>
-            <label style={{ fontSize: "11px", color: "var(--text-dim)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+            <span style={{ color: "var(--accent)", fontSize: "var(--fs-sm)" }}>⚡ ComfyUI 云端自动生成</span>
+            <label style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
               <input type="checkbox" checked={comfyCfg.enabled} onChange={e => updateComfyCfg({ enabled: e.target.checked })} />
               启用
             </label>
@@ -115,7 +115,7 @@ export default function PortraitManager({ portraits, onChange, knownNames, onClo
               <textarea
                 value={comfyCfg.workflowJson} onChange={e => updateComfyCfg({ workflowJson: e.target.value })}
                 placeholder="粘贴 ComfyUI 工作流 JSON（页面菜单「Save (API Format)」导出）"
-                style={{ ...inputStyle, height: 64, fontFamily: "monospace", fontSize: "10.5px", resize: "vertical" }}
+                style={{ ...inputStyle, height: 64, fontFamily: "monospace", fontSize: "var(--fs-xs)", resize: "vertical" }}
               />
               <div style={{ display: "flex", gap: 6 }}>
                 <input type="number" title="宽度" value={comfyCfg.width} onChange={e => updateComfyCfg({ width: +e.target.value || 768 })} style={{ ...inputStyle, width: 64 }} />
@@ -127,7 +127,7 @@ export default function PortraitManager({ portraits, onChange, knownNames, onClo
                   placeholder="负向提示词" style={{ ...inputStyle, flex: 1 }}
                 />
               </div>
-              <div style={{ fontSize: "10px", color: "var(--text-dim)" }}>
+              <div style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)" }}>
                 地址和工作流保存在本地，生成请求经本地开发服务器转发（绕开跨域限制），不经过任何第三方。
                 启用后，下方每个已登场角色的卡片会多出一个提示词输入框和「⚡生成」。
               </div>
@@ -139,7 +139,7 @@ export default function PortraitManager({ portraits, onChange, knownNames, onClo
           <input
             value={customName} onChange={e => setCustomName(e.target.value)}
             placeholder="输入一个新的角色名（比如剧情里刚出场但还没被列出的人）"
-            style={{ flex: 1, background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, color: "var(--text)", padding: "6px 8px", fontSize: "12px" }}
+            style={{ flex: 1, background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, color: "var(--text)", padding: "6px 8px", fontSize: "var(--fs-sm)" }}
           />
           <span style={btnStyle} onClick={handleAddCustom}>+ 添加并上传</span>
         </div>
@@ -156,23 +156,23 @@ export default function PortraitManager({ portraits, onChange, knownNames, onClo
                   display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", cursor: "pointer",
                 }} onClick={() => triggerUpload(name)}>
                   {generating ? (
-                    <span style={{ color: "var(--accent)", fontSize: "10px" }}>⏳ 生成中…</span>
+                    <span style={{ color: "var(--accent)", fontSize: "var(--fs-2xs)" }}>⏳ 生成中…</span>
                   ) : resolvePortrait(portraits, name) ? (
                     <img src={resolvePortrait(portraits, name)} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
-                    <span style={{ color: "var(--ink-dim-deep)", fontSize: "10px" }}>点击上传</span>
+                    <span style={{ color: "var(--ink-dim-deep)", fontSize: "var(--fs-2xs)" }}>点击上传</span>
                   )}
                 </div>
-                <div style={{ fontSize: "11px", color: "var(--text)", marginBottom: 4 }}>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--text)", marginBottom: 4 }}>
                   {name}
                   {/* 标出这张是项目内置的还是玩家自己传的。内置图删不掉（删除按钮只在
                       portraits[name] 有值、即确实上传过时才出现），标一下免得玩家
                       对着一张删不掉的图找删除键。传了自己的图之后这个标记就让位。 */}
                   {!portraits[name] && hasBuiltinPortrait(name) && (
-                    <span style={{ color: "var(--inject-ok)", fontSize: "9px", marginLeft: 4 }}>内置</span>
+                    <span style={{ color: "var(--inject-ok)", fontSize: "var(--fs-2xs)", marginLeft: 4 }}>内置</span>
                   )}
                   {portraits[name] && (
-                    <span style={{ color: "var(--accent)", fontSize: "9px", marginLeft: 4 }}>自定义</span>
+                    <span style={{ color: "var(--accent)", fontSize: "var(--fs-2xs)", marginLeft: 4 }}>自定义</span>
                   )}
                 </div>
                 {comfyCfg.enabled && (
@@ -180,19 +180,19 @@ export default function PortraitManager({ portraits, onChange, knownNames, onClo
                     <input
                       value={promptDrafts[name] || ""} onChange={e => setPromptDrafts(p => ({ ...p, [name]: e.target.value }))}
                       placeholder="外貌提示词" disabled={generating}
-                      style={{ ...inputStyle, flex: 1, fontSize: "10px", padding: "3px 5px" }}
+                      style={{ ...inputStyle, flex: 1, fontSize: "var(--fs-2xs)", padding: "3px 5px" }}
                     />
                     <span
                       onClick={() => !generating && handleGenerate(name)}
-                      style={{ ...btnStyle, fontSize: "10px", padding: "3px 6px", opacity: generating ? 0.5 : 1, cursor: generating ? "default" : "pointer" }}
+                      style={{ ...btnStyle, fontSize: "var(--fs-2xs)", padding: "3px 6px", opacity: generating ? 0.5 : 1, cursor: generating ? "default" : "pointer" }}
                     >⚡</span>
                   </div>
                 )}
                 {genError?.name === name && (
-                  <div style={{ color: "var(--red-soft)", fontSize: "9.5px", marginBottom: 4 }}>{genError.message}</div>
+                  <div style={{ color: "var(--red-soft)", fontSize: "var(--fs-2xs)", marginBottom: 4 }}>{genError.message}</div>
                 )}
                 {portraits[name] && (
-                  <span onClick={() => handleRemove(name)} style={{ color: "var(--red-soft)", fontSize: "10px", cursor: "pointer" }}>删除</span>
+                  <span onClick={() => handleRemove(name)} style={{ color: "var(--red-soft)", fontSize: "var(--fs-2xs)", cursor: "pointer" }}>删除</span>
                 )}
               </div>
             );

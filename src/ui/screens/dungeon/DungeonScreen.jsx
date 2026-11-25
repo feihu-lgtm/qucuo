@@ -168,7 +168,7 @@ export default function DungeonScreen({
       <div style={{ padding: 14 }}>
         <div style={{
           display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8,
-          fontSize: 11.5, color: zoneTheme.textDim, marginBottom: 10,
+          fontSize: "var(--fs-sm)", color: zoneTheme.textDim, marginBottom: 10,
           borderBottom: `1px solid ${zoneTheme.border}`, paddingBottom: 8,
         }}>
           {mapRun ? (
@@ -202,7 +202,7 @@ export default function DungeonScreen({
                   type="button"
                   onClick={handleMapRetreat}
                   style={{
-                    marginTop: 10, padding: "4px 14px", fontSize: 11.5,
+                    marginTop: 10, padding: "4px 14px", fontSize: "var(--fs-sm)",
                     border: `1px solid ${zoneTheme.border}`, color: zoneTheme.text,
                     background: "transparent", cursor: "pointer",
                   }}
@@ -211,14 +211,14 @@ export default function DungeonScreen({
                 </button>
               )}
               {mapRun.map.rooms[mapRun.current]?.isBoss && (
-                <div style={{ marginTop: 8, fontSize: 11, color: zoneTheme.textDim }}>
+                <div style={{ marginTop: 8, fontSize: "var(--fs-xs)", color: zoneTheme.textDim }}>
                   此地有镇宫首领盘踞——决战接线中，先记下方位。
                 </div>
               )}
               {mapRun.log.length > 0 && (
                 <div style={{
                   marginTop: 12, paddingTop: 8, borderTop: `1px solid ${zoneTheme.border}`,
-                  fontSize: 11, color: "var(--text-dim)", lineHeight: 1.6,
+                  fontSize: "var(--fs-xs)", color: "var(--text-dim)", lineHeight: 1.6,
                 }}>
                   {mapRun.log.slice(-5).map((line, i) => (
                     <div key={i}>· {line}</div>
@@ -227,7 +227,7 @@ export default function DungeonScreen({
               )}
             </>
           ) : (
-            <div style={{ fontSize: 12.5, lineHeight: 1.8 }}>
+            <div style={{ fontSize: "var(--fs-sm)", lineHeight: 1.8 }}>
               <div style={{ color: zoneTheme.accent, marginBottom: 6 }}>
                 {mapRun.status === "victory" ? "打通内层地宫！" : mapRun.status === "retreated" ? "已撤回锚点之外。" : "负伤被逐出地宫……"}
               </div>
@@ -236,7 +236,7 @@ export default function DungeonScreen({
                 type="button"
                 onClick={handleMapSettleAndClose}
                 style={{
-                  marginTop: 10, padding: "4px 14px", fontSize: 11.5,
+                  marginTop: 10, padding: "4px 14px", fontSize: "var(--fs-sm)",
                   border: `1px solid ${zoneTheme.border}`, color: zoneTheme.text,
                   background: "transparent", cursor: "pointer",
                 }}
@@ -253,7 +253,7 @@ export default function DungeonScreen({
                 data-part="enter-inner-map"
                 onClick={startInnerMap}
                 style={{
-                  marginBottom: 10, padding: "4px 14px", fontSize: 11.5,
+                  marginBottom: 10, padding: "4px 14px", fontSize: "var(--fs-sm)",
                   border: `1px solid ${zoneTheme.accentDim}`, color: zoneTheme.accent,
                   background: "transparent", cursor: "pointer",
                 }}
@@ -277,7 +277,7 @@ export default function DungeonScreen({
         {!mapRun && run.log.length > 0 && (
           <div style={{
             marginTop: 12, paddingTop: 8, borderTop: `1px solid ${zoneTheme.border}`,
-            fontSize: 11, color: "var(--text-dim)", lineHeight: 1.6,
+            fontSize: "var(--fs-xs)", color: "var(--text-dim)", lineHeight: 1.6,
           }}>
             {run.log.slice(-5).map((line, i) => (
               <div key={i}>· {line}</div>

@@ -1,4 +1,4 @@
-// 2v2 团战切磋界面（玩家+雪豹 vs 1~2个对手）
+// 团战切磋界面（玩家 + 随行伙伴们 vs 1~2个对手；无伙伴时玩家单挑两人也走这里）
 // ============================================================================
 // 状态管理基于 teamBattleEngine.js 的单位数组结构（不照抄 DuelScreen.jsx 那种
 // player/npc 平铺 useState——2v2 会让状态变量翻倍以上，不可维护）。
@@ -22,26 +22,28 @@ import { MoveButton, MoveInspect, TYPE_ICON } from "./DuelScreen.jsx";
 import TeamUnitCard from "./duel/TeamUnitCard.jsx";
 import { styles } from "./duel/teamDuelStyles.js";
 import { addTeamDodgeStealNotes, excludeDodgeStolenItems, useDuelDodgeSteal } from "./useDuelDodgeSteal.js";
-export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendingCombatBuff, playerInv, playerMoveset, zoneTheme, onFinish , playerSkills = []}) {
+export default function TeamDuelScreen({ enemies, companions = [], playerChar, pendingCombatBuff, playerInv, playerMoveset, zoneTheme, onFinish , playerSkills = []}) {
   // 战前餐 buff：跟 DuelScreen 同一套进场应用（waigong/气血上限进玩家单位装配，
   // moveMul 在出招时叠进攻击招倍率——见下方 pickMoveForUnit）。
   const combatBuff = resolveCombatBuff(pendingCombatBuff);
 
+  // 己方 = 玩家 + 随行伙伴们（companions[0] 是出战伙伴，可手动/托管；第三位起如铁伯恒托管）。
+  // 引擎的单位数组本就不限人数，这里只是不再写死"玩家+1"。
   const [allyUnits, setAllyUnits] = useState(() => [
     buildPlayerUnit({ playerChar, playerInv, playerMoveset, combatBuff, playerSkills }),
-    buildLeopardUnit(leopardData),
+    ...companions.map(buildLeopardUnit),
   ]);
   const [enemyUnits, setEnemyUnits] = useState(() => (enemies || []).map((n, i) => buildEnemyUnit(n, i)));
 
   const [round, setRound] = useState(1), { dodgeStolenItems, tryStealOnDodge } = useDuelDodgeSteal();
   const [phase, setPhase] = useState("select"); // select | result | over
   const [outcome, setOutcome] = useState(null); // win | lose | draw
-  // 选招向导：player → leopard → ready。玩家已倒下时开场直接跳过 player 段；
-  // 雪豹托管/已倒下时 leopard 段自动跳过（见下方 needLeopardPick）。
+  // 选招向导：player → leopard（第一位伙伴）→ ready。玩家已倒下时开场直接跳过 player 段；
+  // 伙伴托管/已倒下时 leopard 段自动跳过（见下方 needLeopardPick）。
   const [stage, setStage] = useState(() => "player");
   const [playerIntent, setPlayerIntent] = useState(null); // {move, targetId}
   const [leopardIntent, setLeopardIntent] = useState(null);
-  const [leopardAuto, setLeopardAuto] = useState(true); // 雪豹托管：纯野兽本能（默认）
+  const [leopardAuto, setLeopardAuto] = useState(true); // 第一位伙伴托管：按各自战斗性格自行出招（默认）
   const [error, setError] = useState(null);
   const [inspectMove, setInspectMove] = useState(null);
   // 敌招迷雾：对方的招式一开始全是"？"，用过才揭示（按敌方单位id分别记录）
@@ -50,10 +52,12 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
   const [rounds, setRounds] = useState([]);
 
   const playerUnit = allyUnits[0];
-  const leopardUnit = allyUnits[1];
+  const leopardUnit = allyUnits[1]; // 第一位伙伴（变量名沿用雪豹时代）；无伙伴时为 undefined
+  const autoAllyUnits = allyUnits.slice(2); // 其余伙伴恒托管
+  const partnerName = leopardUnit?.name || "队友";
   const aliveEnemies = enemyUnits.filter(u => u.alive);
   const needPlayerPick = playerUnit?.alive;
-  const needLeopardPick = leopardUnit?.alive && !leopardAuto;
+  const needLeopardPick = !!leopardUnit?.alive && !leopardAuto;
   // 当前阶段的初始段（本回合从哪一段开始）：玩家活着先玩家，否则雪豹，都不行就 ready
   const firstStage = () => (needPlayerPick ? "player" : needLeopardPick ? "leopard" : "ready");
 
@@ -94,16 +98,16 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
         }
         intents[playerUnit.id] = { move, targetId: playerIntent.targetId ?? aliveEnemies[0]?.id ?? null };
       }
-      if (leopardUnit.alive) {
-        if (leopardAuto) {
-          // 托管：纯野兽本能选招（SNOW_LEOPARD_PROFILE）+ 随机选目标，不配合玩家战术
-          const bs = { npcHistory: leopardUnit.history, npcEnergy: leopardUnit.energy[0], forbidDefense: leopardUnit.defenseBroken };
-          const move = decideUnitMove(leopardUnit, bs);
-          if (!move) throw new Error("雪豹没有可用的招式（数据残缺），已中止本回合");
-          intents[leopardUnit.id] = { move, targetId: decideUnitTarget(aliveEnemies) };
-        } else if (leopardIntent?.move) {
-          intents[leopardUnit.id] = { move: leopardIntent.move, targetId: leopardIntent.targetId ?? aliveEnemies[0]?.id ?? null };
-        }
+      // 托管单位：第一位伙伴（托管时）+ 其余伙伴。按各自战斗性格选招，随机选目标，不配合玩家战术
+      const autoUnits = [...(leopardUnit?.alive && leopardAuto ? [leopardUnit] : []), ...autoAllyUnits.filter(u => u.alive)];
+      for (const u of autoUnits) {
+        const bs = { npcHistory: u.history, npcEnergy: u.energy[0], forbidDefense: u.defenseBroken };
+        const move = decideUnitMove(u, bs);
+        if (!move) throw new Error(`${u.name}没有可用的招式（数据残缺），已中止本回合`);
+        intents[u.id] = { move, targetId: decideUnitTarget(aliveEnemies) };
+      }
+      if (leopardUnit?.alive && !leopardAuto && leopardIntent?.move) {
+        intents[leopardUnit.id] = { move: leopardIntent.move, targetId: leopardIntent.targetId ?? aliveEnemies[0]?.id ?? null };
       }
       for (const e of aliveEnemies) {
         const bs = { npcHistory: e.history, npcEnergy: e.energy[0], forbidDefense: e.defenseBroken };
@@ -141,7 +145,7 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
       // 本回合战报文字：渲染用 + 结束时打包给外层（teamText 单行格式，
       // MudRPG onFinish 的逐回合系统日志和AI整场战报都直接复用这行文字）
       const lines = turnLog.map(e => {
-        addTeamDodgeStealNotes([e], playerUnit.id, playerIntent?.move, enemies[0]?.carriedItems, tryStealOnDodge);
+        addTeamDodgeStealNotes([e], playerUnit.id, playerIntent?.move, { id: enemyUnits[0]?.id, carriedItems: enemies[0]?.carriedItems }, tryStealOnDodge);
         if (e.skipped) return { ...e, text: `${e.actor.name}这一击落了空（${e.reason}）。`, notes: [], statusLog: [] };
         const { actor, target, result } = e, clash = target.move ? `，${target.name}以「${target.move.name}」相抗` : `，${target.name}无暇他顾`;
         // 【点名是谁占上风】原来只写"占了上风/被压了一头"，不说主语——
@@ -222,21 +226,21 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
             {!selecting
               ? (outcome ? (outcome === "win" ? "◆ 切磋已分胜负" : outcome === "lose" ? "◆ 你落败了" : "◆ 两败俱伤") : "◆ 结算中")
               : stage === "player" ? "◆ 你的出招"
-              : stage === "leopard" ? "◆ 雪豹的出招"
+              : stage === "leopard" ? `◆ ${partnerName}的出招`
               : "◆ 本回合就绪"}
             {selecting && leopardUnit?.alive && (
               <span
                 onClick={() => { setLeopardAuto(v => !v); setLeopardIntent(null); if (stage === "leopard") setStage(firstStage()); }}
-                title="托管=雪豹凭野兽本能自行出招选目标；手动=你替它选招选目标"
-                style={{ float: "right", cursor: "pointer", fontSize: "10px", color: leopardAuto ? zoneTheme.textDim : "var(--violet)", border: `1px solid ${leopardAuto ? zoneTheme.border : "var(--violet)"}`, borderRadius: 0, padding: "1px 7px" }}
-              >雪豹：{leopardAuto ? "托管中" : "手动"}</span>
+                title={`托管=${partnerName}按自己的路数自行出招选目标；手动=你替${partnerName}选招选目标`}
+                style={{ float: "right", cursor: "pointer", fontSize: "var(--fs-2xs)", color: leopardAuto ? zoneTheme.textDim : "var(--violet)", border: `1px solid ${leopardAuto ? zoneTheme.border : "var(--violet)"}`, borderRadius: 0, padding: "1px 7px" }}
+              >{partnerName}：{leopardAuto ? "托管中" : "手动"}</span>
             )}
           </div>
 
           {selecting && stage !== "ready" && (
             <>
               {error && <div style={styles.warnLine}>⚠ 上一回合结算出错：{error}（可重新出招）</div>}
-              {pickingUnit?.defenseBroken && <div style={styles.hintLine(zoneTheme)}>{stage === "player" ? "你" : "雪豹"}守势已露，此回合不可再守，须变招</div>}
+              {pickingUnit?.defenseBroken && <div style={styles.hintLine(zoneTheme)}>{stage === "player" ? "你" : partnerName}守势已露，此回合不可再守，须变招</div>}
               {round === 1 && (combatBuff.waigong || combatBuff.moveMul || combatBuff.hpBonusRatio) ? (
                 <div style={styles.hintLine(zoneTheme)}>
                   战前一餐，药力正盛：{[
@@ -258,7 +262,7 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
                         disabled={move.energyCost > (pickingUnit?.energy?.[0] ?? 0) || blockedByRepeat}
                         zoneTheme={zoneTheme}
                         onClick={() => pickMoveForUnit(stage, move)}
-                        onInspect={() => setInspectMove({ ...move, side: stage === "player" ? "你" : "雪豹" })} />
+                        onInspect={() => setInspectMove({ ...move, side: stage === "player" ? "你" : partnerName })} />
                     </div>
                   );
                 })}
@@ -267,14 +271,14 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
               {/* 选目标：多于一个存活敌人时必选（防御招也要指定防谁）；单敌自动锁定 */}
               {pickingNeedTarget && (
                 <div style={styles.targetRow}>
-                  <span style={{ fontSize: "10.5px", color: zoneTheme.textDim, flexShrink: 0 }}>
+                  <span style={{ fontSize: "var(--fs-xs)", color: zoneTheme.textDim, flexShrink: 0 }}>
                     {pickingIntent.move.type === MOVE_TYPE.DEFENSE ? "防谁：" : "打谁："}
                   </span>
                   {aliveEnemies.map(e => (
                     <span key={e.id} className="mobile-duel-control"
                       onClick={() => pickTargetForUnit(stage, e.id)}
                       style={{
-                        cursor: "pointer", fontSize: "11px", padding: "3px 10px", borderRadius: 0, userSelect: "none",
+                        cursor: "pointer", fontSize: "var(--fs-xs)", padding: "3px 10px", borderRadius: 0, userSelect: "none",
                         color: pickingIntent?.targetId === e.id ? zoneTheme.bg : "var(--red-soft)",
                         background: pickingIntent?.targetId === e.id ? "var(--red-soft)" : "transparent",
                         border: "1px solid var(--red-soft)",
@@ -286,17 +290,17 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
               {/* 段推进：玩家段备齐→雪豹段（或就绪）；雪豹段备齐→就绪 */}
               <div style={styles.continueRow}>
                 {stage === "player" && playerReady && (needLeopardPick
-                  ? <span onClick={() => setStage("leopard")} style={styles.continueBtn(zoneTheme)}>雪豹出招 ▸</span>
+                  ? <span onClick={() => setStage("leopard")} style={styles.continueBtn(zoneTheme)}>{partnerName}出招 ▸</span>
                   : <span onClick={() => setStage("ready")} style={styles.continueBtn(zoneTheme)}>就绪 ▸</span>)}
                 {stage === "player" && !playerReady && needPlayerPick && (
-                  <span style={{ fontSize: "10.5px", color: zoneTheme.textDim }}>选好招式{pickingNeedTarget ? "与目标" : ""}后继续</span>
+                  <span style={{ fontSize: "var(--fs-xs)", color: zoneTheme.textDim }}>选好招式{pickingNeedTarget ? "与目标" : ""}后继续</span>
                 )}
                 {stage === "leopard" && (
                   <>
                     {leopardReady
                       ? <span onClick={() => setStage("ready")} style={styles.continueBtn(zoneTheme)}>就绪 ▸</span>
-                      : <span style={{ fontSize: "10.5px", color: zoneTheme.textDim }}>替雪豹选好招式{pickingNeedTarget ? "与目标" : ""}后继续</span>}
-                    <span onClick={() => setStage("player")} style={{ marginLeft: 12, fontSize: "10.5px", color: zoneTheme.textDim, cursor: "pointer" }}>◂ 回改你的招</span>
+                      : <span style={{ fontSize: "var(--fs-xs)", color: zoneTheme.textDim }}>替{partnerName}选好招式{pickingNeedTarget ? "与目标" : ""}后继续</span>}
+                    <span onClick={() => setStage("player")} style={{ marginLeft: 12, fontSize: "var(--fs-xs)", color: zoneTheme.textDim, cursor: "pointer" }}>◂ 回改你的招</span>
                   </>
                 )}
               </div>
@@ -307,13 +311,14 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
             <div style={{ textAlign: "center" }}>
               <div style={styles.hintLine(zoneTheme)}>
                 {playerUnit.alive && playerIntent?.move ? `你使「${playerIntent.move.name}」${aliveEnemies.length > 1 ? `击向${enemyUnits.find(e => e.id === playerIntent.targetId)?.name || "?"}` : ""}` : "你已无法行动"}
-                {leopardUnit.alive ? `　·　雪豹${leopardAuto ? "凭本能行事" : leopardIntent?.move ? `使「${leopardIntent.move.name}」${aliveEnemies.length > 1 ? `击向${enemyUnits.find(e => e.id === leopardIntent.targetId)?.name || "?"}` : ""}` : "待定"}` : ""}
+                {leopardUnit?.alive ? `　·　${partnerName}${leopardAuto ? "自行出招" : leopardIntent?.move ? `使「${leopardIntent.move.name}」${aliveEnemies.length > 1 ? `击向${enemyUnits.find(e => e.id === leopardIntent.targetId)?.name || "?"}` : ""}` : "待定"}` : ""}
+                {autoAllyUnits.filter(u => u.alive).map(u => `　·　${u.name}自行出招`).join("")}
               </div>
               {error && <div style={styles.warnLine}>⚠ 上一回合结算出错：{error}（可重新出击）</div>}
               <div style={styles.continueRow}>
                 <span onClick={handleResolve} style={styles.continueBtn(zoneTheme)}>出击 ▸</span>
                 {(needPlayerPick || needLeopardPick) && (
-                  <span onClick={() => setStage(firstStage())} style={{ marginLeft: 12, fontSize: "10.5px", color: zoneTheme.textDim, cursor: "pointer" }}>◂ 回改</span>
+                  <span onClick={() => setStage(firstStage())} style={{ marginLeft: 12, fontSize: "var(--fs-xs)", color: zoneTheme.textDim, cursor: "pointer" }}>◂ 回改</span>
                 )}
               </div>
             </div>
@@ -355,15 +360,15 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
           {rounds.length === 0 && <div style={styles.logHint(zoneTheme)}>——{allyUnits.map(u => u.name).join("与")}拉开架势，静待第一招——</div>}
           {rounds.map(r => (
             <div key={r.round} style={{ marginBottom: 10 }}>
-              <div style={{ fontSize: "11px", color: zoneTheme.accent }}>▸ 第 {r.round} 回合</div>
+              <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accent }}>▸ 第 {r.round} 回合</div>
               {r.lines.map((l, i) => (
                 <div key={i} style={{ marginTop: 2 }}>
-                  <div style={{ fontSize: "12.5px", color: zoneTheme.text }}>{l.text}</div>
+                  <div style={{ fontSize: "var(--fs-sm)", color: zoneTheme.text }}>{l.text}</div>
                   {(l.notes || []).map((n, j) => (
-                    <div key={j} style={{ fontSize: "12px", color: zoneTheme.textDim }}>{n}。</div>
+                    <div key={j} style={{ fontSize: "var(--fs-sm)", color: zoneTheme.textDim }}>{n}。</div>
                   ))}
                   {(l.statusLog || []).map((s, j) => (
-                    <div key={"s" + j} style={{ fontSize: "11px", color: zoneTheme.textDim }}>{s}</div>
+                    <div key={"s" + j} style={{ fontSize: "var(--fs-xs)", color: zoneTheme.textDim }}>{s}</div>
                   ))}
                 </div>
               ))}

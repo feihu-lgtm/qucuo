@@ -124,3 +124,46 @@ export function parseSilverAmount(text) {
   const value = parseChineseNumber(match[1]);
   return Number.isFinite(value) && value > 0 ? value : null;
 }
+
+// 「硬行动」关键词：原话里出现任何一个，就可能是封闭行动集合里的事，值得花一次分类调用。
+// 与 ACTION_KINDS 逐类对齐（交谈/其他本来就是自由行动，不需要关键词）；条件从句（要是…就…）也算。
+// 故意写宽：多放行只多花一次分类调用，漏掉则会把真正的赠送/移动等行动吞成纯叙事。
+export const HARD_ACTION_RE = new RegExp([
+  // 赠送
+  "赠|送|递给|交给|塞给|献给|打赏|孝敬|施舍|给[他她它你]|把.{0,8}给|银子|银两|纹银|\\d+两",
+  // 购买
+  "买|购|采办|置办|赊|付钱|付银|交易|讨价",
+  // 切磋
+  "切磋|比试|比划|比武|过招|过两招|较量|交手|讨教|对练|决斗|挑战",
+  // 拜师/学艺
+  "拜师|拜.{0,4}为师|学艺|学武|学.{0,4}(?:功夫|武功|招|剑|刀|拳)|求教|教我|传授|收我为徒|拜入",
+  // 邀同行
+  "同行|结伴|同路|同去|一道走|一起走|一起去|跟我走|随我|入伙|带上我|带着我",
+  // 偷窃
+  "偷|窃|扒手|顺走|摸走|顺手牵羊",
+  // 平息/道歉
+  "道歉|赔罪|赔不是|认错|对不起|致歉|息怒|消气|平息|原谅|请罪|谢罪|抱歉",
+  // 移动：往/去/走 + 方向或地名；向/朝只在带方向时算，免得「向她亲了一口」也放行
+  "往|去|前往|赶往|走|出发|启程|上路|回[到去家村城]|[向朝]\\s*[东南西北上下]|到了?[^，。,.\\s]{1,6}(?:就|再|便)",
+  // 使用物品
+  "用|吃|喝|服下|服用|饮|敷|涂|嚼|吞",
+  // 拾取
+  "捡|拾|拿|取",
+  // 装备/卸下
+  "装备|穿上|穿戴|穿好|戴上|佩戴|披上|卸|脱下|脱掉|摘下|解下",
+  // 条件从句
+  "要是|如果|若是|万一|一旦|假如|倘若",
+].join("|"));
+
+// 一次性识别用的候选清单：全部来自实时世界状态，与逐槽提问时的 slotOptions 同源。
+// items 按类别分开列，因为赠送含银两、拾取只看地上、装备含地上物。
+export function recognitionOptions(state) {
+  const withoutNone = (options) => options.filter((option) => option !== NONE);
+  const itemKinds = [ACTION_KINDS.GIFT, ACTION_KINDS.USE_ITEM, ACTION_KINDS.PICKUP, ACTION_KINDS.EQUIP];
+  return {
+    kinds: KIND_LIST,
+    targets: withoutNone(slotOptions(state, ACTION_KINDS.TALK, "target")),
+    directions: withoutNone(slotOptions(state, ACTION_KINDS.MOVE, "direction")),
+    items: Object.fromEntries(itemKinds.map((kind) => [kind, withoutNone(slotOptions(state, kind, "item"))])),
+  };
+}

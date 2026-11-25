@@ -13,13 +13,13 @@ export default function ApiLengthFields({ cfg, patch }) {
         <input style={inputStyle} type="number" min="10" max="300" step="10"
           value={Math.round((cfg.timeoutMs ?? 60000) / 1000)}
           onChange={e => patch({ timeoutMs: Math.max(10, Math.min(300, parseInt(e.target.value) || 60)) * 1000 })} />
-        <div style={{ fontSize: "10px", color: "var(--text-dim)", marginTop: 2 }}>
+        <div style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", marginTop: 2 }}>
           接口慢（如千问高峰期）常超时导致移动/操作卡住，可调长到 120~180。
         </div>
     </div>
 
     <div style={{ ...labelStyle, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-      <span>每次叙事输出字数 <span style={{ color: "var(--ink-dim-deep)", fontSize: "10px" }}>（这是游戏体验的核心，直接按汉字数设定，不是 token 数）</span></span>
+      <span>每次叙事输出字数 <span style={{ color: "var(--ink-dim-deep)", fontSize: "var(--fs-2xs)" }}>（这是游戏体验的核心，直接按汉字数设定，不是 token 数）</span></span>
     </div>
     <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
       {[["简短", 300], ["适中", 600], ["详细", 900], ["长篇", 1500]].map(([label, val]) => (
@@ -45,16 +45,16 @@ export default function ApiLengthFields({ cfg, patch }) {
         onChange={e => { const v = parseInt(e.target.value) || 900; patch({ targetWordCount: v, maxTokens: wordCountToMaxTokens(v) }); }}
         style={{ ...inputStyle, width: 80 }}
       />
-      <span style={{ fontSize: "11px", color: "var(--text-dim)" }}>字</span>
+      <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)" }}>字</span>
     </div>
-    <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginTop: 3 }}>
+    <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginTop: 3 }}>
       目标约 {cfg.targetWordCount} 字（允许±15%浮动，AI 会根据这个字数目标自行决定要写几段、每段多长）。
       API 侧的 token 上限会自动换算为 {cfg.maxTokens}，只是防止意外截断的安全余量，不需要手动调整。
     </div>
 
     {cfg.apiType === API_TYPES.QWEN && (
       <div style={{ border: "1px solid var(--ink-edge-panel)", borderRadius: 0, padding: "8px 10px", marginTop: 8, background: "var(--bg-panel)" }}>
-        <div style={{ fontSize: "11px", color: "var(--info)", marginBottom: 4 }}>千问 max_tokens 上限</div>
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--info)", marginBottom: 4 }}>千问 max_tokens 上限</div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <input
             type="number" min="256" max="65536" step="1024"
@@ -62,9 +62,9 @@ export default function ApiLengthFields({ cfg, patch }) {
             value={cfg.qwenMaxTokens ?? 32768}
             onChange={e => patch({ qwenMaxTokens: Math.max(256, Math.min(65536, parseInt(e.target.value) || 32768)) })}
           />
-          <span style={{ fontSize: "10.5px", color: "var(--text-dim)" }}>单次输出 token 上限</span>
+          <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)" }}>单次输出 token 上限</span>
         </div>
-        <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginTop: 4 }}>
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginTop: 4 }}>
           千问对 max_tokens 有硬上限，传太大直接报 400（Range should be [1, 65536]）。
           这里单独封顶：qwen-max 上限 32768，qwen-plus/coder 可到 65536。默认 32768 最稳，叙事足够用。
           上面的字数换算值再大，发给千问时也会被压到这个上限之内。
@@ -86,7 +86,7 @@ export default function ApiLengthFields({ cfg, patch }) {
           : DEFAULT_INTENT_BUDGETS[key];
         return (
           <div key={key} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ flex: 1, fontSize: "11px", color: "var(--text-dim)" }}>{label}</span>
+            <span style={{ flex: 1, fontSize: "var(--fs-xs)", color: "var(--text-dim)" }}>{label}</span>
             <input
               type="number" min="30" step="50" value={cur}
               onChange={e => {
@@ -95,12 +95,12 @@ export default function ApiLengthFields({ cfg, patch }) {
               }}
               style={{ ...inputStyle, width: 70 }}
             />
-            <span style={{ fontSize: "11px", color: "var(--text-dim)" }}>字</span>
+            <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)" }}>字</span>
           </div>
         );
       })}
     </div>
-    <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginBottom: 6 }}>
+    <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 6 }}>
       min 自动取 max×40%。UNKNOWN 意图和 MOVE 未匹配时回退到上面的全局字数。
     </div>
 
@@ -121,7 +121,7 @@ export default function ApiLengthFields({ cfg, patch }) {
           : DEFAULT_CALL_TOKEN_LIMITS[key];
         return (
           <div key={key} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ flex: 1, fontSize: "11px", color: "var(--text-dim)" }}>{label}</span>
+            <span style={{ flex: 1, fontSize: "var(--fs-xs)", color: "var(--text-dim)" }}>{label}</span>
             <input
               type="number" min="1" max={CALL_TOKEN_LIMIT_MAX} step="100" value={cur}
               onChange={e => {
@@ -132,12 +132,12 @@ export default function ApiLengthFields({ cfg, patch }) {
               }}
               style={{ ...inputStyle, width: 84 }}
             />
-            <span style={{ fontSize: "11px", color: "var(--text-dim)" }}>tok</span>
+            <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)" }}>tok</span>
           </div>
         );
       })}
     </div>
-    <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginBottom: 6 }}>
+    <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 6 }}>
       这些是各类 LLM 调用的输出 token 上限（不是字数）。默认已调大，避免带思考的模型（如 gemini-3）思考 token 吃穿正文导致半句截断。每项可调到 {CALL_TOKEN_LIMIT_MAX}。主叙事不在此列（它的上限已由上面的目标字数换算、且地板极高）。
     </div>
     <div style={labelStyle}>上下文窗口（保留最近 N 轮对话）</div>

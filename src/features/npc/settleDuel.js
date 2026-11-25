@@ -10,7 +10,7 @@ import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { BOUNTY_QUESTS } from "../../domain/data/quests/bountyQuests.js";
 import { createQuestProgress, getCurrentStage, advanceQuestStages, lockExclusiveSiblings } from "../../domain/rules/quests/questEngine.js";
 import { resolveStageRewards } from "../../domain/rules/quests/questRewards.js";
-import { duelAlly } from "../../domain/rules/companion/companion.js";
+import { duelAllies } from "../../domain/rules/companion/companion.js";
 import { snowQuestActive } from "../../domain/rules/quests/snowLeopardQuest.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
 import { add, applyWrite, set, updateField } from "../../domain/rules/state/applyWrite.js";
@@ -21,6 +21,7 @@ import { factionRepDeltas } from "../../domain/rules/economy/factionRep.js";
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 // 一场切磋占用的游戏时间（time 一格 = 一小时），由系统直接加，不经过 AI
 export const DUEL_HOURS = 1;
+const RECAP_NOTE_MAX = 60;
 
 function addChange(changes, state, key, update) {
   const previous = changes[key];
@@ -194,11 +195,18 @@ export function settleNpcDuel(state, npc, {
     }
   }
 
-  if (outcome === "win" && duelAlly(state.companionState, npc)) {
-    addChange(changes, working, "varTree", (prev) => applyWrite(
-      { varTree: markNpcKnown(prev || {}, "雪豹") }, add(["角色", "雪豹", "好感度"], TEAMWORK_GAIN),
-    ).state.varTree);
-    logs.push({ t: "affection", text: `  💗 与雪豹并肩破敌，默契渐深，好感 +${TEAMWORK_GAIN}` });
+  if (outcome === "win") {
+    // 并肩破敌：好感记给真正上场的己方伙伴（duelAllies：出战伙伴 + 同组随从）。
+    // 机关人偶铁伯这类 mute 随从没有"好感"可言（intimacy forbidden、不开口），跳过；
+    // 对手本人不算（duelAllies 已排除）。
+    for (const ally of duelAllies(state.companionState, npc).filter((a) => !a.mute)) {
+      const name = ally.label || ally.data?.name;
+      if (!name) continue;
+      addChange(changes, working, "varTree", (prev) => applyWrite(
+        { varTree: markNpcKnown(prev || {}, name) }, add(["角色", name, "好感度"], TEAMWORK_GAIN),
+      ).state.varTree);
+      logs.push({ t: "affection", text: `  💗 与${name}并肩破敌，默契渐深，好感 +${TEAMWORK_GAIN}` });
+    }
   }
 
   let note = null;
@@ -331,7 +339,14 @@ export function settleNpcDuel(state, npc, {
   if (factId) {
     logs.push({ t: "affection", text: `　◈ ${state.char?.name || "你"} 切磋 ${npc.name} · 战斗结算` });
   }
-  const recapNote = `在${state.room?.name}与${npc.name}切磋${recap ? `，${recap.replace(/；/g, "、")}，` : "，"}${outcome === "win" ? "终获胜" : outcome === "lose" ? "落败" : "未分胜负"}。`;
+  // 小纸条与日总结原料只给 60 字：逐回合明细放得下才带上，放不下就只记几回合与胜负，
+  // 绝不按字数硬截（硬截会把句子切在半截、把最要紧的胜负一起截掉）。
+  const verdict = outcome === "win" ? "终获胜" : outcome === "lose" ? "落败" : "未分胜负";
+  const roundCount = reportRounds.length ? `${reportRounds.length}回合` : "";
+  const detailedNote = recap ? `在${state.room?.name}与${npc.name}切磋，${recap.replace(/；/g, "、")}，${verdict}。` : "";
+  const recapNote = detailedNote && detailedNote.length <= RECAP_NOTE_MAX
+    ? detailedNote
+    : `在${state.room?.name}与${npc.name}切磋${roundCount}，${verdict}。`;
 
   return {
     changes,
@@ -343,6 +358,6 @@ export function settleNpcDuel(state, npc, {
     recap,
     reportRounds,
     outcomeText,
-    recapNote: recapNote.slice(0, 60),
+    recapNote,
   };
 }

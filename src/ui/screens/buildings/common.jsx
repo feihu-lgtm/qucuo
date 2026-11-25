@@ -55,11 +55,11 @@ export function Header({ name, zoneTheme, onClose }) {
       // 顶部，不管滚多远都看得见、点得到。zIndex 避免被下面滚上来的内容盖住。
       position: "sticky", top: 0, zIndex: 1, background: zoneTheme.panelBg || "var(--building-panel-bg)",
     }}>
-      <span style={{ fontSize: 14, color: zoneTheme.text || "var(--ink-text)" }}>{name}</span>
+      <span style={{ fontSize: "var(--fs-base)", color: zoneTheme.text || "var(--ink-text)" }}>{name}</span>
       <span
         className="mobile-overlay-close"
         onClick={onClose}
-        style={{ color: zoneTheme.textDim, fontSize: 12, cursor: "pointer", padding: "2px 8px", borderRadius: RADIUS.btn, transition: "color 0.15s, background 0.15s" }}
+        style={{ color: zoneTheme.textDim, fontSize: "var(--fs-sm)", cursor: "pointer", padding: "2px 8px", borderRadius: RADIUS.btn, transition: "color 0.15s, background 0.15s" }}
         onMouseEnter={e => { e.currentTarget.style.color = zoneTheme.accent; e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
         onMouseLeave={e => { e.currentTarget.style.color = zoneTheme.textDim; e.currentTarget.style.background = "transparent"; }}
       >× 关闭</span>
@@ -72,16 +72,14 @@ export function Btn({ label, onClick, disabled, zoneTheme, secondary }) {
     <span
       className="mobile-touch-target"
       onClick={disabled ? undefined : onClick}
-      style={{
-        fontSize: 12, padding: "5px 14px", borderRadius: RADIUS.btn, cursor: disabled ? "not-allowed" : "pointer",
-        color: disabled ? "var(--building-disabled-text)" : secondary ? zoneTheme.accentDim : zoneTheme.bg,
-        background: disabled ? "var(--building-disabled-bg)" : secondary ? "transparent" : zoneTheme.accent,
-        border: `1px solid ${disabled ? "var(--building-disabled-edge)" : secondary ? zoneTheme.border : zoneTheme.accent}`,
-        opacity: disabled ? 0.5 : 1,
-        userSelect: "none",
-        display: "inline-block",
-        transition: "transform 0.1s, filter 0.15s, border-color 0.15s",
-      }}
+      style={{ fontSize: "var(--fs-sm)", padding: "5px 14px", borderRadius: RADIUS.btn, cursor: disabled ? "not-allowed" : "pointer",
+      color: disabled ? "var(--building-disabled-text)" : secondary ? zoneTheme.accentDim : zoneTheme.bg,
+      background: disabled ? "var(--building-disabled-bg)" : secondary ? "transparent" : zoneTheme.accent,
+      border: `1px solid ${disabled ? "var(--building-disabled-edge)" : secondary ? zoneTheme.border : zoneTheme.accent}`,
+      opacity: disabled ? 0.5 : 1,
+      userSelect: "none",
+      display: "inline-block",
+      transition: "transform 0.1s, filter 0.15s, border-color 0.15s", }}
       onMouseEnter={e => { if (disabled) return; e.currentTarget.style.filter = "brightness(1.15)"; if (secondary) e.currentTarget.style.borderColor = zoneTheme.accent; }}
       onMouseLeave={e => { if (disabled) return; e.currentTarget.style.filter = "none"; e.currentTarget.style.transform = "scale(1)"; if (secondary) e.currentTarget.style.borderColor = zoneTheme.border; }}
       onMouseDown={e => { if (disabled) return; e.currentTarget.style.transform = "scale(0.97)"; }}

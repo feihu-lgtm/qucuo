@@ -8,7 +8,8 @@
 // OC 是动态散人天然通过，导入的具名 NPC 会撞上。
 
 import { allContent } from "../../domain/rules/content/registry.js";
-import { unlockImportedCompanion } from "../../domain/rules/companion/companion.js";
+import { unlockImportedCompanion, unlockFollowerCompanion } from "../../domain/rules/companion/companion.js";
+import { ocSignatureMoves } from "../../domain/rules/companion/ocKungfu.js";
 import { markNpcAsKnown } from "../../domain/rules/npc/npcAwareness.js";
 import { removeNpc } from "../../domain/rules/npc/roomNpcs.js";
 import { isNpcAngry } from "../../domain/rules/combat/stealSystem.js";
@@ -27,17 +28,6 @@ export function hirePriceFor(adv) {
 function refusesMoney(adv) {
   const s = String(adv?.tradeStyle || "");
   return /(不收|不要|不取)[^，。]{0,8}(金银|钱|银两)|分文不取|对钱币毫无概念|不懂金钱/.test(s);
-}
-
-// kungfu.moves [{name,desc}] → deriveMovesetFromSig 的 slot 形：首招作攻击，其余依次进状态/防御
-const OC_SIG_SLOTS = ["攻击", "状态", "防御"];
-export function ocSignatureMoves(adv) {
-  const moves = Array.isArray(adv?.kungfu?.moves) ? adv.kungfu.moves : [];
-  const sig = {};
-  moves.slice(0, OC_SIG_SLOTS.length).forEach((m, i) => {
-    if (m?.name) sig[OC_SIG_SLOTS[i]] = { name: m.name, desc: m.desc };
-  });
-  return Object.keys(sig).length ? sig : null;
 }
 
 // 撞车守卫：npcName 出现在进行中任务链的 giver/stage.giver/combatNpc.name 里 → 返回任务题名，否则 null
@@ -151,12 +141,17 @@ export function recruitOC(state, adventurer, route, ctx = {}) {
     brief: adventurer.brief || adventurer.fullBio || adventurer.title,
     signatureMoves: ocSignatureMoves(adventurer),
   };
+  // 带 joinParty 的随从（元朵朵的铁伯）随主人一并入队，作为独立伙伴槽，主人仍是出战位
+  const withOwner = unlockImportedCompanion(state?.companionState || {}, npc);
+  const companionState = unlockFollowerCompanion(withOwner, adventurer);
+  const followerName = adventurer.follower?.joinParty && companionState !== withOwner ? adventurer.follower.name : null;
   return {
     ok: true,
     effect: {
       npc,
       moneyDelta,
-      companionState: unlockImportedCompanion(state?.companionState || {}, npc),
+      companionState,
+      followerName,
       bondRoute: route, // 情谊绑定标记：quest/favor/childhood 不可解雇，hire 可遣回
     },
   };
@@ -174,9 +169,10 @@ export function applyRecruit(state, adventurer, effect) {
       varTree: (prev) => markNpcAsKnown(prev || {}, adventurer.name),
       room: (prev) => ({
         ...prev,
-        npcs: removeNpc(prev.npcs, (entry) => entry.name === adventurer.name),
+        npcs: removeNpc(prev.npcs, (entry) => entry.name === adventurer.name || (!!effect.followerName && entry.name === effect.followerName)),
       }),
     },
+    ...(effect.followerName ? { logs: [{ t: "sys", text: `  ${effect.followerName}关节咔哒一响，推着家当跟在${adventurer.name}身后一并入了队。` }] } : {}),
     settle: `与${adventurer.name}击掌为誓，自此结伴同行`,
     settleOptions: { settleNpc: adventurer.name, settleKind: "companion_invite", settleBeast: false },
   };

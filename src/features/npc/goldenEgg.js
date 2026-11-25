@@ -5,7 +5,7 @@
 
 import { makeNamedItem } from "../../domain/data/items/catalog.js";
 import {
-  GOLDEN_EGG_STATE_KEY, eggAlreadyClaimed, eggDayKey, eggTier, rollGoldenEgg,
+  GOLDEN_EGG_STATE_KEY, eggAlreadyClaimed, eggGameDay, eggTier, rollGoldenEgg,
 } from "../../domain/rules/npc/goldenEgg.js";
 import { updateField, add, set, applyWrite } from "../../domain/rules/state/applyWrite.js";
 
@@ -21,11 +21,11 @@ export function isDuoduo(npc) {
  *   已领过返回 {claimed:true, logs}；开奖返回 {prize, tier, logs, changes}——
  *   prize/tier 供钩子拼 AI 反应 prompt。
  */
-export function claimGoldenEgg(state, npc, { now = Date.now(), rng = Math.random } = {}) {
+export function claimGoldenEgg(state, npc, { rng = Math.random } = {}) {
   if (!isDuoduo(npc)) {
     return { logs: [{ t: "err", text: "  金鸟只认元朵朵。" }] };
   }
-  if (eggAlreadyClaimed(state?.npcState, now)) {
+  if (eggAlreadyClaimed(state?.npcState, state?.time)) {
     return {
       claimed: true,
       logs: [
@@ -45,7 +45,7 @@ export function claimGoldenEgg(state, npc, { now = Date.now(), rng = Math.random
   const changes = {
     npcState: (prev) => ({
       ...(prev || {}),
-      [GOLDEN_EGG_STATE_KEY]: { lastDate: eggDayKey(now) },
+      [GOLDEN_EGG_STATE_KEY]: { lastDay: eggGameDay(state?.time) },
     }),
   };
   if (prize.kind === "money") {

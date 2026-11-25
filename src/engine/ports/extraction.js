@@ -5,6 +5,7 @@ import { snowLeopardNote } from "../../domain/rules/quests/snowLeopardQuest.js";
 import { createWebAi, cleanJsonString } from "./ai.js";
 import { withAI } from "./withAI.js";
 import "../../domain/rules/prompt/calls/domainCalls.js";
+import { ensureUnifiedCalls } from "../../domain/rules/prompt/calls/unifiedCalls.js";
 import { extractMvuBlock } from "../../domain/rules/prompt/mvu.js";
 import { renderExtractionSpec } from "../../domain/rules/prompt/extractionSpecs.js";
 import {
@@ -20,19 +21,16 @@ export async function callExtraction(intentCode, narrative, state, apiCfg, settl
   const { key, spec } = getExtractionSpec(intentCode, settleOpts);
   if (!spec) return null;
 
-  const cfg = buildExtractionCfg(key, apiCfg);
-  const systemPrompt = spec.system;
+  ensureUnifiedCalls();
   // 公共字段统一拼在末尾，避免各意图的 schema 漂移。
   const userContent = renderExtractionSpec(spec, narrative, state, settleOpts, trace) + snowLeopardNote({ ...state, ...settleOpts });
-
-  const { text } = await ai.chat(
-    [{ role: "user", content: userContent }],
-    {
-      cfg,
-      systemPrompt,
-      modelOptions: { maxTokens: apiCfg.callTokenLimits?.extraction ?? 2000, callLabel: `状态提取(${intentCode})` },
-    },
+  const res = await withAI(
+    "turn.extraction",
+    { intentCode, key, spec, userContent },
+    { ai, apiCfg },
   );
+  if (!res.ok && res.error) throw res.error;
+  const text = res.text || "";
 
   // 解析 JSON
   let js = text.replace(/```json\s*|```\s*/g, "").trim();

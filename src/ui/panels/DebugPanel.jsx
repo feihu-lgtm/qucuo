@@ -34,20 +34,20 @@ export default function DebugPanel({
   const [dbgItemQualF, setDbgItemQualF] = useState("全部");
   const [dbgPickedItem, setDbgPickedItem] = useState("");
 
-  const inp = { background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 5px", fontSize: 11 };
+  const inp = { background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 5px", fontSize: "var(--fs-xs)" };
   const lbl = { color: "var(--accent)", flexShrink: 0 };
 
   return (
     <div style={isMobile
       ? { position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 260, padding: "10px 14px",
-          borderTop: `1px solid ${zoneTheme.border}`, background: "rgba(12,14,20,.98)", fontSize: 11, color: "var(--debug-text)",
+          borderTop: `1px solid ${zoneTheme.border}`, background: "rgba(12,14,20,.98)", fontSize: "var(--fs-xs)", color: "var(--debug-text)",
           display: "flex", flexDirection: "column", gap: 8, maxHeight: "70vh", overflowY: "auto", overflowX: "auto",
           WebkitOverflowScrolling: "touch", boxShadow: "0 -8px 30px rgba(0,0,0,.7)" }
-      : { flexShrink: 0, padding: "10px 14px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(110,198,198,0.05)", fontSize: 11, color: "var(--debug-text)", display: "flex", flexDirection: "column", gap: 8, position: "relative" }}>
+      : { flexShrink: 0, padding: "10px 14px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(110,198,198,0.05)", fontSize: "var(--fs-xs)", color: "var(--debug-text)", display: "flex", flexDirection: "column", gap: 8, position: "relative" }}>
       <div style={{ position: "sticky", top: 0, zIndex: 5, display: "flex", alignItems: "center", justifyContent: "space-between",
         margin: "-10px -14px 4px", padding: "6px 14px", background: "rgba(16,18,26,.96)", borderBottom: "1px solid var(--ink-edge-quest)" }}>
-        <span style={{ color: "var(--accent)", fontSize: 12, fontWeight: "bold" }}>🛠 调试面板</span>
-        <span onClick={() => closeOverlay(OVERLAY.DEBUG)} style={{ cursor: "pointer", color: "var(--debug-close)", fontSize: 13, padding: "2px 12px", border: "1px solid var(--debug-close-edge)", borderRadius: 0 }}>✕ 关闭</span>
+        <span style={{ color: "var(--accent)", fontSize: "var(--fs-sm)", fontWeight: "bold" }}>🛠 调试面板</span>
+        <span onClick={() => closeOverlay(OVERLAY.DEBUG)} style={{ cursor: "pointer", color: "var(--debug-close)", fontSize: "var(--fs-md)", padding: "2px 12px", border: "1px solid var(--debug-close-edge)", borderRadius: 0 }}>✕ 关闭</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <span style={{ width: 40, ...lbl }}>金钱</span>
@@ -58,7 +58,7 @@ export default function DebugPanel({
         <input type="number" value={char.hp?.[0] ?? 0}
           onChange={e => setChar(c => ({ ...c, hp: [parseInt(e.target.value) || 0, c.hp?.[1] ?? 100] }))}
           style={{ width: 60, ...inp }} />
-        <span style={{ fontSize: 10 }}>/</span>
+        <span style={{ fontSize: "var(--fs-2xs)" }}>/</span>
         <input type="number" value={char.hp?.[1] ?? 100}
           onChange={e => setChar(c => ({ ...c, hp: [c.hp?.[0] ?? 0, parseInt(e.target.value) || 100] }))}
           style={{ width: 60, ...inp }} />
@@ -77,37 +77,37 @@ export default function DebugPanel({
         <span style={{ width: 40, ...lbl }}>七维</span>
         {["根骨", "悟性", "体魄", "魅力", "智谋", "身法", "气运"].map(dim => (
           <span key={dim} style={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <span style={{ fontSize: 10 }}>{dim}</span>
+            <span style={{ fontSize: "var(--fs-2xs)" }}>{dim}</span>
             <input type="number" value={char.special?.[dim] ?? 5}
               onChange={e => setChar(c => ({ ...c, special: { ...(c.special || {}), [dim]: parseInt(e.target.value) || 0 } }))}
-              style={{ width: 42, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: 11 }} />
+              style={{ width: 42, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: "var(--fs-xs)" }} />
           </span>
         ))}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 10 }}>潜能</span>
+        <span style={{ fontSize: "var(--fs-2xs)" }}>潜能</span>
         <input type="number" value={pot ?? 0}
           onChange={e => setPot(parseInt(e.target.value) || 0)}
-          style={{ width: 55, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: 11 }} />
-        <span style={{ fontSize: 10, marginLeft: 6 }}>阅历</span>
+          style={{ width: 55, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: "var(--fs-xs)" }} />
+        <span style={{ fontSize: "var(--fs-2xs)", marginLeft: 6 }}>阅历</span>
         <input type="number" value={exp ?? 0}
           onChange={e => setExp(parseInt(e.target.value) || 0)}
-          style={{ width: 55, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: 11 }} />
-        <span style={{ fontSize: 10, marginLeft: 6 }}>因果</span>
+          style={{ width: 55, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: "var(--fs-xs)" }} />
+        <span style={{ fontSize: "var(--fs-2xs)", marginLeft: 6 }}>因果</span>
         <input type="number" value={dao.karma ?? 0}
           onChange={e => setDao(d => ({ ...d, karma: parseInt(e.target.value) || 0 }))}
-          style={{ width: 55, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: 11 }} />
-        <span style={{ fontSize: 10, marginLeft: 6 }}>劫数</span>
+          style={{ width: 55, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: "var(--fs-xs)" }} />
+        <span style={{ fontSize: "var(--fs-2xs)", marginLeft: 6 }}>劫数</span>
         <input type="number" value={dao.jie ?? 0}
           onChange={e => setDao(d => ({ ...d, jie: parseInt(e.target.value) || 0 }))}
-          style={{ width: 55, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: 11 }} />
+          style={{ width: 55, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: "var(--fs-xs)" }} />
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <span style={{ width: 40, ...lbl }}>威望</span>
         <input type="number" value={varTree.世界?.威望 ?? 0}
           onChange={e => { const v = parseInt(e.target.value) || 0; setVarTree(prev => ({ ...prev, 世界: { ...(prev.世界 || {}), 威望: v } })); }}
           style={{ width: 70, ...inp }} />
-        <span style={{ fontSize: 10, color: "var(--text-dim)" }}>{reputationLabel(varTree.世界?.威望 ?? 0)}（全局总值，不分势力）</span>
+        <span style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)" }}>{reputationLabel(varTree.世界?.威望 ?? 0)}（全局总值，不分势力）</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <span style={{ width: 70, ...lbl }}>旁白好感</span>
@@ -127,7 +127,7 @@ export default function DebugPanel({
             onChange={e => { const v = parseInt(e.target.value) || 0; setVarTree(prev => ({ ...prev, 角色: { ...(prev.角色 || {}), [dbgFav]: { ...((prev.角色 || {})[dbgFav] || {}), 好感度: v } } })); }}
             style={{ width: 70, ...inp }} />
         )}
-        {!(varTree.世界?.已认识人物 || []).length && <span style={{ fontSize: 10, color: "var(--text-dim)" }}>（还没认识任何人）</span>}
+        {!(varTree.世界?.已认识人物 || []).length && <span style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)" }}>（还没认识任何人）</span>}
         <span
           onClick={() => {
             const visible = room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n));
@@ -135,7 +135,7 @@ export default function DebugPanel({
             setVarTree(prev => visible.reduce((tree, n) => markNpcAsKnown(tree, n.name), prev));
             addLog([{ t: "sys", text: `  [调试] 已认识在场者：${visible.map(n => n.name).join("、")}` }]);
           }}
-          style={{ cursor: "pointer", fontSize: 10, color: "var(--clay)", border: "1px solid var(--ink-accent)", borderRadius: 0, padding: "2px 8px", userSelect: "none" }}
+          style={{ cursor: "pointer", fontSize: "var(--fs-2xs)", color: "var(--clay)", border: "1px solid var(--ink-accent)", borderRadius: 0, padding: "2px 8px", userSelect: "none" }}
         >认识在场者</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
@@ -172,7 +172,7 @@ export default function DebugPanel({
             teleportLookRef.current = { dist: dbgDist, inner: inner2 };
           }
         }}
-          style={{ cursor: "pointer", fontSize: 10, color: dbgDist ? "var(--accent)" : "var(--ink-dim-deep)", padding: "2px 8px", border: `1px solid ${dbgDist ? "var(--accent)" : "var(--ink-divider)"}`, borderRadius: 0, userSelect: "none" }}>传送</span>
+          style={{ cursor: "pointer", fontSize: "var(--fs-2xs)", color: dbgDist ? "var(--accent)" : "var(--ink-dim-deep)", padding: "2px 8px", border: `1px solid ${dbgDist ? "var(--accent)" : "var(--ink-divider)"}`, borderRadius: 0, userSelect: "none" }}>传送</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
         <span style={{ width: 40, ...lbl }}>增加武学</span>
@@ -210,7 +210,7 @@ export default function DebugPanel({
           setSkills(sk => [...sk, entry]);
           addLog([{ t: "sys", text: `  [调试] 习得并运功「${found.name}」（${found.quality}·${found.type}）` }]);
         }}
-          style={{ cursor: "pointer", fontSize: 10, color: dbgPickedSkill ? "var(--clay)" : "var(--ink-dim-deep)", padding: "2px 8px", border: `1px solid ${dbgPickedSkill ? "var(--ink-accent)" : "var(--ink-divider)"}`, borderRadius: 0, userSelect: "none" }}
+          style={{ cursor: "pointer", fontSize: "var(--fs-2xs)", color: dbgPickedSkill ? "var(--clay)" : "var(--ink-dim-deep)", padding: "2px 8px", border: `1px solid ${dbgPickedSkill ? "var(--ink-accent)" : "var(--ink-divider)"}`, borderRadius: 0, userSelect: "none" }}
         >增加并装备</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
@@ -242,7 +242,7 @@ export default function DebugPanel({
           addLog([{ t: "sys", text: `  [调试] 获得「${item.name}」（${item.quality}·${CATEGORY_LABEL[item.category] || item.category}）` }]);
           setDbgPickedItem("");
         }}
-          style={{ cursor: "pointer", fontSize: 10, color: dbgPickedItem ? "var(--clay)" : "var(--ink-dim-deep)", padding: "2px 8px", border: `1px solid ${dbgPickedItem ? "var(--ink-accent)" : "var(--ink-divider)"}`, borderRadius: 0, userSelect: "none" }}
+          style={{ cursor: "pointer", fontSize: "var(--fs-2xs)", color: dbgPickedItem ? "var(--clay)" : "var(--ink-dim-deep)", padding: "2px 8px", border: `1px solid ${dbgPickedItem ? "var(--ink-accent)" : "var(--ink-divider)"}`, borderRadius: 0, userSelect: "none" }}
         >增加</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
@@ -264,7 +264,7 @@ export default function DebugPanel({
           addLog([{ t: "sys", text: `  [调试] 获得「${item.name}」（${item.quality}·${CATEGORY_LABEL[dbgItemCat] || dbgItemCat}）` }]);
           setDbgItemName("");
         }}
-          style={{ cursor: "pointer", fontSize: 10, color: dbgItemName.trim() ? "var(--clay)" : "var(--ink-dim-deep)", padding: "2px 8px", border: `1px solid ${dbgItemName.trim() ? "var(--ink-accent)" : "var(--ink-divider)"}`, borderRadius: 0, userSelect: "none" }}
+          style={{ cursor: "pointer", fontSize: "var(--fs-2xs)", color: dbgItemName.trim() ? "var(--clay)" : "var(--ink-dim-deep)", padding: "2px 8px", border: `1px solid ${dbgItemName.trim() ? "var(--ink-accent)" : "var(--ink-divider)"}`, borderRadius: 0, userSelect: "none" }}
         >增加</span>
       </div>
     </div>
