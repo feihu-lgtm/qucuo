@@ -263,7 +263,7 @@ JSON后若需维护角色/世界状态变量，另起一行独立输出 <mvu> �
     makeBlock("main", `${ENGINE_IDENTITY}\n`),
     makeBlock("worldInfoBefore", presetContent),
     makeBlock("charDescription", `玩家角色：${playerName}。气血、内外功、物品等状态由系统维护，你只叙事，不擅自改状态。`),
-    makeBlock("charPersonality", `旁白语气由「Main Prompt」声线控制，保持统一。`),
+    makeBlock("charPersonality", `旁白语气由给定的说书人声线控制，保持统一。`),
     makeBlock("scenario", scenarioIceberg.blue.join("\n\n")),
     makeBlock("worldInfoAfter", `${wantIsolation ? `${ISOLATION}\n` : ""}\n\n${MAP_LAW}`),
     makeBlock("persona", `玩家以第一人称「我」扮演 ${playerName}，你是说书人/Gamemaster。`),
