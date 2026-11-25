@@ -45,7 +45,7 @@ describe("WO-16F-F1 free_act 按表签发", () => {
     expect(v.facts.find((x) => x.op === "CHANGE_VITALS_SILVER").hpDelta).toBe(10);
     expect(v.facts.find((x) => x.op === "PROGRESS_CULTIVATION").potDelta).toBe(1);
     // turn5 watch=2：rest_2 已记账则跳过
-    const again = judgeTurn(base({ varTree: { 角色: {}, 世界: { 调息账: ["rest_2"] } }), act(fa("调息")), { rng: () => 0.5 });
+    const again = judgeTurn(base({ varTree: { 角色: {}, 世界: { 调息账: ["rest_2"] } } }), act(fa("调息")), { rng: () => 0.5 });
     expect(again.facts.length).toBe(0);
   });
   it("修习：按 tier 签 potDelta", () => {
