@@ -98,6 +98,26 @@ describe("evaluateShadowThresholds", () => {
     expect(e.pass).toBe(false);
     expect(e.failures.some((f) => f.includes("噪声"))).toBe(true);
   });
+  it("全回合盲区类目（npcs 结构性恒 excluded）不阻塞放行", () => {
+    // npcs excluded==turns → comparable=0 不可测，跳过评估而非判负（Review finding）
+    const s = summarizeShadowCoverage(mkAgg({
+      turns: 300, gaps: 0,
+      byCategory: {},
+      excluded: { npcs: 300 },
+    }));
+    expect(s.categories.npcs.comparable).toBe(0);
+    expect(evaluateShadowThresholds(s).pass).toBe(true);
+  });
+  it("可对比但低覆盖率仍判负", () => {
+    const s = summarizeShadowCoverage(mkAgg({
+      turns: 300, gaps: 40,
+      byCategory: { inv: { single_only: 30 } },
+      excluded: { npcs: 300 },
+    }));
+    const e = evaluateShadowThresholds(s);
+    expect(e.pass).toBe(false);
+    expect(e.failures.some((f) => f.startsWith("inv"))).toBe(true);
+  });
   it("null 输入不通过", () => {
     expect(evaluateShadowThresholds(null).pass).toBe(false);
   });

@@ -82,6 +82,11 @@ export function evaluateShadowThresholds(summary, thresholds = DEFAULT_RELEASE_T
   }
   for (const [cat, c] of Object.entries(summary.categories)) {
     if (c.referenceOnly) continue;
+    // Review 修：comparable=0 即全回合盲区（如 npcs 系统改写链恒 excluded，结构性
+    // 不可测）——按「不可测盲区」跳过而不是按不通过论，否则门槛永远卡死任何真实
+    // 游玩样本。这与「无样本不放行」不同：coverageRate 只在 comparable>0 时可计算，
+    // 可计算且低于阈值才真失败。
+    if (c.comparable === 0) continue;
     if (c.coverageRate === null || c.coverageRate < thresholds.minCoverage) {
       failures.push(`${cat} 覆盖率 ${c.coverageRate === null ? "无样本" : `${(c.coverageRate * 100).toFixed(1)}%`} < ${(thresholds.minCoverage * 100).toFixed(0)}%`);
     }
@@ -103,7 +108,7 @@ export function formatCoverageReport(summary, evaluation) {
   ];
   for (const [cat, c] of Object.entries(summary.categories)) {
     if (!c.comparable && !c.excluded) continue;
-    const cov = c.referenceOnly ? "参考" : c.coverageRate === null ? "无样本" : `${(c.coverageRate * 100).toFixed(1)}%`;
+    const cov = c.referenceOnly ? "参考" : c.comparable === 0 ? "不可测(全盲区)" : c.coverageRate === null ? "无样本" : `${(c.coverageRate * 100).toFixed(1)}%`;
     lines.push(`${cat}：覆盖率 ${cov} · 漏判 ${c.single_only} · 会判 ${c.judge_only} · 都偏 ${c.both_diff} · 盲区 ${c.excluded}/${c.comparable + c.excluded}`);
   }
   lines.push(`噪声占比 ${summary.noise.noiseShare === null ? "无信号" : `${(summary.noise.noiseShare * 100).toFixed(0)}%`}（会判噪声 ${summary.noise.totalNoise}/${summary.noise.totalSignals} · quest参考 ${summary.noise.questReference} 不计入）`);
