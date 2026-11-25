@@ -5,6 +5,8 @@ import { createWebAi } from "./ports/ai.js";
 import { createPhaseSetter } from "./turn/phaseSetter.js";
 import { narrateTurn } from "./turn/narrateTurn.js";
 import { finalizeTurn } from "./turn/finalizeTurn.js";
+import { runShadowJudge, resolveShadowJudgeEnabled } from "./act/shadow/shadowJudge.js";
+import { buildPresence } from "./prompt/index.js";
 
 export const ROLLBACK_KEYS = [
   "room", "char", "dao", "skills", "inv", "exp", "pot", "flags",
@@ -60,9 +62,50 @@ export async function playTurn(ctx, cmd, opts = {}) {
     const turnOpts = { ...opts };
     const narrated = await narrateTurn(turnCtx, trace, cmd, turnOpts);
     if (narrated.stale) return stale();
-    return await finalizeTurn({
+    // WO-16D 影子对账：回合前快照切片在 commit 前捕获（store 值不可变，引用即快照）。
+    const shadowPre = resolveShadowJudgeEnabled(turnCtx.apiCfg) && !turnCtx.apiCfg?.extractionEnabled && snapshot
+      ? {
+        inv: snapshot.state.inv, flags: snapshot.state.flags, varTree: snapshot.state.varTree,
+        room: snapshot.state.room, questProgress: getGameState?.()?.questProgress,
+        char: snapshot.state.char, turn: snapshot.state.time,
+        innerRoomName: turnCtx.innerRoomName ?? null,
+      }
+      : null;
+    const finalized = await finalizeTurn({
       ctx: turnCtx, trace, turn: narrated.turn, turnOpts, opts, setPhase,
     });
+    // commit 成功且未 stale 才 fire-and-forget；影子吃回合前快照、对比 commit 后现状，
+    // 结果只进 trace/内存聚合，异常静默，绝不阻塞回合。
+    // settle 双保险：turnCtx.isSettle 是 plan 派生主信号，opts.settle 是调用方直传——
+    // 创造模式等路径可能出现 plan 未派生但 opts.settle 为真的回合（runTurnSteps 仍认它），
+    // 任一命中都不跑影子（影子只在普通自由行动回合对账）。
+    if (shadowPre && finalized?.ok && !finalized?.stale && !turnCtx.isStale?.() && !turnCtx.isSettle && !opts.settle && !opts.isSettle) {
+      const liveAfter = getGameState?.() || {};
+      const shadowPost = {
+        inv: liveAfter.inv, flags: liveAfter.flags, varTree: liveAfter.varTree,
+        room: liveAfter.room, turn: liveAfter.time,
+      };
+      // 同源喂料：在场名单用与 preparedPrompt 完全相同的 buildPresence 口径
+      // （内层过滤+同伴出战位并入），吃回合前房间快照——影子输入才与真实判官一致。
+      // isTalk 可靠信号在 plan/turnContext，opts.isTalk 仅兜底——普通搭话回合
+      // opts 通常不带这个字段，漏掉会让 talkOnly 与在场名单都按非搭话算，对账失真。
+      const isTalk = !!(turnCtx.isTalk ?? opts.isTalk);
+      const presence = buildPresence({
+        isTalk, lockedDestName: turnCtx.lockedDestName,
+        room: shadowPre.room || {}, innerRoomName: turnCtx.innerRoomName,
+        companionState: getGameState?.()?.companionState,
+      });
+      void runShadowJudge({
+        cmd, preState: shadowPre, postState: shadowPost,
+        ai: turnCtx.ai, apiCfg: turnCtx.apiCfg,
+        convo: turnCtx.convo || [], isTalk,
+        visibleNpcs: presence.visibleNpcsForAI,
+        epoch: String(turnCtx.proseEpoch ?? "default"),
+        isStale: turnCtx.isStale, epochGuard: turnCtx.proseEpochGuard,
+        trace: (layer, status, detail) => turnMonitor.add(trace, layer, status, typeof detail === "string" ? { detail } : detail),
+      }).catch(() => { /* 影子异常静默 */ });
+    }
+    return finalized;
   } catch (error) {
     if (ctx.isStale?.()) return stale(error);
     if (snapshot) withTurnContext(trace, () => restoreSnapshot(snapshot, getGameState, gameActions));
