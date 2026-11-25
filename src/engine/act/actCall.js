@@ -68,6 +68,7 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
       inSeaOfMind: !!d.inSeaOfMind,
       gm: d.gm,
       judgeActive: !!d.judgeRuleBlock,
+      groupTalkActive: !!d.groupTalkRuleBlock,
       playerName: d.charName || "主角", // memory摘要统一用这个称呼，不用你/我，避免人称混乱
       activePreset: d.activePreset,
       // 物件志（批四）：只有本轮真可能发出物品才挂——移动拾取命中/战斗/创造模式。
@@ -309,8 +310,9 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
       streamLogIndex = l.length - 1;
       return l;
     });
-    if (d.judgePipelineActive && narrativeOnly) {
+    if ((d.judgePipelineActive || d.groupTalkRuleBlock) && narrativeOnly) {
       // WO-13：判官管线的流式——⟦F⟧ 锚点实时剥除，\n---SEAL--- 后冻结屏幕。
+      // WO-16H-H1：群聊尾章同走剥离（无锚点，只切 ---SEAL--- 尾章），否则尾章漏上屏。
       judgeStream = createStorytellerStream();
     }
     onChunk = (_delta, fullSoFar) => {
@@ -364,7 +366,7 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
   }
   // WO-13：判官管线下剥锚点/切尾章——rawFull 只留屏幕正文，
   // 尾章与锚点落段随结果带回给 runTurn 做 sealVerifier 校对。
-  if (d.judgePipelineActive) {
+  if (d.judgePipelineActive || d.groupTalkRuleBlock) {
     const split = splitStorytellerText(text);
     if (stream && narrativeOnly) {
       d.setLog(l => {
