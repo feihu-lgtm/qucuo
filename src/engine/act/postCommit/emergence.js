@@ -14,13 +14,18 @@ export function materializeEmergence({ p, luck, innerRoomName, npcState }) {
     changes: {
       varTree: (prev) => clearRumor(prev, p.emergedNpcName),
       room: (r) => {
+        // p.room.npcs 只并最小形状的 name/brief——fixateNpcs 已把该条目固化上
+        // 「brief+整段正文」推导的战斗数据，而 ensureNpcCombatData 对已有数据直接
+        // 跳过不重算，整份并入会让正文里形容别人的词（"掌门""学徒"）错定此人战力。
+        const proposed = p.room?.npcs?.find(n => n?.name === p.emergedNpcName);
         const fixed = ensureNpcCombatData({
-          // 合并次序：r.npcs 同名者（重逢）最优先，其次 p.room.npcs 里 runTurn 并入的
-          // 最小形状——brief 只能从这里来，否则 upsert 登场者名片恒空。
-          ...(p.room?.npcs?.find(n => n?.name === p.emergedNpcName) || {}),
+          // 合并次序：r.npcs 同名者（重逢）最优先，其次最小形状的 brief
+          ...(proposed ? { brief: proposed.brief } : {}),
           ...(r.npcs.find(n => n.name === p.emergedNpcName) || {}),
-          // upsert 路径下原名单里没有此人，名字必须显式带上
+          // upsert 路径下原名单里没有此人，名字必须显式带上；id 用确定性派生——
+          // 交易回调按 n.id === npc.id 寻址，两个 undefined 相等会串改旁人随身物
           name: p.emergedNpcName,
+          id: `emerged_${p.emergedNpcName}`,
           personalityProfile,
           // 叙事里登场的人就站在玩家此刻所在的内层房间，不再默认落到锚点
           ...(hasInnerMap(r.name) && innerRoomName ? { innerRoom: innerRoomName } : {}),

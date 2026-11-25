@@ -64,6 +64,25 @@ describe("涌现复接管线·真实 writeRoom 分支", () => {
     expect(wr.changes.room.npcs.some((n) => n.name === "才旦")).toBe(false);
   });
 
+  it("upsert 登场者带确定性 id，且不继承 p.room.npcs 里被场景正文推导的战斗数据", () => {
+    const p = makeP();
+    // 模拟 fixateNpcs 跑过后：p.room.npcs 条目被固化上「brief+整段正文」推导的战斗数据。
+    // 正文形容别人是掌门，若这份数据并入 fixed（ensureNpcCombatData 见已有数据直接跳过），
+    // 磨坊学徒就会被错定成掌门战力——必须只并 name/brief。
+    p.room.npcs = p.room.npcs.map((n) => ({
+      ...n, combatStats: { atk: 999 }, moveset: ["掌门绝技"], carriedItems: [{ name: "掌门信物" }], special: { 臂力: 99 },
+    }));
+    const em = materializeEmergence({ p, luck: 5, innerRoomName: null, npcState: {} });
+    const roomAfter = em.changes.room(BASE_ROOM);
+    const emerged = roomAfter.npcs.find((n) => n.name === "磨坊阿福");
+    expect(emerged.id).toBe("emerged_磨坊阿福");
+    expect(emerged.brief).toBe("磨坊学徒，憨厚老实");
+    // 战斗数据由 description 映射重新定量，不是正文推导的 999/掌门绝技
+    expect(emerged.combatStats?.atk).not.toBe(999);
+    expect(emerged.moveset).not.toContain("掌门绝技");
+    expect((emerged.carriedItems || []).some((i) => i.name === "掌门信物")).toBe(false);
+  });
+
   it("非法 emergedNpc（无传闻/命中排除名单）不进 p.room.npcs", () => {
     const noRumor = validateEmergenceSeal({ emergedNpc: { name: "陌生人", description: "货郎" } },
       { screenText: SCREEN, varTree: VT, roomNpcs: [], playerName: "少侠" });
