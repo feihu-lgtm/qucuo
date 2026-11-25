@@ -5,7 +5,7 @@ export const viewport = { width: 390, height: 844 };
 export default async function mobileKeyboard({ page, game }) {
   await game.loadSave(page, "village");
   const tabs = page.getByRole("navigation", { name: "界面栏目" });
-  const input = page.getByPlaceholder("输入行动指令…（消耗1回合）");
+  const input = page.getByPlaceholder(/说话、做事都行/);
   await input.click();
   assert.equal(await input.evaluate(element => element === element.ownerDocument.activeElement), true);
   const originalInput = await input.elementHandle();

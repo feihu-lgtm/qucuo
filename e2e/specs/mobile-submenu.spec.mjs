@@ -46,8 +46,8 @@ export default async function mobileSubmenu({ page, ai, game }) {
 
   await mode.click();
   const modeMenu = page.locator('[data-control-menu="mode"]');
-  await modeMenu.getByRole("menuitem", { name: /◎ 对话/ }).click();
-  assert.ok((await mode.innerText()).includes("对话"));
+  await modeMenu.getByRole("menuitem", { name: /◈ 自动/ }).click();
+  assert.ok((await mode.innerText()).includes("自动"));
   assert.ok((await people.innerText()).includes(firstNpc));
 
   await people.click();
@@ -64,7 +64,7 @@ export default async function mobileSubmenu({ page, ai, game }) {
   await game.waitFor(page, () => menus.count().then(count => count === 0), { message: "column switch closes submenu" });
 
   await mode.click();
-  await page.locator('[data-control-menu="mode"]').getByRole("menuitem", { name: /◈ 行动/ }).click();
+  await page.locator('[data-control-menu="mode"]').getByRole("menuitem", { name: /◈ 自动/ }).click();
   const groundBefore = await itemsInRoom(page);
   const selectedItem = "界石";
   const firstOtherItem = groundBefore.items.find(item => itemName(item) !== selectedItem);
@@ -106,8 +106,8 @@ export default async function mobileSubmenu({ page, ai, game }) {
     assert.ok(requestText.includes(`地上的「${selectedItem}」`));
 
     await mode.click();
-    await page.locator('[data-control-menu="mode"]').getByRole("menuitem", { name: /◎ 对话/ }).click();
-    assert.ok((await mode.innerText()).includes("对话"));
+    await page.locator('[data-control-menu="mode"]').getByRole("menuitem", { name: /◈ 自动/ }).click();
+    assert.ok((await mode.innerText()).includes("自动"));
     assert.ok((await people.innerText()).includes(firstNpc));
 
     await people.click();
