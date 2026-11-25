@@ -251,4 +251,12 @@ describe("settleKind 铁律的其余分支", () => {
     const { phiRules } = mk("settle", false, { settleNpc: "温掌柜", settleKind: "hire" });
     expect(phiRules).toContain("关于下面那条 <mvu>：如果这一轮牵涉的人物（温掌柜）对玩家的观感确有变化才给出");
   });
+
+  it("narrativeOnly + judgeActive：放行 ---SEAL--- 尾章，只禁其余结构化", () => {
+    const textOn = JSON.stringify(mk("full", true, { judgeActive: true }).phiBlock);
+    expect(textOn).toContain("---SEAL---");
+    const textOff = JSON.stringify(mk("full", true).phiBlock);
+    expect(textOff).toContain("写完即止");
+    expect(textOff).not.toContain("---SEAL---");
+  });
 });
