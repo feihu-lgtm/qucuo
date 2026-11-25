@@ -89,9 +89,11 @@ export function useDuel({
   duelingNpc, pendingQuestBranch, noteAction, jotNote, aiSummarizeFact, setPendingQuestBranch,
   captureUndo, turnGenerationRef, narrator, interactMode,
 }) {
-  const handleNpcDuel = useCallback((npc) => applyResult(featureCtx(), async () => {
+  // WO-16F-F2c：skipCaptureUndo 可选——判官链叙事后接续的交互是同一玩家回合的
+  // 后续，不是新动作，绝不能覆盖本回合开头的撤销检查点；按钮老路默认照旧捕获。
+  const handleNpcDuel = useCallback((npc, { skipCaptureUndo = false } = {}) => applyResult(featureCtx(), async () => {
     const isStale = createTurnStaleCheck(turnGenerationRef);
-    captureUndo();
+    if (!skipCaptureUndo) captureUndo();
     // 没端详过的人不能上来就打——先替他做「细看」这一步，看清楚了
     // 再点一次切磋才真的邀战。
     if (!isNpcLooked(gameStore.getState().varTree, npc.name)) {

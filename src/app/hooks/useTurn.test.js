@@ -130,3 +130,63 @@ it("effectReceipt 结构化动作：已注册命令、走调度队列、回合�
     commands.dispose?.();
   }
 });
+
+// WO-16F-F2c 交互意向消费：playTurn resolve 后才 runDeferred；stale/不 ok 不消费
+function useDeferredTurnHarness({ playTurnResult, intentRouterRef }) {
+  initGameStore({ flags: [], inv: [], questProgress: {}, room: { name: "曲措乡", npcs: [] }, char: { name: "行旅" } });
+  const waitTimerRef = { current: null };
+  const state = gameStore.getState();
+  const commands = createScheduler();
+  const hooks = useTurn({
+    ...state, apiCfg: {}, preset: {}, convo: [], addLog: vi.fn(),
+    effectiveSpecialNow: {}, onTurnsInvalidated: vi.fn(() => vi.fn()), captureUndo: vi.fn(),
+    waitTimerRef, turnGenerationRef: { current: 0 }, dispatchCommand: commands.dispatch,
+    pendDirRef: {}, outerDepartRef: {}, pickupJudgmentRef: {}, collectGrantedRef: {},
+    varTreeRef: { current: {} }, timeRef: { current: 1 },
+    setInput: vi.fn(), setCmdHistory: vi.fn(), setHistIdx: vi.fn(), setLoading: vi.fn(),
+    setWaitSecs: vi.fn(), noteAction: vi.fn(), intentRouterRef,
+  });
+  return { hooks, waitTimerRef };
+}
+
+it("WO-16F-F2c：deferredIntents 在 playTurn resolve 后映射 runDeferred 消费（duel→切磋/trade→购买）", async () => {
+  const runDeferred = vi.fn();
+  const routerFn = Object.assign(vi.fn(), { runDeferred });
+  const intentRouterRef = { current: routerFn };
+  playTurn.mockImplementation(async () => ({
+    ok: true,
+    turn: { deferredIntents: [
+      { kind: "duel", target: "铁匠", text: "切磋" },
+      { kind: "trade", target: "掌柜", text: "问价" },
+    ] },
+  }));
+  const { hooks, waitTimerRef } = useDeferredTurnHarness({ intentRouterRef });
+  try {
+    await hooks.act("跟铁匠切磋再问问掌柜", [], {});
+    // 一回合只发起一场交互（单例 UI 防顶掉）：只接输入序第一场切磋，交易留待下回
+    expect(runDeferred).toHaveBeenCalledTimes(1);
+    expect(runDeferred.mock.calls[0][0]).toMatchObject({ kind: "切磋", target: "铁匠" });
+    expect(runDeferred.mock.calls[0][1]).toBe(true);
+    // WO-16F-F2c Review 修：deferred 消费是同一回合叙事后续接，必须 skipCaptureUndo——
+    // 不得覆盖本回合开头的撤销检查点（按钮老路无第三参照旧捕获）。
+    expect(runDeferred.mock.calls[0][2]).toEqual({ skipCaptureUndo: true });
+  } finally {
+    clearInterval(waitTimerRef.current);
+    turnMonitor.clear();
+  }
+});
+
+it("WO-16F-F2c：result 不 ok / 无 deferredIntents 时不消费", async () => {
+  const runDeferred = vi.fn();
+  const routerFn = Object.assign(vi.fn(), { runDeferred });
+  const intentRouterRef = { current: routerFn };
+  playTurn.mockImplementation(async () => ({ ok: false, error: new Error("boom"), turn: { deferredIntents: [{ kind: "duel", target: "铁匠", text: "" }] } }));
+  const { hooks, waitTimerRef } = useDeferredTurnHarness({ intentRouterRef });
+  try {
+    await hooks.act("打铁匠", [], {});
+    expect(runDeferred).not.toHaveBeenCalled();
+  } finally {
+    clearInterval(waitTimerRef.current);
+    turnMonitor.clear();
+  }
+});

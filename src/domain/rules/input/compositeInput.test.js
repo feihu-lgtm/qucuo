@@ -56,3 +56,35 @@ describe("buildCompositeNote", () => {
     expect(buildCompositeNote("单打独斗一句话")).toBe("");
   });
 });
+
+describe("WO-16F-F2c isTradeInput 交易意向不进免费纯搭话", () => {
+  it("无歧义动作线索分流 action 不免费", () => {
+    expect(routeAutoInput("老孙，这个多少钱", []).kind).toBe("action");
+    expect(routeAutoInput("跟老孙做交易", []).kind).toBe("action");
+    expect(routeAutoInput("掌柜，拿货看看", []).kind).toBe("action");
+  });
+  it("「聊聊家常」仍 talk；送礼排除不回归", () => {
+    expect(routeAutoInput("聊聊家常", []).kind).toBe("talk");
+    expect(routeAutoInput("把这壶酒送给老孙", []).kind).toBe("action");
+  });
+  it("保守口径：只认无歧义动作线索，名词性 买卖/价格/价钱 单独出现一概不算", async () => {
+    const { isTradeInput } = await import("../prompt/inputIntent.js");
+    // 命中：买/卖（动词）/交易/问价/多少钱/开价/拿货看看/什么货/进货/出货
+    expect(isTradeInput("买把剑")).toBe(true);
+    expect(isTradeInput("这个多少钱")).toBe(true);
+    expect(isTradeInput("跟掌柜交易")).toBe(true);
+    expect(isTradeInput("你这有什么货")).toBe(true);
+    // 名词剥除：买卖/价格/价钱 单独出现一概不算（宁可漏判不误判，裁决收口）
+    expect(isTradeInput("聊聊村里的买卖")).toBe(false);
+    expect(isTradeInput("谈谈买卖的事")).toBe(false);
+    expect(isTradeInput("做笔买卖")).toBe(false);
+    expect(isTradeInput("问问价格")).toBe(false);
+    expect(isTradeInput("问问老孙最近买卖怎么样")).toBe(false);
+    expect(isTradeInput("买卖如何啊")).toBe(false);
+    expect(isTradeInput("问问老孙来一笔买卖怎么样")).toBe(false);
+    // 元问题排除不回归
+    expect(isTradeInput("价格是什么")).toBe(false);
+    expect(isTradeInput("什么叫交易")).toBe(false);
+  });
+
+});

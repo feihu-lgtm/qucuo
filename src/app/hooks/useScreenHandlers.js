@@ -142,8 +142,9 @@ export function useScreenHandlers({
     applyResult(featureCtx(), result);
   }, { feature: "items.pickGroundItem" }), [captureUndo]);
 
-  const handleNpcTrade = useCallback((npc) => applyResult(featureCtx(), () => {
-    captureUndo();
+  // WO-16F-F2c：skipCaptureUndo 可选——判官链叙事后接续的交互不覆盖本回合撤销点。
+  const handleNpcTrade = useCallback((npc, { skipCaptureUndo = false } = {}) => applyResult(featureCtx(), () => {
+    if (!skipCaptureUndo) captureUndo();
     const result = tradeWithNpc(gameStore.getState(), npc);
     if (result.shop) {
       // 日更摊刷新带来的落账（换货 room/npcState + 吆喝日志）与开摊分开应用。

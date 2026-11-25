@@ -5,6 +5,7 @@ import { applyResult } from "../../features/run.js";
 import { parseLocalCommand } from "../../engine/localCommands.js";
 import { shouldThrottleMovement } from "../../features/map/logic.js";
 import { consumeDuelRequest } from "./useDuel.js";
+import { ACTION_KINDS } from "../../domain/rules/intent/actionKinds.js";
 import { classifyError } from "../../utils/apiErrors.js";
 import { step as traceStep } from "../../infra/actionTrace.js";
 import { getTurnContext, PHASE, turnMonitor } from "../../infra/turnMonitor.js";
@@ -225,6 +226,32 @@ export function useTurn({
       ]);
     }
     consumeDuelRequest(result, { opts, isStale, isTalk, interactMode: effMode, setActiveTarget, setDuelPending, trace: _trace });
+    // WO-16F-F2c 交互意向消费：duel/trade 在叙事完成、事务落盘且未 stale 后才接
+    // 交互入口——复用 intentRouter 既有 runDeferred 闭包（duel→handleNpcDuel/
+    // openDuelAfterNarration，trade→handleNpcTrade/setTradingShop），不重穿一份。
+    // result 不 ok（回滚）绝不消费；消费前再查 stale。
+    if (result.ok && !result.stale && !isStale()) {
+      const deferredIntents = result.turn?.deferredIntents;
+      if (Array.isArray(deferredIntents) && deferredIntents.length) {
+        const KIND_MAP = { duel: ACTION_KINDS.DUEL, trade: ACTION_KINDS.BUY };
+        // 一回合只发起一场交互：切磋确认/商店货架都是单例 UI——同 tick 连开两场
+        // 后开的顶掉先开的，先受理的那场从此够不着。按输入顺序只接第一场，
+        // 其余系统句明示「一场方休」，正文意向口径不受影响。
+        const [first, ...rest] = deferredIntents;
+        const kind = KIND_MAP[first.kind];
+        if (kind && !isStale()) {
+          try {
+            intentRouterRef.current?.runDeferred?.({ kind, target: first.target, text: first.text || "" }, true, { skipCaptureUndo: true });
+          } catch (deferredError) {
+            traceStep(_trace, "交互意向", "fail", `${first.kind}→${first.target} 接入口异常：${deferredError?.message || deferredError}`);
+          }
+        }
+        for (const skipped of rest) {
+          addLog([{ t: "sys", text: `  一场方休——与${skipped.target}的${skipped.kind === "duel" ? "切磋" : "交易"}且等下回。` }]);
+          traceStep(_trace, "交互意向", "skip", `${skipped.kind}→${skipped.target} 同回合已有交互，留待下回`);
+        }
+      }
+    }
     noteAction(isSettle ? "settle" : isTalk ? "talk" : "action");
     // 随行同伴随机插话（评价玩家活动）：概率触发、AI 现写（无 API 兜底句），记日志 + 进记忆
     if (result.ok && !isStale()) {

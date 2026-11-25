@@ -2,7 +2,7 @@
 // 整句纯「看X」走 lookNpcInBackground（免费）；整句纯搭话走 talk 路（不耗回合）；
 // 其他一切（行动意图/复合句/UNKNOWN）整句进 act() 扣 1 回合——括号/断句只做
 // 段标注透传给模型，不做物理分流、不按段多发调用。
-import { classifyIntent, isGiftInput } from "../prompt/inputIntent.js";
+import { classifyIntent, isGiftInput, isTradeInput } from "../prompt/inputIntent.js";
 
 const PAREN_RE = /[（(]([^（）()]+)[）)]/g;
 const SEG_SPLIT_RE = /[，,。.！!？?；;、\n]+/;
@@ -63,7 +63,7 @@ export function routeAutoInput(raw, npcs = []) {
   // 纯搭话才免费：必须整句一段、判为闲聊、且不是「送给/递给」这类
   // classifyIntent 为篇幅归进 TALK_CASUAL 的真行动。
   if (splitCompositeInput(s).length === 1
-    && classifyIntent(s).code === "TALK_CASUAL" && !isGiftInput(s)) {
+    && classifyIntent(s).code === "TALK_CASUAL" && !isGiftInput(s) && !isTradeInput(s)) {
     return { kind: "talk" };
   }
   return { kind: "action" };

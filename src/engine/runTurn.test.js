@@ -223,6 +223,98 @@ describe("runTurn", () => {
 
 
 
+  it("WO-16F-F2c 交互意向：duel/trade 挂 turn.deferredIntents，叙事注入意向口径而非已打已买", async () => {
+    const calls = [];
+    const intakeJson = JSON.stringify({
+      read: "邀战铁匠再问价掌柜", refIds: [],
+      actions: [
+        { kind: "duel", target: "铁匠", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.8, text: "想和铁匠切磋" },
+        { kind: "trade", target: "掌柜", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.8, text: "问问掌柜有什么好货" },
+        { kind: "duel", target: "路人乙", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.5, text: "还想打路人" },
+      ],
+      proposals: [],
+    });
+    const ai = {
+      async chat(messages, chatOpts) {
+        const all = String(chatOpts?.systemPrompt || "") + "\n" + (messages || []).map((m) => String(typeof m === "string" ? m : (m?.content ?? ""))).join("\n");
+        calls.push(all);
+        if (all.includes("听意员")) return { text: intakeJson };
+        return { text: '铁匠抱拳。\n---SEAL---\n{"fills":{},"respondedNpcs":[],"spontaneousPact":null}' };
+      },
+    };
+    const varTree = { 角色: {} };
+    const deps = {
+      convo: [], addLog: vi.fn(), setConvo: vi.fn(),
+      apiCfg: { extractionEnabled: true, judgePipelineEnabled: true, streamEnabled: false, maxTokens: 4000 },
+      intent: { code: "FREE", label: "自由行动" },
+      room: { name: "鱼定村", npcs: [{ name: "铁匠" }, { name: "掌柜" }], items: [], exits: [] },
+      inv: [], char: { hp: [80, 100], special: { 气运: 5 } }, skills: [],
+      varTree, memory: { varTreeLatest: varTree, recall: { lastAiText: "" } },
+      gm: false, flags: [],
+      narrator: initialNarratorState(), narratorStage: initialNarratorState().stage,
+      scenario: "测试剧本", preset: { scenario: "测试剧本" },
+      charBodyProfile: emptyBodyProfile(), charName: "少侠",
+      dao: { karma: 0, jie: 0 }, questProgress: {}, companionState: {},
+      time: 1, getTimeStr: () => "卯时",
+      hasInnerMap: () => false, describeEquipment: () => "", describeTodayForAI: () => "",
+      visibleNpcsCount: 2, npcLoreBlockWithQuest: "",
+      isTalk: false,
+      ai,
+    };
+    const turn = await runTurn(deps, "跟铁匠切磋，再问问掌柜有什么货");
+    expect(turn).toBeTruthy();
+    // 收集成功两条（在场铁匠/掌柜），路人乙不在场被滤掉不进意向
+    expect(turn.deferredIntents).toHaveLength(2);
+    expect(turn.deferredIntents[0]).toMatchObject({ kind: "duel", target: "铁匠" });
+    expect(turn.deferredIntents[1]).toMatchObject({ kind: "trade", target: "掌柜" });
+    // 叙事输入（判官铁律块）是意向口径：邀战/问价，绝不是已开打/已成交
+    const judgeInput = calls.find((c) => c.includes("交互意向")) || "";
+    expect(judgeInput).toContain("邀战");
+    expect(judgeInput).toContain("问价");
+    expect(judgeInput).toContain("不得写已开打或胜负");
+    expect(judgeInput).toContain("不得写已成交");
+    expect(judgeInput).toContain("未能如愿"); // 路人乙不在场失败回执
+  });
+
+  it("WO-16F-F2c 闸门：talkOnly/条件句不收集交互意向", async () => {
+    const intakeJson = JSON.stringify({
+      read: "要是没人就打铁匠", refIds: [],
+      actions: [
+        { kind: "duel", target: "铁匠", item: "无", itemId: "", direction: "none", condition: "遇敌", condition_text: "要是碰上", stance: "casual", outcome: "无", risk: "无", confidence: 0.8, text: "打铁匠" },
+      ],
+      proposals: [],
+    });
+    const ai = {
+      async chat(messages, chatOpts) {
+        const all = String(chatOpts?.systemPrompt || "") + "\n" + (messages || []).map((m) => String(typeof m === "string" ? m : (m?.content ?? ""))).join("\n");
+        if (all.includes("听意员")) return { text: intakeJson };
+        return { text: '嗯。\n---SEAL---\n{"fills":{},"respondedNpcs":[],"spontaneousPact":null}' };
+      },
+    };
+    const varTree = { 角色: {} };
+    const deps = {
+      convo: [], addLog: vi.fn(), setConvo: vi.fn(),
+      apiCfg: { extractionEnabled: true, judgePipelineEnabled: true, streamEnabled: false, maxTokens: 4000 },
+      intent: { code: "FREE", label: "自由行动" },
+      room: { name: "鱼定村", npcs: [{ name: "铁匠" }], items: [], exits: [] },
+      inv: [], char: { hp: [80, 100], special: { 气运: 5 } }, skills: [],
+      varTree, memory: { varTreeLatest: varTree, recall: { lastAiText: "" } },
+      gm: false, flags: [],
+      narrator: initialNarratorState(), narratorStage: initialNarratorState().stage,
+      scenario: "测试剧本", preset: { scenario: "测试剧本" },
+      charBodyProfile: emptyBodyProfile(), charName: "少侠",
+      dao: { karma: 0, jie: 0 }, questProgress: {}, companionState: {},
+      time: 1, getTimeStr: () => "卯时",
+      hasInnerMap: () => false, describeEquipment: () => "", describeTodayForAI: () => "",
+      visibleNpcsCount: 1, npcLoreBlockWithQuest: "",
+      isTalk: false,
+      ai,
+    };
+    const turn = await runTurn(deps, "要是碰上就打铁匠");
+    // condition≠无：不收集——deferredIntents 为空（null）
+    expect(turn.deferredIntents || null).toBeNull();
+  });
+
   it("normalizes and returns a duel request for an NPC present in the room", async () => {
     const npc = { name: "才旦" };
     const commit = vi.fn();
