@@ -179,6 +179,48 @@ describe("runTurn", () => {
     expect(turn.judgePipelineActive).toBe(true);
   });
 
+  it("WO-16G-G2 混合分流：搭话有任务推进候选时仍调一次 turn.intake（说动通道不断）", async () => {
+    const calls = [];
+    const intakeJson = JSON.stringify({
+      read: "说动老猎户", refIds: [],
+      actions: [{ kind: "talk", target: "老猎户", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "sincere", outcome: "无", risk: "无", confidence: 0.8, text: "老猎户，教我几手吧" }],
+      proposals: [{ claim: "说动了老猎户", kind: "quest_advance", fit: "natural", questId: "hunter_learn_quest", flag: "quest_village1_s1" }],
+    });
+    const ai = {
+      async chat(messages, chatOpts) {
+        const all = String(chatOpts?.systemPrompt || "") + "\n" + (messages || []).map((m) => String(typeof m === "string" ? m : (m?.content ?? ""))).join("\n");
+        calls.push(all);
+        if (all.includes("听意员")) return { text: intakeJson };
+        return { text: '大娘点头。\n---SEAL---\n{"fills":{},"respondedNpcs":[],"spontaneousPact":null}' };
+      },
+    };
+    const varTree = { 角色: {} };
+    const deps = {
+      convo: [], addLog: vi.fn(), setConvo: vi.fn(),
+      apiCfg: { extractionEnabled: true, judgePipelineEnabled: true, streamEnabled: false, maxTokens: 4000 },
+      intent: { code: "TALK_CASUAL", label: "日常闲聊" },
+      // 老猎户在场 + hunter_learn_quest 未开启 → questAdvanceCandidates 非空
+      room: { name: "鱼定村", npcs: [{ name: "老猎户" }], items: [], exits: [] },
+      inv: [], char: { hp: [80, 100], special: { 气运: 5 } }, skills: [],
+      varTree, memory: { varTreeLatest: varTree, recall: { lastAiText: "" } },
+      gm: false, flags: [],
+      narrator: initialNarratorState(), narratorStage: initialNarratorState().stage,
+      scenario: "测试剧本", preset: { scenario: "测试剧本" },
+      charBodyProfile: emptyBodyProfile(), charName: "少侠",
+      dao: { karma: 0, jie: 0 }, questProgress: {}, companionState: {},
+      time: 1, getTimeStr: () => "卯时",
+      hasInnerMap: () => false, describeEquipment: () => "", describeTodayForAI: () => "",
+      visibleNpcsCount: 1, npcLoreBlockWithQuest: "",
+      isTalk: true, talkTarget: "老猎户",
+      ai,
+    };
+    const turn = await runTurn(deps, "老猎户，教我几手吧");
+    expect(turn).toBeTruthy();
+    // 有候选：前哨必须调用——且恰好一次（混合分流的成本是有意保留的）
+    expect(calls.filter((c) => c.includes("听意员"))).toHaveLength(1);
+    expect(turn.judgePipelineActive).toBe(true);
+  });
+
   it("normalizes and returns a duel request for an NPC present in the room", async () => {
     const npc = { name: "才旦" };
     const commit = vi.fn();

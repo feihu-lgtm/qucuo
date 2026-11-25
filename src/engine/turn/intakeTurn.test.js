@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildIntakeUserContent, normalizeIntakeResult } from "./intakeTurn.js";
+import { buildIntakeUserContent, normalizeIntakeResult, synthesizeTalkIntake, shouldSkipIntakeForTalk } from "./intakeTurn.js";
 import { getPromptDef } from "../../domain/rules/prompt/registry.js";
 import { INTAKE_JSON_SCHEMA } from "../../domain/rules/judge/intakeSchema.js";
 
@@ -136,6 +136,30 @@ describe("normalizeIntakeResult 本地复核", () => {
     expect(out.actions).toEqual([]);
     expect(normalizeIntakeResult(null).degraded).toBe(true);
     expect(normalizeIntakeResult("junk").degraded).toBe(true);
+  });
+});
+
+describe("WO-16G-G2 三级分流闸门与本地合成", () => {
+  it("shouldSkipIntakeForTalk：纯搭话无候选才跳过，有候选/非搭话不跳", () => {
+    expect(shouldSkipIntakeForTalk(true, [])).toBe(true);
+    expect(shouldSkipIntakeForTalk(true, null)).toBe(true);
+    expect(shouldSkipIntakeForTalk(true, undefined)).toBe(true);
+    expect(shouldSkipIntakeForTalk(true, [{ questId: "q", flag: "f" }])).toBe(false);
+    expect(shouldSkipIntakeForTalk(false, [])).toBe(false);
+  });
+
+  it("synthesizeTalkIntake 形状与 normalize 输出一致，target 缺省填「无」", () => {
+    const out = synthesizeTalkIntake("才旦，最近可好？", "才旦");
+    expect(out.actions).toHaveLength(1);
+    expect(out.actions[0].kind).toBe("talk");
+    expect(out.actions[0].target).toBe("才旦");
+    expect(out.actions[0].text).toBe("才旦，最近可好？");
+    // 12 字段全在（required 不缺键）
+    for (const key of ["kind", "target", "item", "itemId", "direction", "condition", "condition_text", "stance", "outcome", "risk", "confidence", "text"]) {
+      expect(out.actions[0]).toHaveProperty(key);
+    }
+    expect(out.proposals).toEqual([]);
+    expect(synthesizeTalkIntake("喂", null).actions[0].target).toBe("无");
   });
 });
 

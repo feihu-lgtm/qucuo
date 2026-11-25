@@ -17,7 +17,7 @@ import { buildCausalBudgetInput } from "../domain/rules/judge/budgetInput.js";
 import { getInnerRoom } from "../domain/rules/map/innerMap.js";
 import { resolveContainerContext } from "../domain/rules/world/containers.js";
 import { renderJudgeVerdict, renderCausalBudget } from "../domain/rules/judge/judgeTurn.js";
-import { buildIntakeUserContent, normalizeIntakeResult, synthesizeTalkIntake } from "./turn/intakeTurn.js";
+import { buildIntakeUserContent, normalizeIntakeResult, synthesizeTalkIntake, shouldSkipIntakeForTalk } from "./turn/intakeTurn.js";
 import { buildExtractionCfg } from "../domain/rules/prompt/structuredCallCfg.js";
 import { verifySealAndMaterialize } from "../domain/rules/effects/sealVerifier.js";
 import { writeTurnProse } from "./act/proseWrite.js";
@@ -220,8 +220,10 @@ async function runTurnSteps(ctx, cmd, opts) {
       // 零次 AI 调用（底稿 4.2：面板按钮和简单指令直接进纯函数判官）。talkOnly 白名单
       // 路径（WO-16A）不变；target 沿用现有 talkTarget 上游判定，查不出填「无」。
       // 复合自由行动不是 isTalk，仍走一次 turn.intake。
+      // 混合分流（复审裁决）：有任务推进候选的搭话仍调一次 intake——「说动对方」
+      // 才能产 quest_advance，这个成本有意保留；闸门 helper 与 shadow 同源。
       let intakeResult;
-      if (isTalk) {
+      if (shouldSkipIntakeForTalk(isTalk, questCandidates)) {
         intakeResult = synthesizeTalkIntake(cmd, deps.talkTarget);
       } else {
         const intakeContent = buildIntakeUserContent({

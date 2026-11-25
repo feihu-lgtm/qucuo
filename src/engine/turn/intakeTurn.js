@@ -168,9 +168,18 @@ function repairProposal(entry) {
   };
 }
 
+// WO-16G-G2 三级分流闸门（runTurn 与 shadow 共用唯一来源，不得各写一份）：
+// 纯搭话且无任务推进候选时才跳过前哨；有候选时仍调一次 turn.intake——
+// 「说动对方/说服推进」通道（proposals.quest_advance）只有模型听意才能产出，
+// 本地合成猜不出玩家哪句话真把事说动了，这个成本是有意保留的。
+export function shouldSkipIntakeForTalk(isTalk, questCandidates) {
+  return !!isTalk && !(questCandidates && questCandidates.length > 0);
+}
+
 // WO-16G-G2 三级分流：纯搭话跳过前哨 AI 调用，本地合成听意单直接进纯函数判官。
 // 形状与 normalizeIntakeResult 输出完全一致（12 字段全 required），判官无感；
 // target 沿用上游 talkTarget 判定，查不出填「无」——judgeTurn 按白名单照常裁小额社交事实。
+// confidence:1 是本地占位值——判官当前不消费 confidence，它不表示任何模型确信度。
 export function synthesizeTalkIntake(cmd, talkTarget) {
   const text = String(cmd || "");
   return {
