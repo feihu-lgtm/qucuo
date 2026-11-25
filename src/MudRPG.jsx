@@ -146,7 +146,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const queueTimerRef = useRef(null);
   // WO-06：房间缓存收进 world store（roomCache）。初始播种读档快照/首房间，
   // 之后房间每次变化同步当前房进缓存——语义与原 roomMapRef 一致。
-  useMemo(() => {
+  useEffect(() => {
     const snap0 = restored?.snap;
     gameActions.setRoomCache(snap0?.roomMap || snap0?.roomCache || {
       [(snap0?.room || DEFAULT_PRESETS[0].room).name]: {
@@ -154,6 +154,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         npcs: [...(snap0?.room || DEFAULT_PRESETS[0].room).npcs],
       },
     });
+    // 仅首挂载播种一次：之后由下方房间同步 effect 维护
   }, []);
 
   // apiCfg/uiScale/font/isDayMode 的持久化已收编进 sessionUiStore（PR-2C）。
@@ -169,7 +170,16 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
   useEffect(() => { logEnd.current?.scrollIntoView({ behavior: "smooth" }); }, [log]);
   useEffect(() => { if (!loading) inputRef.current?.focus(); }, [loading]);
-  useEffect(() => { gameActions.setRoomCache((cache) => ({ ...(cache || {}), [room.name]: { items: [...room.items], npcs: [...room.npcs] } })); }, [room]);
+  useEffect(() => {
+    // 读档还原后 effect 会因 room 引用变化重跑——内容与快照缓存一致时跳过写入，
+    // 避免冗余 store 变更触发自动存档调度（WO-06 review）
+    gameActions.setRoomCache((cache) => {
+      const entry = { items: [...room.items], npcs: [...room.npcs] };
+      const prev = cache?.[room.name];
+      if (prev && JSON.stringify(prev) === JSON.stringify(entry)) return cache || {};
+      return { ...(cache || {}), [room.name]: entry };
+    });
+  }, [room]);
 
   useEffect(() => { setBuildingPanelMinimized(false); }, [activeBuilding?.id]);
   // addLog 已上移到 app/runtime/gameRuntime.js（模块级）；本地别名只喂给老 hook 签名

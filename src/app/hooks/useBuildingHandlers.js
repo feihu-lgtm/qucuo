@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { featureCtx } from "../runtime/gameRuntime.js";
-import { gameStore, gameActions } from "../../store/gameStore.js";
+import { gameStore } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import {
   buySkill as buySkillFeature,

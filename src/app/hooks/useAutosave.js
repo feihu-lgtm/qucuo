@@ -96,6 +96,9 @@ export function useAutosave({
       },
     });
     schedulerRef.current = scheduler;
+    // WO-06：模块态进度随挂载重置——对齐旧 useRef 的每局语义，防止上一局的
+    // playedThisSession 泄漏进新开局（未游玩的新档覆盖旧自动档）
+    resetAutosaveProgress();
     return () => {
       window.removeEventListener("pointerdown", arm, true);
       window.removeEventListener("keydown", arm, true);
