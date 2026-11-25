@@ -57,6 +57,43 @@ export function diffSnapshots(pre, post, { moved = false } = {}) {
     if (after !== before) out.affection[npc] = after - before;
   }
 
+  // WO-16D-M1 vitals：char.hp[0]/char.money 数值差——窗口内系统写（包扎/战斗结算）
+  // 与模型归因混杂的风险存在，但判官侧同样是系统签发事实，对照语义一致；纳入对比。
+  const preHp = pre?.char?.hp?.[0], postHp = post?.char?.hp?.[0];
+  if (Number.isFinite(preHp) && Number.isFinite(postHp) && postHp !== preHp) out.vitals.hp = postHp - preHp;
+  const preMoney = pre?.char?.money ?? 0, postMoney = post?.char?.money ?? 0;
+  if (postMoney !== preMoney) out.vitals.money = postMoney - preMoney;
+
+  // skills 多重集 diff（按名/ id 归一，与 inv 同手法）
+  const skillKey = (entry) => (typeof entry === "string" ? entry : entry?.id || entry?.name || "");
+  const skillMap = (list) => {
+    const m = new Map();
+    for (const entry of list || []) {
+      const k = skillKey(entry);
+      if (k) m.set(k, (m.get(k) || 0) + 1);
+    }
+    return m;
+  };
+  const skDiff = diffMultiset(skillMap(pre?.skills), skillMap(post?.skills));
+  out.skills.add = skDiff.add;
+  out.skills.rm = skDiff.rm;
+
+  // cultivation：exp/pot 顶层数值差
+  const preExp = pre?.exp ?? 0, postExp = post?.exp ?? 0;
+  if (postExp !== preExp) out.cultivation.exp = postExp - preExp;
+  const prePot = pre?.pot ?? 0, postPot = post?.pot ?? 0;
+  if (postPot !== prePot) out.cultivation.pot = postPot - prePot;
+
+  // quest 语义投影：questProgress 状态/阶段变化的任务 id——系统 questFlagRule 扫描
+  // flags 的自动推进也在窗口内，无法区分模型归因；但判官侧 ADVANCE_QUEST 同样
+  // 只签 flag 由规则接管，两边语义对齐（都是「本回合任务有推进」），纳入对比。
+  const preQ = pre?.questProgress || {}, postQ = post?.questProgress || {};
+  for (const [qid, qp] of Object.entries(postQ)) {
+    const before = preQ[qid];
+    if (!before) { out.quest.advance.push(qid); continue; }
+    if (before.status !== qp?.status || before.currentStageIndex !== qp?.currentStageIndex) out.quest.advance.push(qid);
+  }
+
   // 审计结论：room.npcs 在窗口内有整链系统改写（幽灵过滤/驻场剔除/战斗固化/
   // 移动落房/涌现实体化/焚卡烙印），纯 diff 无法归因——v1 恒 excluded，
   // 不做泛化复杂旁路（协调裁决）。
