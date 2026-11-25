@@ -475,6 +475,12 @@ async function runTurnSteps(ctx, cmd, opts) {
     if (first) {
       const parts = [first.op, first.npc || first.itemName || "", first.reason || first.detail || ""].filter(Boolean);
       memoryText = parts.join("·").slice(0, 50);
+    } else if ((judgeEffects?.materialized?.receipts || []).some((r) => r?.kind === "grant_item")) {
+      // WO-16C：条件拾取券在判官 verdict 里刻意无 facts（双证据齐备才合成），
+      // memory 模板读 verdict 会漏记路遇拾取——改用落盘回执作事实源，
+      // 回执存在即真实入包（拒捡/撞名丢弃均无回执）。
+      const grant = judgeEffects.materialized.receipts.find((r) => r?.kind === "grant_item");
+      memoryText = `拾得${grant.item?.name || "路遇之物"}`.slice(0, 50);
     } else if (isTalk) {
       const target = (deps.derivedRespondedNpcs || [])[0] || ctx.talkTarget || "";
       memoryText = `${target ? `玩家对${target}说` : "玩家说"}：${String(cmd).slice(0, 30)}`.slice(0, 50);

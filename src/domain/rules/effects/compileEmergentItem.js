@@ -20,7 +20,11 @@ export function compileEmergentItem(warrant, sealFill, { luck = 0 } = {}) {
   const turn = warrant.origin?.turn ?? 0;
   const seq = Number(String(warrant.warrantId || "").replace(/\D/g, "")) || 0;
 
-  const entry = CATALOG_INDEX[sealFill.name];
+  // WO-16C 条件券（移动拾取）：品质/类别是 rollMovementEvents 掷出的精确硬账，
+  // 不是品阶上限——图鉴 substitution 会用图鉴数值顶替掷骰结果、还可能带进
+  // 预算外词条；且图鉴稳定 id 会让第二次同名拾取被当重放静默丢弃。故条件券
+  // 不走图鉴命中，一律按 warrant 锁定的 category/quality 新铸实例。
+  const entry = warrant.conditional ? null : CATALOG_INDEX[sealFill.name];
   let item;
   let catalogHit = false;
   if (entry && qualityRank(entry.quality) <= qualityRank(warrant.quality)) {
@@ -59,6 +63,8 @@ export function compileEmergentItem(warrant, sealFill, { luck = 0 } = {}) {
   item.id = catalogHit
     ? ensureItemId({ name: item.name }, turn, seq)
     : mintItemId(item.name, turn, seq);
+  // 条件券新铸物打 noCatalog 盾：读档 backfill 不得按撞名把图鉴词条/六维补进来
+  if (warrant.conditional) item.noCatalog = true;
   if (sealFill.desc && !item.desc) item.desc = sealFill.desc;
   // 出生落款 + 空器史（器史演化在 WO-23）
   item.provenance = { ...(warrant.origin || {}), factId: warrant.factId || "" };

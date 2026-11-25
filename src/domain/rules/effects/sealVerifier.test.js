@@ -154,6 +154,59 @@ describe("WO-16C 条件拾取券双证据", () => {
     expect(out.screenText).not.toContain("青铜铃");
   });
 
+  it("条件券撞图鉴名：不吃图鉴 substitution，数值按 warrant 锁定+noCatalog 盾", () => {
+    // 「铜铃竹哨」是图鉴具名物（绿档 accessory 带词条）；条件券掷的是蓝档 misc——
+    // 品质/类别必须按 warrant，不得被图鉴顶替；id 按 warrant 派生而非图鉴稳定 id。
+    const catSeal = JSON.stringify({ fills: { W42_9: { name: "铜铃竹哨", desc: "拾得的" } } });
+    const out = verifySealAndMaterialize({
+      sealText: catSeal, screenText: "拾得⟦F42_9⟧。", verdict: condVerdict,
+      anchorIds: ["F42_1", "F42_9"], state: STATE, turn: 42,
+    });
+    const item = (out.materialized.changes?.inv || []).find((it) => it.name === "铜铃竹哨");
+    expect(item).toBeTruthy();
+    expect(item.quality).toBe("蓝");
+    expect(item.category).toBe("misc");
+    expect(item.noCatalog).toBe(true);
+    expect(item.id).not.toMatch(/^it_cat_/);
+  });
+
+  it("不同回合撞名拾取不被当重放丢弃", () => {
+    const v2 = verdictWith({
+      warrants: [{
+        warrantId: "W43_9", factId: "F43_9", op: "GRANT_ITEM", conditional: true,
+        category: "misc", quality: "蓝", pointBudget: 0, allowedAffixes: [],
+        origin: { turn: 43, day: 2, place: "鱼定村", fromNpc: "" },
+      }],
+    });
+    const catSeal = JSON.stringify({ fills: { W43_9: { name: "铜铃竹哨", desc: "拾得的" } } });
+    const first = verifySealAndMaterialize({
+      sealText: catSeal, screenText: "拾得⟦F43_9⟧。", verdict: v2,
+      anchorIds: ["F42_1", "F43_9"], state: STATE, turn: 43,
+    });
+    const invAfterFirst = first.materialized.changes?.inv || [];
+    // 第二回合再拾同名物：id 不撞（不同 warrant 派生），两件都在
+    const state2 = { ...STATE, inv: invAfterFirst };
+    const second = verifySealAndMaterialize({
+      sealText: catSeal, screenText: "拾得⟦F43_9⟧。", verdict: v2,
+      anchorIds: ["F42_1", "F43_9"], state: state2, turn: 43,
+    });
+    void second;
+    const w3 = verdictWith({
+      warrants: [{
+        warrantId: "W44_9", factId: "F44_9", op: "GRANT_ITEM", conditional: true,
+        category: "misc", quality: "蓝", pointBudget: 0, allowedAffixes: [],
+        origin: { turn: 44, day: 2, place: "鱼定村", fromNpc: "" },
+      }],
+    });
+    const seal3 = JSON.stringify({ fills: { W44_9: { name: "铜铃竹哨", desc: "拾得的" } } });
+    const third = verifySealAndMaterialize({
+      sealText: seal3, screenText: "拾得⟦F44_9⟧。", verdict: w3,
+      anchorIds: ["F42_1", "F44_9"], state: state2, turn: 44,
+    });
+    const invFinal = third.materialized.changes?.inv || [];
+    expect(invFinal.filter((it) => it?.name === "铜铃竹哨").length).toBe(2);
+  });
+
   it("无锚无 fill：叙事拒捡，安静作废零告警", () => {
     const out = verifySealAndMaterialize({
       sealText: '{"fills":{}}', screenText: "险境中无暇他顾。", verdict: condVerdict,

@@ -67,6 +67,7 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
       hasNpc: d.visibleNpcsCount > 0,
       inSeaOfMind: !!d.inSeaOfMind,
       gm: d.gm,
+      judgeActive: !!d.judgeRuleBlock,
       playerName: d.charName || "主角", // memory摘要统一用这个称呼，不用你/我，避免人称混乱
       activePreset: d.activePreset,
       // 物件志（批四）：只有本轮真可能发出物品才挂——移动拾取命中/战斗/创造模式。
