@@ -26,7 +26,7 @@ describe("SavesTab 存储驱动 UI 最小测试", () => {
   });
 
   it("cloud 档：地址输入/绑定状态/抹除按钮出现，文案含二次确认前置说明", () => {
-    saveStorageConfig({ driver: "cloud", cloudUrl: "https://x", deviceId: "d1", boundAt: 1 });
+    saveStorageConfig({ driver: "cloud", cloudUrl: "https://x", spaceId: "sp1", hubToken: "tok", deviceId: "d1", boundAt: 1 });
     const html = renderToStaticMarkup(createElement(StorageDriverSection));
     expect(html).toContain("wipe-cloud");
     expect(html).toContain("已绑定");
@@ -34,7 +34,7 @@ describe("SavesTab 存储驱动 UI 最小测试", () => {
   });
 
   it("云冲突：双裁决入口展示，文案明示系统不自动覆盖", () => {
-    saveStorageConfig({ driver: "cloud", cloudUrl: "https://x", deviceId: "d1", boundAt: 1 });
+    saveStorageConfig({ driver: "cloud", cloudUrl: "https://x", spaceId: "sp1", hubToken: "tok", deviceId: "d1", boundAt: 1 });
     localStorage.setItem("wuxia_mud_cloud_conflicts", JSON.stringify([{ key: "autosave", rev: 3, op: "put", value: {}, detectedAt: 1 }]));
     const html = renderToStaticMarkup(createElement(StorageDriverSection));
     expect(html).toContain("cloud-conflicts");

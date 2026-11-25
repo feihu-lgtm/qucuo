@@ -70,7 +70,21 @@ node --test server/memory-hub/hubCore.test.mjs
   client 当前传明文 value）、以及 409 冲突语义对齐（server 已同时返回 `serverRev` 供 client `keep_cloud` 对齐 rev）。
 - force 对齐：server 的 `force:true`/`?force=1` 与 client 「本地覆盖云端」裁决一一对应，只能由玩家显式触发。
 
-**在适配层落地前请勿假设客户端已可插用本服务。**
+**适配层已落地（WO-19/20 PR-A）**：`src/infra/cloudProtocol.js` 是客户端 protocol adapter——
+storageDriver 全部云端调用经它翻译成 canonical 契约：
+URL `<host>/api/spaces/<spaceId>/saves/<slotId>`（wipe 重写为 `DELETE /api/space/<spaceId>`）、
+形状 `{expectedRev, payloadEnc}`、鉴权 `x-memory-hub-token` 必带。
+rev 语义：客户端本地计数器不作 CAS 依据——per-key serverRev 台账（首写 expectedRev=0、成功记响应 rev），
+按 `spaceId::slot` 命名空间隔离（换空间不串账）。409 一律进冲突登记等玩家显式裁决——包括首次错位
+（裁决收紧：自动对齐无法区分迁移与新设备真多端冲突，误覆盖不可逆；迁移代价只是玩家点一次
+「本地覆盖云端」）。玩家裁决 keep_cloud 时台账对齐服务端 rev，后续续写以此为 expectedRev。
+force 仍只能玩家显式「本地覆盖云端」触发。
+另注：浏览器跨源直连需部署方用同源反代或为 hub 自行加 CORS——hub 本身不应答 OPTIONS preflight，
+服务端零改动是本阶段硬约束；hosted 一键云若成行再另立服务端小单。
+加密：payloadEnc 是 WebCrypto AES-GCM 密文串 `v1.<ivB64>.<ctB64>`，密钥首用生成存 localStorage
+（不离开客户端）；**换设备密钥恢复未做**——换机后无法解密云端快照，恢复链路随后续工单。
+绑定三件套（cloudUrl/spaceId/hubToken）缺一即 unbound 优雅降级，队列不推不丢。
+原文段落上行/查询与嵌入向量管线仍未做（PR-B 后续）。
 
 ## ⚠ pre-release schema 不兼容声明
 
