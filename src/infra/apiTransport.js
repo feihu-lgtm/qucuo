@@ -12,6 +12,20 @@ import {
   ANTHROPIC_KNOWN_MODELS,
 } from "./providers.js";
 
+// Gemini v1beta responseSchema 不接受 additionalProperties 键，递归剔除。
+// 棘轮红线禁止 infra 反向引用 utils——本函数与 src/utils/schemaValidate.js 的
+// toGeminiResponseSchema 保持同一实现，utils 侧为 engine/domain 消费的正本。
+function stripAdditionalProperties(schema) {
+  if (Array.isArray(schema)) return schema.map(stripAdditionalProperties);
+  if (!schema || typeof schema !== "object") return schema;
+  const out = {};
+  for (const [key, val] of Object.entries(schema)) {
+    if (key === "additionalProperties") continue;
+    out[key] = stripAdditionalProperties(val);
+  }
+  return out;
+}
+
 export function withProxy(url, cfg) {
   if (cfg.corsProxy) return cfg.corsProxy + encodeURIComponent(url);
   if (typeof window !== "undefined" && window.location.hostname === "localhost") {
@@ -202,6 +216,12 @@ async function requestModel(cfg, systemPrompt, messages, opts) {
         // frequency_penalty/presence_penalty：Anthropic API 没有这两个概念，永远不传。
       }
       applyThinkingAnthropic(abody, cfg, maxOutputTokens);
+      // 原生结构化输出：Anthropic 没有 response_format，用单工具强制——挂唯一工具并
+      // tool_choice 点名，模型只能以 tool_use.input 的形式吐出合规 JSON。
+      if (opts.schema) {
+        abody.tools = [{ name: opts.schema.name, input_schema: opts.schema.schema }];
+        abody.tool_choice = { type: "tool", name: opts.schema.name };
+      }
       const res = await fetchWithTimeout(url, {
         method: "POST",
         headers: {
@@ -214,7 +234,11 @@ async function requestModel(cfg, systemPrompt, messages, opts) {
       });
       raw = await readJsonOrThrow(res, "Anthropic 调用", url);
       if (raw.error) throw new Error(raw.error.message || "Anthropic API 错误");
-      text = stripReasoning(raw.content?.map(b => b.text || "").join("") || "");
+      // 单工具强制结构化时，答案在 tool_use 块的 input 里——序列化回 text 与纯文本通路对齐。
+      const toolUseBlock = opts.schema && raw.content?.find((b) => b.type === "tool_use" && b.name === opts.schema.name);
+      text = toolUseBlock
+        ? JSON.stringify(toolUseBlock.input ?? {})
+        : stripReasoning(raw.content?.map(b => b.text || "").join("") || "");
       finishReason = raw.stop_reason;
       usage = raw.usage;
 
@@ -245,6 +269,11 @@ async function requestModel(cfg, systemPrompt, messages, opts) {
       // 要写死"只输出 JSON"，并对返回值做剥围栏/截取的容错解析。这里加上是因为
       // 原生支持时它确实能显著降低跑偏率，成本为零。
       if (opts.jsonOnly) genConfig.responseMimeType = "application/json";
+      // 原生结构化输出：responseSchema 走 v1beta 官方字段；additionalProperties 键 Gemini 不收，递归剔除。
+      if (opts.schema) {
+        genConfig.responseMimeType = "application/json";
+        genConfig.responseSchema = stripAdditionalProperties(opts.schema.schema);
+      }
       applyThinkingGemini(genConfig, cfg, opts);
       const res = await fetchWithTimeout(url, {
         method: "POST",
