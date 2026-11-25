@@ -27,6 +27,7 @@ import { systemAffectionDelta, systemAffectionPin, hasNoAffectionTrack } from ".
 import { createHeartLedgerEntry, capHeartLedgerEntries, dedupeHeartLedgerId } from "../memory/npcLedger.js";
 import { INITIAL_FAVORABILITY } from "../npc/npcAwareness.js";
 import { readDailyLootUsed } from "../judge/budgetInput.js";
+import { CATALOG_INDEX } from "../../data/items/catalog.js";
 
 const PLAYER = "player";
 
@@ -51,8 +52,13 @@ function qualityStepUp(quality) {
 function locateItem(state, itemId, itemName) {
   // 留档条目（dropped/sold/stolen）只是外观账，不再持有实物——定位时必须跳过，
   // 否则第二人归还同名器物时会错配到前者的留档，复制出神兵
-  const match = (e) => e && typeof e === "object" && !e.dropped && !e.sold && !e.stolen
-    && ((itemId && e.id === itemId) || (!itemId && itemName && e.name === itemName) || (itemId && itemName && e.name === itemName && !e.id));
+  // WO-16F-F4a：字符串池条目（初始存档遗产形态，如 inv 里的「半袋青稞」）按名字面量命中——
+  // 字符串无 id，itemId 位传进来的就是名字（judgeTurn/调用方同口径）。
+  const match = (e) => {
+    if (typeof e === "string") return (itemId && e === itemId) || (itemName && e === itemName);
+    return e && typeof e === "object" && !e.dropped && !e.sold && !e.stolen
+      && ((itemId && e.id === itemId) || (!itemId && itemName && e.name === itemName) || (itemId && itemName && e.name === itemName && !e.id));
+  };
   const invIdx = (state.inv || []).findIndex(match);
   if (invIdx !== -1) return { pool: "inv", index: invIdx, item: state.inv[invIdx] };
   const groundIdx = (state.room?.items || []).findIndex(match);
@@ -133,7 +139,11 @@ export function materializeFacts(state, facts, compiledWarrants) {
       case "TRANSFER_ITEM": {
         const loc = locateItem({ ...state, inv, room }, fact.itemId, fact.itemName);
         if (!loc) { logs.push({ t: "err", text: `  ⛔ 事实 ${fact.id}：找不到器物 ${fact.itemName || fact.itemId}` }); break; }
-        const moving = { ...loc.item };
+        // WO-16F-F4a：字符串条目规范化成对象再入目标池（目录属性并入）——
+        // 直接展开字符串会得到数字键残骸 {0:'半',1:'袋',...}。
+        const moving = typeof loc.item === "string"
+          ? { name: loc.item, ...(CATALOG_INDEX[loc.item] || {}) }
+          : { ...loc.item };
         // 源头摘除：玩家给 NPC 的反向不管；NPC → 玩家时源头条目置 dropped:true
         // （装备外观同步刷新靠这个标记，条目留档不删）
         if (loc.pool === "inv") inv.splice(loc.index, 1);

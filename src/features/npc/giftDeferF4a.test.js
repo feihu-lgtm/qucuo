@@ -124,6 +124,62 @@ describe("judgeTurn give 分支 F4a 口径", () => {
     const transfer = v.facts.find((f) => f.op === "TRANSFER_ITEM");
     expect(transfer.itemId).toBe("it_b");
   });
+
+  it("字符串条目（初始存档遗产形态「半袋青稞」）：查得到、签得出、名字入事实", () => {
+    const strEnv = { ...env, inv: ["半袋青稞"] };
+    const v = judgeTurn(strEnv, mk("半袋青稞"), { rng: () => 0 });
+    const transfer = v.facts.find((f) => f.op === "TRANSFER_ITEM");
+    expect(transfer).toBeTruthy();
+    expect(transfer.itemId).toBe("半袋青稞");
+    expect(transfer.itemName).toBe("半袋青稞");
+  });
+});
+
+describe("字符串背包条目端到端转移（blocker 返修钉测试）", () => {
+  it("判官接受后 inv 少一件、NPC carriedItems 得到规范化对象（非数字键残骸）", async () => {
+    const { materializeFacts } = await import("../../domain/rules/effects/materializeFacts.js");
+    const { judgeTurn: judge } = await import("../../domain/rules/judge/judgeTurn.js");
+    const state = {
+      inv: ["半袋青稞", "毡靴"],
+      room: { name: "曲措乡", npcs: [{ name: "温掌柜", carriedItems: [] }], items: [] },
+      varTree: { 角色: { 温掌柜: { 好感度: 30 } }, 世界: {} },
+      flags: [],
+    };
+    // 判官签发（rng=0 必收）
+    const verdict = judge({
+      turn: 5, day: 1, place: "曲措乡",
+      npcs: [{ name: "温掌柜", personality: "" }],
+      varTree: state.varTree, inv: state.inv, entries: [],
+    }, {
+      read: "", refIds: [],
+      actions: [{ kind: "give", target: "温掌柜", itemId: "半袋青稞", direction: "none", stance: "casual", text: "送礼" }],
+      proposals: [],
+    }, { rng: () => 0 });
+    const out = materializeFacts(state, verdict.facts);
+    expect(out.changes.inv).toEqual(["毡靴"]); // 青稞已移出，余物不动
+    const npc = out.changes.room.npcs.find((n) => n.name === "温掌柜");
+    const got = (npc.carriedItems || []).find((e) => e?.name === "半袋青稞");
+    expect(got).toBeTruthy();
+    expect(typeof got).toBe("object");
+    expect(got[0]).toBeUndefined(); // 不是字符串展开的数字键残骸
+  });
+
+  it("同名字符串两件只移一件", async () => {
+    const { materializeFacts } = await import("../../domain/rules/effects/materializeFacts.js");
+    const state = {
+      inv: ["半袋青稞", "半袋青稞"],
+      room: { name: "曲措乡", npcs: [{ name: "温掌柜", carriedItems: [] }], items: [] },
+      varTree: { 角色: {}, 世界: {} },
+      flags: [],
+    };
+    const out = materializeFacts(state, [{
+      id: "f1", op: "TRANSFER_ITEM", itemId: "半袋青稞", itemName: "半袋青稞",
+      from: "player", to: "温掌柜", witnesses: ["主角", "温掌柜"],
+    }]);
+    expect(out.changes.inv).toEqual(["半袋青稞"]); // 只移一件，另一件还在
+    const npc = out.changes.room.npcs.find((n) => n.name === "温掌柜");
+    expect((npc.carriedItems || []).filter((e) => e?.name === "半袋青稞").length).toBe(1);
+  });
 });
 
 describe("materializeFacts TRANSFER_ITEM 玩家→NPC", () => {
