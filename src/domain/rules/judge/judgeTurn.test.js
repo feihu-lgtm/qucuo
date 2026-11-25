@@ -427,11 +427,11 @@ describe("S7 送银判官桥：give 银两走 CHANGE_VITALS_SILVER", () => {
     return { read: "", refIds: [], actions: [{ kind: "give", target: "才旦", item, itemId: item, direction: "none", condition: "无", condition_text: "", stance: "sincere", outcome: "无", risk: "无", confidence: 0.9, text }], proposals: [] };
   }
   function silverEnv(money = 100, extra = {}) {
-    return { turn: 42, day: 2, place: "鱼定村·茶馆", npcs: NPCS, varTree: { 角色: { 才旦: { 好感度: 30 } } }, inv: [], entries: [], budget: { riskLevel: 1 }, char: { money, special: { 魅力: 5 } }, ...extra };
+    return { turn: 42, day: 2, place: "鱼定村·茶馆", npcs: NPCS, varTree: { 角色: { 才旦: { 好感度: 30 } } }, inv: [], entries: [], budget: { riskLevel: 1 }, char: { money, special: { 魅力: 5 } }, playerInput: "", ...extra };
   }
 
   it("把5两银子送给才旦：签 -5 银两 + 恩好感（分量区间中值），不走 TRANSFER_ITEM", () => {
-    const verdict = judgeTurn(silverEnv(), silverIntake("把5两银子送给才旦"), { rng: seqRng([0.5]) });
+    const verdict = judgeTurn(silverEnv(100, { playerInput: "把5两银子送给才旦" }), silverIntake("把5两银子送给才旦"), { rng: seqRng([0.5]) });
     const silver = verdict.facts.find((f) => f.op === "CHANGE_VITALS_SILVER");
     expect(silver).toBeTruthy();
     expect(silver.moneyDelta).toBe(-5);
@@ -443,19 +443,19 @@ describe("S7 送银判官桥：give 银两走 CHANGE_VITALS_SILVER", () => {
   });
 
   it("中文数字「二十两」同样解析", () => {
-    const verdict = judgeTurn(silverEnv(), silverIntake("送二十两银子给才旦"), { rng: seqRng([0.5]) });
+    const verdict = judgeTurn(silverEnv(100, { playerInput: "送二十两银子给才旦" }), silverIntake("送二十两银子给才旦"), { rng: seqRng([0.5]) });
     expect(verdict.facts.find((f) => f.op === "CHANGE_VITALS_SILVER")?.moneyDelta).toBe(-20);
   });
 
   it("未写数额不签发", () => {
-    const verdict = judgeTurn(silverEnv(), silverIntake("送些银子给才旦"), { rng: seqRng([0.5]) });
+    const verdict = judgeTurn(silverEnv(100, { playerInput: "送些银子给才旦" }), silverIntake("送些银子给才旦"), { rng: seqRng([0.5]) });
     expect(verdict.facts.filter((f) => f.op === "CHANGE_VITALS_SILVER")).toHaveLength(0);
     expect(verdict.facts.filter((f) => f.op === "MUTATE_SOCIAL")).toHaveLength(0);
     expect(verdict.notes.join()).toContain("未写明数额");
   });
 
   it("超囊中不签发（只带 3 两送 50 两）", () => {
-    const verdict = judgeTurn(silverEnv(3), silverIntake("把50两银子送给才旦"), { rng: seqRng([0.5]) });
+    const verdict = judgeTurn(silverEnv(3, { playerInput: "把50两银子送给才旦" }), silverIntake("把50两银子送给才旦"), { rng: seqRng([0.5]) });
     expect(verdict.facts.filter((f) => f.op === "CHANGE_VITALS_SILVER")).toHaveLength(0);
     expect(verdict.notes.join()).toContain("不足");
   });
@@ -463,13 +463,14 @@ describe("S7 送银判官桥：give 银两走 CHANGE_VITALS_SILVER", () => {
   it("对象不在场不签发", () => {
     const intake = silverIntake("把5两银子送给王五");
     intake.actions[0].target = "王五";
-    const verdict = judgeTurn(silverEnv(), intake, { rng: seqRng([0.5]) });
+    const verdict = judgeTurn(silverEnv(100, { playerInput: "把5两银子送给王五" }), intake, { rng: seqRng([0.5]) });
     expect(verdict.facts.filter((f) => f.op === "CHANGE_VITALS_SILVER")).toHaveLength(0);
   });
 
   it("对方气头上：扣银但不涨好感（镜像 giftSilver）", () => {
     const env = silverEnv();
     env.varTree.角色.才旦.生气状态 = { active: true, reason: "先前结怨", turnsLeft: 2 };
+    env.playerInput = "把5两银子送给才旦";
     const verdict = judgeTurn(env, silverIntake("把5两银子送给才旦"), { rng: seqRng([0.5]) });
     expect(verdict.facts.find((f) => f.op === "CHANGE_VITALS_SILVER")?.moneyDelta).toBe(-5);
     expect(verdict.facts.filter((f) => f.op === "MUTATE_SOCIAL")).toHaveLength(0);
@@ -483,5 +484,32 @@ describe("S7 送银判官桥：give 银两走 CHANGE_VITALS_SILVER", () => {
     }, { rng: seqRng([0.1]) });
     expect(verdict.facts.find((f) => f.op === "TRANSFER_ITEM")).toBeTruthy();
     expect(verdict.facts.filter((f) => f.op === "CHANGE_VITALS_SILVER")).toHaveLength(0);
+  });
+});
+
+describe("S7 送银桥 Review 加固：金额只认玩家原文", () => {
+  function env2(playerInput, money = 100) {
+    return { turn: 42, day: 2, place: "鱼定村·茶馆", npcs: NPCS, varTree: { 角色: { 才旦: { 好感度: 30 } } }, inv: [], entries: [], budget: { riskLevel: 1 }, char: { money, special: { 魅力: 5 } }, playerInput };
+  }
+  function act(text) {
+    return { read: "", refIds: [], actions: [{ kind: "give", target: "才旦", item: "银两", itemId: "银两", direction: "none", condition: "无", condition_text: "", stance: "sincere", outcome: "无", risk: "无", confidence: 0.9, text }], proposals: [] };
+  }
+
+  it("模型篡改数额无效：玩家说5两、action.text 写9999两 → 仍按5两签", () => {
+    const verdict = judgeTurn(env2("把5两银子送给才旦"), act("把9999两银子送给才旦"), { rng: seqRng([0.5]) });
+    expect(verdict.facts.find((f) => f.op === "CHANGE_VITALS_SILVER")?.moneyDelta).toBe(-5);
+  });
+
+  it("余额礼金并列歧义不签：「我有50两给你5两」两个数额不猜", () => {
+    const verdict = judgeTurn(env2("我有50两，给你5两吧"), act("给你5两"), { rng: seqRng([0.5]) });
+    expect(verdict.facts.filter((f) => f.op === "CHANGE_VITALS_SILVER")).toHaveLength(0);
+    expect(verdict.notes.join()).toContain("歧义");
+  });
+
+  it("小数/半截数额不签：1.5两、一百二十两完整解析", () => {
+    const v1 = judgeTurn(env2("给你1.5两"), act("给你1.5两"), { rng: seqRng([0.5]) });
+    expect(v1.facts.filter((f) => f.op === "CHANGE_VITALS_SILVER")).toHaveLength(0);
+    const v2 = judgeTurn(env2("孝敬一百二十两", 200), act("孝敬一百二十两"), { rng: seqRng([0.5]) });
+    expect(v2.facts.find((f) => f.op === "CHANGE_VITALS_SILVER")?.moneyDelta).toBe(-120);
   });
 });

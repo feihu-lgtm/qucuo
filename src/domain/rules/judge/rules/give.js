@@ -10,24 +10,68 @@ import { isNpcAngry } from "../../combat/stealSystem.js";
 // 与 features giftSilver 同一 deterministic 表，materialize 侧魅力修正/日涨账自动生效）。
 // 金额只认玩家原话（action.text 为 intake 逐字照抄），绝不让模型编数；
 // 未写数额/超囊中/对象不在场一律不签。生气对象镜像 giftSilver：扣银记仇不涨好感。
-const CN_NUM = { 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10 };
-function parseSilverAmount(text) {
-  const src = String(text || "");
-  // 阿拉伯数字优先：「5两」「12 两银子」
-  const digit = src.match(/(\d+)\s*两/);
-  if (digit) return parseInt(digit[1], 10);
-  // 中文小写数字：「五两」「十两」「二十两」——只支持简单拼写，超大额不在最小口径
-  const cn = src.match(/([一二三四五六七八九十]{1,3})\s*两/);
-  if (cn) {
-    const w = cn[1];
-    if (w === "十") return 10;
-    if (w.length === 1) return CN_NUM[w] || 0;
-    if (w.startsWith("十")) return 10 + (CN_NUM[w[1]] || 0); // 十五
-    if (w.endsWith("十")) return (CN_NUM[w[0]] || 0) * 10; // 五十（二十/三十…）
-    if (w.length === 3 && w[1] === "十") return (CN_NUM[w[0]] || 0) * 10 + (CN_NUM[w[2]] || 0); // 二十五
-    return 0;
+const CN_NUM = { 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
+
+// 中文小写数字解析（十/百，1-999）：非法拼写返回 0——宁可不签不可错扣。
+function parseCnNumeral(w) {
+  if (!w) return 0;
+  if (w === "十") return 10;
+  let total = 0, section = 0, rest = w;
+  const bai = rest.indexOf("百");
+  if (bai >= 0) {
+    const h = CN_NUM[rest.slice(0, bai)];
+    if (!h) return 0;
+    total += h * 100;
+    rest = rest.slice(bai + 1);
   }
-  return 0;
+  const shi = rest.indexOf("十");
+  if (shi >= 0) {
+    const before = rest.slice(0, shi);
+    const t = before ? CN_NUM[before] : 1; // 「十五」十前省略为一
+    if (!t) return 0;
+    section += t * 10;
+    rest = rest.slice(shi + 1);
+  }
+  if (rest) {
+    const ones = CN_NUM[rest];
+    if (!ones) return 0;
+    section += ones;
+  }
+  return total + section;
+}
+
+// 从玩家原文提取全部银两数额提及（ground truth 解析）。
+// 小数/分数（1.5两）与非法中文数字整段视为无效提及——不猜半截。
+// 返回数额数组（保序、可含重复）。
+export function extractSilverAmounts(text) {
+  const src = String(text || "");
+  const amounts = [];
+  const consumed = [];
+  // 中文数字在前（字符集不重叠不会与阿拉伯混淆）
+  const cnRe = /([一二三四五六七八九十百]{1,4})\s*两/g;
+  let m;
+  while ((m = cnRe.exec(src))) {
+    const v = parseCnNumeral(m[1]);
+    if (v > 0) amounts.push(v);
+    consumed.push([m.index, m.index + m[0].length]);
+  }
+  // 阿拉伯数字：前后不得紧邻数字或小数点（1.5两/12.5整体拒收），且不在中文数字段内
+  const digitRe = /(?<![\d.])(\d+)\s*两(?!\d)/g;
+  while ((m = digitRe.exec(src))) {
+    const inCn = consumed.some(([a, b]) => m.index >= a && m.index < b);
+    if (!inCn) amounts.push(parseInt(m[1], 10));
+  }
+  return amounts;
+}
+
+// 送银金额唯一可信来源：玩家原文（envelope.playerInput）。
+//  zero 个提及 → 未写数额；多个不同数额 → 歧义（余额/礼金并列等）不猜；
+//  恰好一个有效数额 → 采用。model 的 action.text 永不作为金额来源。
+function resolveGiftSilverAmount(envelope) {
+  const amounts = extractSilverAmounts(envelope?.playerInput);
+  if (!amounts.length) return { amount: 0, reason: "未写明数额" };
+  if (new Set(amounts).size > 1) return { amount: 0, reason: "原话数额歧义" };
+  return { amount: amounts[0], reason: "" };
 }
 export function isSilverGive(action) {
   return action?.item === "银两" || action?.itemId === "银两";
@@ -51,9 +95,9 @@ export function handleGive(J, action, npc, aff, stanceMod) {
   }
   // ── 送银桥：银两不是背包物件，走 CHANGE_VITALS_SILVER 专用通道 ──
   if (isSilverGive(action)) {
-    const amount = parseSilverAmount(action.text);
+    const { amount, reason } = resolveGiftSilverAmount(J.envelope);
     if (!(amount > 0)) {
-      notes.push(`送银未写明数额（玩家原话无「N两」），不签发`);
+      notes.push(`送银${reason || "数额无效"}（只认玩家原话明确数额），不签发`);
       return;
     }
     if (amount > (J.money?.run ?? 0)) {
