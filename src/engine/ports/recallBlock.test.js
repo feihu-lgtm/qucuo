@@ -159,3 +159,146 @@ describe("WO-18 谱系——检索可见性", () => {
     expect(texts).not.toContain("遗产");
   });
 });
+
+// ── WO-20C 云端原文召回接入 ────────────────────────────────────────
+import { vi } from "vitest";
+import { configureCloudFetch, _resetCloudProtocolForTest } from "../../infra/cloudProtocol.js";
+import { saveStorageConfig } from "../../infra/storageConfig.js";
+
+describe("WO-20C 云端原文召回接入 recallProse", () => {
+  const LINEAGE = [{ b: "b1", upTo: null }];
+  const seedBranch = async () => addProseChunks([
+    { id: "b1_5_1", kind: "raw_memory", turn: 5, location: "铁匠铺", witnesses: ["*"], entities: [], publicText: "本地铸剑往事。", rawText: "本地铸剑往事。", importance: 1, anchorFactIds: [], branchId: "b1", seq: 1 },
+  ]);
+  const cloudHit = (over = {}) => ({
+    chunkId: "b1::P9_1", turn: 9, location: "", witnesses: ["*"], entities: [],
+    rawText: "云端独有的旧事。", publicText: "云端独有的旧事。", seq: 1, branchId: "b1", score: 2, neighbors: [], ...over,
+  });
+  function mockLocalStorage() {
+    const data = new Map();
+    vi.stubGlobal("localStorage", {
+      getItem: (k) => (data.has(k) ? data.get(k) : null),
+      setItem: (k, v) => { data.set(k, String(v)); },
+      removeItem: (k) => { data.delete(k); },
+      clear: () => data.clear(),
+    });
+  }
+  function boundCloud() {
+    saveStorageConfig({ driver: "cloud", cloudUrl: "https://hub.example.com", spaceId: "sp1", hubToken: "tok" });
+  }
+  const okJson = (body) => ({ ok: true, status: 200, json: async () => body });
+
+  beforeEach(() => {
+    globalThis.indexedDB = new IDBFactory();
+    _resetMemoryDbForTest();
+    _resetCloudProtocolForTest();
+    mockLocalStorage();
+  });
+
+  it("cloud 正常补齐本地没有的段（合并形状与本地一致）", async () => {
+    await seedBranch();
+    boundCloud();
+    const fetchSpy = vi.fn(async () => okJson({ hits: [cloudHit()] }));
+    configureCloudFetch(fetchSpy);
+    const out = await recallProse({ queryText: "铸剑", viewer: "主角", lineage: LINEAGE, currentTurn: 20, topK: 5 });
+    expect(fetchSpy).toHaveBeenCalled();
+    const texts = out.map((e) => e.text).join("\n");
+    expect(texts).toContain("本地铸剑往事"); // 本地不丢
+    expect(texts).toContain("云端独有的旧事"); // 云端补上
+  });
+
+  it("同段云/本地不同 id 不双上", async () => {
+    await seedBranch();
+    boundCloud();
+    // 云端返回与本地同文本段（chunkId 形状不同）
+    configureCloudFetch(vi.fn(async () => okJson({ hits: [cloudHit({ turn: 5, rawText: "本地铸剑往事。", publicText: "本地铸剑往事。" })] })));
+    const out = await recallProse({ queryText: "铸剑", viewer: "主角", lineage: LINEAGE, currentTurn: 20, topK: 5 });
+    const occurrences = out.map((e) => e.text).join("\n").split("本地铸剑往事").length - 1;
+    expect(occurrences).toBe(1);
+  });
+
+  it("云失败（非2xx/异常）本地照出，绝不阻断", async () => {
+    await seedBranch();
+    boundCloud();
+    configureCloudFetch(vi.fn(async () => { throw new Error("network down"); }));
+    const out = await recallProse({ queryText: "铸剑", viewer: "主角", lineage: LINEAGE, currentTurn: 20, topK: 5 });
+    expect(out.map((e) => e.text).join("\n")).toContain("本地铸剑往事");
+    configureCloudFetch(vi.fn(async () => ({ ok: false, status: 500, json: async () => ({}) })));
+    const out2 = await recallProse({ queryText: "铸剑", viewer: "主角", lineage: LINEAGE, currentTurn: 20, topK: 5 });
+    expect(out2.length).toBeGreaterThan(0);
+  });
+
+  it("云超时（挂起超 1500ms）降级本地照出", async () => {
+    await seedBranch();
+    boundCloud();
+    vi.useFakeTimers();
+    configureCloudFetch(vi.fn(() => new Promise(() => {}))); // 永不 resolve
+    const p = recallProse({ queryText: "铸剑", viewer: "主角", lineage: LINEAGE, currentTurn: 20, topK: 5 });
+    await vi.advanceTimersByTimeAsync(2000);
+    const out = await p;
+    vi.useRealTimers();
+    expect(out.map((e) => e.text).join("\n")).toContain("本地铸剑往事");
+  });
+
+  it("非 cloud 驱动零 fetch", async () => {
+    await seedBranch();
+    saveStorageConfig({ driver: "local" });
+    const fetchSpy = vi.fn(async () => okJson({ hits: [cloudHit()] }));
+    configureCloudFetch(fetchSpy);
+    const out = await recallProse({ queryText: "铸剑", viewer: "主角", lineage: LINEAGE, currentTurn: 20, topK: 5 });
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(out.length).toBeGreaterThan(0); // 本地不受影响
+  });
+
+  it("未绑定三件套零 fetch", async () => {
+    await seedBranch();
+    saveStorageConfig({ driver: "cloud", cloudUrl: "", spaceId: "", hubToken: "" });
+    const fetchSpy = vi.fn(async () => okJson({ hits: [cloudHit()] }));
+    configureCloudFetch(fetchSpy);
+    await recallProse({ queryText: "铸剑", viewer: "主角", lineage: LINEAGE, currentTurn: 20, topK: 5 });
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("无 lineage 零 fetch（谱系硬门，绝不退 maxTurn 云查）", async () => {
+    await seedBranch();
+    boundCloud();
+    const fetchSpy = vi.fn(async () => okJson({ hits: [cloudHit()] }));
+    configureCloudFetch(fetchSpy);
+    await recallProse({ queryText: "铸剑", viewer: "主角", unscoped: true });
+    expect(fetchSpy).not.toHaveBeenCalled();
+    // lineage 空数组同口径
+    await recallProse({ queryText: "铸剑", viewer: "主角", lineage: [], currentTurn: 20 });
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("witnesses 坏响应客户端再滤：服务端漏滤的私密段不上", async () => {
+    await seedBranch();
+    boundCloud();
+    configureCloudFetch(vi.fn(async () => okJson({ hits: [cloudHit({ witnesses: ["老孙"] })] })));
+    const out = await recallProse({ queryText: "铸剑", viewer: "主角", lineage: LINEAGE, currentTurn: 20, topK: 5 });
+    expect(out.map((e) => e.text).join("\n")).not.toContain("云端独有的旧事");
+  });
+
+  it("topK cap：本地占满名额云补裁掉；云请求不带 embedding 字段", async () => {
+    await seedBranch();
+    boundCloud();
+    const fetchSpy = vi.fn(async () => okJson({ hits: [cloudHit()] }));
+    configureCloudFetch(fetchSpy);
+    const out = await recallProse({ queryText: "铸剑", viewer: "主角", lineage: LINEAGE, currentTurn: 20, topK: 1 });
+    expect(out).toHaveLength(1); // 本地权威占满，云补裁
+    const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
+    expect(body.embedding).toBeUndefined();
+    expect(body.queryEmbedding).toBeUndefined();
+    expect(Array.isArray(body.lineage)).toBe(true);
+    expect(body.currentTurn).toBe(20);
+  });
+
+  it("debounce 未上行的新本地段不丢（本地权威优先）", async () => {
+    // 本地段刚写入云端还没有——云返回空，本地段照出
+    await seedBranch();
+    boundCloud();
+    configureCloudFetch(vi.fn(async () => okJson({ hits: [] })));
+    const out = await recallProse({ queryText: "铸剑", viewer: "主角", lineage: LINEAGE, currentTurn: 20, topK: 5 });
+    expect(out.map((e) => e.text).join("\n")).toContain("本地铸剑往事");
+  });
+});
