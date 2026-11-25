@@ -68,17 +68,18 @@ function validateAction(state, input, raw) {
   return withCondition(action);
 }
 
-// 带前提的赠送，模型可能把整句（连前提）放进 text。银两数只从「送钱那一段」取，前提里的数额一概不算：
-//   「要是到了收100两过路费的鱼定村，就送才旦20两」→ 就/便 之后「送才旦20两」；
-//   「送才旦20两，如果到了鱼定村就这么办」→ 前提之前「送才旦20两」（带送/给字样才算）；
-//   模型已经只给了「送才旦20两」→ 原样。送钱那一段没写数（「送些银两」）就是没写，不回头去整句里找。
+// 带前提的赠送，模型可能把整句（连前提）放进 text。银两数只从「送钱那一段」取，前提里的数额一概不算。
+// 送钱那一段只可能是前提前后两段动作之一：就/便 之后那段写了数就用它；没写数时，前提之前那段若是
+// 带送/给字样的赠送（「送才旦20两，如果到了鱼定村就给他」「……就这么办」）就用它；否则就是没写数。
+//   「要是到了收100两过路费的鱼定村，就送才旦一些银两」→ 没写数（不回头去前提里找）。
+//   模型已经只给了「送才旦20两」→ 原样。
 const GIFT_VERB_RE = /送|给|赠|递|塞|赏|孝敬/;
 function giftSpan(text, condition) {
   if (!condition) return text;
   const clause = splitConditionClause(text);
   if (clause) {
-    const leadingGift = clause.prefix && GIFT_VERB_RE.test(clause.prefix) ? clause.prefix : "";
-    return GIFT_VERB_RE.test(clause.actionText) || !leadingGift ? clause.actionText : leadingGift;
+    if (parseSilverAmount(clause.actionText) != null) return clause.actionText;
+    return clause.prefix && GIFT_VERB_RE.test(clause.prefix) ? clause.prefix : clause.actionText;
   }
   return condition.detail && text.includes(condition.detail) ? text.replace(condition.detail, "") : text;
 }

@@ -297,6 +297,7 @@ describe("conditional steps", () => {
   it.each([
     ["leading premise with its own amount", "要是他先还我100两，就送才旦20两", {}, 20],
     ["trailing premise after the gift", "送才旦20两，如果到了鱼定村就这么办", { condition_text: "到了鱼定村" }, 20],
+    ["gift restated without amount after the premise", "送才旦20两，如果到了鱼定村就给他", { condition_text: "到了鱼定村" }, 20],
     ["narrower classifier premise leaves an aside amount", "如果到了鱼定村（上次过路花了100两），就送才旦20两", { condition_text: "到了鱼定村" }, 20],
     ["gift without an amount never borrows the premise amount", "要是到了收100两过路费的鱼定村，就送才旦一些银两", { condition_text: "到了收100两过路费的鱼定村" }, null],
     ["fractional gift amount stays unparsed", "要是他先还我100两，就送才旦2.5两", {}, null],
