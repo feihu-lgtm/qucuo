@@ -159,7 +159,11 @@ export function useScreenHandlers({
   }, { feature: "npc.tradeWithNpc" }), [captureUndo]);
 
   const handleNpcLearnSkill = useCallback((npc) => applyResult(featureCtx(), () => {
-    const result = learnNpcSkillLogic(gameStore.getState(), npc);
+    // WO-16F-F4b：谓词与 runTurn 闸门同源（judgePipelineEnabled && extractionEnabled）——
+    // 错位最多退化 legacy 前置硬结算，绝不双结算。
+    const cfg = sessionUiStore.getState().apiCfg;
+    const deferToJudge = !!(cfg?.judgePipelineEnabled && cfg?.extractionEnabled);
+    const result = learnNpcSkillLogic(gameStore.getState(), npc, { deferToJudge });
     if (result.changes) {
       captureUndo();
       setActiveTarget(npc.name);

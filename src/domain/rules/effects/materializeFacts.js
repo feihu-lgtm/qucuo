@@ -198,6 +198,24 @@ export function materializeFacts(state, facts, compiledWarrants) {
 
       // ── 4. BESTOW_SKILL：入 skills + 同路数 active 槽位 ──
       case "BESTOW_SKILL": {
+        // WO-16F-F4b 直签转写：fact.skills 数组（feature 门规已确定的招式目录快照）
+        // 逐条直落，幂等已习得跳过——不走天机券编译lookup。
+        if (Array.isArray(fact.skills) && fact.skills.length) {
+          for (const raw of fact.skills) {
+            if (!raw || typeof raw !== "object" || !raw.name) continue;
+            if (skills.some((sk) => sk.id === raw.id || sk.name === raw.name)) continue; // 已习得幂等
+            const entry = { ...raw };
+            if (entry.active) {
+              const routeKey = entry.moveType || entry.type;
+              skills = skills.map((sk) => (sk.active && (sk.moveType || sk.type) === routeKey ? { ...sk, active: false } : sk));
+            }
+            skills.push(entry);
+            skillsDirty = true;
+            receipts.push({ kind: "bestow_skill", factId: fact.id || "", skill: { ...entry } });
+            logs.push({ t: "skill", text: `  习得武学 ${entry.name}${entry.quality ? `（${entry.quality}）` : ""}` });
+          }
+          break;
+        }
         let skill = lookupCompiled(compiledWarrants, fact);
         if (!skill) {
           if (!fact.skillName) { logs.push({ t: "err", text: `  ⛔ 事实 ${fact.id} 无武学可授（缺编译产物与武学名）` }); break; }

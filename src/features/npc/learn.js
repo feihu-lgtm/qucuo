@@ -7,7 +7,7 @@ import { markCarriedLost } from "../../domain/rules/npc/roomNpcs.js";
 import { tryLearnFromMaster, tryStealFrom } from "../../domain/rules/kungfu/learnSkill.js";
 import { isNpcAngry } from "../../domain/rules/combat/stealSystem.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
-import { appeaseAngryNpc } from "./anger.js";
+import { appeaseAngryNpc, recordNpcAttempt } from "./anger.js";
 import { add, applyWrite, set, updateField } from "../../domain/rules/state/applyWrite.js";
 import { systemAffectionDelta, hasNoAffectionTrack } from "../../domain/rules/state/affection.js";
 import { learnRange } from "../../domain/rules/state/fields.js";
@@ -97,7 +97,7 @@ export function stealFromNpc(state, npc, { now = Date.now() } = {}) {
   };
 }
 
-export function learnNpcSkill(state, npc) {
+export function learnNpcSkill(state, npc, { deferToJudge = false } = {}) {
   if (!npc) return { logs: [{ t: "err", text: "  此地没有这位人物。" }] };
   if (isNpcAngry(state.varTree, npc.name)) return appeaseAngryNpc(state, npc, { kind: "learn" });
 
@@ -126,6 +126,38 @@ export function learnNpcSkill(state, npc) {
 
   // WO-16B：授业好感 deterministic 硬结算——普通 3/绝学 6（learnRange 第三值），
   // 经系统账本（魅力修正/日涨上限/0-100 clamp）；兽类无好感轨道跳过。
+  // WO-16F-F4b 先裁后落：判官链激活时按钮求教不在叙事前扣银/加技能/写好感——
+  // 门规与束脩已被 tryLearnFromMaster 裁过（本函数上方），settle 回合由判官「直签转写」
+  // deterministic 事实落账（不二次掷骰，与自由文本 learn 裁量路径严格分开）。
+  // 生气短路在上文已归 F3 appease；门规不过/束脩不足根本走不到这里。
+  // 兽类语义成立（示范传艺），不特殊排除；无好感轨道由判官侧跳过 signing。
+  if (deferToJudge) {
+    return {
+      changes: { varTree: (prev) => recordNpcAttempt(prev, npc.name, { kind: "learn", detail: decision.moveBrief, time: Date.now() }) },
+      logs: [],
+      settle: `拜${npc.name}为师，${npc.name}${verb}「${decision.moveBrief}」倾囊相授，我凝神习得`,
+      settleOptions: {
+        settleNpc: npc.name,
+        settleKind: "learn_skill",
+        learnInfo: {
+          isMaster: decision.isMaster,
+          moveBrief: decision.moveBrief,
+          totalPrice: decision.totalPrice,
+          beast: !!npc.beast || !!npc.cannotSpeak,
+        },
+        // 直签转写载荷：feature 已确定的招式目录快照——判官不用天机券自由填名
+        learnRequest: {
+          npc: npc.name,
+          isMaster: decision.isMaster,
+          moveBrief: decision.moveBrief,
+          totalPrice: decision.totalPrice,
+          freshSkills: decision.freshSkills.map((sk) => ({ ...sk })),
+          beast: !!npc.beast || !!npc.cannotSpeak,
+        },
+      },
+    };
+  }
+
   const [learnLo, learnHi, learnBase] = learnRange(decision.isMaster);
   const affectionWrite = hasNoAffectionTrack(npc) ? null : (prev) => {
     const charm = selectEffectiveStats(state).effectiveSpecialNow?.魅力 ?? 5;
