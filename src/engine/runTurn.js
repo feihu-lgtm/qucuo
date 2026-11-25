@@ -174,7 +174,10 @@ async function runTurnSteps(ctx, cmd, opts) {
     ...Object.fromEntries(Object.entries(memoryDeps).filter(([, value]) => value !== undefined)),
     room: ctx.prompt?.room ?? baseDeps.room,
     activeTarget: ctx.prompt?.activeTarget ?? baseDeps.activeTarget,
-    talkTarget: ctx.prompt?.talkTarget ?? ctx.prompt?.recall?.talkTarget ?? baseDeps.talkTarget,
+    // turnContext 顶层 talkTarget 是 web 链唯一可靠来源——createPromptContext 不带它、
+    // callDeps 也不带它（Review 实证：玩家选中 NPC 搭话时 deps.talkTarget 恒 undefined，
+    // synthesizeTalkIntake 只能填「无」，搭话事实签不到对象头上）。顶层优先，其余为兜底。
+    talkTarget: ctx.talkTarget ?? ctx.prompt?.talkTarget ?? ctx.prompt?.recall?.talkTarget ?? baseDeps.talkTarget,
     cmd,
     ai,
   };
