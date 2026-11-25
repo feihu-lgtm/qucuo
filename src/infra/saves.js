@@ -234,7 +234,11 @@ export function importSave(jsonText) {
   const label = (data && data.label) ? `${data.label}（导入）` : "导入的存档";
   // 谱系重映射必须在 saveToSlot 之前——入槽即 structuredClone，事后改不进槽。
   const stamp0 = `imp${(snap.savedAt || 0).toString(36)}`;
-  if (Array.isArray(snap.proseLineage)) {
+  // 只带快照不带段落的导入文件（v1/裸包）不重映射谱系（Review）：重映射后分支名
+  // 在库里没有任何段落，同机导出再导入反而看不到本就在浏览器里的原文回忆。
+  // 无段落文件保持原谱系——同机 chunks 在原分支名下仍可见；跨机本来就没段落可丢。
+  const hasProse = Array.isArray(data?.prose) && data.prose.length > 0;
+  if (hasProse && Array.isArray(snap.proseLineage)) {
     snap = { ...snap, proseLineage: snap.proseLineage.map((e) => (e && e.b ? { ...e, b: `${e.b}_${stamp0}` } : e)) };
   }
   const id = saveToSlot(snap, label);
