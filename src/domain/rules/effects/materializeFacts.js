@@ -299,6 +299,18 @@ export function materializeFacts(state, facts, compiledWarrants) {
         break;
       }
 
+      // ── 8b. ADVANCE_QUEST：任务推进扩展律（十二律外显式扩展，见 docs）──
+      // 只把白名单核验过的 completionFlag 写进 flags——阶段推进/奖励发放/交付
+      // 扣件全部由 questFlagRule 世界规则扫描 flags 自动接管，这里不做任何
+      // 任务状态机操作（十二律没有任务语义，复用 buff/scene 会造假）。
+      case "ADVANCE_QUEST": {
+        const questFlag = typeof fact.flag === "string" ? fact.flag.trim() : "";
+        if (!questFlag) break;
+        if (!flags.includes(questFlag)) { flags.push(questFlag); flagsDirty = true; }
+        logs.push({ t: "quest", text: `  ❖ 任务推进 「${fact.questTitle || fact.questId || "未知任务"}」` });
+        break;
+      }
+
       // ── 9. MUTATE_SOCIAL：好感/人情账 → applyPatches 指令 ──
       // WO-16A：好感增量不再裸 patch——判官签的社交事实同样走系统好感账本语义
       // （domain/rules/state/affection.js，与 WO-16B #444 同接口）：魅力修正、

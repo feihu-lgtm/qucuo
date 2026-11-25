@@ -290,6 +290,28 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
     }
   }
 
+  // ── B1 任务推进扩展律：quest_advance 白名单核验 ──
+  // 候选只能由系统 helper（questAdvanceCandidates）现场生成并进 envelope；
+  // 小模型提议的 questId+flag 必须精确命中本轮候选，自编/提前阶段/错地点一律
+  // 安静丢弃——叙事到位判定归 intake 提议，上下文合法性归判官裁决。
+  const questCandidates = Array.isArray(envelope.questCandidates) ? envelope.questCandidates : [];
+  const signedQuestFlags = new Set();
+  for (const proposal of proposals) {
+    if (proposal?.kind !== "quest_advance") continue;
+    const hit = questCandidates.find((c) => c.questId === proposal.questId && c.flag === proposal.flag);
+    if (!hit) {
+      notes.push(`任务推进提议未过白名单（${proposal.questId || "?"}/${proposal.flag || "?"}），丢弃`);
+      continue;
+    }
+    if (signedQuestFlags.has(hit.flag)) continue;
+    signedQuestFlags.add(hit.flag);
+    facts.push({
+      id: nextFactId(), op: "ADVANCE_QUEST",
+      questId: hit.questId, flag: hit.flag, questTitle: hit.title,
+      witnesses: ["主角"],
+    });
+  }
+
   // ── WO-16C 移动拾取条件券：rollMovementEvents 系统掷中的路遇拾取，只签空白
   // 条件券（quality/category 系统硬账锁进 warrant，模型碰不到）——不进 facts。
   // 双证据齐备才落账：正文落实处埋 ⟦Fid⟧ 锚点 + 尾章 fill 可编译；叙事此刻

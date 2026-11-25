@@ -33,8 +33,11 @@ export const INTAKE_JSON_SCHEMA = {
           required: ["claim", "kind", "fit"],
           properties: {
             claim: { type: "string", description: "玩家声称找到或促成的具体事物，如桌上有本剑谱" },
-            kind: { type: "string", enum: ["find_item", "secret_clue", "social_deal", "environment_use"] },
+            kind: { type: "string", enum: ["find_item", "secret_clue", "social_deal", "environment_use", "quest_advance"] },
             fit: { type: "string", enum: ["natural", "stretch", "absurd"] },
+            // quest_advance 专用：只能抄系统喂入的候选 questId/flag，自编一律被白名单拒收
+            questId: { type: "string" },
+            flag: { type: "string" },
           },
         },
       },

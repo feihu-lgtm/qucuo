@@ -37,7 +37,7 @@ const placeLabel = (stage) => {
 // AI 要把这当成一场真交锋来演：只有玩家的话在理、把对方驳倒/说动时，
 // 才在 flags_add 吐出成功 flag 推进；玩家词不达意、被反驳、气势输了，
 // 就让对方继续刁难，不给过。
-export function buildQuestStageNote({ questProgress, flags, varTree, char, room, inv, pendingQuestBranch, visibleNpcs, convo, settleNpc, cmd, innerRoomName, questTriggerMode }) {
+export function buildQuestStageNote({ questProgress, flags, varTree, char, room, inv, pendingQuestBranch, visibleNpcs, convo, settleNpc, cmd, innerRoomName, questTriggerMode, suppressModelFlags }) {
   const describeFlag = (f) => Array.isArray(f) ? f.map(x => `"${x}"`).join("/或") + "（按玩家实际选择的分支，只加其中一个）" : `"${f}"`;
   const noteLines = [];
   for (const quest of QUCUO_QUESTS) {
@@ -74,7 +74,13 @@ export function buildQuestStageNote({ questProgress, flags, varTree, char, room,
         if (stage.choices?.length && (questTriggerMode !== "script" || allCombat(stage))) {
           noteLines.push(`《${quest.title}》当前阶段：${stage.description}——这一步的推进由玩家在任务面板抉择（${stage.choices.map(c => c.label).join("／")}），叙事最多写到撞见此景，不要替玩家抉择，也不要在 flags_add 里加这一阶段的 flag`);
         } else if (stage.choices?.length) {
-          noteLines.push(`《${quest.title}》当前阶段：${stage.description}——玩家抉择后，在 flags_add 加入${describeFlag(stage.completionFlag)}`);
+          noteLines.push(suppressModelFlags
+            ? `《${quest.title}》当前阶段：${stage.description}——玩家抉择后把情景自然写出即可，推进与否系统自会判定`
+            : `《${quest.title}》当前阶段：${stage.description}——玩家抉择后，在 flags_add 加入${describeFlag(stage.completionFlag)}`);
+        } else if (suppressModelFlags) {
+          // 判官双调用：推进由 intake quest_advance 提议 + judgeTurn 白名单签发，
+          // 模型不再需要（也不应）往 flags_add 吐任务旗——提示只剩场景上下文。
+          noteLines.push(`《${quest.title}》当前阶段：${stage.description}——把这一步的到场情景自然写出即可，推进与否系统自会判定`);
         } else {
           noteLines.push(`《${quest.title}》当前阶段：${stage.description}——叙事推进到此处后，在 flags_add 加入${describeFlag(stage.completionFlag)}`);
         }
@@ -93,9 +99,13 @@ export function buildQuestStageNote({ questProgress, flags, varTree, char, room,
         if (first.choices?.length && (questTriggerMode !== "script" || allCombat(first))) {
           noteLines.push(`《${quest.title}》在此可开启——这一步的推进由玩家在任务面板抉择，叙事最多写到撞见此景，不要在 flags_add 加这一阶段的 flag`);
         } else {
-          noteLines.push(needsGiver
-            ? `${quest.giver}可引出《${quest.title}》——若玩家与其互动触及此事，在 flags_add 加入${describeFlag(first.completionFlag)}`
-            : `《${quest.title}》在此地可开启——玩家触及此事时，在 flags_add 加入${describeFlag(first.completionFlag)}`);
+          noteLines.push(suppressModelFlags
+            ? (needsGiver
+              ? `${quest.giver}可引出《${quest.title}》——玩家与其互动触及此事时自然写出演进，开启与否系统自会判定`
+              : `《${quest.title}》在此地可开启——玩家触及此事时自然写出演进，开启与否系统自会判定`)
+            : (needsGiver
+              ? `${quest.giver}可引出《${quest.title}》——若玩家与其互动触及此事，在 flags_add 加入${describeFlag(first.completionFlag)}`
+              : `《${quest.title}》在此地可开启——玩家触及此事时，在 flags_add 加入${describeFlag(first.completionFlag)}`));
         }
       }
     }
