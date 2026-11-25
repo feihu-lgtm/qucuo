@@ -265,7 +265,7 @@ ${dealFmt}`;
     sysBlocks,
     chatMessages,
     effectiveCfg,
-    stream: effectiveCfg.streamEnabled && effectiveCfg.apiType !== "gemini",
+    stream: effectiveCfg.streamEnabled,
     intent: { code: d.intent.code, label: d.intent.label },
     recallInfo: d.recallInfo,
     modelOptions: { callLabel: "主叙事" },

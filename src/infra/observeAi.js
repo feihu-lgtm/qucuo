@@ -23,7 +23,15 @@ export async function observeAi(messages, opts, request) {
       call.chunk();
       opts.onChunk?.(...args);
     });
-    call.end({ success: true, response: result.text, finishReason: result.finishReason, usage: result.usage });
+    // 各家缓存命中字段统一归一化为 cachedTokens：OpenAI cached_tokens /
+    // Anthropic cache_read_input_tokens / Gemini cachedContentTokenCount，
+    // 随 usage 一起写入流水线诊断日志，供 TraceViewer 观察前缀缓存命中率。
+    const usage = result.usage;
+    const cachedTokens = usage?.prompt_tokens_details?.cached_tokens
+      ?? usage?.cache_read_input_tokens
+      ?? usage?.cachedContentTokenCount
+      ?? 0;
+    call.end({ success: true, response: result.text, finishReason: result.finishReason, usage, cachedTokens });
     return result;
   } catch (error) {
     call.end({ success: false, error: error.message || String(error) });

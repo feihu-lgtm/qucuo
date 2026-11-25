@@ -1,9 +1,27 @@
 // SSE 通用读取器：解析 "data: {...}" 格式的流，遇到 [DONE] 停止。
 // 每解析出一个合法 JSON 事件就调用一次 onEvent(parsedObject)。
-export async function readSSE(res, onEvent) {
+export async function readSSE(res, onEvent, { idleTimeoutMs } = {}) {
   const reader = res.body.getReader();
   const decoder = new TextDecoder("utf-8");
   let buf = "";
+  // 流式 body 的 idle 超时：每次等下一个 chunk 都受 idleTimeoutMs 约束。
+  // 持续有字到达不会误杀长正文；但 headers 拿到之后 body 卡住不再无限等——
+  // 否则玩家配置的接口超时对流式路径形同虚设（fetchWithTimeout 只管首字节）。
+  const readChunk = () => {
+    if (!idleTimeoutMs) return reader.read();
+    let timer;
+    return Promise.race([
+      reader.read().finally(() => clearTimeout(timer)),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          reader.cancel().catch(() => {});
+          const err = new Error(`流式传输超过 ${Math.round(idleTimeoutMs / 1000)} 秒没有新内容`);
+          err.code = "timeout";
+          reject(err);
+        }, idleTimeoutMs);
+      }),
+    ]);
+  };
   const handleLine = (line) => {
     const trimmed = line.trim();
     if (!trimmed.startsWith("data:")) return;
@@ -14,8 +32,9 @@ export async function readSSE(res, onEvent) {
   while (true) {
     let chunk;
     try {
-      chunk = await reader.read();
+      chunk = await readChunk();
     } catch (e) {
+      if (e?.code === "timeout") throw e; // idle 超时原样上抛，别包装成网络错误
       const err = new Error(`流式传输中途断开：${e?.message || e}`);
       err.code = "network";
       throw err;

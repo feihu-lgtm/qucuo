@@ -51,15 +51,34 @@ export function fmtGameClock(turn) {
   return `第${day}日·第${turn.gameTurn}回合`;
 }
 
+// 各家 usage 字段名不同，统一取数：OpenAI prompt_tokens/completion_tokens、
+// Anthropic input_tokens/output_tokens、Gemini promptTokenCount/candidatesTokenCount。
+export function formatUsageTab(p) {
+  const u = p?.usage;
+  if (!u && p?.cachedTokens == null) return undefined;
+  const input = u?.prompt_tokens ?? u?.input_tokens ?? u?.promptTokenCount;
+  const output = u?.completion_tokens ?? u?.output_tokens ?? u?.candidatesTokenCount;
+  const lines = [];
+  if (input != null) lines.push(`输入 tokens: ${input}`);
+  if (output != null) lines.push(`输出 tokens: ${output}`);
+  if (p?.cachedTokens != null) {
+    lines.push(`前缀缓存命中 tokens: ${p.cachedTokens}`);
+    if (input) lines.push(`缓存命中率: ${Math.round((p.cachedTokens / input) * 100)}%`);
+  }
+  return lines.length ? lines.join("\n") : undefined;
+}
+
 export function pipelineTabs(p) {
-  return {
+  // 无内容的标签页直接不渲染（用量/召回缺数据时不占位置）
+  return Object.fromEntries(Object.entries({
     System: Array.isArray(p.systemPrompt)
       ? p.systemPrompt.map((m) => `[${m.tavernLabel || m.tavernBlock || "system"}]\n${m.content || ""}`).join("\n\n")
       : p.systemPrompt,
     输入: (p.userMessages || []).map((m) => `[${m.role}] ${m.content}`).join("\n\n"),
     输出: p.response ?? p.error,
+    用量: formatUsageTab(p),
     召回: p.recall && JSON.stringify(p.recall, null, 2),
-  };
+  }).filter(([, content]) => content != null && content !== ""));
 }
 
 export function formatTrace(turn, { full = true } = {}) {

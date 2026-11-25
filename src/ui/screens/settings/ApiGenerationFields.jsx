@@ -1,5 +1,4 @@
 import React from "react";
-import { API_TYPES } from "../../../infra/apiConfig.js";
 import { getApiModel } from "../../../infra/apiModel.js";
 import IntentRecognitionToggle from "../IntentRecognitionToggle.jsx";
 import ModelPicker from "./ModelPicker.jsx";
@@ -134,17 +133,10 @@ export default function ApiGenerationFields({
     <div style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 8 }}>
       <input
         type="checkbox" checked={!!cfg.streamEnabled}
-        disabled={cfg.apiType === API_TYPES.GEMINI}
         onChange={e => patch({ streamEnabled: e.target.checked })}
-        style={{ cursor: cfg.apiType === API_TYPES.GEMINI ? "not-allowed" : "pointer" }}
       />
       <span>流式输出（边生成边显示，不用等一整段返回完）</span>
     </div>
-    {cfg.apiType === API_TYPES.GEMINI && (
-      <div style={{ fontSize: "var(--fs-xs)", color: "var(--gold)", marginTop: -6, marginBottom: 6 }}>
-        Gemini 暂不支持流式输出，切到 Anthropic 或 OpenAI 兼容类型后可用。
-      </div>
-    )}
 
     <div style={labelStyle}>思考 / 推理模式</div>
     <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 4 }}>

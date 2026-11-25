@@ -47,6 +47,9 @@ export function setRequestTimeout(ms) {
   const v = Number(ms);
   if (Number.isFinite(v) && v >= 10000 && v <= 300000) _requestTimeoutMs = v;
 }
+export function getRequestTimeout() {
+  return _requestTimeoutMs;
+}
 export async function fetchWithTimeout(url, options = {}, timeoutMs = _requestTimeoutMs) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
