@@ -20,6 +20,7 @@ import { factionRepDeltas } from "../../domain/rules/economy/factionRep.js";
 import { recordNemesisDuel, scarFromBattleLog, nemesisFactionOf, findNemesisEntry } from "../../domain/rules/nemesis/nemesisEngine.js";
 import { recordWeaponVictory } from "../../domain/rules/items/itemAwaken.js";
 import { lethalVerdict, recordLethalOutcome } from "../../domain/rules/combat/lethal.js";
+import { rollFakeDead, markNemesisStatus } from "../../domain/rules/nemesis/fakeDead.js";
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 // 一场切磋占用的游戏时间（time 一格 = 一小时），由系统直接加，不经过 AI
@@ -228,12 +229,33 @@ export function settleNpcDuel(state, npc, {
     const nemesisActive = !!(faction0 && findNemesisEntry(rosterPre, faction0, npc.name)?.status === "active");
     const verdict = lethalVerdict({ outcome, lethal, spare, nemesisActive });
     const bookNow = working.varTree?.世界?.生死 || {};
-    const bookNext = recordLethalOutcome(bookNow, npc, verdict, { turn: state.time || 0, place: state.room?.name || "" });
+    let bookNext = recordLethalOutcome(bookNow, npc, verdict, { turn: state.time || 0, place: state.room?.name || "" });
+    // WO-23C2b 假死池：dying+候选才掷签（seeded 可复现，AI 无票）——
+    // 进池：谱 status=fakeDead+池账 returnAfterDay；不进：status=dead 真死。
+    // 玩家文案只有死亡表象，fakeDead 真相绝不进 logs。
+    let deathMark = null;
+    if (verdict?.status === "dying" && verdict.fakeDeadCandidate && bookNext?.[npc.name] && faction0) {
+      const roll = rollFakeDead({ turn: state.time || 0, npcName: npc.name, faction: faction0 });
+      deathMark = roll.entersPool ? "fakeDead" : "dead";
+      if (roll.entersPool) {
+        bookNext = {
+          ...bookNext,
+          [npc.name]: { ...bookNext[npc.name], fakeDead: true, fakeDeadAt: state.time || 0, returnAfterDay: roll.returnAfterDay },
+        };
+      }
+    }
     if (verdict && bookNext) {
-      addChange(changes, working, "varTree", (prev) => ({
-        ...(prev || {}),
-        世界: { ...(prev?.世界 || {}), 生死: bookNext },
-      }));
+      const bookFinal = bookNext;
+      const markTo = deathMark;
+      addChange(changes, working, "varTree", (prev) => {
+        const world = { ...(prev?.世界 || {}), 生死: bookFinal };
+        // 状态置位对最新谱惰性变换——同回合 win+疤的谱更新不被覆盖丢账
+        if (markTo) {
+          const marked = markNemesisStatus(world.宿敌谱 || {}, faction0, npc.name, markTo);
+          if (marked) world.宿敌谱 = marked;
+        }
+        return { ...(prev || {}), 世界: world };
+      });
       logs.push({
         t: "sys",
         text: verdict.status === "spared"
