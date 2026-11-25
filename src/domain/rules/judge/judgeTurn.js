@@ -310,11 +310,15 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
           itemId: item?.id || action.itemId || "", itemName: item?.name || action.itemId || "礼物",
           from: "player", to: npc.name, witnesses: ["主角", npc.name],
         });
-        facts.push({
-          id: nextFactId(), op: "MUTATE_SOCIAL", npc: npc.name,
-          affectionDelta: weight?.ratio >= 2 ? 6 : weight?.ratio >= 1 ? 4 : 2,
-          ledgerKind: "恩", reason: `赠${item?.name || "礼"}`, witnesses: ["主角", npc.name],
-        });
+        // WO-16F-F4a：无好感轨道对象（兽类/intimacy.forbidden）只收物不涨好感——
+        // 与 legacy giftNpc 的 hasNoAffectionTrack 口径一致（谓词内联同 talk 分支，防循环依赖）。
+        if (!(npc?.intimacy?.forbidden || npc?.beast)) {
+          facts.push({
+            id: nextFactId(), op: "MUTATE_SOCIAL", npc: npc.name,
+            affectionDelta: weight?.ratio >= 2 ? 6 : weight?.ratio >= 1 ? 4 : 2,
+            ledgerKind: "恩", reason: `赠${item?.name || "礼"}`, witnesses: ["主角", npc.name],
+          });
+        }
       } else {
         // 拒收不产扣物事实——物件还在玩家身上，彻底消灭错账
         notes.push(`${npc.name}拒收${item?.name || "礼物"}，物件未易主`);

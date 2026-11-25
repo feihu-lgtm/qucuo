@@ -217,7 +217,10 @@ async function runTurnSteps(ctx, cmd, opts) {
   // WO-16F-F3：赔罪 settle 单独进判官——appease 在 feature 层本无前置硬结算
   // （anger.js 只记尝试不写状态），无双结算风险；送礼/求教/邀同行 settle 仍排除。
   const isAppeaseSettle = !!isSettle && opts.settleKind === "appease" && !!opts.settleNpc;
-  if (deps.apiCfg?.judgePipelineEnabled && deps.apiCfg?.extractionEnabled && (!isSettle || isAppeaseSettle) && !isGroupTalk) {
+  // WO-16F-F4a：普通送礼 settle 进判官——giftNpc 判官链下 defer（不前置扣物/写好感）
+  // 才带 giftRequest；任务交付/雪豹/草药/信物/生气/送银 settle 不带此键，仍排除在外。
+  const isGiftSettle = !!isSettle && opts.settleKind === "gift" && !!opts.settleNpc && !!opts.giftRequest;
+  if (deps.apiCfg?.judgePipelineEnabled && deps.apiCfg?.extractionEnabled && (!isSettle || isAppeaseSettle || isGiftSettle) && !isGroupTalk) {
     try {
       const visibleNpcs = visibleNpcsPre;
       // B1 任务推进候选：只能由系统 helper 现场生成——小模型挑候选、
@@ -262,6 +265,20 @@ async function runTurnSteps(ctx, cmd, opts) {
           }],
           proposals: [],
         };
+      } else if (isGiftSettle) {
+        // WO-16F-F4a：gift settle 本地合成听意单——与自由文本 give 同口径进判官
+        // give 分支裁定收/拒，不再额外调 intake AI。itemId 用 giftRequest 确定性
+        // 寻址（对象条目=id，字符串条目=名字），不读 cmd 文本猜物。
+        const giftNpcName = typeof opts.settleNpc === "string" ? opts.settleNpc : opts.settleNpc?.name || "";
+        const req = opts.giftRequest || {};
+        intakeResult = {
+          read: "", refIds: [],
+          actions: [{
+            kind: "give", target: giftNpcName, itemId: req.itemId || req.itemName || "",
+            direction: "none", stance: "casual", text: cmd,
+          }],
+          proposals: [],
+        };
       } else if (shouldSkipIntakeForTalk(isTalk, questCandidates)) {
         intakeResult = synthesizeTalkIntake(cmd, deps.talkTarget);
       } else {
@@ -295,7 +312,7 @@ async function runTurnSteps(ctx, cmd, opts) {
         inv: deps.inv || [], entries: [],
         // WO-16F-F3：appease settle 听证不算纯搭话——否则 talkOnly 白名单会把
         // appease 动作整条拦掉，判官路空转、旧仲裁又已被跳过（零裁决穿帮）。
-        talkOnly: isAppeaseSettle ? false : isTalk,
+        talkOnly: (isAppeaseSettle || isGiftSettle) ? false : isTalk,
         // WO-16F-F1：steal/free_act 检定与伤损/破费定量要读玩家属性与气血银两。
         char: liveNow.char || deps.char || {},
         containers: containerView,

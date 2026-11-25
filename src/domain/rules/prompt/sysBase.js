@@ -95,6 +95,9 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       return `\n【切磋邀战叙事铁律】只写玩家发出邀战、${npcName}接受邀战与双方摆开架势，写到第一招交手之前立刻停止。严禁描写任何招式交锋、回合、伤势、胜负、任一方喊停或${npcName}拒绝。切磋是否开始由玩家通过确认栏选择，本轮不得替玩家开始战斗。`;
     }
     if (o.settleKind === "gift") {
+      // WO-16F-F4a：判官路（judgeActive）不得写「已由系统交付」——收/拒由判官定案单
+      // （judgeRuleBlock 注入）为唯一方向，这里再说已交付已结算会与拒收裁决打架。
+      if (o.judgeActive) return "";
       // 偏好暗示：回复里自然带出对方偏爱哪类物件（玩家下次就知道送什么）。
       const preferHint = o.giftInfo?.preferLabel
         ? ` ${o.settleNpc}平日偏爱「${o.giftInfo.preferLabel}」一类——回应对白里自然带出他对这类物件的惦记（暗示即可，禁直白报出类别名、禁清单式罗列）。`
