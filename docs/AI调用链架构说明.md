@@ -20,13 +20,21 @@ flowchart TD
   A[玩家输入] --> B[intent.classify 行动识别]
   B --> C[resolveIntent / settleTurn 路由与软结算]
   C --> D[memory recall + prompt assembly]
-  D --> E[turn.main 主叙事 streaming]
-  E --> F[turn.extraction 旧状态提取]
+  D --> Q{判官管线激活?}
+  Q -- 是 --> I[turn.intake 前哨听意]
+  I --> J[judgeTurn 纯函数判官]
+  J --> E[turn.main 主叙事 streaming<br/>注入定案单与锚点铁律]
+  Q -- 否 --> E
+  E --> F[turn.extraction 旧状态提取<br/>双调用模式仍运行]
+  E --> V{有判官定案?}
+  V -- 是 --> S[sealVerifier 尾章校对<br/>materializeFacts 编译十二律]
+  V -- 否 --> G
   F --> G[commitRound / applyPatches 统一写入口]
+  S --> G
   G --> H[postCommit 日志、记账、补写、自动存档]
 ```
 
-这条链路仍是线上主回路，但判官管线（WO-13）已并线接入：`judgePipelineEnabled` 开启时，`turn.intake` 前哨听意 → `judgeTurn` 纯函数判官 → 定案单与锚点铁律注入主叙事 → 流式剥 `⟦F⟧` 锚点、`---SEAL---` 尾章校对 → `materializeFacts` 经 `commitRound` 落盘，全部发生在 `turn.main` 前后，不替换旧状态提取——旧提取/单调用链路仍原样保留兜底。
+上图画的是双调用叙事模式下的真实叠线：判官管线（WO-13）已并线接入，但旧提取仍同步运行作过渡兜底。判官支线的具体顺序是：`judgePipelineEnabled` 开启时，`turn.intake` 前哨听意 → `judgeTurn` 纯函数判官 → 定案单与锚点铁律注入主叙事 → 流式剥 `⟦F⟧` 锚点、`---SEAL---` 尾章校对 → `materializeFacts` 经 `commitRound` 落盘，全部发生在 `turn.main` 前后，不替换旧状态提取——旧提取/单调用链路仍原样保留兜底。
 
 **当前真实覆盖率**：web 端 `judgePipelineEnabled` 默认 `true`；CLI 老录制回放默认 `false`（保留旧链路对比）。激活还需同时满足两个条件——**非 settle 回合且非纯搭话回合**（settle 回合状态已由系统/软结算裁决落账，判官再裁会重复结算；纯搭话免费不动状态，判官收礼会越权搬背包）且 **`extractionEnabled` 双调用叙事模式**（单调用 JSON 老路的输出契约是纯 JSON 骨架，锚点+SEAL 散文指令会冲垮它）；任一不满足，新管线不激活、整链 no-op。场记板 entries、容器坍缩态、备料物、悬空道具尚无宿主系统喂入（属 WO-17/18/22/24），判官多数回合签出空 facts，新管线实际以 no-op 退化运行——链路已通但尚未全量替换旧状态提取，本节 mermaid 图仍是状态写入口的事实主流。
 
