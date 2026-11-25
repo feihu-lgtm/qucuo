@@ -35,11 +35,10 @@ function argmax(probs) {
   return best;
 }
 
-// 解析选择题回复：保留选项内的概率并归一化；choice 不在选项里时取概率最大者；
-// 什么都读不出来时落「无法判断」。永不抛错。
-export function parseJudgeAnswer(text, options = []) {
+// 对已解析的判定对象做归一化：只保留选项内的概率并归一化；choice 取概率最大者；
+// 什么都读不出来时落「无法判断」。schema 原生通路与手工截取通路共用，行为不漂。
+export function normalizeJudgeData(json, options = []) {
   const unknown = options.includes(UNKNOWN_CHOICE) ? UNKNOWN_CHOICE : options[options.length - 1];
-  const json = extractJson(text);
   const stated = {};
   for (const [key, value] of Object.entries(json?.probs || {})) {
     const option = options.find((candidate) => candidate === String(key).replace(/[「」]/g, ""));
@@ -52,6 +51,11 @@ export function parseJudgeAnswer(text, options = []) {
   const mass = total > 0 ? stated : { [choice]: 1 };
   const probs = Object.fromEntries(options.map((option) => [option, (mass[option] || 0) / (total > 0 ? total : 1)]));
   return { choice: argmax(probs) ?? choice ?? unknown, probs, parseFailed: false };
+}
+
+// 旧手工截取通路：从文本里截出第一个 JSON 对象再走同一份归一化。
+export function parseJudgeAnswer(text, options = []) {
+  return normalizeJudgeData(extractJson(text), options);
 }
 
 export function registerSettleCalls() {
@@ -77,6 +81,29 @@ export function registerSettleCalls() {
     defaultMaxTokens: 512,
     join: "",
     blocks: ["settle.judge.sys", "settle.judge.user"],
+    // 原生结构化输出：probs 的键就是本轮选项原文，schema 随 ctx 动态生成——
+    // choice 枚举与 probs 键集合都被锁死在选项内，模型没法编造选项外的答案。
+    schema: (ctx) => {
+      const options = (ctx?.options || []).filter((o) => typeof o === "string" && o);
+      if (!options.length) return undefined;
+      return {
+        name: "settle_judge",
+        schema: {
+          type: "object",
+          additionalProperties: false,
+          required: ["choice", "probs"],
+          properties: {
+            choice: { type: "string", enum: options },
+            probs: {
+              type: "object",
+              additionalProperties: false,
+              required: options,
+              properties: Object.fromEntries(options.map((o) => [o, { type: "number" }])),
+            },
+          },
+        },
+      };
+    },
     // 解析不通过不视为调用失败：直接落「无法判断」，由调用方按"系统判不了"处理。
     vet: (text, ctx) => ({ ok: true, value: parseJudgeAnswer(text, ctx.options || []) }),
     offline: (ctx) => ({

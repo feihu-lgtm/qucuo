@@ -36,7 +36,9 @@ export function createAiClassifier(ai, { model, cfg, temperature = 0, maxTokens 
       const finishReason = finishReasonOf(response);
       onResponse?.({ question: "recognize", text: response.text ?? "", finishReason, usage: response.usage ?? response.raw?.usage ?? null, ms: Date.now() - startedAt });
       if (LENGTH_REASONS.has(String(finishReason))) throw new IntentTruncatedError("recognize", response.text ?? "", finishReason);
-      const json = extractJson(response.text);
+      // 原生 schema 通过时 res.data 就是校验过的整对象，直接取用；
+      // 服务商不支持 schema / 校验未过时回退旧手工截取（剥围栏找首尾花括号）。
+      const json = Array.isArray(response.data?.actions) ? response.data : extractJson(response.text);
       return Array.isArray(json?.actions) ? json : { actions: [], parseFailed: true };
     },
   };

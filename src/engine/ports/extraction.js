@@ -63,7 +63,7 @@ export async function callExtraction(intentCode, narrative, state, apiCfg, settl
 // 里挑——这批是 combat/resolveTurn.js 真正读取的字段，选别的是死字段。玩家"要求"栏(锋利/
 // 幸运/护身…)是词条来源，模型据此语义匹配。返回 3 个不同演绎，供面板三选一。
 export async function forgeDesign({ material, category, requirement, craft }, apiCfg) {
-  const { text } = await withAI(
+  const res = await withAI(
     "forge.design",
     {
       material,
@@ -74,12 +74,18 @@ export async function forgeDesign({ material, category, requirement, craft }, ap
     },
     { ai: webAi, apiCfg },
   );
-  let js = (text || "").replace(/\`\`\`json\s*|\`\`\`\s*/g, "").trim();
-  const i0 = js.indexOf("{"), i1 = js.lastIndexOf("}");
-  if (i0 >= 0 && i1 > i0) js = js.slice(i0, i1 + 1);
-  js = cleanJsonString(js);
+  // 原生 schema 通过时 res.data 就是校验过的整对象，直接取用；
+  // 服务商不支持 schema / 校验未过时回退旧手工截取（剥围栏找首尾花括号）。
   let parsed;
-  try { parsed = JSON.parse(js); } catch { return { ok: false, candidates: [] }; }
+  if (Array.isArray(res.data?.candidates)) {
+    parsed = res.data;
+  } else {
+    let js = (res.text || "").replace(/\`\`\`json\s*|\`\`\`\s*/g, "").trim();
+    const i0 = js.indexOf("{"), i1 = js.lastIndexOf("}");
+    if (i0 >= 0 && i1 > i0) js = js.slice(i0, i1 + 1);
+    js = cleanJsonString(js);
+    try { parsed = JSON.parse(js); } catch { return { ok: false, candidates: [] }; }
+  }
   const cands = Array.isArray(parsed.candidates) ? parsed.candidates.slice(0, 3) : [];
   // 清洗：category 兜底 weapon，effect/sixDim 保证是对象
   const CATS = ["weapon", "armor", "accessory"];

@@ -2,7 +2,7 @@ import { withAI } from "./withAI.js";
 import { applyWrite } from "../../domain/rules/state/applyWrite.js";
 import { WHISPER_AFFECTION_RULES, giftRange } from "../../domain/rules/state/fields.js";
 import { SOFT_RULES } from "../../domain/rules/settle/softRules.js";
-import { UNKNOWN_CHOICE } from "../../domain/rules/settle/judge.js";
+import { UNKNOWN_CHOICE, parseJudgeAnswer, normalizeJudgeData } from "../../domain/rules/settle/judge.js";
 
 // ── 结算层入口 ──
 // runSoftSettle 跑一次软判断：出选择题 → 判选项 → 照规则表把数值钉死。
@@ -67,7 +67,17 @@ export async function runSoftSettle({ ai, apiCfg, kind, ctx = {} } = {}) {
     { ai, apiCfg, throwOnError: false },
   );
 
-  const data = res?.data || {};
+  // 原生 schema 通过时 res.data 就是校验过的 {choice, probs}；校验未过/不支持 schema 时
+  // data 是 offline 兜底（parseFailed），此时按旧路手工截取 res.text 补救一次，仍不行才落「无法判断」。
+  let data = res?.data || {};
+  if (data.parseFailed && res?.text) {
+    const manual = parseJudgeAnswer(res.text, options);
+    if (!manual.parseFailed) data = manual;
+  } else if (!data.parseFailed && (data.choice || data.probs)) {
+    // schema 原生通路回来的生对象同样过一遍归一化（argmax 定 choice、概率归一），
+    // 与手工截取通路行为一致。
+    data = normalizeJudgeData(data, options);
+  }
   const choice = options.includes(data.choice) ? data.choice : UNKNOWN_CHOICE;
   const probs = data.probs || {};
 
