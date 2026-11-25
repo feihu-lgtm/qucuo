@@ -87,15 +87,18 @@ export async function playTurn(ctx, cmd, opts = {}) {
       };
       // 同源喂料：在场名单用与 preparedPrompt 完全相同的 buildPresence 口径
       // （内层过滤+同伴出战位并入），吃回合前房间快照——影子输入才与真实判官一致。
+      // isTalk 可靠信号在 plan/turnContext，opts.isTalk 仅兜底——普通搭话回合
+      // opts 通常不带这个字段，漏掉会让 talkOnly 与在场名单都按非搭话算，对账失真。
+      const isTalk = !!(turnCtx.isTalk ?? opts.isTalk);
       const presence = buildPresence({
-        isTalk: !!opts.isTalk, lockedDestName: turnCtx.lockedDestName,
+        isTalk, lockedDestName: turnCtx.lockedDestName,
         room: shadowPre.room || {}, innerRoomName: turnCtx.innerRoomName,
         companionState: getGameState?.()?.companionState,
       });
       void runShadowJudge({
         cmd, preState: shadowPre, postState: shadowPost,
         ai: turnCtx.ai, apiCfg: turnCtx.apiCfg,
-        convo: turnCtx.convo || [], isTalk: !!opts.isTalk,
+        convo: turnCtx.convo || [], isTalk,
         visibleNpcs: presence.visibleNpcsForAI,
         epoch: String(turnCtx.proseEpoch ?? "default"),
         isStale: turnCtx.isStale, epochGuard: turnCtx.proseEpochGuard,

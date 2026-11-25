@@ -152,6 +152,14 @@ describe("WO-16D 影子对账接线", () => {
     expect(runShadowJudge).not.toHaveBeenCalled();
   });
 
+  it("搭话回合 turnCtx.isTalk 信号进影子（不靠 opts）", async () => {
+    runTurn.mockResolvedValue({ narrativeText: "test" });
+    const ctxTalk = { ...shadowCtx(), isTalk: true };
+    await playTurn(ctxTalk, "test");
+    expect(runShadowJudge).toHaveBeenCalledTimes(1);
+    expect(runShadowJudge.mock.calls[0][0].isTalk).toBe(true);
+  });
+
   it("stale 回合不跑影子", async () => {
     runTurn.mockResolvedValue({ narrativeText: "test" });
     await playTurn(shadowCtx(), "test", { isStale: undefined });
