@@ -178,7 +178,11 @@ async function runTurnSteps(ctx, cmd, opts) {
   // 降级安全：intake 调用失败/不合形制一律空听意单，判官照常签发（多半空事实），
   // 主叙事拿不到锚点任务时退化为普通正文，锚点剥离/尾章校对全是 no-op。
   let judgeVerdict = null;
-  if (deps.apiCfg?.judgePipelineEnabled) {
+  // 闸门：① 单调用 JSON 模式的输出契约是纯 JSON，锚点+SEAL 的散文指令会让模型
+  // 丢 JSON 骨架，故只在双调用叙事（extractionEnabled）模式激活；
+  // ② settle 回合（赠礼/赔罪/求教等）状态已由系统/软结算裁决落账，
+  // 判官再裁一次会重复加好感——settle 回合不激活。
+  if (deps.apiCfg?.judgePipelineEnabled && deps.apiCfg?.extractionEnabled && !isSettle) {
     try {
       const visibleNpcs = preparedPrompt.visibleNpcsForAI || preparedPrompt.visibleNpcs || deps.room?.npcs || [];
       const intakeContent = buildIntakeUserContent({
@@ -365,12 +369,17 @@ async function runTurnSteps(ctx, cmd, opts) {
   // fills 编译进 materializeFacts，产物随 turn 带给 finalizeTurn 经 commitRound 落盘。
   let judgeEffects = null;
   if (judgeVerdict && deps.judgePipelineActive) {
+    // 状态袋一律以 getGameState 实录为准（deps 里的 inv/char 在部分链路是空壳，
+    // 空背包进 materializeFacts 会让 changes.inv 只含新货、把真背包整包抹掉）。
+    const live = ctx.getGameState?.() || {};
     const stateForFacts = {
       time: getGameStateTime(ctx, deps),
-      inv: deps.inv || [], room: deps.room, char: deps.char,
-      skills: deps.skills || ctx.getGameState?.()?.skills || [],
-      exp: ctx.getGameState?.()?.exp ?? 0, pot: ctx.getGameState?.()?.pot ?? 0,
-      flags: deps.flags || ctx.getGameState?.()?.flags || [],
+      inv: live.inv || deps.inv || [], room: live.room || deps.room, char: live.char || deps.char,
+      skills: live.skills || deps.skills || [],
+      exp: live.exp ?? 0, pot: live.pot ?? 0,
+      flags: live.flags || deps.flags || [],
+      varTree: live.varTree, companionState: live.companionState,
+      claimedMilestones: live.claimedMilestones,
     };
     const verified = verifySealAndMaterialize({
       sealText: sealParts?.sealText || "",
