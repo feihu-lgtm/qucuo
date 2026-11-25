@@ -389,15 +389,17 @@ describe("S2 hostile 敌意档：辱骂签负好感+怨，暴烈性情置生气"
 });
 
 describe("S2 Review 补洞：赠物必须实有/敌意不跳前哨", () => {
-  it("银两赠予（囊中无此物件）：不签 TRANSFER_ITEM 也不涨好感", () => {
+  it("银两赠予改走送银桥（S7）：签 CHANGE_VITALS_SILVER 不走 TRANSFER_ITEM", () => {
+    // S2 时代银两因不在背包不签发；S7 送银桥接入后，明确数额的送银正常签发——
+    // baseEnvelope 无 char.money 字段按 0 计，超囊中仍不签，此处仅验不串器物通道。
     const verdict = judgeTurn(baseEnvelope(), {
       read: "", refIds: [],
       actions: [{ kind: "give", target: "才旦", item: "银两", itemId: "", direction: "none", stance: "sincere", text: "把5两银子送给才旦" }],
       proposals: [],
-    }, { rng: seqRng([0.01]) }); // 低骰必收——但无物可赠不签发
+    }, { rng: seqRng([0.01]) });
     expect(verdict.facts.filter((f) => f.op === "TRANSFER_ITEM")).toHaveLength(0);
-    expect(verdict.facts.filter((f) => f.op === "MUTATE_SOCIAL")).toHaveLength(0);
-    expect(verdict.notes.join()).toContain("不在囊中");
+    // baseEnvelope 未给 char.money（视为 0）→ 超囊中所签为空，但不再落「不在囊中」器物口径
+    expect(verdict.notes.join()).not.toContain("不在囊中");
   });
 
   it("幻影礼物（背包没有的倚天剑）：不签发，零假账", () => {
@@ -417,5 +419,69 @@ describe("S2 Review 补洞：赠物必须实有/敌意不跳前哨", () => {
       proposals: [],
     }, { rng: seqRng([0.1]) });
     expect(verdict.facts.find((f) => f.op === "TRANSFER_ITEM")).toBeTruthy();
+  });
+});
+
+describe("S7 送银判官桥：give 银两走 CHANGE_VITALS_SILVER", () => {
+  function silverIntake(text, item = "银两") {
+    return { read: "", refIds: [], actions: [{ kind: "give", target: "才旦", item, itemId: item, direction: "none", condition: "无", condition_text: "", stance: "sincere", outcome: "无", risk: "无", confidence: 0.9, text }], proposals: [] };
+  }
+  function silverEnv(money = 100, extra = {}) {
+    return { turn: 42, day: 2, place: "鱼定村·茶馆", npcs: NPCS, varTree: { 角色: { 才旦: { 好感度: 30 } } }, inv: [], entries: [], budget: { riskLevel: 1 }, char: { money, special: { 魅力: 5 } }, ...extra };
+  }
+
+  it("把5两银子送给才旦：签 -5 银两 + 恩好感（分量区间中值），不走 TRANSFER_ITEM", () => {
+    const verdict = judgeTurn(silverEnv(), silverIntake("把5两银子送给才旦"), { rng: seqRng([0.5]) });
+    const silver = verdict.facts.find((f) => f.op === "CHANGE_VITALS_SILVER");
+    expect(silver).toBeTruthy();
+    expect(silver.moneyDelta).toBe(-5);
+    const social = verdict.facts.find((f) => f.op === "MUTATE_SOCIAL");
+    expect(social).toBeTruthy();
+    expect(social.ledgerKind).toBe("恩");
+    expect(social.affectionDelta).toBeGreaterThan(0);
+    expect(verdict.facts.filter((f) => f.op === "TRANSFER_ITEM")).toHaveLength(0);
+  });
+
+  it("中文数字「二十两」同样解析", () => {
+    const verdict = judgeTurn(silverEnv(), silverIntake("送二十两银子给才旦"), { rng: seqRng([0.5]) });
+    expect(verdict.facts.find((f) => f.op === "CHANGE_VITALS_SILVER")?.moneyDelta).toBe(-20);
+  });
+
+  it("未写数额不签发", () => {
+    const verdict = judgeTurn(silverEnv(), silverIntake("送些银子给才旦"), { rng: seqRng([0.5]) });
+    expect(verdict.facts.filter((f) => f.op === "CHANGE_VITALS_SILVER")).toHaveLength(0);
+    expect(verdict.facts.filter((f) => f.op === "MUTATE_SOCIAL")).toHaveLength(0);
+    expect(verdict.notes.join()).toContain("未写明数额");
+  });
+
+  it("超囊中不签发（只带 3 两送 50 两）", () => {
+    const verdict = judgeTurn(silverEnv(3), silverIntake("把50两银子送给才旦"), { rng: seqRng([0.5]) });
+    expect(verdict.facts.filter((f) => f.op === "CHANGE_VITALS_SILVER")).toHaveLength(0);
+    expect(verdict.notes.join()).toContain("不足");
+  });
+
+  it("对象不在场不签发", () => {
+    const intake = silverIntake("把5两银子送给王五");
+    intake.actions[0].target = "王五";
+    const verdict = judgeTurn(silverEnv(), intake, { rng: seqRng([0.5]) });
+    expect(verdict.facts.filter((f) => f.op === "CHANGE_VITALS_SILVER")).toHaveLength(0);
+  });
+
+  it("对方气头上：扣银但不涨好感（镜像 giftSilver）", () => {
+    const env = silverEnv();
+    env.varTree.角色.才旦.生气状态 = { active: true, reason: "先前结怨", turnsLeft: 2 };
+    const verdict = judgeTurn(env, silverIntake("把5两银子送给才旦"), { rng: seqRng([0.5]) });
+    expect(verdict.facts.find((f) => f.op === "CHANGE_VITALS_SILVER")?.moneyDelta).toBe(-5);
+    expect(verdict.facts.filter((f) => f.op === "MUTATE_SOCIAL")).toHaveLength(0);
+  });
+
+  it("器物赠礼不回归：霜牙短刀仍走 TRANSFER_ITEM", () => {
+    const verdict = judgeTurn(baseEnvelope(), {
+      read: "", refIds: [],
+      actions: [{ kind: "give", target: "才旦", item: "霜牙短刀", itemId: "it_8f3a", direction: "none", stance: "sincere", text: "把霜牙短刀送给才旦" }],
+      proposals: [],
+    }, { rng: seqRng([0.1]) });
+    expect(verdict.facts.find((f) => f.op === "TRANSFER_ITEM")).toBeTruthy();
+    expect(verdict.facts.filter((f) => f.op === "CHANGE_VITALS_SILVER")).toHaveLength(0);
   });
 });

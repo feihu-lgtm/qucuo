@@ -253,6 +253,7 @@ flowchart LR
 
 | S1 架构说明状态表校正与防漂移 | 已合并 #526 | 58 行历史施工中状态按 git 历史落到具体已合并编号；WO-16 行改当前真实口径（CLI 已随 #461 退役、单调用老路仅留显式配置/测试/紧急回退/GM、整体删除改由 S10 分片）。`checkAiChainDocs.mjs` 新增防漂移闸：非 PR/main 上下文若架构说明残留施工中状态则失败，PR 分支允许草稿状态但合并前必须落编号。 |
 | S2 | 前哨提示词正文落地+hostile 敌意档 | 待合 #527 | INTAKE_SYS 换正式正文（kind/stance 定义入提示词）；stance 枚举加 hostile；-3 怨+暴烈/刚烈/阴鸷置生气 |
+| S7-送银桥 自由文本送银判官桥 | 本 PR | give 银两接既有送银链：金额只 parse 玩家原话「N两」（中/阿数字，模型永不编数），未写数额/超囊中/对象不在场不签；签 CHANGE_VITALS_SILVER 扣银+MUTATE_SOCIAL 恩（分量=computeGiftWeight{amount}区间中值，与 features giftSilver 同表，materialize 魅力/日涨自动生效）；生气镜像旧链扣银不涨好感。分歧声明：施粥/孝敬势力声誉（soupKitchen）未接，按钮链不受影响。 |
 | 放行指标观测 | 已合并 #463 | 新增 `src/engine/ports/releaseMetrics.js`，在 `withAI("turn.intake")` 与 `runTurn` 尾章校对回执处按 `provider/model` 与 save `epoch` 内存聚合 schema/SEAL 合格率；dev-only，production 零噪音，不落盘、不进 prompt、不写 `gameStore`；`TraceViewer` 增加只读聚合区与 Markdown「复制报告」按钮。判官/容器/saves 逻辑本次行为不变。 |
 
 ### 影子对账覆盖率口径与放行阈值（WO-16D-1，只读观测）
