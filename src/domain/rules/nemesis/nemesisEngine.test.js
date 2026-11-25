@@ -77,6 +77,13 @@ describe("伤痕五类映射", () => {
     expect(scarFromBattleLog(log)).toMatchObject({ kind: "钝击", note: "最后一击：铁线拳" });
     expect(scarFromBattleLog([{ round: 1, playerMove: { name: "青钢剑法" }, result: { damageToB: 0 } }])).toBeNull();
     expect(scarFromBattleLog([])).toBeNull();
+    // 组队战行：玩家出手记疤，同伴出手不记（actor.id 非 player）
+    const teamLog = [{ round: 1, actor: { id: "player", move: { name: "青钢剑法" } }, result: { damageToB: 6 } }];
+    expect(scarFromBattleLog(teamLog)).toMatchObject({ kind: "利刃", note: "最后一击：青钢剑法" });
+    expect(scarFromBattleLog([{ round: 1, actor: { id: "leopard", move: { name: "青钢剑法" } }, result: { damageToB: 6 } }])).toBeNull();
+    // 命名误伤回归：刚锋腿/飘雪穿云掌归钝击不再误判利刃/寒冰
+    expect(scarAttrOfMove({ name: "刚锋腿" })).toBe("钝击");
+    expect(scarAttrOfMove({ name: "飘雪穿云掌" })).toBe("钝击");
     // 无招式名 note 空串但字段存在（读侧契约）
     expect(scarFromBattleLog([{ round: 1, playerMove: { desc: "快剑刺出" }, result: { damageToB: 3 } }])).toMatchObject({ kind: "利刃", note: "" });
   });

@@ -34,8 +34,8 @@ export function findNemesisEntry(roster, faction, name) {
 const SCAR_RULES = [
   { attr: "点穴", re: /点穴|封穴|麻穴|昏厥|指穴/ },
   { attr: "火毒", re: /火|毒|灼|焰|蛊/ },
-  { attr: "寒冰", re: /寒|冰|霜|冻|雪/ },
-  { attr: "利刃", re: /剑|刀|刃|刺|斩|锋|匕|戟|枪尖/ },
+  { attr: "寒冰", re: /寒|冰|霜|冻/ },
+  { attr: "利刃", re: /剑|刀|刃|刺|斩|匕|戟|枪尖/ },
   { attr: "钝击", re: /拳|掌|锤|棍|杖|砸|撞|肘|膝|腿|踢/ },
 ];
 export function scarAttrOfMove(move) {
@@ -56,9 +56,12 @@ export function scarFromBattleLog(battleLog) {
   for (let i = battleLog.length - 1; i >= 0; i--) {
     const row = battleLog[i];
     if (!row || !(row.result?.damageToB > 0)) continue;
-    const attr = scarAttrOfMove(row.playerMove);
+    // 1v1 行挂 playerMove；组队战（TeamDuelScreen）行挂 actor/target——
+    // 玩家单位 id 固定 "player"，同伴/敌方出手不算玩家招式。
+    const move = row.playerMove || (row.actor?.id === "player" ? row.actor.move : null);
+    const attr = scarAttrOfMove(move);
     if (!attr) return null;
-    const moveName = row.playerMove?.name || "";
+    const moveName = move?.name || "";
     return { kind: attr, note: moveName ? `最后一击：${moveName}` : "" };
   }
   return null;
