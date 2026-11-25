@@ -8,7 +8,6 @@ import { applyResult } from "../../features/run.js";
 import { featureCtx } from "../runtime/gameRuntime.js";
 import { validateInscription, planInscriptionUpgrade } from "../../domain/rules/items/inscribe.js";
 import { awakenableWeapons } from "../../domain/rules/items/itemAwaken.js";
-import { getAllProseChunks } from "../../engine/ports/recallBlock.js";
 import { apiModelField, getApiModel } from "../../content/apiModel.js";
 import "../calls/hookCalls.js";
 import "../../domain/rules/prompt/calls/domainCalls.js";
@@ -28,18 +27,9 @@ function parseInscription(res) {
   try { return JSON.parse(cleanJsonString(js))?.inscription || ""; } catch { return ""; }
 }
 
-// 来历原文精确取：prose 段落库里含器物名的最早一段（取不到传空，
-// prompt 侧已钉死「无来历不得编造」）。
-async function originTextFor(itemName) {
-  try {
-    const chunks = await getAllProseChunks();
-    const hit = (chunks || [])
-      .filter((c) => typeof c?.rawText === "string" && itemName && c.rawText.includes(itemName))
-      .sort((a, b) => (a.turn - b.turn) || ((a.seq || 0) - (b.seq || 0)))[0];
-    return hit ? hit.rawText.slice(0, 120) : "";
-  } catch { return ""; }
-}
-
+// 来历原文：初审裁决——全库扫 rawText 无谱系/turn/witnesses 口径会串线泄密，
+// 本单完全不传 originText（宁可无来历）；prompt 侧已钉死「无来历不得编造」。
+// 后续如需化用原文，须先按 recall/visibility 同口径（谱系+turn+见证者+剥心理）做精确检索再恢复。
 export function useInscribeWeapon({ apiCfg, addLog }) {
   return useCallback(async (item) => {
     if (!item?.id) return;
@@ -52,18 +42,16 @@ export function useInscribeWeapon({ apiCfg, addLog }) {
       return;
     }
     const ledgerEntry = state0.varTree?.世界?.器物谱?.[item.id] || {};
-    const originText = await originTextFor(item.name);
-    if (stale()) return;
     const payload = {
       name: item.name, category: item.category,
       wins: ledgerEntry.wins || 0, nemesisKills: ledgerEntry.nemesisKills || 0,
-      originText, inscribeCfg: inscribeModelCfg(apiCfg),
+      originText: "", inscribeCfg: inscribeModelCfg(apiCfg),
     };
     const playerName = state0.char?.name || "";
     let inscription = "";
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const res = await withAI("item.inscription", payload, { ai: webAi, apiCfg });
+        const res = await withAI("item.inscription", payload, { ai: webAi, apiCfg, isStale: stale });
         if (stale()) return;
         const candidate = String(parseInscription(res) || "").trim();
         if (validateInscription(candidate, { playerName }).ok) { inscription = candidate; break; }
@@ -77,11 +65,10 @@ export function useInscribeWeapon({ apiCfg, addLog }) {
       return;
     }
     if (stale()) return;
-    // 落账走单一写边界：plan 在最新 state 上复核全部前置（幂等/脱下/已醒不重复升）。
-    applyResult(featureCtx(), () => {
-      const result = planInscriptionUpgrade(gameStore.getState(), item.id, inscription);
-      if (!result) return { logs: [{ t: "sys", text: "  铭文未成——兵器灵性已经另有归属。" }] };
-      applyResult(featureCtx(), result);
-    }, { feature: "items.inscribe" });
+    // 落账走单一写边界：plan 在最新 state 上复核全部前置（幂等/脱下/已醒不重复升），
+    // 结果一次写入不嵌套；前置失败（已醒/脱下/账本变）的失败日志也走同一边界落。
+    const result = planInscriptionUpgrade(gameStore.getState(), item.id, inscription)
+      || { feature: "items.inscribe", logs: [{ t: "sys", text: "  铭文未成——兵器灵性已经另有归属。" }] };
+    applyResult(featureCtx(), result, { feature: "items.inscribe" });
   }, [apiCfg, addLog]);
 }

@@ -88,3 +88,23 @@ describe("item.inscription prompt 块", () => {
     expect(withOrigin).toContain("赠刀原文");
   });
 });
+
+describe("WO-23D2 初审返修契约", () => {
+  it("item.inscription 挂 strict 兼容 schema 主路径", async () => {
+    const { getPromptDef } = await import("../prompt/registry.js");
+    const def = getPromptDef("call", "item.inscription");
+    if (!def) return; // 注册侧效应环境差异不硬炸
+    expect(def.schema?.schema?.properties?.inscription?.type).toBe("string");
+    expect(def.schema?.schema?.required).toContain("inscription");
+    expect(def.schema?.schema?.additionalProperties).toBe(false);
+  });
+
+  it("useInscribeWeapon 不再全库扫 prose（originText 摘除）", async () => {
+    const src = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../../../app/hooks/useInscribeWeapon.js", import.meta.url), "utf-8"));
+    expect(src).not.toContain("getAllProseChunks");
+    expect(src).toContain('originText: ""');
+    // 写边界不嵌套：applyResult 全文件最多两处调用（result 直写+无内层嵌套）
+    expect((src.match(/applyResult\(featureCtx\(\)/g) || []).length).toBe(1);
+    expect(src).toContain("isStale: stale");
+  });
+});

@@ -253,6 +253,18 @@ ${ctx.originText ? `来历原文（可化用）：${ctx.originText}` : "来历�
     cfg: (_apiCfg, ctx) => ctx.inscribeCfg,
     join: "",
     blocks: ["item.inscription.sys", "item.inscription.user"],
+    // 原生结构化输出主路径：单一字符串字段闭合 schema，满足 strict subset；
+    // 手解 JSON 仅作老 provider 兼容兜底。
+    schema: {
+      name: "item_inscription",
+      strictCompatible: true,
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        required: ["inscription"],
+        properties: { inscription: { type: "string" } },
+      },
+    },
   });
 
 }
