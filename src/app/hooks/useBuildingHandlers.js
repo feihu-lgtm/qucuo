@@ -47,7 +47,7 @@ import { FESTIVAL_CONTESTS, MIDNIGHT_FLAG, contestFlag } from "../../domain/data
 import { isContestOpen } from "../../domain/rules/festival/rules.js";
 import { buildQuestFoe } from "../../features/quest/combatChoice.js";
 
-export function useBuildingHandlers({ activeBuilding, setActiveBuilding, captureUndo, setPendingQuestBranch, setDuelingNpc }) {
+export function useBuildingHandlers({ activeBuilding, setActiveBuilding, captureUndo, setPendingQuestBranch, setDuelingNpc, maybePrep }) {
   const handleBuyTangmenItem = useCallback((name, shopKey = "唐门暗器") => applyResult(featureCtx(), () => {
     const result = buyFactionShopItem(gameStore.getState(), shopKey, name);
     if (result.changes) captureUndo();
@@ -67,7 +67,8 @@ export function useBuildingHandlers({ activeBuilding, setActiveBuilding, capture
       buildingName: activeBuilding?.name,
     });
     applyResult(featureCtx(), result);
-  }, { feature: "building.restAtInn" }), [activeBuilding, captureUndo]);
+    if (result?.changes) maybePrep?.("lodging"); // WO-24C：住店成功才备料
+  }, { feature: "building.restAtInn" }), [activeBuilding, captureUndo, maybePrep]);
 
   const handleBuildingHeal = useCallback((cost, healAmt) => applyResult(featureCtx(), () => {
     captureUndo();
@@ -155,8 +156,10 @@ export function useBuildingHandlers({ activeBuilding, setActiveBuilding, capture
 
   const handleReadBook = useCallback((book) => applyResult(featureCtx(), () => {
     captureUndo();
-    applyResult(featureCtx(), readBookFeature(gameStore.getState(), book));
-  }, { feature: "building.readBook" }), [captureUndo]);
+    const result = readBookFeature(gameStore.getState(), book);
+    applyResult(featureCtx(), result);
+    if (result?.settle) maybePrep?.("reading"); // WO-24C：读书成功（hook 内 8 秒空档闸）
+  }, { feature: "building.readBook" }), [captureUndo, maybePrep]);
 
   const handleBuyBook = useCallback((book) => applyResult(featureCtx(), () => {
     captureUndo();

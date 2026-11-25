@@ -17,6 +17,7 @@ import { useQuestPanel } from "./app/hooks/useQuestPanel.js";
 import { useDuel, useForcedDuelNpc } from "./app/hooks/useDuel.js";
 import { usePigeonReplies } from "./app/hooks/usePigeonReplies.js";
 import { useNpcLetters } from "./app/hooks/useNpcLetters.js";
+import { useWorldPrep } from "./app/hooks/useWorldPrep.js";
 import { usePigeonHandlers } from "./app/hooks/usePigeonHandlers.js";
 import { useAutoTravel } from "./app/hooks/useAutoTravel.js";
 import { useCraftingAI } from "./app/hooks/useCraftingAI.js";
@@ -257,8 +258,11 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     addLog, jotNote, apiCfg,
     dispatchCommand,
   }));
+  // WO-24C 后台备料：travel 触发在 hook 内监听 room 变化；lodging/meditate/reading 由各 handler 传入。
+  const { maybePrep } = useWorldPrep({ apiCfg });
+
   const progressionHandlers = commandScheduler.wrapHandlers("useProgressionHandlers", useProgressionHandlers({
-    loading, noteAction, setJustMeditated, captureUndo,
+    loading, noteAction, setJustMeditated, captureUndo, maybePrep,
   }));
   const { confessToNarrator } = progressionHandlers;
 
@@ -325,7 +329,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
   const buildingHandlers = commandScheduler.wrapHandlers("useBuildingHandlers", useBuildingHandlers({
     activeBuilding, setActiveBuilding, captureUndo,
-    setPendingQuestBranch, setDuelingNpc,
+    setPendingQuestBranch, setDuelingNpc, maybePrep,
   }));
 
   const craftingAI = commandScheduler.wrapHandlers("useCraftingAI", useCraftingAI({

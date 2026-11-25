@@ -10,7 +10,7 @@ import {
   trainWaigong as trainWaigongLogic,
 } from "../../features/cultivation/logic.js";
 
-export function useProgressionHandlers({ loading, noteAction, setJustMeditated, captureUndo }) {
+export function useProgressionHandlers({ loading, noteAction, setJustMeditated, captureUndo, maybePrep }) {
   const confessToNarrator = useCallback(() => applyResult(featureCtx(), () => {
     captureUndo();
     applyResult(featureCtx(), confessLogic(gameStore.getState()));
@@ -21,9 +21,11 @@ export function useProgressionHandlers({ loading, noteAction, setJustMeditated, 
     captureUndo();
     setJustMeditated(true);
     setTimeout(() => setJustMeditated(false), 350);
-    applyResult(featureCtx(), meditateLogic(gameStore.getState()));
+    const result = meditateLogic(gameStore.getState());
+    applyResult(featureCtx(), result);
     noteAction("meditate");
-  }, { feature: "cultivation.meditate" }), [loading, noteAction, captureUndo]);
+    if (result?.changes) maybePrep?.("meditate"); // WO-24C：打坐成功才备料
+  }, { feature: "cultivation.meditate" }), [loading, noteAction, captureUndo, maybePrep]);
 
   const trainNeigong = useCallback(() => applyResult(featureCtx(), () => {
     if (loading) return;
