@@ -111,3 +111,31 @@ describe("放行指标持久化 v2", () => {
     expect(exported.cumulative.intake[0].calls).toBe(1); // 不是 100
   });
 });
+
+describe("复审返修：写入失败增量不丢", () => {
+  beforeEach(() => {
+    _resetReleaseMetrics();
+    _setReleaseMetricsEnabledForTest(true);
+  });
+
+  it("setItem 抛错时增量留在 ownDeltas，恢复后样本补上", () => {
+    let failWrites = true;
+    const data = new Map();
+    const storage = {
+      getItem: (k) => (data.has(k) ? data.get(k) : null),
+      setItem: (k, v) => { if (failWrites) throw new Error("quota"); data.set(k, String(v)); },
+      removeItem: (k) => data.delete(k),
+    };
+    _setReleaseMetricsStorageForTest(storage);
+    recordIntakeMetric({ epoch: "e1", cfg, outcome: "schemaOk" });
+    // 写入失败但 export 仍含未写穿增量（不丢）
+    expect(releaseMetricsExport().cumulative.intake[0]?.calls).toBe(1);
+    // 恢复写入后再 record：两次样本都在
+    failWrites = false;
+    recordIntakeMetric({ epoch: "e1", cfg, outcome: "schemaOk" });
+    const persisted = JSON.parse(data.get(RELEASE_METRICS_STORAGE_KEY));
+    expect(persisted.cumulative.intake["openai::gpt-x"].calls).toBe(2);
+    // 已写穿后 export 不双计
+    expect(releaseMetricsExport().cumulative.intake[0].calls).toBe(2);
+  });
+});

@@ -141,14 +141,15 @@ function persist() {
       if (!cumulative.seal[key]) cumulative.seal[key] = blankSealRow(delta.provider, delta.model);
       mergeRowInto(cumulative.seal[key], delta);
     }
-    // 增量已入存储即清零——下次 persist 不重复加
-    ownDeltas.intake.clear();
-    ownDeltas.seal.clear();
-    let payload = JSON.stringify({ version: 2, cumulative });
-    // 字节硬顶兜底：超限则放弃本次写入（累计桶正常远小于此，真超了说明异常）
+    const payload = JSON.stringify({ version: 2, cumulative });
+    // 字节硬顶兜底：超限则放弃本次写入（累计桶正常远小于此，真超了说明异常）。
+    // 复审裁决：只有写入真的成功才清零增量——配额满/超限/隐私模式抛错时
+    // 增量留在 ownDeltas，下次 persist/export 仍会带上，样本不丢。
     if (payload.length > BYTE_CAP) return;
     storage.setItem(RELEASE_METRICS_STORAGE_KEY, payload);
-  } catch { /* 配额满/隐私模式静默——观测绝不阻塞 */ }
+    ownDeltas.intake.clear();
+    ownDeltas.seal.clear();
+  } catch { /* 配额满/隐私模式静默——增量未清零，观测样本不丢 */ }
 }
 
 // 导出跨会话累计聚合，shape 供 scripts/releaseReport.mjs 离线消费。
