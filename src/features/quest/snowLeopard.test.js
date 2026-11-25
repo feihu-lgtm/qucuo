@@ -82,6 +82,25 @@ describe("resolveSnowInteraction 触发面", () => {
     const r = resolveSnowInteraction(st, "把羊肉干喂雪豹");
     expect(r.changes.inv(st.inv).map((e) => e.name)).toEqual(["羊肉"]); // 扣羊肉干不扣羊肉
   });
+  it("否定挂在给/吃上也不触发", () => {
+    expect(resolveSnowInteraction(base(), "不给雪豹吃肉")).toBeNull();
+    expect(resolveSnowInteraction(base(), "别给雪豹喂食")).toBeNull();
+  });
+  it("怎么/如何问法不触发", () => {
+    expect(resolveSnowInteraction(base(), "怎么喂雪豹")).toBeNull();
+    expect(resolveSnowInteraction(base(), "如何给雪豹挠痒")).toBeNull();
+  });
+  it("乳制品不算肉", () => {
+    const st = base({ inv: [{ id: "d1", name: "牦牛奶酪" }, { id: "d2", name: "奶渣" }] });
+    expect(resolveSnowInteraction(st, "喂雪豹吃肉")).toBeNull();
+  });
+  it("点名了身上没有的东西不触发，不偷换", () => {
+    const st = base({ inv: [{ id: "m1", name: "羊肉" }] });
+    expect(resolveSnowInteraction(st, "喂雪豹吃牛肉干")).toBeNull();
+    expect(resolveSnowInteraction(st, "把鹿腿喂雪豹")).toBeNull();
+    // 泛称仍允许回落
+    expect(resolveSnowInteraction(st, "喂雪豹吃肉")?.kind).toBe("feed");
+  });
   it("未点名时取背包第一块肉", () => {
     const st = base({ inv: [{ id: "b1", name: "青稞饼" }, { id: "m1", name: "羊肉" }, { id: "m2", name: "牛肉干" }] });
     const r = resolveSnowInteraction(st, "喂雪豹吃肉");

@@ -47,6 +47,7 @@ export function snowMeatGift(state, npc, item) {
   if (npc.name !== "雪豹" || !snowQuestActive(state) || !snowLeopardPresent(state) || state.flags?.includes("snow_spirit_meat")) return false;
   const name = typeof item === "string" ? item : item?.name || "";
   const entry = CATALOG_INDEX[name] || (typeof item === "object" ? item : null);
+  if (/奶|酪|乳|酥油/.test(name)) return false; // 乳制品非肉食
   const tags = entry?.tags || [];
   if (tags.includes("肉食")) return true;
   if (tags.length) return tags.some((tag) => SNOW_MEAT_TAGS.has(tag)) && SNOW_MEAT_RE.test(name);
@@ -58,7 +59,7 @@ export function snowMeatGift(state, npc, item) {
 // 系统在叙事前确定性落定，不靠模型自证。保守识别：否定/假设/询问一律不触发。
 
 // 询问/假设/条件句整句豁免——宁可漏判不可误触发
-const SNOW_UNCERTAIN_RE = /[吗呢嘛？?]|要不要|如果|假如|若是|要不|是不是|能不能|可不可以|该不该/;
+const SNOW_UNCERTAIN_RE = /[吗呢嘛？?]|要不要|如果|假如|若是|要不|是不是|能不能|可不可以|该不该|怎么|如何|怎样|为啥|为什么/;
 // 否定词紧贴动作（4 字内）视为否定
 const snowNegated = (cmd, verb) => new RegExp(`[不别没莫勿未休].{0,3}${verb}`).test(cmd);
 
@@ -66,6 +67,7 @@ export function isSnowMeatItem(item) {
   const name = typeof item === "string" ? item : item?.name || "";
   if (!name) return false;
   const entry = CATALOG_INDEX[name] || (typeof item === "object" ? item : null);
+  if (/奶|酪|乳|酥油/.test(name)) return false; // 乳制品非肉食
   const tags = entry?.tags || [];
   if (tags.includes("肉食")) return true;
   if (tags.length) return tags.some((tag) => SNOW_MEAT_TAGS.has(tag)) && SNOW_MEAT_RE.test(name);
@@ -96,7 +98,7 @@ export function resolveSnowInteraction(state, cmd) {
   }
 
   // 喂食：明确喂雪豹 + 背包真有肉食——消耗一件肉（按 id 精确），写 snow_spirit_meat
-  if (!flags.includes("snow_spirit_meat") && !snowNegated(cmd, "喂")) {
+  if (!flags.includes("snow_spirit_meat") && !snowNegated(cmd, "(喂|给|吃|丢|抛|递)")) {
     const feedHit = /喂(食|了|一口|点)?雪豹|给雪豹(喂|吃|丢|抛|递)|喂雪豹|拿.{0,4}(喂|给).{0,4}雪豹|把.{1,10}(喂|给|丢|抛|递).{0,3}雪豹/.test(cmd);
     if (feedHit) {
       const inv = state.inv || [];
@@ -106,6 +108,13 @@ export function resolveSnowInteraction(state, cmd) {
         .map((entry, index) => ({ entry, index, at: itemName(entry).length >= 2 ? cmd.indexOf(itemName(entry)) : -1 }))
         .filter((hit) => hit.at !== -1)
         .sort((a, b) => a.at - b.at || itemName(b.entry).length - itemName(a.entry).length)[0]; // 同位置优先更长名称（羊肉干 vs 羊肉）
+      // 点名具体物但背包没有（玩家喂食了自己并不携带的东西）——不触发，
+      // 不能偷换成背包里别的肉；泛称（肉/吃的/食物…）才允许回落第一块肉
+      const offerM = cmd.match(/把([^，。！？,.!?]{1,10}?)(?:喂|给|丢|抛|递)/) || cmd.match(/喂(?:一?口|点)?雪豹吃([^，。！？,.!?]{1,10})/);
+      if (offerM && !named) {
+        const span = offerM[1].replace(/^一?[口点些]/, "");
+        if (span && !/^(肉|肉干|吃的|食物|肉食|东西|干粮|猎物)$/.test(span)) return null;
+      }
       const meat = named ? named.entry : inv.find((entry) => isSnowMeatItem(entry));
       if (!meat || !isSnowMeatItem(meat)) return null; // 点名物非肉 / 无肉——不触发，叙事自由发挥
       const meatName = itemName(meat) || "肉";
