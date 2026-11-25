@@ -104,7 +104,9 @@ export async function runShadowJudge({
     if (isStale?.() || epochGuard?.()) return null;
     const intakeResult = normalizeIntakeResult(intakeRes?.data);
     const verdict = judgeTurn({
-      turn: postState?.turn || 1, day: Math.floor((postState?.turn || 1) / 24) + 1,
+      // WO-16E 二审修：真实判官吃 commit 前 timeNow——影子统一用回合前 turn，
+      // 否则非搭话回合差 +1，day/跨日配额/warrantId/rng seed/origin 全错位。
+      turn: preState?.turn ?? postState?.turn ?? 1, day: Math.floor((preState?.turn ?? postState?.turn ?? 1) / 24) + 1,
       place: preState?.room?.name || "",
       npcs, varTree: preState?.varTree || {},
       inv: preState?.inv || [], entries: [], talkOnly: isTalk,
@@ -118,13 +120,13 @@ export async function runShadowJudge({
         varTree: preState?.varTree || {},
         char: preState?.char || {},
         room: preState?.room || {}, inv: preState?.inv || [],
-        turn: postState?.turn || 1, day: Math.floor((postState?.turn || 1) / 24) + 1,
+        turn: preState?.turn ?? postState?.turn ?? 1, day: Math.floor((preState?.turn ?? postState?.turn ?? 1) / 24) + 1,
         encounter: preState?.encounter || null,
         questCandidates,
       }, intakeResult, { gm }),
     // 影子用隔离 rng 实例——绝不能用全局 random，否则影子抽数会推进游戏共享
     // 随机流，污染后续掷骰/赌博等玩法结果（影子必须零行为变化）。
-    }, intakeResult, { rng: createRng((((postState?.turn || 1) * 2654435761) >>> 0) || 1).random });
+    }, intakeResult, { rng: createRng((((preState?.turn ?? postState?.turn ?? 1) * 2654435761) >>> 0) || 1).random });
     if (isStale?.() || epochGuard?.()) return null;
 
     const diffOut = diffSnapshots(preState, postState, { moved });
