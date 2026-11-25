@@ -22,11 +22,9 @@ export function createTurnContext({ plan, env }) {
     convo, nsfwOn, activeTarget, talkTarget, companionState,
     questProgress, pendingQuestBranch, innerRoomName, effectiveSpecialNow,
   } = state;
-  const {
-    varTreeRef, roomMapRef, gambleTalkCtx, outerDepartRef, pendDirRef,
-    pickupJudgmentRef, pickupExtractionFailedRef, collectGrantedRef, dayMaterialRef,
-    roundsSinceLastSaveRef, playedThisSessionRef, timeRef,
-  } = refs;
+  // WO-06：12 个跨层 React ref 全部清退——varTree/time 直读 store（io.getGameState），
+  // 移动/拾取裁决值走 plan 只读字段，roomCache/gambleSession 进 store，
+  // 存档计数进 autosaveScheduler 模块状态，dayMaterial 走 io 注入回调。
   const {
     addLog, setLog, setVarTree, setRoom, setGambleNegotiation, setInv,
     setChar, setDao, setExp, setPot, setSkills, setMapData, setTime,
@@ -36,23 +34,24 @@ export function createTurnContext({ plan, env }) {
   const {
     isTalk, isSettle, intent, movingDir, lockedDestName,
     destinationLock, collectNote, activeGroundItemForTurn, intimateTicket,
+    pendDir, outerDepart, pickupJudgment, collectGranted,
   } = plan;
   // apiCfg/gm/isStale 挂在 env 顶层（hook 注入），不进 state。
   const { isStale, _trace, apiCfg, gm } = env;
 
-  // 本回合开始时的 varTree，逻辑读取走 ref 以包含已发生的同步写入。
-  const preActVarTree = varTreeRef.current;
+  // 本回合开始时的 varTree：store 直读即为最新（zustand 写读同步）。
+  const preActVarTree = getGameState?.()?.varTree ?? {};
 
   const callDeps = (memory = {}, prepared = {}) => ({
-    varTree: memory.varTree ?? varTreeRef.current, gm, isSettle, isTalk, intent, apiCfg, narrator,
+    varTree: memory.varTree ?? getGameState?.()?.varTree, gm, isSettle, isTalk, intent, apiCfg, narrator,
     scenario: preset.scenario, budgetInstruction: prepared.budgetInstruction,
     npcLoreBlockWithQuest: prepared.npcLoreBlockWithQuest || "",
     visibleNpcsCount: prepared.visibleNpcsCount || 0, charName: char.name, charBodyProfile: char.bodyProfile,
-    pickupJudgment: pickupJudgmentRef.current, cmd: prepared.cmd || env.cmd, convo, nsfwOn,
+    pickupJudgment, cmd: prepared.cmd || env.cmd, convo, nsfwOn,
     ctx: prepared.ctx, recallBlock: memory.recallBlock || "", reunionBlock: prepared.reunionBlock || "",
     infoDomainBlock: memory.infoDomainBlock || "", hist: prepared.hist, mainConvo: prepared.mainConvo,
     lockedDestName,
-    gambleTalkCtx: gambleTalkCtx.current, recallInfo: memory.recallInfo,
+    gambleTalkCtx: io.getGambleSession?.() ?? null, recallInfo: memory.recallInfo,
     inSeaOfMind: room.name === SEA_OF_MIND.district,
     settleNpc: opts.settleNpc, settleKind: opts.settleKind, giftInfo: opts.giftInfo, learnInfo: opts.learnInfo, settleBeast: !!opts.settleBeast,
     _trace, addLog, setLog, isStale, intentPlan: opts.intentPlan,
@@ -70,11 +69,11 @@ export function createTurnContext({ plan, env }) {
     prompt: createPromptContext({
       room, char, inv, skills, dao, flags, questProgress, pendingQuestBranch,
       varTree: preActVarTree, time, preset, companionState, nsfwOn, activeTarget, activeGroundItem: activeGroundItemForTurn, isTalk,
-      gm, movingDir, lockedDestName, outerDepart: outerDepartRef.current, innerRoomName, apiCfg,
-      destinationLock, pickupJudgment: pickupJudgmentRef.current, categoryLabel: CATEGORY_LABEL,
+      gm, movingDir, lockedDestName, outerDepart, innerRoomName, apiCfg,
+      destinationLock, pickupJudgment, categoryLabel: CATEGORY_LABEL,
       encounter: plan.encounterToDescribe, collectNote, intent,
       npcState: getGameState?.()?.npcState,
-      timeForToday: timeRef.current,
+      timeForToday: getGameState?.()?.time,
     }, {
       importedNpcLore: importedRegistry.getImportedNpcLore(),
       companionForms: Object.fromEntries(Object.keys(COMPANION_LORE).map(key => [key, getCompanionDescForm(key)])),
@@ -99,32 +98,23 @@ export function createTurnContext({ plan, env }) {
     beforeRun: io.beforeRun,
     setCommandPhase, setVarTree, effectiveSpecialNow, onTurnsInvalidated,
     getGameState, gameActions, subscribeGameReplaced,
-    refs: {
-      varTreeRef, roomMapRef, gambleTalkCtx, outerDepartRef, pendDirRef,
-      pickupJudgmentRef, pickupExtractionFailedRef, collectGrantedRef, dayMaterialRef,
-      roundsSinceLastSaveRef, playedThisSessionRef,
-    },
-    commitDeps: (turnResult) => {
-      pickupExtractionFailedRef.current = turnResult.pickupExtractionFailed;
-      return {
+    commitDeps: (turnResult) => ({
         p: turnResult.p, mvuCommands: turnResult.mvuCommands, dealResult: turnResult.dealResult,
         intimateTicket,
+        pickupExtractionFailed: turnResult.pickupExtractionFailed,
         rawFull: turnResult.rawFull, narrativeText: turnResult.narrativeText,
         knowledgeTree: turnResult.knowledgeTree, knowledgeTreeBase: turnResult.knowledgeTreeBase,
         isTalk, gm, lockedDestName, room, innerRoomName, time, mapData,
         pendingQuestBranch, apiCfg, activeTarget, talkTarget, effectiveSpecialNow, newConvo: turnResult.newConvo,
         questProgress, char, preserveHp: opts.preserveHp, npcState: getGameState?.()?.npcState,
         companionState: getGameState?.()?.companionState,
-        _trace, addLog,
-        // ref 读写走具名出入口：engine/act 内部不再出现 .current，ref 本体留在本层。
-        refGet: (name) => refs[name]?.current,
-        refSet: (name, value) => { refs[name].current = value; },
+        // WO-06：移动/拾取裁决值走 plan 只读字段直传（原跨层 ref）
+        pendDir, outerDepart, pickupJudgment, collectGranted,
+        _trace, addLog, getGameState,
+        getGambleSession: io.getGambleSession, setGambleSession: io.setGambleSession,
+        appendDayMaterial: io.appendDayMaterial,
         setVarTree, setRoom, setGambleNegotiation, setInv, setChar, setDao, setExp, setPot,
         setSkills, setFlags: io.setFlags, setMapData, setTime, setPendingQuestBranch, setConvo,
-        varTreeRef, roomMapRef, gambleTalkCtx, outerDepartRef, pendDirRef,
-        pickupJudgmentRef, pickupExtractionFailedRef, collectGrantedRef, dayMaterialRef,
-        roundsSinceLastSaveRef, playedThisSessionRef,
-      };
-    },
+      }),
   };
 }

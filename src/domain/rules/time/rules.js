@@ -133,7 +133,7 @@ function parseForgeOrder(flag) {
 export const timeAdvanceRule = {
   id: "time.advance",
   deps: (state) => [state.time, state.room?.npcs],
-  run(state, { firstRun, previousDeps, roomMapRef, importedRegistry }) {
+  run(state, { firstRun, previousDeps, roomMap, importedRegistry }) {
     if (firstRun || Object.is(state.time, previousDeps?.[0])) return null;
 
     const time = state.time;
@@ -181,7 +181,7 @@ export const timeAdvanceRule = {
 
     const angerUpdates = [];
     const pursuedNpcs = [];
-    const roomMap = roomMapRef?.current;
+    // roomMap 由调用方以纯值注入（WO-06 前为 roomMapRef 跨层 ref）
     let nextRoomMap;
     let forcedDuelNpc;
     for (const [name, attrs] of Object.entries(state.varTree?.角色 || {})) {

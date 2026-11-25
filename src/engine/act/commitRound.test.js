@@ -16,6 +16,7 @@ vi.mock("../ports/noteMemory.js", () => ({
 }));
 
 import { commitRound } from "./commitRound.js";
+import { getRoundsSinceLastSave, getPlayedThisSession, resetAutosaveProgress } from "../../features/autosaveScheduler.js";
 import { writeNote } from "../ports/noteMemory.js";
 
 // 与 tests/stateWriters.test.js 同一套 deps 形状：state 是可变容器，
@@ -27,11 +28,14 @@ function makeDeps(state, proposals = {}, overrides = {}) {
     p: proposals,
     apiCfg: {}, mapData: {}, rawFull: "叙事原文", narrativeText: "叙事原文",
     newConvo: [], convo: [], questProgress: {}, time: 25,
-    varTreeRef: mkRef(state.varTree), roomMapRef: mkRef({}),
-    gambleTalkCtx: mkRef(null), pendDirRef: mkRef(null), outerDepartRef: mkRef(null),
-    pickupJudgmentRef: mkRef(null), pickupExtractionFailedRef: mkRef(false),
-    collectGrantedRef: mkRef([]), dayMaterialRef: mkRef([]),
-    roundsSinceLastSaveRef: mkRef(0), playedThisSessionRef: mkRef(false),
+    // WO-06：refs 清退后改为 plan 直传字段 + getGameState + 注入回调
+    pendDir: null, outerDepart: null, pickupJudgment: null, collectGranted: [],
+    pickupExtractionFailed: false,
+    roomCache: {},
+    getGameState: () => ({ ...state, roomCache: state.roomCache || {} }),
+    appendDayMaterial: (entry) => { (state._dayMaterial ||= []).push(entry); },
+    getGambleSession: () => state._gambleSession ?? null,
+    setGambleSession: (v) => { state._gambleSession = v; },
     mvuCommands: [], addLog: (rows) => logs.push(...rows),
     ...overrides,
   }, {
@@ -50,7 +54,6 @@ function makeDeps(state, proposals = {}, overrides = {}) {
       return (value) => { state[path] = typeof value === "function" ? value(state[path]) : value; };
     },
   });
-  Object.assign(deps, refAccessors(deps));
   return { deps, logs };
 }
 
@@ -63,7 +66,7 @@ function baseState() {
   };
 }
 
-beforeEach(() => { writeNote.mockClear(); });
+beforeEach(() => { writeNote.mockClear(); resetAutosaveProgress(); });
 afterEach(() => { vi.useRealTimers(); });
 
 describe("delta 写入契约", () => {
@@ -171,11 +174,11 @@ describe("dealResult / 移动契约", () => {
     const ctx = { baseOffer: 100, cash: Infinity, carry: [], stoneId: "s1", bidderName: "商人" };
     const { deps, logs } = makeDeps(state, {}, {
       dealResult: { priceMult: 99 }, // 越界 → clamp 到 1.5
-      gambleTalkCtx: mkRef(ctx),
+      getGambleSession: () => ctx,
     });
     commitRound(deps);
     expect(state.gambleNegotiation.s1.商人).toBe(150);
-    expect(refValue(deps.gambleTalkCtx)).toBeNull();
+    expect(state._gambleSession).toBeNull();
     expect(logs.some(l => l.t === "affection" && l.text.includes("谈妥了"))).toBe(true);
   });
 
@@ -192,7 +195,7 @@ describe("dealResult / 移动契约", () => {
     const { deps, logs } = makeDeps(state,
       { room: { name: "别处的名字", desc: "AI 写的场景", npcs: [], items: [] } },
       { lockedDestName: "鱼定土司",
-        roomMapRef: mkRef({ 鱼定土司: { npcs: [{ name: "管家" }], items: [{ name: "凳子" }] } }) });
+        getGameState: () => ({ ...state, roomCache: { 鱼定土司: { npcs: [{ name: "管家" }], items: [{ name: "凳子" }] } } }) });
     commitRound(deps);
     expect(state.room.name).toBe("鱼定土司");
     expect(state.room.exits).toEqual(["e"]);
@@ -220,7 +223,7 @@ describe("memory / 已知人物 / 收尾契约", () => {
     state.room.npcs = [{ name: "侠客" }];
     const { deps } = makeDeps(state, { memory: "少侠在村口救了一只猫" });
     commitRound(deps);
-    expect(deps.refGet("dayMaterialRef")).toEqual([{ turn: 25, text: "少侠在村口救了一只猫" }]);
+    expect(state._dayMaterial).toEqual([{ turn: 25, text: "少侠在村口救了一只猫" }]);
     const facts = state.varTree.世界.知识领域.事实;
     expect(facts["turn_25_侠客"]).toBeDefined();
     expect(facts["turn_25_侠客"].标签).toBe("见闻");
@@ -262,7 +265,7 @@ describe("memory / 已知人物 / 收尾契约", () => {
     const state = baseState();
     const { deps } = makeDeps(state, {});
     commitRound(deps);
-    expect(deps.refGet("dayMaterialRef")).toEqual([]);
+    expect(state._dayMaterial || []).toEqual([]);
     expect(state.varTree.世界.知识领域).toBeUndefined();
     expect(writeNote).not.toHaveBeenCalled();
   });
@@ -274,8 +277,9 @@ describe("memory / 已知人物 / 收尾契约", () => {
     expect(state.time).toBe(26);
     expect(state.convo).toHaveLength(1);
     expect(state.convo[0]).toMatchObject({ role: "assistant", memory: "一笔账", turn: 25 });
-    expect(deps.refGet("roundsSinceLastSaveRef")).toBe(1);
-    expect(deps.refGet("playedThisSessionRef")).toBe(true);
+    // WO-06：轮次计数收进 autosaveScheduler 模块状态
+    expect(getRoundsSinceLastSave()).toBeGreaterThanOrEqual(1);
+    expect(getPlayedThisSession()).toBe(true);
   });
 
   it("isTalk 回合 time 不前进", () => {

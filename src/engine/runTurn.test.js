@@ -136,7 +136,7 @@ describe("runTurn", () => {
     }));
   });
 
-  it("restores rollback keys, refs, and RNG while preserving concurrent log writes", async () => {
+  it("restores rollback keys and RNG while preserving concurrent log writes（WO-06：refs 已清退，不再参与回滚）", async () => {
     const originalStore = structuredClone(gameStore.getState());
     const originalRng = getRngState();
     const originalSquares = serializeSquares();
@@ -163,11 +163,6 @@ describe("runTurn", () => {
     initGameStore(before);
     setRngState(rngBefore);
     const roomBefore = gameStore.getState().room;
-    const refs = {
-      varTreeRef: { current: before.varTree },
-      roomMapRef: { current: { 石阶: { npcs: [], items: [] } } },
-      dayMaterialRef: { current: [] },
-    };
     const failingContext = createPlayTurnContext(
       createMockAi(['{"output":["叙事"]}']),
       (deps) => {
@@ -178,15 +173,11 @@ describe("runTurn", () => {
         }
         gameActions.setLog((previous) => [...previous, { t: "sys", text: "concurrent commit" }]);
         gameActions.setQuestProgress({ concurrent: true });
-        refs.varTreeRef.current = { changed: true };
-        refs.dayMaterialRef.current.push({ turn: 1, text: "partial" });
-        refs.roomMapRef.current.石阶.items.push({ name: "partial" });
         loadSquares({ partial: { npcs: [], items: [] } });
         random();
         throw new Error("commit failed");
       },
     );
-    failingContext.refs = refs;
     const failed = await playTurn(failingContext, "探索石阶");
     expect(failed.ok).toBe(false);
     expect(failed.error.message).toBe("commit failed");
@@ -200,9 +191,6 @@ describe("runTurn", () => {
     expect(gameStore.getState().questProgress).toEqual({ concurrent: true });
     expect(getRngState()).toBe(rngBefore);
     expect(serializeSquares()).toEqual(squaresBefore);
-    expect(refs.dayMaterialRef.current).toEqual([]);
-    expect(refs.roomMapRef.current).toEqual({ 石阶: { npcs: [], items: [] } });
-
     initGameStore(originalStore);
     setRngState(originalRng);
     loadSquares(originalSquares);

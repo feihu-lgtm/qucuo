@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAutosave } from "./useAutosave.js";
 import { autoSave } from "../../infra/saves.js";
+import { noteRoundCompleted, noteAutosaveSaved, resetAutosaveProgress, getRoundsSinceLastSave } from "../../features/autosaveScheduler.js";
 
 vi.mock("react", async (importOriginal) => ({
   ...await importOriginal(),
@@ -17,7 +18,8 @@ vi.mock("../../infra/saves.js", async (importOriginal) => ({
   autoSave: vi.fn(() => ({ ok: true })),
   buildSnapshot: vi.fn(() => ({ fake: "snapshot" })),
 }));
-vi.mock("../../features/autosaveScheduler.js", () => ({
+vi.mock("../../features/autosaveScheduler.js", async (importOriginal) => ({
+  ...await importOriginal(),
   createAutosaveScheduler: vi.fn((cfg) => {
     capturedSchedulerCfg = cfg;
     return {
@@ -37,7 +39,6 @@ function useTestAutosave({ autoSaveEvery = 5 } = {}) {
     apiCfg,
     loadingRef: { current: false },
     pendingTalksRef: { current: 0 },
-    roomMapRef: { current: {} },
     restoredInnerRef: { current: null },
     presets: [],
     setGm: vi.fn(),
@@ -53,6 +54,7 @@ globalThis.window = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
 beforeEach(() => {
   vi.clearAllMocks();
   capturedSchedulerCfg = null;
+  resetAutosaveProgress();
 });
 
 describe("useAutosave 存档 effect 的触发条件", () => {
@@ -71,11 +73,11 @@ describe("useAutosave 存档 effect 的触发条件", () => {
     const { hook, runAutosaveEffect, schedulerCfg } = useTestAutosave();
     schedulerCfg.onPlayed();
 
-    hook.roundsSinceLastSaveRef.current = 0;
+    // WO-06：计数收进 autosaveScheduler 模块状态——零轮即不存
     runAutosaveEffect();
 
     expect(autoSave).not.toHaveBeenCalled();
-    expect(hook.playedThisSessionRef.current).toBe(true);
+    expect(getRoundsSinceLastSave()).toBe(0);
   });
 
   // 契约：回合数未达 autoSaveEvery 间隔 → 跳过；达到 → 存档并归零计数。
@@ -83,14 +85,14 @@ describe("useAutosave 存档 effect 的触发条件", () => {
     const { hook, runAutosaveEffect, schedulerCfg } = useTestAutosave({ autoSaveEvery: 5 });
     schedulerCfg.onPlayed();
 
-    hook.roundsSinceLastSaveRef.current = 3;
+    for (let i = 0; i < 3; i += 1) noteRoundCompleted();
     runAutosaveEffect();
     expect(autoSave).not.toHaveBeenCalled();
 
-    hook.roundsSinceLastSaveRef.current = 5;
+    for (let i = 0; i < 2; i += 1) noteRoundCompleted();
     runAutosaveEffect();
     expect(autoSave).toHaveBeenCalledTimes(1);
-    expect(hook.roundsSinceLastSaveRef.current).toBe(0);
+    expect(getRoundsSinceLastSave()).toBe(0);
   });
 
   // 契约：autoSaveEvery=0（每回合都存）也要过「确有一轮 commit」这道闸——
@@ -102,7 +104,7 @@ describe("useAutosave 存档 effect 的触发条件", () => {
     runAutosaveEffect();
     expect(autoSave).not.toHaveBeenCalled();
 
-    hook.roundsSinceLastSaveRef.current = 1;
+    noteRoundCompleted();
     runAutosaveEffect();
     expect(autoSave).toHaveBeenCalledTimes(1);
   });

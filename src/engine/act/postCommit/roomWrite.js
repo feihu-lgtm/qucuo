@@ -32,7 +32,7 @@ export function emitRoomHeader(ctx) {
 // freshNpcData=fixateNpcs 的 dWrites。
 export function writeRoom({ isTalk, lockedDestName, p, room, innerRoomName, roomMap, outerDepart, mapData, pendDir, freshNpcData }, { traceStep }) {
   if (isTalk) return null;
-  const out = { refWrites: { pendDirRef: null } };
+  const out = {};
   if (lockedDestName) {
     // 系统裁决：目的地、出口列表强制来自固定地图，不信任 AI 返回的 room.name/exits，
     // 只采用 AI 给出的 desc（场景描述文本）——这是本轮改造的核心："AI 只负责怎么形容，
@@ -57,7 +57,6 @@ export function writeRoom({ isTalk, lockedDestName, p, room, innerRoomName, room
     if (!mapData[lockedDestName]) {
       out.changes.mapData = (m) => ({ ...m, [lockedDestName]: { x: destNode.x, y: destNode.y } });
     }
-    out.refWrites.outerDepartRef = null;
     out.effects = [() => traceStep("状态写回", "pass", `room.name → ${lockedDestName}（移动完成）${outerDepart?.fromInner ? `，内层落点自动归为新据点锚点` : ""}`)];
   } else if (p.room && QUCUO_MAP[room.name]) {
     // 当前在固定地图范围内，且这次没有触发移动（比如原地互动/战斗），

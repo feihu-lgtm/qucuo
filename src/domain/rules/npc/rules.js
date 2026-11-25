@@ -58,7 +58,7 @@ export const residentNpcRule = {
     state.flags,
     state.importedVer,
   ],
-  run(state, { importedRegistry, roomMapRef, companionState = state.companionState }) {
+  run(state, { importedRegistry, roomMap, companionState = state.companionState }) {
     const { room, time, questProgress = {}, flags = [], char } = state;
     if (!room?.name) return null;
     const dayIdx = Math.floor(time / 24);
@@ -66,7 +66,7 @@ export const residentNpcRule = {
     const existingByName = new Map((room.npcs || []).map((npc) => [npc.name, npc]));
     const currentNpcNames = new Set(existingByName.keys());
     const cachedNpcNames = new Set(
-      Object.entries(roomMapRef?.current || {})
+      Object.entries(roomMap || {})
         .filter(([roomName]) => roomName !== room.name)
         .flatMap(([roomName, cached]) => (cached?.npcs || [])
           .filter((npc) => RELOCATED_RESIDENTS[npc.name] !== roomName)
@@ -137,7 +137,7 @@ export const residentNpcRule = {
       .filter((npc) => !isCompanionUnlockedByName(companionState, npc.name))
       .map(toRoomNpcWithCombat);
     // 名字避开玩家认识的人和导入角色卡；认识的人里，今天已经刷出来的那批（本地或别处缓存里）不算撞名，保证同日重进结果不变。
-    const todaysPassers = new Set([room.npcs || [], ...Object.values(roomMapRef?.current || {}).map((cached) => cached?.npcs || [])]
+    const todaysPassers = new Set([room.npcs || [], ...Object.values(roomMap || {}).map((cached) => cached?.npcs || [])]
       .flat()
       .filter((npc) => npc?.randomPasser === dayIdx)
       .map((npc) => npc.name));

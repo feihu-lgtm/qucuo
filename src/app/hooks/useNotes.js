@@ -15,6 +15,12 @@ export function restoreDayMaterial(items) {
   if (activeDayMaterialRef) activeDayMaterialRef.current = [...(items || [])];
 }
 
+// 当日原料追加口：engine 落盘链（memoryFact）经 io 注入的回调走到这里，
+// ref 本体不出 app 层。
+export function appendDayMaterial(entry) {
+  activeDayMaterialRef?.current?.push(entry);
+}
+
 export function useNotes({ apiCfg, setVarTree }) {
   const noteEnvRef = useRef({});
   useEffect(() => {

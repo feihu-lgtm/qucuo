@@ -99,7 +99,6 @@ export function commitProposalWrites({ p, isTalk, giftAlreadySettled, deliveredI
         effects.push(() => trace("拾取判定", "info", `系统本轮掷中拾取（品质「${judgment.quality}」），提取层正常但未产出拾取物——依叙事判断此刻不宜取物，本轮不发。`));
       }
     }
-    out.refWrites = { pickupJudgmentRef: null, pickupExtractionFailedRef: false };
     // AI 自由发挥的拾取（系统没掷中拾取骰、但 AI 说书时自己写了"捡到 XX"）现在
     // 也由提取层读名、产在 delta.items_add，已随上面的正常 items_add 循环入袋，
     // 品质取"白"（系统未授权的自编拾取不给品质加成，避免 AI 靠多写拾取情节薅稀有

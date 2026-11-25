@@ -28,6 +28,6 @@ export function settleDeal({ dealResult, gambleTalkCtx }) {
     }
   }
   // 谈价这轮处理完就清标记（下一句普通对话不再当谈价）
-  if (ctx) out.refWrites = { gambleTalkCtx: null };
+  if (ctx) out.changes = { ...out.changes, gambleSession: null };
   return Object.keys(out).length ? out : null;
 }
