@@ -176,10 +176,11 @@ async function runTurnSteps(ctx, cmd, opts) {
   let judgeVerdict = null;
   // 闸门：① 单调用 JSON 模式的输出契约是纯 JSON，锚点+SEAL 的散文指令会让模型
   // 丢 JSON 骨架，故只在双调用叙事（extractionEnabled）模式激活；
-  // ② 纯搭话回合不发生任何动作（搭话免费、不动状态），判官收礼会越权搬背包。
-  // WO-15：软结算通道已删，settle 回合（赠礼/赔罪/求教/邀同行）的收拒改由判官
-  // 裁定（judgeTurn 内置 gift/appease/learn 收拒逻辑），不再排除 settle 回合。
-  if (deps.apiCfg?.judgePipelineEnabled && deps.apiCfg?.extractionEnabled && !isTalk) {
+  // ② settle 回合（赠礼/赔罪/求教等）状态在进叙事前已由 feature 层硬结算落账
+  // （giftNpc/learnNpcSkill/inviteCompanion 先扣先写），判官再裁会双重结算——
+  // settle 回合不激活；待后续工单把前置硬写改成「事实请求先裁后落」才可开放。
+  // ③ 纯搭话回合不发生任何动作（搭话免费、不动状态），判官收礼会越权搬背包。
+  if (deps.apiCfg?.judgePipelineEnabled && deps.apiCfg?.extractionEnabled && !isSettle && !isTalk) {
     try {
       const visibleNpcs = preparedPrompt.visibleNpcsForAI || preparedPrompt.visibleNpcs || deps.room?.npcs || [];
       const intakeContent = buildIntakeUserContent({

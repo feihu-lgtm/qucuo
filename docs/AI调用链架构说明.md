@@ -32,9 +32,9 @@ flowchart TD
   G --> H[postCommit 日志、记账、补写、自动存档]
 ```
 
-WO-15 起这就是线上主回路：**旧状态提取层（turn.extraction/extractionSpecs/extractionEngine/appeaseExtraction）与独立软结算通道（settleTurn/runSoftSettle/softRules/settle.judge）已整块删除**。`judgePipelineEnabled` 开启时，`turn.intake` 前哨听意 → `judgeTurn` 纯函数判官 → 定案单与锚点铁律注入主叙事 → 流式剥 `⟦F⟧` 锚点、`---SEAL---` 尾章校对 → `materializeFacts` 经 `commitRound` 落盘。双调用模式下不再有第二次"从叙事反推状态"的提取调用——自由行动状态只来自判官 facts；settle 回合靠 feature 前置硬结算。单调用 JSON 老路（extractionEnabled=false）仍保留到 WO-16。
+WO-15 起这就是线上主回路：**旧状态提取层（turn.extraction/extractionSpecs/extractionEngine/appeaseExtraction）与独立软结算通道（settleTurn/runSoftSettle/softRules/settle.judge）已整块删除**。`judgePipelineEnabled` 开启时，`turn.intake` 前哨听意 → `judgeTurn` 纯函数判官 → 定案单与锚点铁律注入主叙事 → 流式剥 `⟦F⟧` 锚点、`---SEAL---` 尾章校对 → `materializeFacts` 经 `commitRound` 落盘。双调用模式下不再有第二次"从叙事反推状态"的提取调用——自由行动状态只来自判官 facts；settle 回合状态靠 feature 前置硬结算。单调用 JSON 老路（extractionEnabled=false）仍保留到 WO-16。
 
-**当前真实覆盖率**：web 端 `judgePipelineEnabled` 默认 `true`；CLI 老录制回放默认 `false`（单调用老路，WO-16 收尾）。激活还需同时满足两个条件——**非纯搭话回合**（纯搭话免费不动状态，判官收礼会越权搬背包）且 **`extractionEnabled` 双调用叙事模式**（单调用 JSON 老路的输出契约是纯 JSON 骨架，锚点+SEAL 散文指令会冲垮它）；任一不满足，新管线不激活、该回合无状态裁决。WO-15 起 **settle 回合（赠礼/赔罪/求教/邀同行）不再豁免**：软结算通道删除后，收拒与好感幅度由判官一裁定案（judgeTurn 内置 gift/appease/learn 收拒逻辑）。场记板 entries、容器坍缩态、备料物、悬空道具尚无宿主系统喂入（属 WO-17/18/22/24），判官多数回合签出空 facts。
+**当前真实覆盖率**：web 端 `judgePipelineEnabled` 默认 `true`；CLI 老录制回放默认 `false`（单调用老路，WO-16 收尾）。激活还需同时满足两个条件——**非 settle 回合且非纯搭话回合**（settle 回合状态在进叙事前已由 feature 层硬结算落账——giftNpc 已扣货、learnNpcSkill 已扣束脩授业、inviteCompanion 已写 companionState，判官再裁会双重结算；纯搭话免费不动状态，判官收礼会越权搬背包）且 **`extractionEnabled` 双调用叙事模式**；任一不满足，新管线不激活、整链 no-op。WO-15 删除的只是「独立软结算通道」（AI 事后裁好感/收拒），feature 前置硬结算不在删除范围；settle 回合开放判官须等后续工单把前置硬写改成「事实请求先裁后落」。场记板 entries、容器坍缩态、备料物、悬空道具尚无宿主系统喂入（属 WO-17/18/22/24），判官多数回合签出空 facts。
 
 **WO-15 保留边界（如实声明）**：
 - `forgeDesign`（铸剑坊/金玉行定制设计）不属提取层，已迁入独立小文件 `src/engine/ports/forgeDesign.js` 保活。
@@ -121,7 +121,7 @@ flowchart LR
 | 状态提取 | **已删除（WO-15）** | `turn.extraction`/extractionSpecs/extractionEngine/appeaseExtraction/ports/extraction 整块移除；双调用模式状态只来自判官 facts。 |
 | MVU 文本命令 | 仍有大量历史消费方 | 只保留必要字段协议，不再让 AI 自由写状态。 |
 | 账本写入 | `commitRound` + `applyPatches` | 保留统一写入口，新增事实账本先编译后提交。 |
-| 结算回合 | 软结算通道已删（WO-15） | settleTurn/runSoftSettle/softRules/settle.judge 整块移除；赠礼/赔罪/求教/邀同行的收拒改由判官裁定。旁白私语好感走独立 `narrator.affinity` 调用。 |
+| 结算回合 | 软结算通道已删（WO-15） | settleTurn/runSoftSettle/softRules/settle.judge 整块移除；feature 前置硬结算（扣货/授业/入队）保留并继续排除判官。旁白私语好感走独立 `narrator.affinity` 调用。 |
 
 
 ## 5.1 关键契约速查
