@@ -153,6 +153,18 @@ export function sellToNpcCarry(npc, item, { affection = 0 } = {}) {
     logs: [{ t: "item", text: `  你卖出「${item.name}」，${npc.name}出 ${price} 两收下。` }] };
 }
 
+
+/**
+ * WO-23D0a 购回入包 id 裁决（纯函数）：货架条目原本带 id 且玩家背包无同 id
+ * 冲突时保留原 id——器物谱/觉醒账本按 id 追踪，赎回同一实例必须不断联；
+ * 无 id 或撞 id 才铸新 id。不按名字猜，同名两件各按实例 id 走。
+ */
+export function resolveBuyInId(item, inv) {
+  const invIds = new Set((inv || []).map((i) => (typeof i === "object" ? i?.id : i)).filter(Boolean));
+  if (item?.id && !invIds.has(item.id)) return item.id;
+  return `${item?.name || "item"}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+}
+
 /**
  * 给 store 层用：把 delta 落进 npcState[npc.id ?? npc.name]，并在记录里留
  * name——再出场/换据点时房间实例 id 会变（pool_ 前缀/重抽），npcTradeOf
