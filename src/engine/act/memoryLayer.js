@@ -67,26 +67,31 @@ export async function runKnowledgeTurn({ varTreeLatest, roomNpcNames, infoDomain
 // 注入 prompt，让 AI"想起"窗口外的伏笔/承诺/旧账。
 // 双路查询：Q_intent=玩家这句话；Q_context=上轮引擎回复 + 当前位置/在场人物。
 // 全程降级安全：没开向量开关或召回失败，recallInfo 为 null，这段完全不影响后续流程。
-export async function runRecall({ apiCfg, cmd, lastAiText, room, varTreeLatest, flags, activeTarget, activeGroundItem, isTalk, talkTarget, followingNames = [], recentTexts = [], viewer = "" }) {
-  if (!embeddingReady(apiCfg)) return { recallInfo: null, recallBlock: "" };
+export async function runRecall({ apiCfg, cmd, lastAiText, room, varTreeLatest, flags, activeTarget, activeGroundItem, isTalk, talkTarget, followingNames = [], recentTexts = [], viewer = "", epoch, currentTurn } = {}) {
+  // WO-18：不在这层按 embeddingReady 截停——原文段落召回是纯本地词法路，
+  // 没开向量也必须跑；向量纸条/reembed 的开关判断统一收进 runFormattedRecall 内部。
   // 召回前对账（后台自愈，不阻塞本轮）：把换模型后指纹过期、召不回的老纸条重算向量写回。
   // 有界(每回合最多几条)，逐回合把库里过期纸条慢慢补齐，不影响本轮召回时序。
-  reembedStaleNotes({ cfg: apiCfg }).catch(() => {});
+  if (embeddingReady(apiCfg)) reembedStaleNotes({ cfg: apiCfg }).catch(() => {});
+  // 缺 room/varTree 的降级调用（测试替身/边缘链路）也不能炸——prose 召回本来就不需要它们
+  const npcNames = (room?.npcs || []).map(n => n.name);
   const focusEntities = Array.from(new Set([
-    ...room.npcs.map(n => n.name),
-    ...Object.keys(varTreeLatest.角色 || {}),
-    room.name,
+    ...npcNames,
+    ...Object.keys(varTreeLatest?.角色 || {}),
+    room?.name,
     ...(activeGroundItem ? [activeGroundItem] : []),
-  ]));
+  ].filter(Boolean)));
   return runFormattedRecall({
     apiCfg,
     queryText: cmd,
-    contextText: `${lastAiText}\n[当前]位置:${room.name} 在场:${room.npcs.map(n => n.name).join("、") || "无"} 地上关注物品:${activeGroundItem || "无"}`,
+    contextText: `${lastAiText}\n[当前]位置:${room?.name || "?"} 在场:${npcNames.join("、") || "无"} 地上关注物品:${activeGroundItem || "无"}`,
     focusEntities,
     unlockedFlags: flags,
-    presentNames: Array.from(new Set([...room.npcs.map(n => n.name), ...followingNames, ...(activeTarget ? [activeTarget] : []), ...(isTalk && talkTarget ? [talkTarget] : [])])),
+    presentNames: Array.from(new Set([...npcNames, ...followingNames, ...(activeTarget ? [activeTarget] : []), ...(isTalk && talkTarget ? [talkTarget] : [])])),
     topK: 5,
     recentTexts,
     viewer,
+    epoch,
+    currentTurn,
   });
 }

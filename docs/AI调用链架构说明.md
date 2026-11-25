@@ -183,7 +183,7 @@ flowchart LR
 | WO-16A | 已合并 #445 | 判官替代覆盖层：搭话开闸白名单、respondedNpcs 系统推导、memory 模板串过渡、判官 MUTATE_SOCIAL 好感走统一系统账本语义（复用 WO-16B affection.js）；不删旧路纯增量。 |
 | WO-16C-pickup | 已合并 #446 + #447 修包 | 移动拾取判官替代层：rollMovementEvents 掷中后判官只签条件券（quality/category 系统锁定、pointBudget=0 无词条保持旧行为），不进 facts；正文埋 ⟦F⟧ 锚点+尾章 fill 双证据齐备才由 sealVerifier 合成 GRANT_ITEM fact 落包，缺一券作废零落账（叙事可拒捡，系统绝不硬塞）。判官模式下 commitProposalWrites 不再保底发放/打误导 trace；单调用旧路 delta.items_add 原样保留。合并后 Review 修包：①条件券撞图鉴名不做 substitution（数值按 warrant 锁定、noCatalog 盾防读档回填、id 按 warrant 派生不撞重放）；②路遇拾取 memory 改用落盘回执作事实源（verdict 刻意无 facts 不漏记）；③sysBase narrativeOnly 判官路放行 ---SEAL--- 尾章（修「禁输出JSON」与判官铁律打架），判官不在时原样。 |
 | WO-17 | 已合并 | 正文按段切分器+他人斜体心理剥离+老存档迁移器：proseChunker 产契约 A ProseChunk（witnesses/location/turn 全系统来源），stripOtherInnerThoughts 按邻近归属证据剥 *斜体心理*（拿不准保留）；qucuo_memory 统一升 v2 新增 prose_chunks（memoryDb.js 共享开库，memories 原表不动）；migrateLegacyConvoAndNotes 幂等无损迁移 convo/小纸条；memoryEval.mjs 封存评测小纸条 40% vs 原文段落+邻段 100% 召回。**尚未接入主链路，写挂与检索归 WO-18**。 |
-| WO-18 | 本 PR | 原文段落检索接主链路：runTurn 尾章后 writeTurnProse 写挂最终上屏正文（含系统补锚，存档代次护栏非回合 stale）；witnesses 最小区分（搭话=玩家+对象/其余=玩家+在场 NPC）；recallBlock 混排——原文段落纯本地词法召回优先（不要 embedding/向量开关）、小纸条补充去重，witnesses 按 viewer 硬过滤，强相关前 3 段带同回合 ±1 邻段原字合并，超字符预算 weak 退单行事实目录；viewer 接口参数化，主回合/私聊均传玩家视角。 |
+| WO-18 | 本 PR | 原文段落检索接主链路：runTurn 尾章后 writeTurnProse 写挂最终上屏正文（存档代次护栏+同回合 seq 续号不撞号（saveEpoch 时间线方案暂停待裁决））；检索按回合不晚于当前+witnesses viewer 硬过滤；写库 rawText 保全文、召回侧按当前 viewer 动态剥他人心理（publicText 仅兼容降级）；纯本地词法召回与向量开关解耦（没开 embedding 主回合/私聊都有往事）；强相关前 3 段带同回合 ±1 邻段池化合并去重；场记板「往事正本」格式（众人皆知/见证名单/〔刻骨〕），预算不足 weak 退单行「往事索引」。 |
 | WO-16C-snow | 本 PR | 雪豹挠痒/自由喂食确定性替代层：feature 叙事前硬结算 + prompt 改「系统已结算/禁写旗」+ 模型 snow 旗全剥，无双通道。 |
 
 ## 6. 已确认的设计取舍

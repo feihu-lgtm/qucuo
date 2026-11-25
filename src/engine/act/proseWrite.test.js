@@ -57,3 +57,36 @@ describe("writeTurnProse — 原文段落写挂", () => {
     expect(await countProseChunks()).toBe(0);
   });
 });
+
+describe("WO-18 阶段零——epoch id 与同回合续号", () => {
+  beforeEach(() => {
+    globalThis.indexedDB = new IDBFactory();
+    _resetMemoryDbForTest();
+  });
+  const flush = () => new Promise((r) => setTimeout(r, 40));
+
+  it("同回合两次写挂 seq 接续不撞号", async () => {
+    const { getProseChunksByTurn } = await import("../../infra/proseStore.js");
+    const args = {
+      narrativeText: "第一次搭话正文", turn: 5, location: "x", playerName: "主角",
+      addChunks: addProseChunks, listChunksByTurn: getProseChunksByTurn,
+    };
+    writeTurnProse(args);
+    await flush();
+    writeTurnProse({ ...args, narrativeText: "第二次搭话正文" });
+    await flush();
+    const all = await getAllProseChunks();
+    expect(all.length).toBe(2);
+    expect(all.map((c) => c.id).sort()).toEqual(["P5_1", "P5_2"]);
+  });
+
+  it("无 epoch 时 legacy id 形状不变（P<turn>_<seq>）", async () => {
+    writeTurnProse({
+      narrativeText: "正文", turn: 5, location: "x", playerName: "主角",
+      addChunks: addProseChunks,
+    });
+    await flush();
+    const all = await getAllProseChunks();
+    expect(all[0].id).toBe("P5_1");
+  });
+});

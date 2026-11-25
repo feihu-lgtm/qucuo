@@ -16,7 +16,7 @@ import { renderJudgeVerdict, renderCausalBudget } from "../domain/rules/judge/ju
 import { buildIntakeUserContent, normalizeIntakeResult } from "./turn/intakeTurn.js";
 import { verifySealAndMaterialize } from "../domain/rules/effects/sealVerifier.js";
 import { writeTurnProse } from "./act/proseWrite.js";
-import { addProseChunks as proseChunkSink } from "./ports/recallBlock.js";
+import { addProseChunks as proseChunkSink, getProseChunksByTurn as proseListByTurn } from "./ports/recallBlock.js";
 import { random } from "../utils/rng.js";
 import { validateEmergenceSeal } from "../domain/rules/npc/npcEmergence.js";
 import { getPresentNpcs } from "../domain/rules/prompt/promptRefs.js";
@@ -137,6 +137,8 @@ async function runTurnSteps(ctx, cmd, opts) {
       varTreeLatest: ctx.memory.varTreeLatest,
       recentTexts: [hist],
       viewer: ctx.prompt?.char?.name || ctx.char?.name || "主角",
+      epoch: ctx.proseEpoch,
+      currentTurn: ctx.getGameState?.()?.time ?? undefined,
     });
     [knowledgeTurn, recall] = await Promise.all([
       runKnowledgeTurn({
@@ -510,6 +512,7 @@ async function runTurnSteps(ctx, cmd, opts) {
       ],
       guard: ctx.proseEpochGuard,
       addChunks: ctx.proseSink || proseChunkSink,
+      listChunksByTurn: proseListByTurn,
     });
   }
 

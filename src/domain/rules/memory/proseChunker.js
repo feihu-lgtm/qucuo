@@ -48,7 +48,10 @@ export function stripOtherInnerThoughts(text, viewerName = "") {
   let cursor = 0;
   for (const match of src.matchAll(ITALIC_RE)) {
     const start = match.index;
-    const attribution = attributeItalic(src.slice(0, start), viewerName);
+    // 内容内证据优先：斜体开口就是「他心想/她暗道」这类第三人称心理动词，
+    // 无论前文有没有归属证据都判他人——这是格式里最典型的他人心理写法。
+    const innerEvidence = /^[他她它](心想|暗想|暗道|寻思|腹诽|默念)/.test(match[1] || "");
+    const attribution = innerEvidence ? "other" : attributeItalic(src.slice(0, start), viewerName);
     out += src.slice(cursor, start);
     if (attribution !== "other") {
       out += match[0]; // 视角人或无归属：保留原文（含星号标记）
@@ -67,7 +70,7 @@ export function stripOtherInnerThoughts(text, viewerName = "") {
 // 产出字段：id/kind/turn/location/witnesses/entities/publicText/rawText/importance/anchorFactIds
 // entities 迁移期只收 witnesses 中的人名（实体编号归 WO-18 检索期细化）；
 // importance 粗分：段落带锚点事实=2（要紧），否则 1（寻常）。
-export function splitProseIntoChunks(rawProse, { turn, location, witnesses = [], anchoredFacts = [] } = {}) {
+export function splitProseIntoChunks(rawProse, { turn, location, witnesses = [], anchoredFacts = [], viewerName = "主角", saveEpoch, seqOffset = 0 } = {}) {
   const prose = String(rawProse || "");
   if (!prose.trim()) return [];
   const paragraphs = prose.split(/\n{1,}/).map((p) => p.trim()).filter(Boolean);
@@ -84,13 +87,14 @@ export function splitProseIntoChunks(rawProse, { turn, location, witnesses = [],
     if (!stripped) continue; // 整段只有锚点/空白，不成段
     const anchored = anchorIds.filter((fid) => !factSet.size || factSet.has(fid));
     chunks.push({
-      id: `P${turn}_${seq}`,
+      id: saveEpoch != null ? `P${saveEpoch}_${turn}_${seq + seqOffset}` : `P${turn}_${seq + seqOffset}`,
       kind: "raw_memory",
       turn,
+      ...(saveEpoch != null ? { saveEpoch } : {}),
       location: location || "",
       witnesses: Array.isArray(witnesses) && witnesses.length ? [...witnesses] : ["*"],
-      entities: (Array.isArray(witnesses) ? witnesses : []).filter((w) => w && w !== "*" && w !== "主角"),
-      publicText: stripOtherInnerThoughts(stripped, "主角"),
+      entities: (Array.isArray(witnesses) ? witnesses : []).filter((w) => w && w !== "*" && w !== viewerName),
+      publicText: stripOtherInnerThoughts(stripped, viewerName),
       rawText: stripped,
       importance: anchored.length ? 2 : 1,
       anchorFactIds: anchorIds,

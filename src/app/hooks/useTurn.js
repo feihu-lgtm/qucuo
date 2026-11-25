@@ -153,6 +153,7 @@ export function useTurn({
     const env = {
       cmd, opts, extraReplies, interactMode: effMode, apiCfg, gm, _trace, isStale,
       proseEpochGuard: () => isGameEpochStale(turnEpoch),
+      proseEpoch: turnEpoch,
       pending: snapshotIntentPending(),
       state: {
         ...gameStore.getState(),

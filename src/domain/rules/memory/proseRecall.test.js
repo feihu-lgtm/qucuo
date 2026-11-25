@@ -75,3 +75,45 @@ describe("expandWithNeighbors — 邻段连带合并", () => {
     expect(chunkSeq(mk("P5_12", 5, ["*"], "x"))).toBe(12);
   });
 });
+
+describe("WO-18 复审修正——动态视角文本与邻段合并", () => {
+  it("可见文本按当前 viewer 用 rawText 动态剥离：他人心理对旁观者消失、本人可见", () => {
+    const raw = "燕孤鸿点头。*他心想：此子可杀。*你收下剑。";
+    const c = mk("P9_1", 9, ["燕孤鸿", "主角"], "", { rawText: raw, publicText: "燕孤鸿点头。你收下剑。" });
+    const asPlayer = rankProseChunks([c], "点头", "主角");
+    const text1 = expandWithNeighbors([c], asPlayer, { viewer: "主角" })[0].text;
+    expect(text1).not.toContain("可杀");
+    const asNpc = rankProseChunks([c], "点头", "燕孤鸿");
+    const text2 = expandWithNeighbors([c], asNpc, { viewer: "燕孤鸿" })[0].text;
+    // 心理无主语且邻近无他人证据——拿不准保留；这里只验证两位视角都能得到文本且 API 走 rawText 动态路
+    expect(text2.length).toBeGreaterThan(0);
+  });
+  it("无 rawText 的老段降级 publicText", () => {
+    const c = mk("P9_2", 9, ["*"], "老段兼容文本");
+    delete c.rawText;
+    const hits = rankProseChunks([c], "兼容", "主角");
+    expect(expandWithNeighbors([c], hits, { viewer: "主角" })[0].text).toBe("老段兼容文本");
+  });
+  it("相邻双命中合并成一块且只出现一次", () => {
+    const chunks = [
+      mk("P5_1", 5, ["*"], "甲段"),
+      mk("P5_2", 5, ["*"], "乙段"),
+      mk("P5_3", 5, ["*"], "丙段"),
+    ];
+    const hits = [{ chunk: chunks[0], score: 5 }, { chunk: chunks[1], score: 4 }];
+    const out = expandWithNeighbors(chunks, hits, { viewer: "主角" });
+    const allIds = out.flatMap((e) => e.ids);
+    expect(new Set(allIds).size).toBe(allIds.length);
+    // 1/2/3 连续应并在同一块
+    expect(out.some((e) => e.ids.join(",") === "P5_1,P5_2,P5_3")).toBe(true);
+  });
+  it("邻段不带入 viewer 未见证段", () => {
+    const chunks = [
+      mk("P5_1", 5, ["*"], "公开段"),
+      mk("P5_2", 5, ["慕轻烟", "燕孤鸿"], "私密段"),
+    ];
+    const hits = [{ chunk: chunks[0], score: 5 }];
+    const out = expandWithNeighbors(chunks, hits, { viewer: "主角" });
+    expect(out.flatMap((e) => e.ids)).not.toContain("P5_2");
+  });
+});

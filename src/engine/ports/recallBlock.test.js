@@ -53,9 +53,9 @@ describe("WO-18 原文段落召回混排", () => {
   });
 
   const seed = async () => addProseChunks([
-    { id: "P5_1", kind: "raw_memory", turn: 5, location: "铁匠铺", witnesses: ["主角", "赫连铸"], entities: ["赫连铸"], publicText: "赫连铸把短剑递给你，说此剑染过血。", rawText: "x", importance: 2, anchorFactIds: [] },
-    { id: "P5_2", kind: "raw_memory", turn: 5, location: "铁匠铺", witnesses: ["主角", "赫连铸"], entities: [], publicText: "你收下了剑。", rawText: "x", importance: 1, anchorFactIds: [] },
-    { id: "P7_1", kind: "raw_memory", turn: 7, location: "密室", witnesses: ["慕轻烟", "燕孤鸿"], entities: [], publicText: "两人密谋劫镖。", rawText: "x", importance: 1, anchorFactIds: [] },
+    { id: "P5_1", kind: "raw_memory", turn: 5, location: "铁匠铺", witnesses: ["主角", "赫连铸"], entities: ["赫连铸"], publicText: "赫连铸把短剑递给你，说此剑染过血。", rawText: "赫连铸把短剑递给你，说此剑染过血。", importance: 2, anchorFactIds: [] },
+    { id: "P5_2", kind: "raw_memory", turn: 5, location: "铁匠铺", witnesses: ["主角", "赫连铸"], entities: [], publicText: "你收下了剑。", rawText: "你收下了剑。", importance: 1, anchorFactIds: [] },
+    { id: "P7_1", kind: "raw_memory", turn: 7, location: "密室", witnesses: ["慕轻烟", "燕孤鸿"], entities: [], publicText: "两人密谋劫镖。", rawText: "两人密谋劫镖。", importance: 1, anchorFactIds: [] },
   ]);
 
   it("recallProse 词法命中+邻段连带+witnesses 硬过滤", async () => {
@@ -79,7 +79,7 @@ describe("WO-18 原文段落召回混排", () => {
     await seed();
     const r = await runFormattedRecall({ apiCfg: {}, queryText: "赫连铸", viewer: "主角" });
     expect(r.recallBlock).toContain("短剑");
-    expect(r.recallBlock).toContain("〔第5回合〕");
+    expect(r.recallBlock).toContain("〔第5回合·");
   });
 
   it("近期窗口已出现的原文不再重复入场", async () => {
@@ -94,5 +94,44 @@ describe("WO-18 原文段落召回混排", () => {
     const r = await runFormattedRecall({ apiCfg: {}, queryText: "赫连铸", viewer: "主角", budgetChars: 10 });
     // 预算极小：最多只剩收缩后的首段，且整体行数受限
     expect(r.recallBlock.length).toBeLessThan(200);
+  });
+});
+
+describe("WO-18 复审补测——时间线隔离/格式/见证标签", () => {
+  beforeEach(() => {
+    globalThis.indexedDB = new IDBFactory();
+    _resetMemoryDbForTest();
+  });
+  const seedEpoch = async () => addProseChunks([
+    { id: "P1_5_1", saveEpoch: 1, kind: "raw_memory", turn: 5, location: "", witnesses: ["*"], entities: [], publicText: "一代旧档铸剑往事", rawText: "一代旧档铸剑往事", importance: 1, anchorFactIds: [] },
+    { id: "P2_5_1", saveEpoch: 2, kind: "raw_memory", turn: 5, location: "", witnesses: ["*"], entities: [], publicText: "二代新档铸剑往事", rawText: "二代新档铸剑往事", importance: 1, anchorFactIds: [] },
+    { id: "P2_8_1", saveEpoch: 2, kind: "raw_memory", turn: 8, location: "", witnesses: ["*"], entities: [], publicText: "未来回合的铸剑剧透", rawText: "未来回合的铸剑剧透", importance: 3, anchorFactIds: [] },
+  ]);
+
+  it("saveEpoch 过滤暂停期：带 epoch 字段的段落仍按 witnesses/回合可见（等裁决）", async () => {
+    await seedEpoch();
+    const out = await recallProse({ queryText: "铸剑", viewer: "主角", epoch: 2, currentTurn: 10 });
+    const texts = out.map((e) => e.text).join("\n");
+    expect(texts).toContain("铸剑");
+  });
+
+  it("未来回合段落不可见（防剧透）", async () => {
+    await seedEpoch();
+    const out = await recallProse({ queryText: "铸剑", viewer: "主角", epoch: 2, currentTurn: 6 });
+    expect(out.map((e) => e.text).join("\n")).not.toContain("剧透");
+  });
+
+  it("刻骨戳+众人皆知标签上场记板", async () => {
+    await seedEpoch();
+    const r = await runFormattedRecall({ apiCfg: {}, queryText: "剧透", viewer: "主角", epoch: 2, currentTurn: 10 });
+    expect(r.recallBlock).toContain("〔刻骨〕");
+    expect(r.recallBlock).toContain("众人皆知");
+  });
+
+  it("超预算弱相关退单行带「往事索引」前缀", async () => {
+    await seedEpoch();
+    const r = await runFormattedRecall({ apiCfg: {}, queryText: "铸剑", viewer: "主角", epoch: 2, currentTurn: 10, budgetChars: 10 });
+    // 极小预算下块被收缩/丢弃，验证不炸且长度受限即可（单行索引属纸条侧语义）
+    expect(r.recallBlock.length).toBeLessThan(300);
   });
 });

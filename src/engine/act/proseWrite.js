@@ -13,27 +13,40 @@
 
 import { splitProseIntoChunks } from "../../domain/rules/memory/proseChunker.js";
 
-// addChunks 由 app 层注入（engine 不得直连 infra——层级棘轮只减不增）；
+// addChunks/listChunks 由 ports 层转手注入（engine 不得直连 infra——层级棘轮只减不增）；
 // 未注入时静默跳过，测试/裸引擎路径不受影响。
 export function writeTurnProse(args = {}) {
-  const { narrativeText, turn, location, playerName, roomNpcNames = [], isTalk = false, talkTarget = "", anchoredFacts = [], guard, addChunks } = args || {};
+  const { narrativeText, turn, location, playerName, roomNpcNames = [], isTalk = false, talkTarget = "", anchoredFacts = [], guard, addChunks, listChunksByTurn } = args || {};
   try {
     const text = String(narrativeText || "").trim();
     if (!text || !Number.isFinite(turn) || turn <= 0) return;
     const witnesses = isTalk && talkTarget
       ? [playerName, talkTarget].filter(Boolean)
       : [playerName, ...roomNpcNames].filter(Boolean);
-    const chunks = splitProseIntoChunks(text, {
-      turn,
-      location: location || "",
-      witnesses,
-      anchoredFacts,
-    });
-    if (!chunks.length || typeof addChunks !== "function") return;
+    if (typeof addChunks !== "function") return;
     void (async () => {
       // 读档/换存档往往发生在回合结束后的空窗——落库前最后核一次代次；
       // 挡不住毫秒级竞态的全部，但用户驱动的存档切换是秒级动作，这一道足够。
       if (guard?.()) return;
+      // 同回合多次写挂（连搭两次话/连续行动）seq 接续不撞号覆盖：
+      // 数一下同代同回合已有几段，从其后接着编号。
+      let seqOffset = 0;
+      if (typeof listChunksByTurn === "function") {
+        try {
+          const existing = await listChunksByTurn(turn);
+          seqOffset = existing.length;
+        } catch (_) { /* 数不出来就从 0 起——宁可覆盖一段也不卡死写挂 */ }
+      }
+      if (guard?.()) return;
+      const chunks = splitProseIntoChunks(text, {
+        turn,
+        location: location || "",
+        witnesses,
+        anchoredFacts,
+        viewerName: playerName || "主角",
+        seqOffset,
+      });
+      if (!chunks.length) return;
       await addChunks(chunks);
     })().catch(() => { /* 增量层写失败静默降级 */ });
   } catch (_) {

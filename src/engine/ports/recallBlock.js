@@ -4,10 +4,10 @@
 // 小纸条向量召回维持原样作补充，两者在此混排成一块场记板。
 import { embeddingReady } from "./embeddingService.js";
 import { recallWithVisibility } from "./recallWithVisibility.js";
-import { getAllProseChunks, addProseChunks } from "../../infra/proseStore.js";
+import { getAllProseChunks, addProseChunks, getProseChunksByTurn } from "../../infra/proseStore.js";
 import { rankProseChunks, expandWithNeighbors } from "../../domain/rules/memory/proseRecall.js";
 
-const DEFAULT_HEADER = "\n\n[往事·与此刻情形相关的旧记忆，可能不在最近对话里，供你行文时自然照应，不要生硬复述]\n";
+const DEFAULT_HEADER = "\n\n[往事正本·与此刻情形相关的原文记忆，可能不在最近对话里，供你行文时自然照应，不要生硬复述]\n";
 
 // 场记板字符预算（粗略当 token 用，中文 1 字 ≈ 1 token 量级）：
 // 原文段落+纸条合计超出预算时，弱相关项退回单行事实目录，再超硬截断。
@@ -16,18 +16,19 @@ const WEAK_LINE_CHARS = 40;
 
 // 段落库写入口的 ports 出口：engine 层不许直连 infra（棘轮只减不增），
 // runTurn 的写挂经此转手拿 addProseChunks——与上方读取共用同一条 import，不新增跨层计数。
-export { addProseChunks };
+export { addProseChunks, getProseChunksByTurn };
 
 // 原文段落召回（ports 层编排：infra 读库 + domain 纯函数打分/连带）。
 // viewer 是查询视角人物名——witnesses 硬过滤以它为准；不传只看公共段。
 // 失败/空库一律降级为空数组，绝不阻断回合。
-export async function recallProse({ queryText, viewer, topK = 5 } = {}) {
+export async function recallProse({ queryText, viewer, topK = 5, epoch, currentTurn } = {}) {
   try {
     const all = await getAllProseChunks();
     if (!all.length) return [];
-    const hits = rankProseChunks(all, queryText || "", viewer);
+    const scope = { epoch, currentTurn };
+    const hits = rankProseChunks(all, queryText || "", viewer, scope);
     if (!hits.length) return [];
-    return expandWithNeighbors(all, hits).slice(0, topK);
+    return expandWithNeighbors(all, hits, { viewer, epoch, currentTurn }).slice(0, topK);
   } catch (_) {
     return [];
   }
@@ -71,10 +72,18 @@ export function formatRecallEntries(recallInfo, { recentTexts = [], header = DEF
 
   // 3) 预算：先全量排，字符合计超预算时——weak 纸条退单行目录（本就 40 字截断），
   // 再超则砍低分邻段只留锚段，最后硬截断。强相关原文段落永远优先保全文。
-  const proseLine = (e) => `〔第${e.turn}回合〕${e.text}`;
+  // 场记板正本行：〔第X回合·见证标签〕，witnesses 为 ["*"]/空渲染「众人皆知」，
+  // 有具体名单渲染「见证：A、B」；importance===3 加〔刻骨〕戳。
+  const witnessLabel = (e) => {
+    const w = Array.isArray(e.witnesses) ? e.witnesses.filter(Boolean) : [];
+    if (!w.length || w.includes("*")) return "众人皆知";
+    return `见证：${w.join("、")}`;
+  };
+  const proseLine = (e) => `${e.importance === 3 ? "〔刻骨〕" : ""}〔第${e.turn}回合·${witnessLabel(e)}〕${e.text}`;
   const noteLine = (m, forceShort = false) => {
     const line = (forceShort || m.tier === "weak") && m.text.length > WEAK_LINE_CHARS ? m.text.slice(0, WEAK_LINE_CHARS) + "…" : m.text;
-    return `· （第${m.meta.turn}回合）${line}`;
+    // 预算充足期普通行；退回单行目录时带「往事索引」前缀明示这是折叠目录而非正本
+    return forceShort ? `· 往事索引（第${m.meta.turn}回合）${line}` : `· （第${m.meta.turn}回合）${line}`;
   };
 
   let proseParts = proseKept.map(proseLine);
@@ -114,6 +123,8 @@ export async function runFormattedRecall({
   header = DEFAULT_HEADER,
   viewer = "",
   budgetChars = RECALL_BUDGET_CHARS,
+  epoch,
+  currentTurn,
 }) {
   // 原文段落召回与向量开关无关：纯本地词法检索，永远跑（失败静默降级空数组）。
   // 查询词 = 玩家输入 + 上下文，专名命中多半在输入里，上下文补场景词。
@@ -121,6 +132,8 @@ export async function runFormattedRecall({
     queryText: `${queryText || ""}\n${contextText || ""}`.trim(),
     viewer,
     topK,
+    epoch,
+    currentTurn,
   });
   if (!embeddingReady(apiCfg)) {
     return formatRecallEntries(null, { recentTexts, header, proseEntries, budgetChars });
