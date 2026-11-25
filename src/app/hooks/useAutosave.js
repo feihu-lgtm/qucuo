@@ -3,7 +3,8 @@ import { createAutosaveScheduler, noteAutosaveSaved, resetAutosaveProgress, getR
 import { snapshotFromStore } from "../../store/persist.js";
 import { setRngState } from "../../utils/rng.js";
 import { DEFAULT_PRESETS } from "../../engine/newGame.js";
-import { gameActions, gameStore, markGameReplaced } from "../../store/gameStore.js";
+import { gameActions, gameStore, markGameReplaced, getGameEpoch } from "../../store/gameStore.js";
+import { reconcileProseLineageAfterLoad } from "./proseReconcile.js";
 import { OVERLAY, closeOverlay } from "../../store/uiStore.js";
 import { autoSave, tryRestoreSave, flushLocalBackup, isCompatibleCharShape, isCompatibleRoomShape } from "../../infra/saves.js";
 import { statsForQuality } from "../../domain/rules/economy/equipment.js";
@@ -173,6 +174,10 @@ export function useAutosave({
       setCompanionState(snap.companionState || initCompanionState());
       setDungeonRun(snap.dungeonRun || null); // 地宫 checkpoint 随档还原
       setNpcState(snap.npcState || {}); // NPC 随身交易账随档还原
+      // 原文段落谱系随档还原：逐字段 set 不经 GAME_KEYS 自动恢复，必须显式拷回；
+      // 老档无字段时置 undefined/0，交给 reconcile 建根。
+      gameActions.setProseLineage(snap.proseLineage ?? undefined);
+      gameActions.setProseSeq(snap.proseSeq ?? 0);
       // 无条件重置客房缓存：老档无此字段时清空（否则上一局的缓存漏进新档），
       // 当前房由房间同步 effect 自愈
       setRoomCache(snap.roomCache || snap.roomMap || {});
@@ -191,8 +196,17 @@ export function useAutosave({
       closeOverlay(OVERLAY.SETTINGS);
     };
     const scheduler = schedulerRef.current;
-    if (scheduler) scheduler.runSilently(restoreSnapshot);
-    else restoreSnapshot();
+    if (scheduler) {
+      scheduler.runSilently(() => {
+        restoreSnapshot();
+        // 谱系 reconcile 包进同一段沉默期（runSilently 支持 async 延续）——
+        // 读档触发的谱系写不算游玩，不许顶掉更新的自动存档。
+        return reconcileProseLineageAfterLoad(snap, { epoch: getGameEpoch() }).catch(() => {});
+      });
+    } else {
+      restoreSnapshot();
+      void reconcileProseLineageAfterLoad(snap, { epoch: getGameEpoch() }).catch(() => {});
+    }
   }, [presets, setVarTree]);
 
   const buildCurrentSnapshot = useCallback(() => snapshotFromStore({

@@ -23,7 +23,7 @@ import { describeTallyForWhisper } from "../../domain/rules/memory/tally.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
 import { LOG_T, stampLogEntries } from "../../domain/rules/log/logTypes.js";
-import { gameActions, gameStore } from "../../store/gameStore.js";
+import { gameActions, gameStore, getGameEpoch } from "../../store/gameStore.js";
 
 export function usePrivateTalk({
   apiCfg, nsfwOn, jotNote, noteAction, changePendingTalks,
@@ -88,7 +88,9 @@ export function usePrivateTalk({
       let recallBlock = "";
       if (ov.recall?.mode === "off") {
         traceStep(_wt, "向量召回", "skip", "总控台关闭召回");
-      } else if (embeddingReady(apiCfg)) {
+      } else {
+        // WO-18：原文段落召回是纯本地词法路，不受 embedding 开关影响；
+        // 向量纸条部分的开关判断收在 runFormattedRecall 内部。
         const lastAiText = [...convo].reverse().find(m => m.role === "assistant")?.content || "";
         const focusEntities = Array.from(new Set([...room.npcs.map(n => n.name), ...Object.keys(gameStore.getState().varTree.角色 || {}), room.name]));
         const recentTexts = convo.slice(-Math.max(apiCfg.contextWindow || 20, 20)).map((m) => m.content);
@@ -102,6 +104,10 @@ export function usePrivateTalk({
           topK: 5,
           recentTexts,
           header: "\n\n[你记得的往事，与此刻私聊相关，供你回应时自然照应，不要生硬复述]\n",
+        // 视角仍是玩家本人：私聊对象是旁白，回忆可见性按玩家见证口径过滤
+        viewer: gameStore.getState().char?.name || "主角",
+          currentTurn: gameStore.getState().time,
+          lineage: gameStore.getState().proseLineage,
         }));
         if (isStale()) return;
         if (recallInfo && recallInfo.visible.length) {
@@ -109,8 +115,6 @@ export function usePrivateTalk({
         } else {
           traceStep(_wt, "向量召回", "skip", "已开启但本轮无相关召回结果");
         }
-      } else {
-        traceStep(_wt, "向量召回", "skip", "embedding未开启，跳过召回");
       }
       // scenario 蓝绿灯（与 act 同一套 gateScenario）：私聊此前直接拼 preset.scenario 全文，
       // 于是每次闲聊都要背一遍地图拓扑、契诃夫之枪、路途遭遇、装备品质六档表——
@@ -127,7 +131,7 @@ export function usePrivateTalk({
               scope: "whisper",
               userInput: content,
               lastReply: _lastReply,
-            });
+                });
       if (_whisperGate.lit.length || _whisperGate.dark.length) {
         traceStep(_wt, "世界书·总纲", "info",
           `🟢${_whisperGate.lit.join("、") || "无"}　⚫灭:${_whisperGate.dark.join("、") || "无"}`);

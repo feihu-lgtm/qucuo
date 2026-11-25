@@ -8,7 +8,7 @@
 // 版本史：v1 = memories（小纸条）；v2 = + prose_chunks（WO-17 原文段落库）。
 
 const DB_NAME = "qucuo_memory";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 let _dbPromise = null;
 
@@ -31,8 +31,14 @@ export function openMemoryDb() {
         const store = db.createObjectStore("prose_chunks", { keyPath: "id" });
         store.createIndex("turn", "turn", { unique: false });
         store.createIndex("location", "location", { unique: false });
+        store.createIndex("branchId", "branchId", { unique: false });
+      } else if ((event.oldVersion || 0) < 3) {
+        // v2→v3：补 branchId 索引（读档分叉后按分支取段/判旧未来用）
+        const store = req.transaction.objectStore("prose_chunks");
+        if (!store.indexNames.contains("branchId")) {
+          store.createIndex("branchId", "branchId", { unique: false });
+        }
       }
-      void event;
     };
     req.onsuccess = () => {
       const db = req.result;

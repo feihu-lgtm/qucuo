@@ -86,9 +86,17 @@ export function createAutosaveScheduler({
     runSilently(fn) {
       silenceDepth += 1;
       try {
-        return fn();
-      } finally {
+        const out = fn();
+        // async 静默：fn 返回 promise 时沉默期延续到落地——读档后异步 reconcile
+        // 写谱系不该触发自动存档（否则光读个旧槽就把新 autosave 覆盖了）。
+        if (out && typeof out.then === "function") {
+          return out.finally(() => { silenceDepth -= 1; });
+        }
         silenceDepth -= 1;
+        return out;
+      } catch (error) {
+        silenceDepth -= 1;
+        throw error;
       }
     },
     touch() {

@@ -12,6 +12,26 @@ import { memoryStoreOf } from "./memoryDb.js";
 
 const STORE = "prose_chunks";
 
+// ── reconcile-pending 最小闸门 ──────────────────────────────
+// 读档/undo 后 reconcile 异步跑谱系分叉。窗口内：recall 保守返回空（防串
+// 未来段），prose 写挂先 await 再分配/落库（防新正文写进将被截断的旧头）。
+// 模块级 promise 非持久状态，刷新自然归零。
+let reconcilePendingPromise = null;
+export function setProseReconcilePending(promise) {
+  reconcilePendingPromise = promise || null;
+}
+// token 清理：只有当前 pending 仍是同一个 promise 才清——两次读档 reconcile
+// 重叠时，旧 reconcile 的 finally 不得误清新一次读档刚挂上的闸。
+export function clearProseReconcilePending(promise) {
+  if (reconcilePendingPromise === promise) reconcilePendingPromise = null;
+}
+export function isProseReconcilePending() {
+  return !!reconcilePendingPromise;
+}
+export function waitProseReconcile() {
+  return reconcilePendingPromise || Promise.resolve();
+}
+
 function tx(mode) {
   return memoryStoreOf(mode, STORE);
 }
@@ -38,6 +58,21 @@ export async function getProseChunksByTurn(turn) {
   } catch (err) {
     console.warn("[proseStore] 按回合读取失败，按空处理：", err.message || err);
     return [];
+  }
+}
+
+// 按分支取段（v3 branchId 索引）：读档 reconcile 判旧未来、检索按谱系过滤都用。
+export async function getProseChunksByBranch(branchId) {
+  if (!branchId) return [];
+  try {
+    const store = await memoryStoreOf("readonly", STORE);
+    return await new Promise((resolve, reject) => {
+      const req = store.index("branchId").getAll(branchId);
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  } catch (_) {
+    return []; // 降级：索引缺失/库异常按空处理
   }
 }
 
@@ -79,7 +114,15 @@ export async function countProseChunks() {
 // 拿不准就留空字符串——不编造）。
 // 幂等口径：不设 proseMigrated 状态旗——同一存档再迁一遍产出完全相同的
 // 确定性 chunk id，put 自然覆盖，不重复增生；少一个状态源就不会半死。
-export function migrateLegacyConvoAndNotes(saveSnapshot, { notes = [] } = {}) {
+// 稳定内容 hash（非加密）：同内容重迁幂等同 id，异内容/异存档不撞。
+function contentHash(text) {
+  let h = 5381;
+  const str = String(text || "");
+  for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
+
+export function migrateLegacyConvoAndNotes(saveSnapshot, { notes = [], branchId = "", seqStart = 1 } = {}) {
   if (!saveSnapshot || typeof saveSnapshot !== "object") return [];
   const chunks = [];
   const timeNow = Number(saveSnapshot.time) || 0;
@@ -130,6 +173,22 @@ export function migrateLegacyConvoAndNotes(saveSnapshot, { notes = [] } = {}) {
       anchorFactIds: [],
       migrated: true,
     });
+  }
+  // 谱系补挂：迁移进根分支的 chunk 必须带 branchId/seq（检索可见性硬口径）。
+  // seq 从 seqStart 顺序递增——同一存档输入顺序确定，幂等键仍是确定性 id+put 覆盖。
+  // 确定性 id 改用内容 hash：同内容重迁幂等（put 覆盖自身），
+  // 异内容/异存档/异时间线同 turn 同位置不再撞 id 互覆。branchId 不进 id——
+  // 根分支 id 是随机的，进 id 会让旧档重复迁移增生副本。
+  for (const c of chunks) {
+    c.id = `P${c.turn}_m${contentHash(c.rawText + "|" + c.turn + "|" + (c.location || "") + "|" + (Array.isArray(c.witnesses) ? c.witnesses.join(",") : "") + "|" + (c.kind || "") + "|" + (Array.isArray(c.anchorFactIds) ? c.anchorFactIds.join(",") : ""))}`;
+  }
+  if (branchId) {
+    let seq = seqStart - 1;
+    for (const c of chunks) {
+      seq += 1;
+      c.branchId = branchId;
+      c.seq = seq;
+    }
   }
   return chunks;
 }

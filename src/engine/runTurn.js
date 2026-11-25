@@ -15,6 +15,8 @@ import { judgeTurn } from "../domain/rules/judge/judgeTurn.js";
 import { renderJudgeVerdict, renderCausalBudget } from "../domain/rules/judge/judgeTurn.js";
 import { buildIntakeUserContent, normalizeIntakeResult } from "./turn/intakeTurn.js";
 import { verifySealAndMaterialize } from "../domain/rules/effects/sealVerifier.js";
+import { writeTurnProse } from "./act/proseWrite.js";
+import { addProseChunks as proseChunkSink } from "./ports/recallBlock.js";
 import { random } from "../utils/rng.js";
 import { validateEmergenceSeal } from "../domain/rules/npc/npcEmergence.js";
 import { questAdvanceCandidates } from "../domain/rules/quests/questAdvanceCandidates.js";
@@ -135,6 +137,9 @@ async function runTurnSteps(ctx, cmd, opts) {
       lastAiText: preparedPrompt.lastAiText || ctx.memory.recall.lastAiText,
       varTreeLatest: ctx.memory.varTreeLatest,
       recentTexts: [hist],
+      viewer: ctx.prompt?.char?.name || ctx.char?.name || "主角",
+      currentTurn: ctx.getGameState?.()?.time ?? undefined,
+      lineage: ctx.getGameState?.()?.proseLineage,
     });
     [knowledgeTurn, recall] = await Promise.all([
       runKnowledgeTurn({
@@ -503,7 +508,29 @@ async function runTurnSteps(ctx, cmd, opts) {
     if (memoryText) p = { ...p, memory: memoryText };
   }
 
+  // WO-18 原文段落写挂 payload：不在这里触发——commitRound 可能抛错回滚，
+  // 被回滚的叙事不能进段落库。payload 随结果带给 finalizeTurn，在事务成功
+  // 且未 stale 后统一派发（见 finalizeTurn）。
+  const prosePayload = (() => {
+    const liveNow = ctx.getGameState?.() || {};
+    const roomNow = liveNow.room || deps.room || {};
+    return {
+      narrativeText,
+      turn: getGameStateTime(ctx, deps),
+      location: roomNow.name || "",
+      playerName: (liveNow.char || deps.char)?.name || deps.charName || "主角",
+      roomNpcNames: (roomNow.npcs || []).map((n) => n?.name).filter(Boolean),
+      isTalk: !!isTalk,
+      talkTarget: ctx.talkTarget || "",
+      anchoredFacts: [
+        ...(judgeVerdict?.facts || []).map((f) => f?.id).filter(Boolean),
+        ...(sealParts?.anchors || []).map((a) => a?.id).filter(Boolean),
+      ],
+    };
+  })();
+
   return {
+    prosePayload,
     p,
     mvuCommands,
     dealResult,
