@@ -16,6 +16,7 @@ import { judgeTurn } from "../domain/rules/judge/judgeTurn.js";
 import { buildCausalBudgetInput } from "../domain/rules/judge/budgetInput.js";
 import { getInnerRoom } from "../domain/rules/map/innerMap.js";
 import { resolveContainerContext } from "../domain/rules/world/containers.js";
+import { resolvePrepItemsForJudge, buildPrepMaterialBlock } from "../domain/rules/prep/prepConsumption.js";
 import { buildIntakeUserContent, normalizeIntakeResult, synthesizeTalkIntake, shouldSkipIntakeForTalk } from "./turn/intakeTurn.js";
 import { buildExtractionCfg } from "../domain/rules/prompt/structuredCallCfg.js";
 import { verifySealAndMaterialize } from "../domain/rules/effects/sealVerifier.js";
@@ -255,6 +256,12 @@ async function runTurnSteps(ctx, cmd, opts) {
         districtName: deps.room?.name, innerRoomName: innerRoomNow, varTree: vtNow, roomDefLookup: getInnerRoom,
         hasFloating: floatingItems.length > 0,
       });
+      // WO-24D 备料消费：真实判官与影子同一适配入口（resolvePrepItemsForJudge），
+      // prep_item 进 envelope.prepItems 走 judgeTurn 既有第二关（仍在 budget/warrant
+      // 管线内）——绝不直接发背包；文本素材只作前哨参考，不是事实。
+      const prepStateSlice = { room: deps.room || {}, innerRoomName: innerRoomNow, time: timeNow, varTree: vtNow };
+      const prepItemsForJudge = resolvePrepItemsForJudge(prepStateSlice, deps.prepSeeds);
+      const prepMaterialBlock = buildPrepMaterialBlock(prepStateSlice, deps.prepSeeds);
       // WO-16G-G2 三级分流：纯搭话跳过前哨——本地合成听意单直接进纯函数判官，
       // 零次 AI 调用（底稿 4.2：面板按钮和简单指令直接进纯函数判官）。talkOnly 白名单
       // 路径（WO-16A）不变；target 沿用现有 talkTarget 上游判定，查不出填「无」。
@@ -323,6 +330,7 @@ async function runTurnSteps(ctx, cmd, opts) {
           inv: liveNow.inv || deps.inv || [],
           char: liveNow.char || deps.char || {},
           varTree: vtNow,
+          prepBlock: prepMaterialBlock,
         });
         // WO-16G-G2：前哨走提取链模型口径（玩家给双调用/提取链选的 extractionModel 优先），
         // 不再是主模型直传——#451 审查指出的前哨模型口径在此钉住。buildExtractionCfg 自带关思考。
@@ -346,6 +354,7 @@ async function runTurnSteps(ctx, cmd, opts) {
         // WO-22B-P2 悬空秘宝注入：与容器解析同一次计算——地域+现世日+唯一锁过滤，
         // 非合规地域/未到 earliestDay/已落定（placed）一律不注入，第三关复用现有掷骰。
         floatingItems,
+        prepItems: prepItemsForJudge,
         // WO-16E：授信输入由 buildCausalBudgetInput 装配（runTurn/shadow 同一入口），
         // 不再硬编码 riskLevel:0——tension 读 encounter 势力字段、risk 按动作兜底、
         // 每日搜刮配额读 varTree 账本跨日归零。

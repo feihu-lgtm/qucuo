@@ -16,6 +16,7 @@ import { createRng } from "../../../utils/rng.js";
 import { diffSnapshots } from "./shadowDiff.js";
 import { projectFacts } from "./shadowTaxonomy.js";
 import { compareCategories } from "./shadowCompare.js";
+import { resolvePrepItemsForJudge, buildPrepMaterialBlock } from "../../../domain/rules/prep/prepConsumption.js";
 
 // 开关生效值：显式存储值（apiCfg.shadowJudgeEnabled 为布尔）优先；
 // 未显式设置时 dev（import.meta.env.DEV）默认 true、production/player 默认 false。
@@ -118,6 +119,11 @@ export async function runShadowJudge({
       districtName: preState?.room?.name, innerRoomName: innerNow, varTree: vtPre, roomDefLookup: getInnerRoom,
       hasFloating: floatingItems.length > 0,
     });
+    // WO-24D 同源备料：与 runTurn 同一适配入口同一 state 切片形状——
+    // 影子若吃不同口径，prepItems 覆盖对账失真。
+    const shadowPrepSlice = { room: preState?.room || {}, innerRoomName: innerNow, time: shadowTurn, varTree: vtPre };
+    const prepItemsForJudge = resolvePrepItemsForJudge(shadowPrepSlice, preState?.prepSeeds);
+    const prepMaterialBlock = buildPrepMaterialBlock(shadowPrepSlice, preState?.prepSeeds);
     // WO-16G-G2 混合分流同源：与 runTurn 共用 shouldSkipIntakeForTalk 闸门——
     // 纯搭话无任务候选时影子也本地合成（不调 withAI），有候选才调 intake；
     // 否则影子与真实判官输入不同源，搭话回合覆盖率数据失真。
@@ -140,6 +146,7 @@ export async function runShadowJudge({
         inv: preState?.inv || [],
         char: preState?.char || {},
         varTree: vtPre,
+        prepBlock: prepMaterialBlock,
       });
       // 网关 guard 与 epoch 必须传入：stale/换档的影子样本不进网络也不计入
       // intake 指标桶（withAI 在 stale 时提前返回、不 recordIntakeMetric），
@@ -158,6 +165,7 @@ export async function runShadowJudge({
       npcs, varTree: preState?.varTree || {},
       inv: preState?.inv || [], entries: [], talkOnly: isTalk,
       containers: containerView,
+      prepItems: prepItemsForJudge,
       containerPlace,
       questCandidates,
       pickupJudgment: null,
