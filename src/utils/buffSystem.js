@@ -16,7 +16,8 @@ export function parseActiveBuffs(flags, currentTurn) {
   const bonuses = {};
   if (!Array.isArray(flags)) return bonuses;
   for (const f of flags) {
-    const m = typeof f === "string" && f.match(/^buff_(.+?)\+(\d+)_untilturn_(\d+)$/);
+    // WO-11：伤病等负向 buff 同格式（buff_体魄-2_untilturn_T），符号并入数值
+    const m = typeof f === "string" && f.match(/^buff_(.+?)([+-]\d+)_untilturn_(\d+)$/);
     if (!m) continue;
     if (currentTurn <= Number(m[3])) bonuses[m[1]] = (bonuses[m[1]] || 0) + Number(m[2]);
   }
@@ -28,7 +29,7 @@ export function applyBuffsToSpecial(special, flags, currentTurn) {
   const bonuses = parseActiveBuffs(flags, currentTurn);
   const result = { ...(special || {}) };
   for (const [attr, val] of Object.entries(bonuses)) {
-    if (attr in result) result[attr] = Math.min(10, (result[attr] || 0) + val);
+    if (attr in result) result[attr] = Math.min(10, Math.max(0, (result[attr] || 0) + val));
   }
   return result;
 }
@@ -53,7 +54,7 @@ export function activeBuffsWithRemaining(flags, currentTurn) {
   const out = [];
   if (!Array.isArray(flags)) return out;
   for (const f of flags) {
-    const m = typeof f === "string" && f.match(/^buff_(.+?)\+(\d+)_untilturn_(\d+)$/);
+    const m = typeof f === "string" && f.match(/^buff_(.+?)([+-]\d+)_untilturn_(\d+)$/);
     if (!m) continue;
     const remaining = Number(m[3]) - currentTurn;
     if (remaining >= 0) out.push({ attr: m[1], val: Number(m[2]), remaining });
