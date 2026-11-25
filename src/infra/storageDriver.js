@@ -206,10 +206,12 @@ export function resolveCloudConflict(key, choice) {
   const hit = conflicts.find((c) => c.key === key);
   _lsWrite(CONFLICTS_KEY, conflicts.filter((c) => c.key !== key));
   if (!hit) return false;
-  // 跨空间遗留冲突作废（Review 修）：冲突是在旧空间登记的，换绑后对它执行
-  // 「本地覆盖云端」会把 force 打进新空间的同名槽——无 rev 校验覆盖别人备份。
+  // 跨空间/无戳遗留冲突作废（Review 修+裁决）：冲突是在旧空间登记的（或 legacy 无戳），
+  // 对它执行「本地覆盖云端」会把 force 打进新空间的同名槽——无 rev 校验覆盖别人备份。
   const currentSpace = hubBinding(loadStorageConfig()).spaceId || "";
-  if (hit.spaceId && hit.spaceId !== currentSpace) return false;
+    // 严格不等即废（裁决）：缺失/空串 spaceId 的 legacy/异常遗留同样作废——
+  // 正常绑定 spaceId 必填，无法证明同源就绝不 force。
+  if (hit.spaceId !== currentSpace) return false;
   if (choice === "keep_local") {
     if (hit.op === "put") {
       enqueueCloudForcePush(key, hit.value);

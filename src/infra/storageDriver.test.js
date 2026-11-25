@@ -209,6 +209,20 @@ describe("WO-19/20 PR-A canonical adapter", () => {
     expect(getCloudConflicts()).toEqual([]); // 已出登记不残留
   });
 
+  it("裁决：legacy 无 spaceId 冲突同样作废不动作", async () => {
+    boundCfg();
+    // 手工埋一条旧版/异常遗留的无空间戳冲突
+    localStorage.setItem("wuxia_mud_cloud_conflicts", JSON.stringify([
+      { key: "autosave", rev: 1, serverRev: 3, queuedAt: 1, detectedAt: 2, op: "put", value: { v: 1 } },
+    ]));
+    const calls = [];
+    configureCloudFetch(async (url, init) => { calls.push({ url, body: JSON.parse(init?.body || "{}") }); return okJson({ rev: 1 }); });
+    const acted = resolveCloudConflict("autosave", "keep_local");
+    await vi.advanceTimersByTimeAsync(100);
+    expect(acted).toBe(false);
+    expect(calls.filter((c) => c.body.force)).toHaveLength(0);
+  });
+
   it("wipe 重写为 canonical DELETE /api/space/<spaceId>（单数无 saves 后缀）并带 token", async () => {
     boundCfg();
     const calls = [];
