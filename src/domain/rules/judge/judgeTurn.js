@@ -14,6 +14,7 @@ import { knowsEntry, findNpc, affectionOf, personaMod, affectionMod } from "./ru
 import { handleFreeAct } from "./rules/freeAct.js";
 import { handleSteal } from "./rules/steal.js";
 import { handleTalk } from "./rules/talk.js";
+import { handleIntimate } from "./rules/intimate.js";
 import { evaluateActionCondition, conditionUnmetNote, conditionMetNote } from "./conditionEval.js";
 import { handleGive } from "./rules/give.js";
 import { handleAppease } from "./rules/appease.js";
@@ -150,6 +151,7 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
       }
       notes.push(conditionMetNote(action));
     }
+    if (action.intimate === true) continue; // V8：亲密动作不凑 kind 结算，回合级签发见下
     if (action.kind === "free_act") { handleFreeAct(J, action); continue; }
     if (action.kind === "steal") { handleSteal(J, action); continue; }
 
@@ -183,6 +185,9 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
     if (action.kind === "appease") handleAppease(J, action, npc, aff, stanceMod);
     if (action.kind === "learn") handleLearn(J, action, npc, aff, stanceMod);
   }
+
+  // ── V8 亲密回合社交结算：门禁放行（envelope.intimateCtx）才签发，回合至多一条 ──
+  handleIntimate(J);
 
   // ── 第三步：inspect_container 三关掷骰 ──
   // WO-16A：纯搭话回合不翻容器——搭话时翻箱倒柜本就不该发生，整段跳过。
