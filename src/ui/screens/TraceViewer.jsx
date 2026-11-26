@@ -54,6 +54,24 @@ function ShadowDetails({ node, theme }) {
   );
 }
 
+
+// A3-Review 修：drain 最长 60s，先 await 再 writeText 会超出点击的用户激活期导致
+// 剪贴板写入被浏览器拒绝。ClipboardItem 接受 promise——在激活期内同步创建、
+// 文本异步产出，是规范允许的延迟剪贴板写法；不支持的浏览器退回 writeText。
+async function copyTextAfterWork(work) {
+  const textPromise = (async () => await work())();
+  if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
+    try {
+      const item = new ClipboardItem({
+        "text/plain": textPromise.then((t) => new Blob([t], { type: "text/plain" })),
+      });
+      await navigator.clipboard.write([item]);
+      return;
+    } catch { /* 退回 writeText */ }
+  }
+  await navigator.clipboard.writeText(await textPromise);
+}
+
 export default function TraceViewer({ theme, onClose, onReport }) {
   const { trees } = useSyncExternalStore(turnMonitor.subscribe, turnMonitor.getSnapshot);
   const rawTime = useGameStore((s) => s.time);
@@ -112,9 +130,11 @@ export default function TraceViewer({ theme, onClose, onReport }) {
                 <button type="button" style={{ ...button, marginTop: 4 }} onClick={async () => {
                   try {
                     // A3：导出前收口——等在途影子结束（上限60s），超时计 pendingAtExport
-                    const { pending } = await drainShadowTasks(60000);
-                    const fresh = shadowAggregates(epoch);
-                    await navigator.clipboard.writeText(JSON.stringify({ ...fresh, stageCounts: shadowStageCounts(epoch), pendingAtExport: pending }));
+                    await copyTextAfterWork(async () => {
+                      const { pending } = await drainShadowTasks(60000);
+                      const fresh = shadowAggregates(epoch);
+                      return JSON.stringify({ ...fresh, stageCounts: shadowStageCounts(epoch), pendingAtExport: pending });
+                    });
                     setCopied("聚合JSON已复制");
                   } catch { setCopied("复制失败"); }
                 }}>复制聚合JSON</button>
@@ -132,17 +152,22 @@ export default function TraceViewer({ theme, onClose, onReport }) {
               <div style={{ marginTop: 6 }}>
                 <button type="button" style={button} onClick={async () => {
                   try {
-                    const { pending } = await drainShadowTasks(60000);
-                    const md = formatReleaseGateMarkdown({ epoch, shadowAgg: shadowAggregates(epoch), metricsAgg, stageCounts: shadowStageCounts(epoch), pendingAtExport: pending });
-                    await navigator.clipboard.writeText(md);
+                    await copyTextAfterWork(async () => {
+                      const { pending } = await drainShadowTasks(60000);
+                      // drain 期间完成的 intake 也要进报告——stageCounts 已是 drain 后口径，
+                      // metricsAgg 必须用同一时点重读，否则同一份报告两处计数对不上。
+                      return formatReleaseGateMarkdown({ epoch, shadowAgg: shadowAggregates(epoch), metricsAgg: releaseMetricAggregates(epoch), stageCounts: shadowStageCounts(epoch), pendingAtExport: pending });
+                    });
                     setReportCopied("已复制报告");
                   } catch { setReportCopied("复制失败"); }
                 }}>{reportCopied || "复制报告"}</button>
                 {/* WO-16D-4：跨 epoch 全量聚合导出，shape 供 npm run release:report 离线消费 */}
                 <button type="button" style={{ ...button, marginLeft: 4 }} onClick={async () => {
                   try {
-                    await drainShadowTasks(60000);
-                    await navigator.clipboard.writeText(JSON.stringify(releaseMetricsExport()));
+                    await copyTextAfterWork(async () => {
+                      await drainShadowTasks(60000);
+                      return JSON.stringify(releaseMetricsExport());
+                    });
                     setReportCopied("指标JSON已复制");
                   } catch { setReportCopied("复制失败"); }
                 }}>复制放行指标JSON</button>
