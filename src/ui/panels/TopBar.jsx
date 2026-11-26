@@ -8,10 +8,10 @@
 //      跟顶栏放一起是因为它只由顶栏右侧的头像入口触发，别处不用。
 //
 // 顶栏按钮的统一规格 topBtn() 内聚在本文件（只依赖 zoneTheme.border，
-// 别处不再需要）；遮罩点击关闭的 useOverlayCloseGuard 同样内聚。
+// 别处不再需要）；头像选择弹窗套 ModalShell，遮罩点击关闭由外壳负责。
 import { chromeBtn } from "../../utils/theme.js";
 import React, { useState, useEffect } from "react";
-import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
+import ModalShell from "../primitives/ModalShell.jsx";
 import { CURRENT_VERSION } from "../../utils/version.js";
 import { getState as getMusicState, subscribe as subscribeMusic } from "../../infra/musicPlayer.js";
 import { OVERLAY, closeOverlay, openOverlay, toggleOverlay, useOverlay } from "../../store/uiStore.js";
@@ -75,7 +75,6 @@ export default function TopBar({
   // 顶栏按钮统一规格：此前每个按钮各自 padding/字号/色系，一字排开像彩虹糖纸。
   // 收敛成"同一副骨架 + 三色语义"：金=重要入口，松石绿=设置/切换，绛红=上报，其余用正文/次要色。
   const topBtn = (active = false) => chromeBtn(zoneTheme, { active });
-  const avatarPickerCloseGuard = useOverlayCloseGuard(() => closeOverlay(OVERLAY.AVATAR_PICKER));
   // 音乐按钮要同时跟 playing 和 enabled 走。原来只订阅了 playing，而
   // `{isMusicEnabled() && ...}` 是渲染期直接读 localStorage 的非响应式调用——
   // 在设置里勾上"音乐模式"，这个按钮不会冒出来，得等别的 state 变化捎带重渲染。
@@ -188,56 +187,63 @@ export default function TopBar({
 
 
       {showAvatarPicker && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(4,4,10,0.9)", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={avatarPickerCloseGuard.onMouseDown} onClick={avatarPickerCloseGuard.onClick}>
-          <div style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: 24, width: 460, maxWidth: "90vw", color: "var(--text)" }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <span style={{ color: "var(--accent)", fontSize: "var(--fs-lg)" }}>选择头像</span>
-              <span className="mobile-overlay-close" style={{ color: "var(--text-dim)", fontSize: "var(--fs-sm)", cursor: "pointer" }} onClick={() => closeOverlay(OVERLAY.AVATAR_PICKER)}>× 关闭</span>
-            </div>
-            <div style={{ fontSize: "var(--fs-sm)", color: "var(--text-dim)", marginBottom: 14 }}>
-              选一张预制头像，或上传自己的图片（建议 2:3 竖版）。选择只影响你自己的显示，存在本地浏览器。
-            </div>
-            {/* 预制头像：从 public/portraits/player/ 读，共8张同一批唐卡风格厚涂立绘
-                （male=藏剑大叔/female=花商/other=朔风刀客·默认兜底/preset1~5=飞贼·猎手·
-                猫人·假小子·穿越者）。文件名约定 male/female/other + preset1..N，2:3竖版。 */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 16 }}>
-              {[genderAvatar["男"], genderAvatar["女"], AV_BASE + "other.webp",
-                AV_BASE + "preset1.webp", AV_BASE + "preset2.webp", AV_BASE + "preset3.webp",
-                AV_BASE + "preset4.webp", AV_BASE + "preset5.webp"].map((src, i) => (
-                <div key={i}
-                  onClick={() => { setPlayerAvatarCustom(src); closeOverlay(OVERLAY.AVATAR_PICKER); }}
-                  style={{ aspectRatio: "2/3", borderRadius: 0, overflow: "hidden", cursor: "pointer", border: playerAvatarCustom === src ? "2px solid var(--accent)" : "1px solid var(--border)", background: "var(--bg-panel)" }}
-                >
-                  <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    onError={(e) => { e.currentTarget.style.display = "none"; }} />
-                </div>
-              ))}
-            </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <label style={{ cursor: "pointer", fontSize: "var(--fs-sm)", color: "var(--accent)", padding: "6px 12px", border: "1px solid var(--border)", borderRadius: 0 }}>
-                ⬆ 上传图片
-                <input type="file" accept="image/*" style={{ display: "none" }}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                      const dataUrl = reader.result;
-                      setPlayerAvatarCustom(dataUrl);
-                      closeOverlay(OVERLAY.AVATAR_PICKER);
-                    };
-                    reader.readAsDataURL(file);
-                  }} />
-              </label>
-              {playerAvatarCustom && (
-                <span onClick={() => { setPlayerAvatarCustom(""); closeOverlay(OVERLAY.AVATAR_PICKER); }}
-                  style={{ cursor: "pointer", fontSize: "var(--fs-sm)", color: "var(--ink-danger-soft)", padding: "6px 12px", border: "1px solid var(--footer-stalled-bg)", borderRadius: 0 }}>
-                  恢复默认（按性别）
-                </span>
-              )}
-            </div>
+        // 头像选择沿用自己的标题栏（字号、间距与外壳默认不同），外壳只管遮罩、层级与关闭。
+        // 原遮罩透明度 0.9，并入 --ink-overlay（0.92）；手机上原本不全屏，保持 mobile="none"。
+        <ModalShell
+          onClose={() => closeOverlay(OVERLAY.AVATAR_PICKER)}
+          layer="screen-high"
+          mobile="none"
+          showClose={false}
+          ariaLabel="选择头像"
+          panelStyle={{ width: 460, padding: 24 }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <span style={{ color: "var(--accent)", fontSize: "var(--fs-lg)" }}>选择头像</span>
+            <span className="mobile-overlay-close" style={{ color: "var(--text-dim)", fontSize: "var(--fs-sm)", cursor: "pointer" }} onClick={() => closeOverlay(OVERLAY.AVATAR_PICKER)}>× 关闭</span>
           </div>
-        </div>
+          <div style={{ fontSize: "var(--fs-sm)", color: "var(--text-dim)", marginBottom: 14 }}>
+            选一张预制头像，或上传自己的图片（建议 2:3 竖版）。选择只影响你自己的显示，存在本地浏览器。
+          </div>
+          {/* 预制头像：从 public/portraits/player/ 读，共8张同一批唐卡风格厚涂立绘
+              （male=藏剑大叔/female=花商/other=朔风刀客·默认兜底/preset1~5=飞贼·猎手·
+              猫人·假小子·穿越者）。文件名约定 male/female/other + preset1..N，2:3竖版。 */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 16 }}>
+            {[genderAvatar["男"], genderAvatar["女"], AV_BASE + "other.webp",
+              AV_BASE + "preset1.webp", AV_BASE + "preset2.webp", AV_BASE + "preset3.webp",
+              AV_BASE + "preset4.webp", AV_BASE + "preset5.webp"].map((src, i) => (
+              <div key={i}
+                onClick={() => { setPlayerAvatarCustom(src); closeOverlay(OVERLAY.AVATAR_PICKER); }}
+                style={{ aspectRatio: "2/3", borderRadius: 0, overflow: "hidden", cursor: "pointer", border: playerAvatarCustom === src ? "2px solid var(--accent)" : "1px solid var(--border)", background: "var(--bg-panel)" }}
+              >
+                <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  onError={(e) => { e.currentTarget.style.display = "none"; }} />
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <label style={{ cursor: "pointer", fontSize: "var(--fs-sm)", color: "var(--accent)", padding: "6px 12px", border: "1px solid var(--border)", borderRadius: 0 }}>
+              ⬆ 上传图片
+              <input type="file" accept="image/*" style={{ display: "none" }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    const dataUrl = reader.result;
+                    setPlayerAvatarCustom(dataUrl);
+                    closeOverlay(OVERLAY.AVATAR_PICKER);
+                  };
+                  reader.readAsDataURL(file);
+                }} />
+            </label>
+            {playerAvatarCustom && (
+              <span onClick={() => { setPlayerAvatarCustom(""); closeOverlay(OVERLAY.AVATAR_PICKER); }}
+                style={{ cursor: "pointer", fontSize: "var(--fs-sm)", color: "var(--ink-danger-soft)", padding: "6px 12px", border: "1px solid var(--footer-stalled-bg)", borderRadius: 0 }}>
+                恢复默认（按性别）
+              </span>
+            )}
+          </div>
+        </ModalShell>
       )}
     </>
   );

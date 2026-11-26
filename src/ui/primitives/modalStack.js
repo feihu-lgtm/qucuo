@@ -54,7 +54,7 @@ export const FOCUSABLE_SELECTOR = [
 ].join(",");
 
 // z-index 档位：取值写在 tokens.css 的 --z-*，这里只列合法名字。
-export const MODAL_LAYERS = ["float", "map", "building", "screen", "screen-high", "dialog", "top"];
+export const MODAL_LAYERS = ["hud", "float", "map", "building", "screen", "screen-high", "dialog", "top"];
 
 export function normalizeLayer(layer) {
   return MODAL_LAYERS.includes(layer) ? layer : "dialog";

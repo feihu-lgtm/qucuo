@@ -17,15 +17,27 @@ describe("ModalShell", () => {
     expect(html).toContain("正文");
   });
 
-  it("默认挂移动端全屏类，可以关掉", () => {
+  it("手机形态：默认全屏，sheet 用动作面板类，none 不挂手机类，未知值回落全屏", () => {
     const on = render({ title: "x" });
     expect(on).toContain("mobile-overlay-root");
     expect(on).toContain("mobile-overlay-panel");
     expect(on).toContain("mobile-overlay-header");
     expect(on).toContain("mobile-overlay-close");
-    const off = render({ title: "x", mobileFullscreen: false });
+    const sheet = render({ title: "x", mobile: "sheet" });
+    expect(sheet).toContain("mobile-overlay-root");
+    expect(sheet).toContain("ui-modal-panel mobile-action-panel");
+    expect(sheet).not.toContain("mobile-overlay-panel");
+    const off = render({ title: "x", mobile: "none" });
     expect(off).not.toContain("mobile-overlay-root");
     expect(off).not.toContain("mobile-overlay-panel");
+    expect(render({ mobile: "weird" })).toContain("mobile-overlay-panel");
+  });
+
+  it("遮罩深浅与面板去壳通过 data 属性选择", () => {
+    expect(render({})).toContain('data-backdrop="ink"');
+    expect(render({ backdrop: "soft" })).toContain('data-backdrop="soft"');
+    expect(render({})).not.toContain("data-chrome");
+    expect(render({ chrome: false })).toContain('data-chrome="none"');
   });
 
   it("层级通过 data-layer 选档，未知档位回落到 dialog", () => {

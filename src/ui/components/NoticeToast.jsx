@@ -42,7 +42,8 @@ export default function NoticeToast({ zoneTheme }) {
         className="blocked-direction-toast"
         onClick={() => clearNotice(notice.id)}
         style={{
-          position: "fixed", top, left: "50%", zIndex: 55, transform: "translateX(-50%)",
+          // 定位与层级在 tokens.css 的 .blocked-direction-toast（--z-hud），这里只留随顶栏高度变化的 top。
+          top, transform: "translateX(-50%)",
           width: "max-content", maxWidth: "min(92vw, 420px)", boxSizing: "border-box",
           padding: "9px 14px", whiteSpace: "pre-line", textAlign: "center",
           background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`,

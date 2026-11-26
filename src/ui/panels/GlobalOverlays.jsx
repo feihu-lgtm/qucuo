@@ -8,14 +8,16 @@
 // 收录（按 zIndex 大致由低到高）：
 //   TraceViewer(70) · PersuasionScreen(60) · Duel/TeamDuelScreen
 //   CharacterPage/QuestLogScreen/LoreScreen/PortraitManager/CodexScreen(300)
-//   BugReportModal/NpcActionMenu(400) · ItemActionMenu(410)
-//   TutorialOverlay/VersionHistoryPanel(500)
+//   BugReportModal(400) · NpcActionMenu/ItemActionMenu（ModalShell dialog 档，
+//   ItemActionMenu 排在后面，同档压在上面）
+//   TutorialOverlay(500) · VersionHistoryPanel（ModalShell top 档）
 //
 // 弹层可见性读 uiStore，游戏数据与业务回调经 props 下传。切磋界面额外包了一层
 // ErrorBoundary——战斗引擎报错时不该把整局游戏拖崩，能退回房间重来。
 //
 // 结构：下面 entries 是一张有序条目表，每行 = {show, render}。新增浮层只需
 // 在表尾登记一行；数组顺序即 DOM 顺序（与原条件分支的书写顺序一致）。
+// 已迁到 ModalShell 的弹层同档之间靠 DOM 顺序决定上下，所以这张表的顺序不能随意调。
 import { Fragment, lazy, Suspense, useCallback } from "react";
 import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { listCharacters } from "../../domain/rules/prompt/mvu.js";

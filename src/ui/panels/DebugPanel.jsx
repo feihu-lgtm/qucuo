@@ -38,8 +38,9 @@ export default function DebugPanel({
   const lbl = { color: "var(--accent)", flexShrink: 0 };
 
   return (
-    <div style={isMobile
-      ? { position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 260, padding: "10px 14px",
+    // 手机端贴底浮出：定位与层级在 tokens.css 的 .debug-panel-dock（--z-screen-high）。
+    <div className={isMobile ? "debug-panel-dock" : undefined} style={isMobile
+      ? { padding: "10px 14px",
           borderTop: `1px solid ${zoneTheme.border}`, background: "rgba(12,14,20,.98)", fontSize: "var(--fs-xs)", color: "var(--debug-text)",
           display: "flex", flexDirection: "column", gap: 8, maxHeight: "70vh", overflowY: "auto", overflowX: "auto",
           WebkitOverflowScrolling: "touch", boxShadow: "0 -8px 30px rgba(0,0,0,.7)" }

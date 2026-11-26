@@ -48,9 +48,10 @@
   --ctl-pad-x: 9px;
   --radius-none: 0;
   /* 浮层层级表（唯一来源）：ModalShell 的 layer 只能取这几档。档位按现存浮层的
-     z-index 分簇定值，保住原有先后：浮条/提示/界面内覆盖层 < 大地图 < 建筑面板
+     z-index 分簇定值，保住原有先后：回合状态条与提示 < 界面内覆盖层 < 大地图 < 建筑面板
      < 设置/交易/赌石 < 人物页/见闻录/图鉴等全屏界面 < 二级弹窗与菜单 < 教程/版本历史
      < 错误兜底。 */
+  --z-hud: 50;
   --z-float: 60;
   --z-map: 100;
   --z-building: 120;
@@ -265,6 +266,7 @@
 
   /* 设置面板定色（原字面量，不随日间模式变） */
   --ink-overlay: rgba(4,4,10,0.92);
+  --ink-overlay-soft: rgba(4,4,10,0.75);
   --ink-divider: #1a1d2e;
   --ink-divider-blue: #1a2d3a;
   --ink-error-bg: #1a0e0e;
@@ -513,7 +515,9 @@ body {
 }
 
 div[style*="position: fixed"][style*="z-index"],
-.ui-modal-root {
+.ui-modal-root,
+.turn-status-float,
+.debug-panel-dock {
   animation: ink-overlay-in var(--dur) ease-out both;
   transform-origin: center;
 }
@@ -660,6 +664,7 @@ div[style*="position: fixed"][style*="z-index"],
   background: var(--ink-overlay);
 }
 
+.ui-modal-root[data-layer="hud"] { z-index: var(--z-hud); }
 .ui-modal-root[data-layer="float"] { z-index: var(--z-float); }
 .ui-modal-root[data-layer="map"] { z-index: var(--z-map); }
 .ui-modal-root[data-layer="building"] { z-index: var(--z-building); }
@@ -667,6 +672,8 @@ div[style*="position: fixed"][style*="z-index"],
 .ui-modal-root[data-layer="screen-high"] { z-index: var(--z-screen-high); }
 .ui-modal-root[data-layer="dialog"] { z-index: var(--z-dialog); }
 .ui-modal-root[data-layer="top"] { z-index: var(--z-top); }
+
+.ui-modal-root[data-backdrop="soft"] { background: var(--ink-overlay-soft); }
 
 .ui-modal-panel {
   position: relative;
@@ -680,8 +687,16 @@ div[style*="position: fixed"][style*="z-index"],
   background: var(--bg-panel);
   color: var(--text);
   font-family: inherit;
-  font-size: var(--fs-md);
   outline: none;
+}
+
+.ui-modal-panel[data-chrome="none"] {
+  max-width: none;
+  max-height: none;
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .ui-modal-panel.version-history-panel {
@@ -717,4 +732,26 @@ div[style*="position: fixed"][style*="z-index"],
 .ui-modal-close:hover,
 .ui-modal-close:focus-visible {
   color: var(--accent);
+}
+
+/* ── 非模态浮层：定位与层级写在类里，组件只留随内容变化的位置值 ──────── */
+.blocked-direction-toast {
+  position: fixed;
+  left: 50%;
+  z-index: var(--z-hud);
+}
+
+.turn-status-float {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: var(--z-hud);
+}
+
+.debug-panel-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-screen-high);
 }

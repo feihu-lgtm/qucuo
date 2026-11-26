@@ -33,7 +33,7 @@ export default function TurnStatusPill({ theme, mobile, docked }) {
     <div className={mobile || docked ? undefined : "turn-status-float"} style={mobile
       ? { display: "flex", justifyContent: "flex-end", padding: "3px 10px", flexShrink: 0 }
       : docked ? { display: "flex" }
-      : { position: "fixed", right: 12, bottom: 12, zIndex: 40 }}>
+      : undefined /* 悬浮态的定位与层级在 tokens.css 的 .turn-status-float（--z-hud） */}>
       <button type="button" title={label} aria-label={`全流程日志：${label}`}
         onClick={() => openOverlay(OVERLAY.TRACE)}
         style={{

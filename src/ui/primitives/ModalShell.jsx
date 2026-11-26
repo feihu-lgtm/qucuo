@@ -8,6 +8,9 @@
 // 四个类，所以迁过来的弹窗在手机上的表现与原先一致。点遮罩关闭沿用
 // useOverlayCloseGuard，避免"从弹窗里拖选文字拖到遮罩上松手就被关掉"。
 //
+// 可选外观：backdrop="ink"（默认，--ink-overlay）或 "soft"（--ink-overlay-soft，短菜单用）；
+// chrome={false} 去掉面板默认的底色、描边、内边距和尺寸上限，给自带版式的面板用。
+//
 // 用法：
 //   <ModalShell title="版本历史" onClose={onClose} layer="top" panelStyle={{ width: 420 }}>
 //     ……正文……
@@ -23,6 +26,12 @@ const NOOP = () => {};
 // 面板内的点击不再往外冒泡，与迁移前各弹窗内层的 stopPropagation 保持一致。
 const stopPropagation = (event) => event.stopPropagation();
 
+// 手机端面板的三种形态，都复用 mobile.css 里已有的类：
+//   fullscreen —— mobile-overlay-panel，铺满屏幕（设置、版本历史这类长面板）
+//   sheet      —— mobile-action-panel，居中的整宽卡片（物品、NPC 这类短菜单）
+//   none       —— 不挂手机类，手机上保持桌面写法（大地图卷轴这类自带版式的）
+const MOBILE_PANEL_CLASS = { fullscreen: "mobile-overlay-panel", sheet: "mobile-action-panel", none: "" };
+
 export default function ModalShell({
   title = null,
   onClose = NOOP,
@@ -34,7 +43,9 @@ export default function ModalShell({
   closeLabel = "关闭",
   closeText = "× 关闭",
   headerExtra = null,
-  mobileFullscreen = true,
+  mobile = "fullscreen",
+  backdrop = "ink",
+  chrome = true,
   className = "",
   panelClassName = "",
   rootStyle = undefined,
@@ -81,14 +92,16 @@ export default function ModalShell({
   }, [id, closeOnEsc]);
 
   const titleId = title ? `${id}-title` : undefined;
-  const rootClass = ["ui-modal-root", mobileFullscreen && "mobile-overlay-root", className].filter(Boolean).join(" ");
-  const panelClass = ["ui-modal-panel", mobileFullscreen && "mobile-overlay-panel", panelClassName].filter(Boolean).join(" ");
+  const mobileMode = MOBILE_PANEL_CLASS[mobile] === undefined ? "fullscreen" : mobile;
+  const rootClass = ["ui-modal-root", mobileMode !== "none" && "mobile-overlay-root", className].filter(Boolean).join(" ");
+  const panelClass = ["ui-modal-panel", MOBILE_PANEL_CLASS[mobileMode], panelClassName].filter(Boolean).join(" ");
   const hasHeader = title !== null || headerExtra !== null || showClose;
 
   return (
     <div
       className={rootClass}
       data-layer={normalizeLayer(layer)}
+      data-backdrop={backdrop === "soft" ? "soft" : "ink"}
       style={rootStyle}
       onMouseDown={closeGuard.onMouseDown}
       onClick={closeGuard.onClick}
@@ -100,6 +113,7 @@ export default function ModalShell({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-label={titleId ? undefined : ariaLabel}
+        data-chrome={chrome ? undefined : "none"}
         tabIndex={-1}
         style={panelStyle}
         onClick={stopPropagation}
