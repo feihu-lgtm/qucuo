@@ -311,20 +311,41 @@ describe("WO-21B 判官签发类目迁移：谊→恩、隙→怨、和→见", 
   });
 });
 
-describe("WO-16G interim：带前提动作不结算", () => {
+describe("D3：带前提动作确定性裁决", () => {
   const condInspect = {
     kind: "inspect_container", target: "木箱", itemId: "", direction: "none", stance: "casual",
     condition: "其他", condition_text: "要是没人看见",
   };
-  it("条件翻箱：不坍缩、不给物、只留前提未裁 note", () => {
+  it("条件翻箱前提未成（场上有人）：不坍缩、不给物、禁写成功批注", () => {
     const verdict = judgeTurn(baseEnvelope({
       containers: { 木箱: { collapsed: false, presetItems: [{ id: "it_pre", name: "铁钥匙" }] } },
     }), { read: "", refIds: [], actions: [condInspect], proposals: [] }, { rng: seqRng([0.9]) });
     expect(verdict.facts.filter((f) => f.op === "GRANT_ITEM")).toHaveLength(0);
-    expect(verdict.notes.join()).toContain("前提未裁");
-    expect(verdict.notes.join()).not.toContain("已坍缩");
+    expect(verdict.notes.join()).toContain("条件未成立");
+    expect(verdict.notes.join()).toContain("严禁写成已经动手或已经得手");
     // 容器不被消费——verdict 里无坍缩产物（collapse 相关的容器写不出现）
     expect(JSON.stringify(verdict)).not.toContain("铁钥匙");
+  });
+  it("条件翻箱前提成立（四下无人）：照常结算并记前提成立批注", () => {
+    const verdict = judgeTurn(baseEnvelope({
+      containers: { 木箱: { collapsed: false, presetItems: [{ id: "it_pre", name: "铁钥匙" }] } },
+      // D3：conditionCtx 经 envelope 注入——judgePhase 在前置路由刷新后传入在场实况
+      conditionCtx: { visibleNpcs: [] },
+    }), { read: "", refIds: [], actions: [condInspect], proposals: [] }, { rng: seqRng([0.9]) });
+    expect(verdict.notes.join()).toContain("条件已达成");
+    expect(verdict.facts.some((f) => f.itemName === "铁钥匙")).toBe(true);
+  });
+  it("被拒信号传递：give 拒收后续 duel 条件「被拒」成立", () => {
+    // 才旦厌弃/低好感时拒收礼——构造必拒场景（物未携身，拒收口径最稳：target 有厌弃）
+    const giveAct = { kind: "give", target: "才旦", itemId: "青稞酒", direction: "none", stance: "casual", text: "把青稞酒送给才旦" };
+    const duelAct = { kind: "duel", target: "才旦", itemId: "", direction: "none", stance: "forceful", text: "拔刀切磋", condition: "被拒", condition_text: "他若不收" };
+    const verdict = judgeTurn(baseEnvelope(), { read: "", refIds: [], actions: [giveAct, duelAct], proposals: [] }, { rng: seqRng([0.99]) });
+    const duelResult = (verdict.conditionResults || []).find((r) => r.action.kind === "duel");
+    expect(verdict.lastActionOutcome).toBeTruthy();
+    // give 拒收与否取决于掷骰——拒则 duel 成立，收则不成立；两路都必须有裁决记录
+    expect(duelResult).toBeTruthy();
+    if (verdict.lastActionOutcome.rejected) expect(duelResult.met).toBe(true);
+    else expect(duelResult.met).toBe(false);
   });
   it("condition 为「无」或缺省照旧结算", () => {
     const plain = { ...condInspect, condition: "无", condition_text: "" };

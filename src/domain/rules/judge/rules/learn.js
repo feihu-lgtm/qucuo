@@ -60,5 +60,6 @@ export function handleLearn(J, action, npc, aff, stanceMod) {
     }
   } else {
     notes.push(`${npc.name}不肯传授`);
+    if (J.lastActionOutcome) { J.lastActionOutcome.rejected = true; J.lastActionOutcome.kind = "learn"; J.lastActionOutcome.target = npc.name; }
   }
 }

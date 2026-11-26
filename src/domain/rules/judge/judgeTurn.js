@@ -14,6 +14,7 @@ import { knowsEntry, findNpc, affectionOf } from "./rules/shared.js";
 import { handleFreeAct } from "./rules/freeAct.js";
 import { handleSteal } from "./rules/steal.js";
 import { handleTalk } from "./rules/talk.js";
+import { evaluateActionCondition, conditionUnmetNote, conditionMetNote } from "./conditionEval.js";
 import { handleGive } from "./rules/give.js";
 import { handleAppease } from "./rules/appease.js";
 import { handleLearn } from "./rules/learn.js";
@@ -63,14 +64,13 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
 
   // ── 第二步：赠礼/赔罪/求教收拒裁决 ──
   const rawActions = Array.isArray(intakeResult.actions) ? intakeResult.actions : [];
-  // WO-16G interim：带前提（condition≠无）的动作全部机械结算跳过——前提是否成真
-  // 判官还没裁决能力（WO-16F 才做真条件裁决），提前结算会把「要是没人我就翻箱」
-  // 当成已经翻了：容器被耗竭、物件被搬空。只留 note 痕迹，其余 action 照常。
-  const conditioned = rawActions.filter((a) => a?.condition && a.condition !== "无");
-  for (const a of conditioned) {
-    notes.push(`前提未裁，暂不结算：${a.kind}${a.target && a.target !== "无" ? `→${a.target}` : ""}（${a.condition}：${a.condition_text || "未述"}）`);
-  }
-  const actions = rawActions.filter((a) => !(a?.condition && a.condition !== "无"));
+  // D3：带前提动作不再机械跳过——逐动作在循环内按 evaluateActionCondition 确定性
+  // 裁决（遇敌/到达/被拒/其他），成立才结算、不成立只留禁写成功批注。
+  const actions = rawActions;
+  const conditionResults = [];
+  // D3：条件裁决结果按动作对象登记——inspect/quest/movePickup/pact 等下游处理器
+  // 不在主循环内逐条拦截，必须按同一 Map 过滤，否则条件翻箱仍会消费容器。
+  const condVerdicts = new Map();
   const signedRestKeys = new Set();
   const signedFreeActGainKeys = new Set(); // WO-16F-F1 本 verdict 调息去重
   // 任务交付去重预扫：quest_advance 提议命中带 deliver 的合法候选时，同目标同物的
@@ -98,6 +98,14 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
     envelope, roll, turn, day, place, npcs, varTree, inv, budget,
     facts, warrants, notes, nextFactId, nextWarrantId, talkOnly, proposalsPre,
     signedRestKeys, signedFreeActGainKeys, isDeliverGive,
+    // D3：同回合前序拒收信号——give/appease/learn 拒收、前置路由 invite 失败时
+    // 置 rejected，紧随其后的 condition「被拒」动作据此精确判定。
+    lastActionOutcome: {
+      rejected: !!envelope.conditionCtx?.inviteRejected,
+      kind: envelope.conditionCtx?.inviteRejected ? "invite" : "",
+      target: envelope.conditionCtx?.inviteRejectedTarget || "",
+    },
+    conditionCtx: envelope.conditionCtx || {},
     accept: { value: false },
     // S3 破费查价链修订：同一回合内 得财/破费 按签发顺序累计流水余额，
     // 先赚后花不再被开场余额误卡（materialize 按 facts 顺序落账，此处同序预演）。
@@ -106,6 +114,26 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
   };
 
   for (const action of actions) {
+    // D3 条件裁决：condition≠「无」时先判前提。evalCtx 每轮现场组装——
+    // lastActionOutcome 随前序动作结算实时更新（被拒信号按动作序传递）。
+    if (action?.condition && action.condition !== "无") {
+      const evalCtx = {
+        encounter: envelope.encounter ?? J.conditionCtx.encounter ?? null,
+        moved: !!J.conditionCtx.moved,
+        roomName: J.conditionCtx.roomName || place,
+        innerRoomName: J.conditionCtx.innerRoomName ?? null,
+        visibleNpcs: J.conditionCtx.visibleNpcs || npcs,
+        lastActionOutcome: J.lastActionOutcome,
+      };
+      const verdict0 = evaluateActionCondition(action, evalCtx);
+      conditionResults.push({ action, met: verdict0.met, reason: verdict0.reason || "" });
+      condVerdicts.set(action, verdict0.met);
+      if (!verdict0.met) {
+        notes.push(conditionUnmetNote(action, verdict0.reason));
+        continue;
+      }
+      notes.push(conditionMetNote(action));
+    }
     if (action.kind === "free_act") { handleFreeAct(J, action); continue; }
     if (action.kind === "steal") { handleSteal(J, action); continue; }
 
@@ -132,7 +160,10 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
 
   // ── 第三步：inspect_container 三关掷骰 ──
   // WO-16A：纯搭话回合不翻容器——搭话时翻箱倒柜本就不该发生，整段跳过。
-  processInspectContainers(J, actions);
+  // D3：未成立条件动作不进容器/任务/移动拾取/履约处理——前提未成而翻箱倒柜
+  // 等于替玩家消费容器，必须按 condVerdicts 过滤（缺省 true 不影响旧形状）。
+  const effective = actions.filter((a) => condVerdicts.get(a) !== false);
+  processInspectContainers(J, effective);
 
   // ── B1 任务推进扩展律：quest_advance 白名单核验 ──
   processQuestAdvance(J, proposalsPre);
@@ -149,6 +180,8 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
     pacingWords: Number.isInteger(envelope.pacingWords) ? envelope.pacingWords : 320,
     facts,
     warrants,
+    lastActionOutcome: J.lastActionOutcome,
+    conditionResults,
     allowSpontaneousPact: J.accept.value || budget.tier !== "T0",
     reactionGuides,
     notes,

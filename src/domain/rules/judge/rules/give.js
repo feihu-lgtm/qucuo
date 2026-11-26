@@ -169,5 +169,7 @@ export function handleGive(J, action, npc, aff, stanceMod) {
   } else {
     // 拒收不产扣物事实——物件还在玩家身上，彻底消灭错账
     notes.push(`${npc.name}拒收${itemObj?.name || "礼物"}，物件未易主`);
+    // D3：置拒收信号——紧随其后的 condition「被拒」动作据此触发
+    if (J.lastActionOutcome) { J.lastActionOutcome.rejected = true; J.lastActionOutcome.kind = "give"; J.lastActionOutcome.target = npc.name; }
   }
 }
