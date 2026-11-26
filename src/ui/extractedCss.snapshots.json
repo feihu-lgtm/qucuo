@@ -159,5 +159,184 @@
    "cursor": "pointer",
    "opacity": "1"
   }
+ },
+ {
+  "css": "src/ui/screens/screens.css",
+  "cls": "api-generation-fields-2",
+  "on": {
+   "padding": "4px 10px",
+   "borderRadius": "0",
+   "fontSize": "var(--fs-xs)",
+   "cursor": "pointer",
+   "border": "1px solid var(--ink-edge-think)",
+   "color": "var(--bg-panel)",
+   "background": "var(--accent)"
+  },
+  "off": {
+   "padding": "4px 10px",
+   "borderRadius": "0",
+   "fontSize": "var(--fs-xs)",
+   "cursor": "pointer",
+   "border": "1px solid var(--ink-edge-think)",
+   "color": "var(--accent)",
+   "background": "var(--bg-panel)"
+  }
+ },
+ {
+  "css": "src/ui/screens/screens.css",
+  "cls": "api-generation-fields-1",
+  "on": {
+   "padding": "4px 10px",
+   "borderRadius": "0",
+   "border": "1px solid var(--ink-edge-quest)",
+   "cursor": "pointer",
+   "fontSize": "var(--fs-xs)",
+   "color": "var(--bg-panel)",
+   "background": "var(--accent)"
+  },
+  "off": {
+   "padding": "4px 10px",
+   "borderRadius": "0",
+   "border": "1px solid var(--ink-edge-quest)",
+   "cursor": "pointer",
+   "fontSize": "var(--fs-xs)",
+   "color": "var(--accent)",
+   "background": "var(--bg-panel)"
+  }
+ },
+ {
+  "css": "src/ui/screens/screens.css",
+  "cls": "model-picker-1",
+  "on": {
+   "padding": "5px 8px",
+   "cursor": "pointer",
+   "fontSize": "var(--fs-sm)",
+   "borderBottom": "1px solid var(--bg-slate)",
+   "color": "var(--accent)",
+   "background": "var(--ink-select-bg)"
+  },
+  "off": {
+   "padding": "5px 8px",
+   "cursor": "pointer",
+   "fontSize": "var(--fs-sm)",
+   "borderBottom": "1px solid var(--bg-slate)",
+   "color": "var(--text-dim)",
+   "background": "transparent"
+  }
+ },
+ {
+  "css": "src/ui/screens/screens.css",
+  "cls": "music-settings-1",
+  "on": {
+   "cursor": "pointer",
+   "color": "var(--accent)",
+   "padding": "3px 10px",
+   "border": "1px solid var(--border)",
+   "borderRadius": "0",
+   "fontSize": "var(--fs-xs)"
+  },
+  "off": null
+ },
+ {
+  "css": "src/ui/screens/screens.css",
+  "cls": "narrator-tab-1",
+  "on": {
+   "cursor": "pointer",
+   "textAlign": "center",
+   "padding": "4px 2px",
+   "borderRadius": "0",
+   "fontSize": "var(--fs-2xs)",
+   "border": "1px solid var(--border)",
+   "color": "var(--bg-panel)",
+   "background": "var(--accent)"
+  },
+  "off": {
+   "cursor": "pointer",
+   "textAlign": "center",
+   "padding": "4px 2px",
+   "borderRadius": "0",
+   "fontSize": "var(--fs-2xs)",
+   "border": "1px solid var(--border)",
+   "color": "var(--ink-sage)",
+   "background": "var(--bg-panel)"
+  }
+ },
+ {
+  "css": "src/ui/screens/screens.css",
+  "cls": "other-tab-1",
+  "on": {
+   "fontSize": "var(--fs-2xs)",
+   "color": "var(--accent)",
+   "cursor": "pointer",
+   "flexShrink": "0",
+   "border": "1px solid var(--border)",
+   "borderRadius": "0",
+   "padding": "2px 6px"
+  },
+  "off": null
+ },
+ {
+  "css": "src/ui/screens/screens.css",
+  "cls": "dungeon-screen-3",
+  "on": {
+   "marginBottom": "10px",
+   "padding": "4px 14px",
+   "fontSize": "var(--fs-sm)",
+   "border": "1px solid var(--accent-dim)",
+   "color": "var(--accent)",
+   "background": "transparent",
+   "cursor": "pointer"
+  },
+  "off": null
+ },
+ {
+  "css": "src/ui/screens/screens.css",
+  "cls": "dungeon-screen-2",
+  "on": {
+   "marginTop": "10px",
+   "padding": "4px 14px",
+   "fontSize": "var(--fs-sm)",
+   "border": "1px solid var(--border)",
+   "color": "var(--text)",
+   "background": "transparent",
+   "cursor": "pointer"
+  },
+  "off": null
+ },
+ {
+  "css": "src/ui/screens/screens.css",
+  "cls": "dungeon-screen-1",
+  "on": {
+   "marginTop": "10px",
+   "padding": "4px 14px",
+   "fontSize": "var(--fs-sm)",
+   "border": "1px solid var(--border)",
+   "color": "var(--text)",
+   "background": "transparent",
+   "cursor": "pointer"
+  },
+  "off": null
+ },
+ {
+  "css": "src/ui/screens/screens.css",
+  "cls": "move-button-1",
+  "on": {
+   "position": "relative",
+   "background": "var(--bg)",
+   "borderRadius": "0",
+   "padding": "10px 8px",
+   "textAlign": "center",
+   "cursor": "not-allowed",
+   "opacity": "0.4"
+  },
+  "off": {
+   "position": "relative",
+   "background": "var(--bg)",
+   "borderRadius": "0",
+   "padding": "10px 8px",
+   "textAlign": "center",
+   "cursor": "pointer",
+   "opacity": "1"
+  }
  }
 ]

@@ -8,18 +8,8 @@ export function MoveButton({ move, disabled, onClick, onInspect }) {
   const color = QUALITY_COLOR[move.quality] || "var(--text)";
   return (
     <div
-      className="mobile-duel-control"
-      onClick={disabled ? undefined : onClick}
-      style={{
-        position: "relative",
-        cursor: disabled ? "not-allowed" : "pointer",
-        opacity: disabled ? 0.4 : 1,
-        background: "var(--bg)",
-        border: `1px solid ${color}`,
-        borderRadius: 0,
-        padding: "10px 8px",
-        textAlign: "center",
-      }}
+      className="mobile-duel-control move-button-1"
+      onClick={disabled ? undefined : onClick} data-on={Boolean(disabled)} style={{ border: `1px solid ${color}` }}
     >
       {/* 右上角"察看"：点它只看详情、不出招 */}
       <span onClick={(e) => { e.stopPropagation(); onInspect?.(); }}

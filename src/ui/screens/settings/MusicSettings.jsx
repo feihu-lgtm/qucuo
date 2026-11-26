@@ -22,8 +22,7 @@ export default function MusicSettings() {
       {enabled && (
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span
-            onClick={toggleMusic}
-            style={{ cursor: "pointer", color: "var(--accent)", padding: "3px 10px", border: "1px solid var(--border)", borderRadius: 0, fontSize: "var(--fs-xs)" }}
+            onClick={toggleMusic} className="music-settings-1"
           >{state.playing ? "⏸ 暂停" : "▶ 播放"}</span>
           <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", flexShrink: 0 }}>音量</span>
           <input

@@ -19,8 +19,7 @@ export default function OtherTab({ uiScale, setUiScale, font, setFont }) {
         />
         <span style={{ fontSize: "var(--fs-xs)", color: "var(--text)", flexShrink: 0, width: 42, textAlign: "right" }}>{Math.round(uiScale * 100)}%</span>
         <span
-          onClick={() => setUiScale(1)}
-          style={{ fontSize: "var(--fs-2xs)", color: "var(--accent)", cursor: "pointer", flexShrink: 0, border: "1px solid var(--border)", borderRadius: 0, padding: "2px 6px" }}
+          onClick={() => setUiScale(1)} className="other-tab-1"
         >重置</span>
       </div>
 

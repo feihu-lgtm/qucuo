@@ -23,13 +23,7 @@ export default function ModelPicker({ target, modelPickerTarget, modelStatus, mo
           {modelList.map(m => (
             <div
               key={m}
-              onClick={() => onPick(m)}
-              style={{
-                padding: "5px 8px", cursor: "pointer", fontSize: "var(--fs-sm)",
-                color: m === current ? "var(--accent)" : "var(--text-dim)",
-                background: m === current ? "var(--ink-select-bg)" : "transparent",
-                borderBottom: "1px solid var(--bg-slate)",
-              }}
+              onClick={() => onPick(m)} className="model-picker-1" data-on={Boolean(m === current)}
             >{m}{m === current && " ◂"}</div>
           ))}
         </div>

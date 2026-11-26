@@ -112,13 +112,7 @@ export default function ApiGenerationFields({
         { key: "script", label: "对话自然演绎" },
       ].map(opt => (
         <button key={opt.key}
-          onClick={() => patch({ questTriggerMode: opt.key })}
-          style={{
-            padding: "4px 10px", borderRadius: 0, border: "1px solid var(--ink-edge-quest)",
-            cursor: "pointer", fontSize: "var(--fs-xs)",
-            color: (cfg.questTriggerMode || "prompt") === opt.key ? "var(--bg-panel)" : "var(--accent)",
-            background: (cfg.questTriggerMode || "prompt") === opt.key ? "var(--accent)" : "var(--bg-panel)",
-          }}
+          onClick={() => patch({ questTriggerMode: opt.key })} className="api-generation-fields-1" data-on={Boolean((cfg.questTriggerMode || "prompt") === opt.key)}
         >{opt.label}</button>
       ))}
     </div>
@@ -138,13 +132,7 @@ export default function ApiGenerationFields({
     <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 4 }}>
       {["off", "low", "medium", "high", "custom"].map(m => (
         <button key={m}
-          onClick={() => patch({ thinkingMode: m })}
-          style={{
-            padding: "4px 10px", borderRadius: 0, fontSize: "var(--fs-xs)", cursor: "pointer",
-            border: "1px solid var(--ink-edge-think)",
-            color: (cfg.thinkingMode || "off") === m ? "var(--bg-panel)" : "var(--accent)",
-            background: (cfg.thinkingMode || "off") === m ? "var(--accent)" : "var(--bg-panel)",
-          }}>
+          onClick={() => patch({ thinkingMode: m })} className="api-generation-fields-2" data-on={Boolean((cfg.thinkingMode || "off") === m)}>
           {{ off: "关闭", low: "低", medium: "中", high: "高", custom: "自定义" }[m]}
         </button>
       ))}

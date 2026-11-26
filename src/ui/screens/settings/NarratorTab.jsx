@@ -36,13 +36,7 @@ export default function NarratorTab({ cfg, patch, narrator, setNarrator }) {
           const active = affectionTier(narrator?.affection ?? 0).key === key;
           return (
             <span key={key}
-              onClick={() => setNarrator?.(n => ({ ...n, affection: v }))}
-              style={{
-                cursor: "pointer", textAlign: "center", padding: "4px 2px", borderRadius: 0, fontSize: "var(--fs-2xs)",
-                color: active ? "var(--bg-panel)" : "var(--ink-sage)",
-                background: active ? "var(--accent)" : "var(--bg-panel)",
-                border: "1px solid var(--border)",
-              }}>
+              onClick={() => setNarrator?.(n => ({ ...n, affection: v }))} className="narrator-tab-1" data-on={Boolean(active)}>
               {label}
             </span>
           );

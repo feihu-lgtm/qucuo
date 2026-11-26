@@ -199,12 +199,7 @@ export default function DungeonScreen({
               {mapRun.current === mapRun.map.anchor && (
                 <button
                   type="button"
-                  onClick={handleMapRetreat}
-                  style={{
-                    marginTop: 10, padding: "4px 14px", fontSize: "var(--fs-sm)",
-                    border: `1px solid var(--border)`, color: "var(--text)",
-                    background: "transparent", cursor: "pointer",
-                  }}
+                  onClick={handleMapRetreat} className="dungeon-screen-1"
                 >
                   撤回外城（保收获）
                 </button>
@@ -233,12 +228,7 @@ export default function DungeonScreen({
               <div>带出：{mapRun.loot.money} 两 · 物事 {mapRun.loot.items.length} 件</div>
               <button
                 type="button"
-                onClick={handleMapSettleAndClose}
-                style={{
-                  marginTop: 10, padding: "4px 14px", fontSize: "var(--fs-sm)",
-                  border: `1px solid var(--border)`, color: "var(--text)",
-                  background: "transparent", cursor: "pointer",
-                }}
+                onClick={handleMapSettleAndClose} className="dungeon-screen-2"
               >
                 结算离开
               </button>
@@ -250,12 +240,7 @@ export default function DungeonScreen({
               <button
                 type="button"
                 data-part="enter-inner-map"
-                onClick={startInnerMap}
-                style={{
-                  marginBottom: 10, padding: "4px 14px", fontSize: "var(--fs-sm)",
-                  border: `1px solid var(--accent-dim)`, color: "var(--accent)",
-                  background: "transparent", cursor: "pointer",
-                }}
+                onClick={startInnerMap} className="dungeon-screen-3"
               >
                 转入内层地图（房间图探法）
               </button>
