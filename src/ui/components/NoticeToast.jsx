@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { clearNotice, useNotice } from "../../store/uiStore.js";
 
-export default function NoticeToast({}) {
+export default function NoticeToast() {
   const notice = useNotice();
   const [top, setTop] = useState(0);
 

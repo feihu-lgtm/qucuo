@@ -7,7 +7,7 @@
 //   2. 头像选择弹层（showAvatarPicker）：8 张预制立绘 + 上传自定义 + 恢复默认。
 //      跟顶栏放一起是因为它只由顶栏右侧的头像入口触发，别处不用。
 //
-// 顶栏按钮的统一规格 topBtn() 内聚在本文件（只依赖 "var(--border)"，
+// 顶栏按钮的统一规格 topBtn() 内聚在本文件（只依赖 var(--border)，
 // 别处不再需要）；头像选择弹窗套 ModalShell，遮罩点击关闭由外壳负责。
 import { THEME_VARS, chromeBtn } from "../../utils/theme.js";
 import React, { useState, useEffect } from "react";
@@ -54,7 +54,7 @@ export function VersionHistoryButton({ theme }) {
   return <button type="button" onClick={() => openOverlay(OVERLAY.VERSION_HISTORY)} title={`当前版本「${CURRENT_VERSION.codename}」· 点击查看版本历史目录`} style={chromeBtn(theme, { active: false })}>{label}</button>;
 }
 
-export default function TopBar({ 
+export default function TopBar({
   dispatchCommand,
   autoSaveError, lastAutoSave,
   playerAvatarCustom, setPlayerAvatarCustom,

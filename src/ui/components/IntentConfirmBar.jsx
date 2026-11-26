@@ -2,7 +2,7 @@
 import { useIntentPending } from "../../store/intentPendingStore.js";
 import { THEME_VARS, chromeBtn } from "../../utils/theme.js";
 
-export default function IntentConfirmBar({}) {
+export default function IntentConfirmBar() {
   const pending = useIntentPending();
   if (!pending) return null;
   return (
