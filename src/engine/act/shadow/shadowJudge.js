@@ -17,6 +17,7 @@ import { diffSnapshots } from "./shadowDiff.js";
 import { projectFacts, featureRoutedCats, SHADOW_CATEGORIES } from "./shadowTaxonomy.js";
 import { compareCategories } from "./shadowCompare.js";
 import { resolvePrepItemsForJudge, buildPrepMaterialBlock } from "../../../domain/rules/prep/prepConsumption.js";
+import { recordShadowStage, recordShadowError, shadowTaskEnter, shadowTaskExit } from "./shadowStages.js";
 
 // 开关生效值：显式存储值（apiCfg.shadowJudgeEnabled 为布尔）优先；
 // 未显式设置时 dev（import.meta.env.DEV）默认 true、production/player 默认 false。
@@ -123,9 +124,15 @@ export async function runShadowJudge({
   isStale, epochGuard, trace, convo = [], isTalk = false, moved = false,
   visibleNpcs = null, gm = false, talkTarget = null,
 }) {
+  // A3：两道闸（未启用/双调用）在计数之外——过了闸才算真任务，shadowStarted 起计，
+  // 此后每条路径必须恰好落一个终态（compareDone/droppedStale/droppedEpoch/errorTurns）。
+  if (!resolveShadowJudgeEnabled(apiCfg)) return null;
+  if (apiCfg?.extractionEnabled) return null; // 只在单调用模式跑影子
+  recordShadowStage(epoch, "shadowStarted");
+  shadowTaskEnter();
+  let stage = "intake";
   try {
-    if (!resolveShadowJudgeEnabled(apiCfg)) return null;
-    if (apiCfg?.extractionEnabled) return null; // 只在单调用模式跑影子
+
     // 同源喂料：在场名单必须由调用方按 preparedPrompt 同口径（buildPresence：
     // 内层过滤+同伴出战位并入）算好传入——直接用 room.npcs 会让影子与真实判官
     // 输入不同，覆盖率数据失真。
@@ -165,9 +172,11 @@ export async function runShadowJudge({
     // 纯搭话无任务候选时影子也本地合成（不调 withAI），有候选才调 intake；
     // 否则影子与真实判官输入不同源，搭话回合覆盖率数据失真。
     let intakeResult;
+    recordShadowStage(epoch, "intakeStarted");
     if (shouldSkipIntakeForTalk(isTalk, questCandidates) && !hasHostileHint(cmd)) {
       const soleTalkTarget = talkTarget || (npcs.length === 1 ? npcs[0]?.name || "" : "");
       intakeResult = synthesizeTalkIntake(cmd, talkTarget, soleTalkTarget);
+      recordShadowStage(epoch, "intakeDone");
     } else {
       const intakeContent = buildIntakeUserContent({
         playerInput: cmd,
@@ -192,7 +201,10 @@ export async function runShadowJudge({
       const shadowStale = () => Boolean(isStale?.() || epochGuard?.());
       // WO-16G-G2：影子与真实判官同一模型口径——提取链模型，不能各写一份。
       const intakeRes = await withAI("turn.intake", { userContent: intakeContent, cfg: buildExtractionCfg("INTAKE", apiCfg) }, { ai, apiCfg, throwOnError: false, epoch, isStale: shadowStale });
-      if (isStale?.() || epochGuard?.()) return null;
+      if (isStale?.()) { recordShadowStage(epoch, "droppedStale"); return null; }
+      if (epochGuard?.()) { recordShadowStage(epoch, "droppedEpoch"); return null; }
+      if (intakeRes?.data) recordShadowStage(epoch, "intakeDone");
+      else { recordShadowStage(epoch, "intakeFailed"); recordShadowError(epoch, "intake", intakeRes?.error || null); }
       intakeResult = normalizeIntakeResult(intakeRes?.data);
       const soleTalkTarget = talkTarget || (npcs.length === 1 ? npcs[0]?.name || "" : "");
       applyTalkTargetFallback(intakeResult, talkTarget, soleTalkTarget);
@@ -225,13 +237,19 @@ export async function runShadowJudge({
     // 影子用隔离 rng 实例——绝不能用全局 random，否则影子抽数会推进游戏共享
     // 随机流，污染后续掷骰/赌博等玩法结果（影子必须零行为变化）。
     }, intakeResult, { rng: createRng((((preState?.turn ?? postState?.turn ?? 1) * 2654435761) >>> 0) || 1).random });
-    if (isStale?.() || epochGuard?.()) return null;
+    recordShadowStage(epoch, "judgeDone");
+    stage = "compare";
+    if (isStale?.()) { recordShadowStage(epoch, "droppedStale"); return null; }
+    if (epochGuard?.()) { recordShadowStage(epoch, "droppedEpoch"); return null; }
 
     const diffOut = diffSnapshots(preState, postState, { moved });
     const proj = projectFacts(verdict?.facts || []);
     // S5：feature 路由 kind 对应类目不参与比较（equip/use_item/take/invite）
     const result = compareCategories(diffOut, proj, { featureRoutedCats: featureRoutedCats(intakeResult?.actions, { npcs }) });
-    if (isStale?.() || epochGuard?.()) return null;
+    if (isStale?.()) { recordShadowStage(epoch, "droppedStale"); return null; }
+    if (epochGuard?.()) { recordShadowStage(epoch, "droppedEpoch"); return null; }
+    // compareDone 计在 stale/epoch 检查之后——完成与被丢弃互斥，恒等式才成立。
+    recordShadowStage(epoch, "compareDone");
     recordAggregate(epoch, result, cmd);
     // 结构化 trace：verdicts 原样进 fields，TraceViewer 按类目渲染含 excluded 盲区；
     // detail 单行摘要供复制文本用。
@@ -244,7 +262,13 @@ export async function runShadowJudge({
       verdicts: result.verdicts,
     });
     return result;
-  } catch (_) {
-    return null; // 静默——影子绝不能影响主链
+  } catch (error) {
+    // A3：整单终止计入 errorTurns 终态 + errorByStage 类型分类；
+    // 静默不变——影子绝不能影响主链（异常不外抛）。
+    recordShadowStage(epoch, "errorTurns");
+    recordShadowError(epoch, stage, error);
+    return null;
+  } finally {
+    shadowTaskExit();
   }
 }

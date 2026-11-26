@@ -6,6 +6,7 @@ import { getTimeStr } from "../../utils/mudHelpers.js";
 import { chromeBtn } from "../../utils/theme.js";
 import { gameStore, useGameStore, getGameEpoch } from "../../store/gameStore.js";
 import { shadowAggregates } from "../../engine/act/shadow/shadowJudge.js";
+import { drainShadowTasks, shadowStageCounts } from "../../engine/act/shadow/shadowStages.js";
 import { formatShadowVerdicts, formatAggregate } from "../../engine/act/shadow/shadowFormat.js";
 import { summarizeShadowCoverage, evaluateShadowThresholds } from "../../engine/act/shadow/shadowCoverage.js";
 import {
@@ -110,7 +111,10 @@ export default function TraceViewer({ theme, onClose, onReport }) {
                 {/* WO-16D-1：只读导出聚合 JSON 供 scripts/shadowCoverageReport.mjs 覆盖率评估——不碰游戏状态 */}
                 <button type="button" style={{ ...button, marginTop: 4 }} onClick={async () => {
                   try {
-                    await navigator.clipboard.writeText(JSON.stringify(shadowAgg));
+                    // A3：导出前收口——等在途影子结束（上限60s），超时计 pendingAtExport
+                    const { pending } = await drainShadowTasks(60000);
+                    const fresh = shadowAggregates(epoch);
+                    await navigator.clipboard.writeText(JSON.stringify({ ...fresh, stageCounts: shadowStageCounts(epoch), pendingAtExport: pending }));
                     setCopied("聚合JSON已复制");
                   } catch { setCopied("复制失败"); }
                 }}>复制聚合JSON</button>
@@ -128,7 +132,8 @@ export default function TraceViewer({ theme, onClose, onReport }) {
               <div style={{ marginTop: 6 }}>
                 <button type="button" style={button} onClick={async () => {
                   try {
-                    const md = formatReleaseGateMarkdown({ epoch, shadowAgg, metricsAgg });
+                    const { pending } = await drainShadowTasks(60000);
+                    const md = formatReleaseGateMarkdown({ epoch, shadowAgg: shadowAggregates(epoch), metricsAgg, stageCounts: shadowStageCounts(epoch), pendingAtExport: pending });
                     await navigator.clipboard.writeText(md);
                     setReportCopied("已复制报告");
                   } catch { setReportCopied("复制失败"); }
@@ -136,6 +141,7 @@ export default function TraceViewer({ theme, onClose, onReport }) {
                 {/* WO-16D-4：跨 epoch 全量聚合导出，shape 供 npm run release:report 离线消费 */}
                 <button type="button" style={{ ...button, marginLeft: 4 }} onClick={async () => {
                   try {
+                    await drainShadowTasks(60000);
                     await navigator.clipboard.writeText(JSON.stringify(releaseMetricsExport()));
                     setReportCopied("指标JSON已复制");
                   } catch { setReportCopied("复制失败"); }

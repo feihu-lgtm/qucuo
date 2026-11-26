@@ -275,8 +275,30 @@ export function formatReleaseMetricLines(agg) {
   return lines;
 }
 
-export function formatReleaseGateMarkdown({ epoch = "default", shadowAgg = null, metricsAgg = null } = {}) {
+export function formatReleaseGateMarkdown({ epoch = "default", shadowAgg = null, metricsAgg = null, stageCounts = null, pendingAtExport = 0 } = {}) {
   const parts = [`## 放行指标观测报告（epoch ${String(epoch)}）`];
+
+  // A3 阶段计数表头：开始/完成/丢弃/出错/导出时在途——恒等口径：
+  // 开始数 = 完成数 + 丢弃数 + 出错数 + 导出时在途数。
+  // （intakeFailed 为阶段级非终态失败，回合继续，不进恒等式；errorByStage 同。）
+  if (stageCounts && stageCounts.shadowStarted) {
+    const done = stageCounts.compareDone || 0;
+    const dropped = (stageCounts.droppedStale || 0) + (stageCounts.droppedEpoch || 0);
+    const errored = stageCounts.errorTurns || 0;
+    const sum = done + dropped + errored + pendingAtExport;
+    parts.push("", "### 0. A3 影子阶段计数",
+      "| 开始数 | 完成数 | 丢弃数 | 出错数 | 导出时在途数 |", "|---:|---:|---:|---:|---:|",
+      `| ${stageCounts.shadowStarted} | ${done} | ${dropped} | ${errored} | ${pendingAtExport} |`,
+      `数量恒等：${done}+${dropped}+${errored}+${pendingAtExport}=${sum} vs 开始 ${stageCounts.shadowStarted} —— ${sum === stageCounts.shadowStarted ? "对账平" : "不平，计量有洞"}`,
+      `intake 进入 ${stageCounts.intakeStarted || 0} · 完成 ${stageCounts.intakeDone || 0} · 失败但回合继续 ${stageCounts.intakeFailed || 0} · 判官产出 ${stageCounts.judgeDone || 0}`,
+      `丢弃明细：stale ${stageCounts.droppedStale || 0} / epoch ${stageCounts.droppedEpoch || 0}`);
+    const errs = stageCounts.errorByStage || {};
+    const stages = Object.keys(errs);
+    if (stages.length) {
+      parts.push("错误分类：" + stages.map((s) =>
+        `${s}: ${Object.entries(errs[s]).map(([t, n]) => `${t}×${n}`).join(" ")}`).join("；"));
+    }
+  }
 
   parts.push("", "### 1. WO-16D 影子覆盖率");
   if (!shadowAgg || !shadowAgg.turns) {
