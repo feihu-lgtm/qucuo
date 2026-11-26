@@ -1,3 +1,4 @@
+import { hasNoAffectionTrack } from "../../npc/npcTrack.js";
 // ── V8 亲密回合社交结算：门禁放行回合按态度档位签发 MUTATE_SOCIAL 好感事实 ──
 // 缺口背景：判官社交结算原只有 talk/give/appease/learn 四条目，亲密互动零好感通道。
 // 档位确定性裁定不掷骰（与 talk 同哲学——亲密不该有随机社交风险）：
@@ -27,7 +28,7 @@ export function handleIntimate(J) {
   // 夜班双修虫①：与门禁同口径——intimacyGate 本身不因 beast 拦阻（雪豹是人形化
   // 可亲密同伴，门禁既放行叙事也已发生，账就必须落）；只有 intimacy.forbidden
   // （不受人情）保持零事实。凭卡可撬开 forbidden 门槛，但不通人情依旧不涨不跌。
-  if (npc.intimacy?.forbidden) return;
+  if (hasNoAffectionTrack(npc)) return;
   const margin = (Number(ictx.affection) || 0) - (Number(ictx.threshold) || 0);
   const tier = intimateTier({ ticket: !!ictx.ticket, margin });
   if (!tier.delta) return;

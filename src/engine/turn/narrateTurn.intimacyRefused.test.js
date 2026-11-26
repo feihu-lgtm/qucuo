@@ -17,3 +17,13 @@ describe("夜班虫②：亲密拒止信号透传不回滚", () => {
     expect(useTurn).toMatch(/if \(!result\.ok\) \{/);
   });
 });
+
+describe("夜班双修 Review 修②：拒决回合时间照走", () => {
+  it("playTurn 拒决早退前 setTime+1——用物耗时不白嫖", () => {
+    const src = readFileSync("src/engine/playTurn.js", "utf8");
+    const idx = src.indexOf("if (narrated.intimacyRefused)");
+    const block = src.slice(idx, idx + 400);
+    expect(block).toContain("setTime");
+    expect(block.indexOf("setTime")).toBeLessThan(block.indexOf("return { ok: true"));
+  });
+});

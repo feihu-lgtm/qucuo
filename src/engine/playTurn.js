@@ -74,6 +74,10 @@ export async function playTurn(ctx, cmd, opts = {}) {
     // D8 Review修：亲密门槛拒决回合——拒词与扣好感已在判官段直写落盘，
     // 无 turn 载荷不进 finalize/commit（否则 commitRound 缺载荷炸回合）。
     if (narrated.intimacyRefused) {
+      // 夜班双修 Review 修：拒决回合时间照走——复合指令里用物/耗时动作在拒决前
+      // 已生效（runUseItem 把时辰账留给 commitRound），早退跳过 commit 也得把这一刻
+      // 扣了，否则物品花了效果落了时间不流。
+      gameActions?.setTime?.((t) => t + 1);
       turnMonitor.finish(trace, "亲密门槛拒决");
       return { ok: true, done: true, intimacyRefused: true };
     }

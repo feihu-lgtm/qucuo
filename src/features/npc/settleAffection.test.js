@@ -110,14 +110,22 @@ describe("邀同行好感钉账", () => {
       expect(tree.角色.墨团儿.好感度).toBe(45);
     }
   });
-  it("兽类伙伴跳过好感轨道", () => {
+  it("夜班双修口径：命定同伴兽（companionCandidate）有好感轨道照钉 45——雪豹 85 好感实证轨道存在", () => {
     const npc = { name: "雪团子", imported: true, companionCandidate: true, beast: true, cannotSpeak: true };
     const state = makeState({ room: { name: "曲措乡", npcs: [npc] } });
     const result = inviteCompanion(state, npc);
     if (result.settleOptions?.settleKind === "companion_invite") {
       const tree = runVarTree(result, state);
-      // 兽类不钉 45：要么无好感条目，要么只有相识初始分，绝不能到 45
-      expect(tree.角色.雪团子?.好感度 ?? 0).toBeLessThan(45);
+      expect(tree.角色.雪团子?.好感度).toBe(45);
+    }
+  });
+  it("普通兽类（非命定同伴）仍跳过好感轨道", () => {
+    const npc = { name: "大公鸡", beast: true };
+    const state = makeState({ room: { name: "曲措乡", npcs: [npc] } });
+    const result = inviteCompanion(state, npc);
+    if (result.settleOptions?.settleKind === "companion_invite") {
+      const tree = runVarTree(result, state);
+      expect(tree.角色.大公鸡?.好感度 ?? 0).toBeLessThan(45);
     }
   });
 });

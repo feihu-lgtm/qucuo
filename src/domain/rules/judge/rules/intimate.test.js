@@ -39,7 +39,7 @@ describe("V8 亲密回合社交结算", () => {
     expect(fe.reason).toBe("闺房勉强");
   });
   it("夜班虫①：雪豹（beast 人形化同伴）门禁放行照签恩账——判官与门禁同口径", () => {
-    const beast = { ...NPC, name: "雪豹", beast: true };
+    const beast = { ...NPC, name: "雪豹", beast: true, companionCandidate: true };
     const v = judgeTurn({ ...base, npcs: [beast], intimateCtx: { npc: "雪豹", ticket: false, threshold: 45, affection: 90 } },
       intakeWith([{ ...intimateAction, target: "雪豹" }]), { rng: () => 0.5 });
     const facts = v.facts.filter((x) => x.op === "MUTATE_SOCIAL");
@@ -131,5 +131,14 @@ describe("V8 Review 二轮：执行信号贯通焚卡/多对象不错账", () =>
       intakeWith(two), { rng: () => 0.5 });
     expect(v.facts.filter((x) => x.op === "MUTATE_SOCIAL")).toHaveLength(1);
     expect(v.intimateCtxExecuted).toBe(true);
+  });
+});
+
+describe("夜班双修 Review 修：好感轨道三端一致", () => {
+  it("普通兽类（无 companionCandidate，如大公鸡）仍无轨道不产事实", () => {
+    const chicken = { ...NPC, name: "大公鸡", beast: true };
+    const v = judgeTurn({ ...base, npcs: [chicken], intimateCtx: { npc: "大公鸡", ticket: false, threshold: 45, affection: 90 } },
+      intakeWith([{ ...intimateAction, target: "大公鸡" }]), { rng: () => 0.5 });
+    expect(v.facts.filter((x) => x.op === "MUTATE_SOCIAL")).toHaveLength(0);
   });
 });
