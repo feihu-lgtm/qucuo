@@ -143,6 +143,20 @@ describe("S7 计量口径两小修", () => {
     const m4 = compareCategories({ categories: { affection: { 掌柜: 2 } } }, { affection: {} });
     expect(m4.verdicts.affection.verdict).toBe("single_only");
   });
+  it("Review 修：双子项全遮判 excluded 不判 match——防全遮回合注水覆盖率", () => {
+    // trade（money）+ 耗材服用（hp）同回合：vitals 两子项皆遮 → excluded 不进已对比
+    const cats = featureRoutedCats([
+      { kind: "trade", target: "掌柜", condition: "无" },
+      { kind: "use_item", itemId: "it_w", item: "青稞酒", condition: "无" },
+    ], { npcs: [{ name: "掌柜" }], inv: [{ id: "it_w", name: "青稞酒", category: "misc", consumable: { hpDelta: 5 } }] });
+    expect(cats).toEqual(expect.arrayContaining(["vitals.money", "vitals.hp"]));
+    const r = compareCategories(
+      { categories: { vitals: { hp: 5, money: -8 } }, excluded: [] }, {},
+      { featureRoutedCats: cats },
+    );
+    expect(r.verdicts.vitals.verdict).toBe("excluded");
+    expect(r.verdicts.vitals.subExempted).toEqual(expect.arrayContaining(["hp", "money"]));
+  });
   it("trade 进 feature 路由豁免：inv excluded+vitals.money 子项豁免（D5 粒度）", () => {
     const cats = featureRoutedCats([{ kind: "trade", target: "掌柜", condition: "无" }], { npcs: [{ name: "掌柜" }] });
     expect(cats.sort()).toEqual(["inv", "vitals.money"]);

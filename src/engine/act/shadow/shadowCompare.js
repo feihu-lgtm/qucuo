@@ -85,6 +85,13 @@ export function compareCategories(diffOut, proj, { featureRoutedCats = [] } = {}
       // 对账（记 subExempted 供审计），其余子项照常比较显形。
       const keys = allKeys.filter((k) => !excluded.has(`${cat}.${k}`));
       const subExempted = allKeys.filter((k) => excluded.has(`${cat}.${k}`));
+      // Review 修：子项全遮（如 trade+耗材同回合 money/hp 皆豁免）时该类目无可比
+      // 维度——必须判 excluded 不可判 match，否则释放闸把全遮回合计入已对比，
+      // 覆盖率被虚高注水。
+      if (keys.length === 0) {
+        verdicts[cat] = { verdict: "excluded", subExempted };
+        continue;
+      }
       const keys0 = keys;
       const sub = {}; let anySingle = false, anyJudge = false, anyDiff = false, anyActive = false, anyCaliber = false;
       for (const k of keys0) {
