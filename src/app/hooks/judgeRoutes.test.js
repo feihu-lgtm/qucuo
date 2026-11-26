@@ -373,3 +373,75 @@ describe("WO-16F-F2a 判官路由集成", () => {
   });
 
 });
+
+describe("S7 move 路由：内层移动确定性结算", () => {
+  const mkMove = (direction, text) => ({
+    kind: "move", target: "无", item: "无", itemId: "", direction, condition: "无",
+    condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text,
+  });
+  function setupInnerRoom() {
+    const prev = gameStore.getState();
+    gameActions.setRoom({ name: "鱼定村", npcs: [], items: [], exits: [] });
+    gameStore.setState({ innerRoomName: "村口", convo: [], flags: [], questProgress: {}, inv: [], char: { hp: [80, 100] }, varTree: {}, time: 6 });
+    return prev;
+  }
+
+  it("内层有效方向：执行 innerMove 同一套账，回执成功", () => {
+    const prev = setupInnerRoom();
+    try {
+      const { receipts } = executeJudgeRoutes([mkMove("e", "去东边看看")]);
+      expect(receipts[0].ok).toBe(true);
+      expect(receipts[0].text).toContain("系统已结算");
+      expect(gameStore.getState().innerRoomName).toBe("歇马居");
+    } finally {
+      gameStore.setState({ innerRoomName: prev.innerRoomName, room: prev.room, convo: prev.convo, time: prev.time });
+    }
+  });
+
+  it("评审 blocker：路由移动不提前扣回合/不提前写 convo（commitRound 统一推进）", () => {
+    const prev = setupInnerRoom();
+    try {
+      gameStore.setState({ time: 6, convo: [] });
+      const timeBefore = gameStore.getState().time;
+      const convoLenBefore = (gameStore.getState().convo || []).length;
+      executeJudgeRoutes([mkMove("e", "去东边看看")]);
+      expect(gameStore.getState().innerRoomName).toBe("歇马居"); // 位移照结
+      expect(gameStore.getState().time).toBe(timeBefore); // 时间不提前 +1
+      expect((gameStore.getState().convo || []).length).toBe(convoLenBefore); // convo 不提前追加
+    } finally {
+      gameStore.setState({ innerRoomName: prev.innerRoomName, room: prev.room, convo: prev.convo, time: prev.time });
+    }
+  });
+
+  it("direction none/无效：失败回执不得写成已移动", () => {
+    setupInnerRoom();
+    const { receipts } = executeJudgeRoutes([mkMove("none", "走走")]);
+    expect(receipts[0].ok).toBe(false);
+    expect(receipts[0].text).toContain("系统未结算");
+    expect(receipts[0].text).toContain("不得写成已移动");
+  });
+
+  it("无内层箱庭房间（外层方向）：不串账不位移，回执明示缺口", () => {
+    gameActions.setRoom({ name: "雪山派", npcs: [], items: [], exits: [] });
+    gameStore.setState({ innerRoomName: null });
+    const before = gameStore.getState().room?.name;
+    const { receipts } = executeJudgeRoutes([mkMove("n", "往北走")]);
+    expect(receipts[0].ok).toBe(false);
+    expect(receipts[0].text).toContain("外层");
+    expect(gameStore.getState().room?.name).toBe(before);
+  });
+
+  it("内层锁门不穿帮：无钥匙进溪边小屋被挡，失败回执带锁因", () => {
+    const prev = setupInnerRoom();
+    try {
+      // 村口·广场向北是溪边小屋，unlockCondition 要钥匙——空手被挡
+      gameStore.setState({ innerRoomName: "村口·广场" });
+      const { receipts } = executeJudgeRoutes([mkMove("n", "往北走")]);
+      expect(receipts[0].ok).toBe(false);
+      expect(receipts[0].text).toContain("系统未结算");
+      expect(gameStore.getState().innerRoomName).toBe("村口·广场"); // 原地未动
+    } finally {
+      gameStore.setState({ innerRoomName: prev.innerRoomName, room: prev.room, convo: prev.convo, time: prev.time });
+    }
+  });
+});

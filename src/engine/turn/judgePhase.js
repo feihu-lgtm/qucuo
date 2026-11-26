@@ -243,13 +243,28 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
       //    立刻捡，前提裁决属 WO-16F 真条件规则，此处 trace/note 留痕不抢跑（G1 interim 口径）；
       // ② isTalk（判官 talkOnly 口径）下三类硬路由一律不执行——纯搭话回合判官白名单
       //    本就禁止硬事实，intake 误产/混产也不能落地。
-      const ROUTEABLE = ["equip", "use_item", "take", "invite"];
+      // S7：move 入路由——intake.direction 有效时内层移动叙事前确定性结算，
+      // 外层/无效方向回执「未结算」，叙事不得编位移。
+      const ROUTEABLE = ["equip", "use_item", "take", "invite", "move"];
       const routeCandidates = (intakeResult.actions || []).filter((a) => ROUTEABLE.includes(a?.kind));
       const conditioned = routeCandidates.filter((a) => a?.condition && a.condition !== "无");
       if (conditioned.length) {
         trace("判官管线", "skip", `前提未裁，暂不路由 ${conditioned.length} 条：${conditioned.map((a) => `${a.kind}:${a.item}`).join("、")}（待 WO-16F 真条件裁决）`);
       }
-      const judgeRoutes = isTalk ? [] : routeCandidates.filter((a) => !(a?.condition && a.condition !== "无"));
+      // Review 修：本回合若已是系统移动回合（resolveIntent 锁定外层目的地/方向），
+      // 位移由移动链本身结算——judge 再路由 move 会双到达冲突（outer writeRoom 写目的地、
+      // innerMove 又进内层房）。此类回合 move 不路由，回执交给移动链自身。
+      const systemMoveTurn = !!(deps.lockedDestName || ctx.lockedDestName || deps.movingDir || ctx.movingDir);
+      // 系统移动回合只滤 move（防双到达）——其余 kind 与位移无冲突照路由（Review 修）；
+      // isTalk 维持原口径整批不路由。
+      const judgeRoutes = isTalk ? [] : routeCandidates.filter((a) => {
+        if (a?.condition && a.condition !== "无") return false;
+        if (systemMoveTurn && a?.kind === "move") return false;
+        return true;
+      });
+      if (systemMoveTurn && routeCandidates.some((a) => a?.kind === "move")) {
+        trace("判官管线", "skip", "系统移动回合，move 不重复路由（位移由移动链结算）");
+      }
       if (isTalk && routeCandidates.length) {
         trace("判官管线", "skip", `talkOnly 回合禁止硬事实，${routeCandidates.length} 条 equip/use_item/take 不路由`);
       }

@@ -7,6 +7,48 @@ import { featureCtx } from "../runtime/gameRuntime.js";
 import { applyResult } from "../../features/run.js";
 import { stepEffect } from "../../features/intent/logic.js";
 import { ACTION_KINDS, UNEQUIP_RE } from "../../domain/rules/intent/actionKinds.js";
+import { innerMove } from "../../features/map/logic.js";
+
+// S7 move 路由：intake.direction（n/s/e/w）直接消费，不从长文本重猜。
+const VALID_DIRS = new Set(["n", "s", "e", "w"]);
+const DIR_LABEL = { n: "北", s: "南", e: "东", w: "西" };
+
+// 内层移动确定性路由：复用 features/map innerMove 同一套账（锁门/无出口/新人物/
+// lastSeen 全在里头），写账仍走 applyResult 单边界。
+// 外层大地图移动不支持——缺口与阻塞点见 PR 描述；回执明确「系统未结算」，
+// 叙事不得写成已移动，但也绝不编「到了某处」。
+function runMove(action) {
+  const dir = String(action?.direction || "").trim().toLowerCase();
+  if (!VALID_DIRS.has(dir)) {
+    return { kind: "move", ok: false, text: "移动方向不明——系统未结算，叙事不得写成已移动。" };
+  }
+  const state = gameStore.getState();
+  // includeCommand:false——不造「e」式伪用户输入日志；文字用玩家原话。
+  const result = innerMove(state, { direction: dir, command: action.text || dir, includeCommand: false });
+  // 评审 blocker 修：路由内层移动只是「本 AI 回合内的位置前置结算」——
+  // 本回合 commitRound 还会统一 setTime+1 并 append 主叙事 convo，
+  // innerMove 自造的 time+1/convo 不能提前落账（否则一次移动扣 2 回合、
+  // convo 多一条伪用户输入）。剥离 time/convo 键（clone 不改原对象），
+  // innerRoomName/varTree lastSeen/logs 等确定性结果保留。
+  const stripTurnSpan = (res) => {
+    if (!res?.changes) return res;
+    const { time: _t, convo: _c, ...restChanges } = res.changes;
+    return { ...res, changes: restChanges };
+  };
+  if (result?.changes?.innerRoomName) {
+    applyResult(featureCtx(), stripTurnSpan(result), { feature: "judgeRoute.move" });
+    return { kind: "move", ok: true, text: `你已进入${result.changes.innerRoomName}——系统已结算，叙事须照此写。` };
+  }
+  if (result?.logs?.length) {
+    // 内层被挡（锁门/无去处）：日志照落（玩家要看见为什么走不通），但不构成位移
+    applyResult(featureCtx(), stripTurnSpan(result), { feature: "judgeRoute.move" });
+    const why = result.logs.map((l) => l.text?.trim()).filter((t) => t && !t.startsWith(">")).pop();
+    return { kind: "move", ok: false, text: `向${DIR_LABEL[dir]}走不通（${why || "此方向没有去处"}）——系统未结算移动，叙事不得写成已移动。` };
+  }
+  // result 为 null：当前房间无内层箱庭，方向属外层大地图——本路由不支持（缺口），
+  // 明确未结算，叙事不得编位移。
+  return { kind: "move", ok: false, text: "该方向属外层赶路，判官链暂不接外层移动——系统未结算，叙事不得写成已移动，也不可编造抵达。" };
+}
 
 // intake 12 字段 kind（英文枚举）→ stepEffect 的 ACTION_KINDS（中文封闭集）
 const ROUTE_KIND = {
@@ -21,6 +63,7 @@ const ROUTE_KIND = {
 // 失败形状都是只有 logs 没有 changes（pickup 找不到物件甚至返回 {}）。
 // 返回 receipt 供主叙事注入：成功照系统日志原句，失败绝不静默签成功。
 function runOne(action) {
+  if (action?.kind === "move") return runMove(action);
   const kind = ROUTE_KIND[action?.kind];
   // invite 按人寻址（target），其余按物寻址（item）
   const isInvite = action?.kind === "invite";
