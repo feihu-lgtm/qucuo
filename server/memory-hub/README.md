@@ -9,12 +9,23 @@ cd server/memory-hub
 MEMORY_HUB_TOKEN=本地开发token PORT=8787 MEMORY_HUB_DB=./memory-hub.sqlite npm start
 ```
 
-## 鉴权与监听（生产必读）
+## 鉴权与威胁模型（生产必读，E1 按空间分凭证）
 
-- 除 `GET /health` 外所有 `/api/*` 必须带 hub 专用凭证头 `x-memory-hub-token`（与任何模型 key 无关；
-  `Authorization`/`x-api-key` 等 header 依然拒收）。
+- **空间凭证**：每个空间有独立随机凭证，创建时只返回一次，库内只存 SHA-256（明文绝不落库/不落日志）。
+  所有空间数据路径（`/api/spaces/:spaceId/*` 与单数 `DELETE /api/space/:spaceId`）只认该空间自己的凭证——
+  跨空间读/写/删一律 `401`。
+- **管理员凭证**：`MEMORY_HUB_TOKEN` 降为纯运维凭证，只能用于 `POST /api/space`（创建空间）、
+  `POST /api/spaces/:spaceId/rotate-token`（旋转凭证，新凭证同样只返回一次）、
+  `GET /api/spaces/:spaceId/meta`（只返回计数/时间戳，**绝不返回存档或段落正文**）。
+  管理员凭证**不能**读/写/删任何空间的玩家数据。
+- **兼容期 claim**：未登记凭证的空间（旧部署数据）收到首个写请求时，把所带凭证哈希登记为该空间凭证——
+  旧客户端 cloudUrl/spaceId/hubToken 三件套无需改造即可继续用同一凭证；读请求不参与 claim。
+- **写限流**：同一来源 IP 每 60 秒最多 60 次写请求（PUT/POST/DELETE；query/has-after 属读不限），
+  超出返回 `429`。内存滑动窗口，键取 socket 地址（不盲信 `x-forwarded-for`；反代部署需自行保证
+  socket 地址可信或前置限流）。
+- 凭证头仍走 `x-memory-hub-token`，与任何模型 key 无关；`Authorization`/`x-api-key` 等 header 依然拒收。
 - `MEMORY_HUB_TOKEN` 缺失**拒绝启动**。唯一例外：显式 `ALLOW_INSECURE_LOCAL_ONLY=1` 的本机开发
-  （此时必须自行确保只 bind loopback）。
+  （此时跳过全部鉴权，必须自行确保只 bind loopback）。
 - 默认 listen host 是 `127.0.0.1`。生产暴露公网：显式 `HOST=0.0.0.0` + 强随机 `MEMORY_HUB_TOKEN`，
   并建议前置 TLS 反代。
 
@@ -35,6 +46,9 @@ node --test server/memory-hub/hubCore.test.mjs
 ## 接口清单
 
 - `GET /health`：健康检查
+- `POST /api/space`：创建空间（管理员凭证），返回 `{spaceId, token, createdAt}`——`token` 只出现这一次
+- `POST /api/spaces/:spaceId/rotate-token`：旋转空间凭证（管理员凭证），新凭证同样只返回一次
+- `GET /api/spaces/:spaceId/meta`：空间元信息（管理员凭证；只含 saveCount/chunkCount/createdAt，无正文）
 - `GET /api/spaces/:spaceId/saves`：列出当前空间的存档槽位与 `rev`
 - `GET /api/spaces/:spaceId/saves/:slotId`：读取密文存档（`payload_enc`）
 - `PUT /api/spaces/:spaceId/saves/:slotId`：带 `expectedRev` 写入存档；版本冲突返回 HTTP `409`（响应同时给 `serverRev`/`currentRev`）不静默覆盖；`force:true` 跳过冲突检查强制覆盖——**唯一合法触发源是玩家在客户端显式裁决「本地覆盖云端」，自动同步流程绝不许带 force**

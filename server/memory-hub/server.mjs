@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { timingSafeEqual } from "node:crypto";
+import { timingSafeEqual, randomBytes, createHash } from "node:crypto";
 import { createHubStore, assertNoApiKeyPayload } from "./hubCore.mjs";
 
 // node:http 入站 header 名已全部小写化（RFC 层面大小写不敏感），无需另行 canonicalize。
@@ -19,6 +19,41 @@ function tokenValid(presented, expected) {
     return false;
   }
 }
+
+function sha256hex(text) {
+  return createHash("sha256").update(String(text)).digest("hex");
+}
+
+function hashEqual(presented, storedHash) {
+  if (!presented || !storedHash) return false;
+  const a = Buffer.from(sha256hex(presented));
+  const b = Buffer.from(String(storedHash));
+  if (a.length !== b.length) return false;
+  try {
+    return timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
+
+// E1 写请求限流：同一来源 IP 每分钟最多 60 次写，超出 429。
+// 内存滑动窗口，键用 req.socket.remoteAddress——不盲信 x-forwarded-for
+// （反向代理部署时由部署方保证 socket 地址可信或自行前置限流）。
+const WRITE_RATE_LIMIT = 60;
+const WRITE_RATE_WINDOW_MS = 60_000;
+const writeBuckets = new Map(); // ip -> number[]（时间戳升序）
+function writeRateLimited(ip, now = Date.now()) {
+  const key = ip || "unknown";
+  const arr = (writeBuckets.get(key) || []).filter((t) => now - t < WRITE_RATE_WINDOW_MS);
+  if (arr.length >= WRITE_RATE_LIMIT) {
+    writeBuckets.set(key, arr);
+    return true;
+  }
+  arr.push(now);
+  writeBuckets.set(key, arr);
+  return false;
+}
+export function _resetWriteRateBuckets() { writeBuckets.clear(); }
 
 function readJsonBody(req, limitBytes = 2 * 1024 * 1024) {
   return new Promise((resolve, reject) => {
@@ -100,9 +135,89 @@ export function createHubServer({
         return;
       }
 
-      // /api/* 全部要 token——/health 是唯一公开端点
-      if (token && path.startsWith("/api/") && !tokenValid(req.headers[HUB_TOKEN_HEADER], token)) {
-        sendJson(res, 401, { error: "unauthorized" });
+      // E1 鉴权模型：
+      // · 空间数据路径（/api/spaces?/:spaceId/…）只认该空间自己的凭证——
+      //   库内 SHA-256 比对；全站 MEMORY_HUB_TOKEN 在此一律无效（降为管理员凭证）。
+      // · 运维端点（rotate/meta）只认管理员 token。
+      // · claim 兼容期：space 无凭证行时首个写请求把所带凭证哈希登记为该空间凭证
+      //   （旧客户端 cloudUrl/spaceId/hubToken 三件套无需改造即继续可用）；
+      //   读请求对未登记空间一律 401——读不参与 claim，避免探测即占空间。
+      // · insecure 本机模式（无 token）跳过全部鉴权，仅限 loopback 开发。
+      const presented = req.headers[HUB_TOKEN_HEADER];
+      const insecure = !token;
+      const isAdmin = token && tokenValid(presented, token);
+
+      // 创建空间：管理员或 insecure 可建（写请求，计入限流）——凭证只返回一次。
+      if (method === "POST" && path === "/api/space") {
+        if (!insecure && !isAdmin) {
+          sendJson(res, 401, { error: "unauthorized" });
+          return;
+        }
+        const spaceId = `sp_${randomBytes(12).toString("hex")}`;
+        const spaceToken = randomBytes(24).toString("hex");
+        const createdAt = Date.now();
+        store.createSpace(spaceId, sha256hex(spaceToken), createdAt);
+        sendJson(res, 200, { spaceId, token: spaceToken, createdAt });
+        return;
+      }
+
+      // 运维端点：旋转凭证 / 空间元信息（不返回正文）——只认管理员 token
+      const rotateMatch = path.match(/^\/api\/spaces\/([^/]+)\/rotate-token$/);
+      if (rotateMatch && method === "POST") {
+        if (!insecure && !isAdmin) {
+          sendJson(res, 401, { error: "unauthorized" });
+          return;
+        }
+        const spaceId = decodeURIComponent(rotateMatch[1]);
+        if (!store.spaceTokenHash(spaceId)) {
+          sendJson(res, 404, { error: "not_found" });
+          return;
+        }
+        const next = randomBytes(24).toString("hex");
+        store.rotateSpaceToken(spaceId, sha256hex(next));
+        sendJson(res, 200, { spaceId, token: next, rotatedAt: Date.now() });
+        return;
+      }
+      const metaMatch = path.match(/^\/api\/spaces\/([^/]+)\/meta$/);
+      if (metaMatch && method === "GET") {
+        if (!insecure && !isAdmin) {
+          sendJson(res, 401, { error: "unauthorized" });
+          return;
+        }
+        sendJson(res, 200, store.spaceMeta(decodeURIComponent(metaMatch[1])));
+        return;
+      }
+
+      // 空间数据路径统一鉴权：单复数 /api/space(s)/:spaceId 都覆盖
+      const spaceDataMatch = path.match(/^\/api\/spaces?\/([^/]+)(\/|$)/);
+      if (spaceDataMatch) {
+        const spaceId = decodeURIComponent(spaceDataMatch[1]);
+        if (!insecure) {
+          let storedHash = store.spaceTokenHash(spaceId);
+          const isWrite = method === "PUT" || method === "POST" || method === "DELETE";
+          // query/has-after 是 POST 但属读——不参与 claim
+          const isReadlikePost = method === "POST" && /\/(query|has-after)$/.test(path);
+          if (!storedHash && isWrite && !isReadlikePost && presented) {
+            // claim：首个写请求登记凭证哈希（兼容期最小迁移机制）
+            store.createSpace(spaceId, sha256hex(presented), Date.now());
+            storedHash = store.spaceTokenHash(spaceId);
+          }
+          if (!hashEqual(presented, storedHash)) {
+            sendJson(res, 401, { error: "unauthorized" });
+            return;
+          }
+        }
+      } else if (path.startsWith("/api/")) {
+        // 非空间路径的 /api/*（当前无此类端点）默认拒绝
+        sendJson(res, 404, { error: "not_found" });
+        return;
+      }
+
+      // E1 写限流：写请求（PUT/POST/DELETE，query/has-after 读型 POST 除外）超 60/min 返 429
+      const isWriteMethod = method === "PUT" || method === "POST" || method === "DELETE";
+      const readlikePost = method === "POST" && /\/(query|has-after)$/.test(path);
+      if (!insecure && isWriteMethod && !readlikePost && writeRateLimited(req.socket?.remoteAddress)) {
+        sendJson(res, 429, { error: "rate_limited" });
         return;
       }
 

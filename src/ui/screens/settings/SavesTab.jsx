@@ -170,14 +170,14 @@ export function StorageDriverSection() {
           <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 6 }}>
             <input style={{ ...inputStyle, flex: 1 }} defaultValue={cfg.spaceId || ""} placeholder="空间编号 spaceId（存档归属的云端空间）"
               onBlur={(e) => { const v = e.target.value.trim(); if (v !== (cfg.spaceId || "")) patchCfg({ spaceId: v, hubToken: "" }); }} />
-            <input style={{ ...inputStyle, flex: 1 }} type="password" defaultValue={cfg.hubToken || ""} placeholder="memory-hub 凭证 token"
+            <input style={{ ...inputStyle, flex: 1 }} type="password" defaultValue={cfg.hubToken || ""} placeholder="memory-hub 空间凭证 token"
               onBlur={(e) => patchCfg({ hubToken: e.target.value.trim() })} />
           </div>
           <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 6 }}>
-            三件套（地址/空间/凭证）缺一即不推送；快照经 AES-GCM 客户端加密后上送，密钥只存在这台设备——换设备恢复随后续工单。
+            三件套（地址/空间/空间凭证）缺一即不推送；快照经 AES-GCM 客户端加密后上送，密钥只存在这台设备——换设备恢复随后续工单。
           </div>
           <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 6 }}>
-            绑定状态：{cfg.cloudUrl && cfg.spaceId && cfg.hubToken ? `已绑定（设备 ${cfg.deviceId}）` : "未配齐（地址/空间/凭证缺一不可推）"}　待推送队列：{queueLen} 条
+            绑定状态：{cfg.cloudUrl && cfg.spaceId && cfg.hubToken ? `已绑定（设备 ${cfg.deviceId}）` : "未配齐（地址/空间/空间凭证缺一不可推）"}　待推送队列：{queueLen} 条
             {queueLen > 0 && <span style={{ ...btnStyle, padding: "2px 6px", marginLeft: 6 }} onClick={() => { void flushCloudQueue().then(force); }}>立即推送</span>}
           </div>
           {conflicts.length > 0 && (
