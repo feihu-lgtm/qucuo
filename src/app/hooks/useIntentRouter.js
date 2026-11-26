@@ -58,7 +58,9 @@ export function useIntentRouter(routerRef, {
     // 条件步触发：走原有命令调度器排队；立即结算类照旧 stepEffect，需要交互/自由文本的走原入口。
     // beforeRoute：自动寻路途经点上应验时，排在剩余路程之前（不拖到终点才做）。
     function runTriggerStep(step) {
-      if (DEFERRED_KINDS.has(step.kind)) return runDeferred(step, true);
+      // 打字输入路径（条件步触发）autoProceedAfterLook：玩家已明写「切磋/交易」，
+      // 未端详只做静默端详直拉邀战，绝不跑整轮说书后再要玩家重输一遍（决斗队列空转复发根因）。
+      if (DEFERRED_KINDS.has(step.kind)) return runDeferred(step, true, { autoProceedAfterLook: true });
       if (step.kind === ACTION_KINDS.TALK || step.kind === ACTION_KINDS.OTHER) {
         return dispatchCommand(KIND_COMMAND[step.kind], () => act(step.text, [], { silentCmd: true, intentSkip: true, keepUndo: true }));
       }
@@ -112,7 +114,7 @@ export function useIntentRouter(routerRef, {
         });
       }
       if (!single && plan.valid.length) act(cmd, [], { intentPlan: plan, intentPlanNote: note, silentCmd: true, keepUndo: true });
-      for (const step of plan.valid) if (DEFERRED_KINDS.has(step.kind)) runDeferred(step, single);
+      for (const step of plan.valid) if (DEFERRED_KINDS.has(step.kind)) runDeferred(step, single, { autoProceedAfterLook: true });
       // 「被拒」触发在已核准步骤都派完之后才发，免得它抢走前面步骤要用的资源。
       if (plan.refused) fireTriggerStep(plan.refused, turn);
       // 前提判不进封闭集合的从句，按原文各走一趟自由行动。
