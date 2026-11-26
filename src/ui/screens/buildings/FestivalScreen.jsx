@@ -19,8 +19,8 @@ import {
 } from "../../../domain/rules/festival/rules.js";
 
 const dim = { color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)", marginBottom: 8 };
-const sectionTitle = (zoneTheme) => ({
-  color: zoneTheme.accent, fontSize: "var(--fs-sm)", margin: "14px 0 6px",
+const sectionTitle = () => ({
+  color: "var(--accent)", fontSize: "var(--fs-sm)", margin: "14px 0 6px",
 });
 
 function windowLabel(contest, hour) {
@@ -29,7 +29,7 @@ function windowLabel(contest, hour) {
 }
 
 export default function FestivalScreen({
-  building, char, flags, time, varTree, questProgress, zoneTheme, onClose, inline,
+  building, char, flags, time, varTree, questProgress, onClose, inline,
   onEnter, onBet, onInvite, onNight, onWubi, onMidnight,
 }) {
   const hour = time % 24;
@@ -56,7 +56,7 @@ export default function FestivalScreen({
       <div style={{ padding: 16 }}>
         <div style={dim}>银两 {money} 两 · 现在 {hour} 时 · {building.desc}</div>
 
-        <div style={sectionTitle(zoneTheme)}>一、节目单</div>
+        <div style={sectionTitle()}>一、节目单</div>
         {Object.values(FESTIVAL_CONTESTS).map((contest) => {
           const open = isContestOpen(contest, hour);
           const entered = (flags || []).includes(contestFlag(contest.id, "enter", dayIdx));
@@ -85,7 +85,7 @@ export default function FestivalScreen({
                     <span style={{ fontSize: "var(--fs-xs)", color: "var(--ink-text-dim)" }}>注额</span>
                     <input type="number" value={bet} min={1} max={Math.min(50, money)}
                       onChange={(e) => setBet(Math.max(1, Math.min(50, Number(e.target.value) || 1)))}
-                      style={{ width: 60, background: "var(--bg-ink)", border: `1px solid ${zoneTheme.border}`, color: "var(--ink-text)", fontSize: "var(--fs-xs)", padding: "2px 4px" }} />
+                      style={{ width: 60, background: "var(--bg-ink)", border: `1px solid var(--border)`, color: "var(--ink-text)", fontSize: "var(--fs-xs)", padding: "2px 4px" }} />
                     <span style={{ fontSize: "var(--fs-xs)", color: "var(--ink-text-dim)" }}>两（≤50，押谁点谁）</span>
                   </div>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -102,7 +102,7 @@ export default function FestivalScreen({
           );
         })}
 
-        <div style={sectionTitle(zoneTheme)}>二、同游（好感 ≥ {FESTIVAL_COMPANION_FAVOR}，一天一人）</div>
+        <div style={sectionTitle()}>二、同游（好感 ≥ {FESTIVAL_COMPANION_FAVOR}，一天一人）</div>
         {invitedToday ? (
           <div style={dim}>今日伴游：{invitedToday}</div>
         ) : (
@@ -116,7 +116,7 @@ export default function FestivalScreen({
           </div>
         )}
 
-        <div style={sectionTitle(zoneTheme)}>三、夜晚剧情（戌亥之交 19–22 时）</div>
+        <div style={sectionTitle()}>三、夜晚剧情（戌亥之交 19–22 时）</div>
         {invitedCompanion && isNightTalkHour(hour) && !nightDone ? (
           <Btn label={`与${invitedCompanion.name}夜话`}
             onClick={() => onNight?.(invitedCompanion.name)} />
@@ -126,7 +126,7 @@ export default function FestivalScreen({
           </div>
         )}
 
-        <div style={sectionTitle(zoneTheme)}>四、子夜之变（23 时）</div>
+        <div style={sectionTitle()}>四、子夜之变（23 时）</div>
         {midnight ? (
           <div>
             <div style={{ ...dim, marginBottom: 8 }}>{midnight.intro}</div>

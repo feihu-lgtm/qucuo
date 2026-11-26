@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { getAllMemories } from "../../infra/memoryStore.js";
 import ModalShell from "../primitives/ModalShell.jsx";
+import { THEME_VARS } from "../../utils/theme.js";
 
 // 见闻录：把两套记忆系统可视化——玩家可打开查看。
 // ① 事实账本（knowledge.js，varTree.世界.知识域）：什么时候·什么事·谁知道·怎么知道的·能记多少·传闻怎么演变
@@ -11,10 +12,10 @@ import ModalShell from "../primitives/ModalShell.jsx";
 const 途径色 = { 亲历: "var(--clay)", 目击: "var(--ink-accent)", 告知: "var(--lore-gold)", 传闻: "var(--lore-amber)", 剧本: "var(--lore-script)" };
 const 途径说明 = { 亲历: "亲身经历", 目击: "当场看见", 告知: "有人明说", 传闻: "道听途说", 剧本: "夙来知晓" };
 
-export default function LoreScreen({ varTree, time = 0, turnToStr, zoneTheme, onClose }) {
+export default function LoreScreen({ varTree, time = 0, turnToStr, onClose }) {
   const [tab, setTab] = useState("account"); // account=事实账本 | notes=记忆碎片
   const [notes, setNotes] = useState(null);
-  const T = zoneTheme || {};
+  const T = THEME_VARS;
   const accent = T.accent || "var(--lore-gold)";
   const border = T.border || "var(--ink-edge-quest)";
   const bgPanel = T.bgPanel || "var(--lore-panel)";

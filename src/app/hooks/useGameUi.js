@@ -217,6 +217,8 @@ export function useGameUi({
     gambleNegotiation, setGambleNegotiation, buildingPanelMinimized, setBuildingPanelMinimized,
     justMeditated, setJustMeditated, tradingShop, setTradingShop, inputRef, logEnd, composingRef,
     availableQuestsHere, AV_BASE, genderAvatar, playerAvatar, zoneTheme,
+    // 分区名是文案数据（如「人间烟火·昼」），与颜色分开提供；颜色一律走 CSS 变量。
+    zoneName: zoneTheme.name,
     clr, uiPink, uiGreen, uiTurquoise, uiGold, uiCrimson, inkDivider, S,
     buildBugReportTurns, getLiveBlockText,
   };

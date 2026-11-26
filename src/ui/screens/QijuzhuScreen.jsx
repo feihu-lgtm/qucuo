@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import ModalShell from "../primitives/ModalShell.jsx";
 import { TALLY_KINDS, DAY_TURNS, tallyToday, describeLifetime, tallyTotals } from "../../domain/rules/memory/tally.js";
 import { NNPC_STAGE } from "../../domain/rules/narrator/narrator.js";
+import { THEME_VARS } from "../../utils/theme.js";
 
 // 起居注：逐日记录起居言动。
 // ============================================================================
@@ -18,9 +19,9 @@ import { NNPC_STAGE } from "../../domain/rules/narrator/narrator.js";
 // 【标题会变】走完旁白线（stage=RESOLVED）之后，这本册子的口吻跟着第六档一起变成
 // 她的手笔——面板本身也成了那段关系的证据，与 TONE_BY_TIER.unmasked 同一个道理。
 
-export default function QijuzhuScreen({ varTree, time = 0, narratorStage, zoneTheme, onClose }) {
+export default function QijuzhuScreen({ varTree, time = 0, narratorStage, onClose }) {
   const [tab, setTab] = useState("today");
-  const T = zoneTheme || {};
+  const T = THEME_VARS;
   const accent = T.accent || "var(--qijuzhu-accent)";
   const border = T.border || "var(--ink-edge-quest)";
   const bgPanel = T.bgPanel || "var(--qijuzhu-panel)";

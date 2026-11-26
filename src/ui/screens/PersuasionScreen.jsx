@@ -8,10 +8,11 @@ import { createWebAi } from "../../engine/ports/ai.js";
 import { hintsUnlockedByGuard } from "../../domain/rules/quests/persuasion.js";
 import { runPersuadeTurn } from "../../engine/ports/persuasion.js";
 import ModalShell from "../primitives/ModalShell.jsx";
+import { THEME_VARS } from "../../utils/theme.js";
 
 const webAi = createWebAi();
 
-export default function PersuasionScreen({ persuade, apiCfg, ownedFlags = [], playerMoney = 0, playerIdentities = [], playerSpecial = {}, zoneTheme, savedProgress = null, onProgress, onFinish }) {
+export default function PersuasionScreen({ persuade, apiCfg, ownedFlags = [], playerMoney = 0, playerIdentities = [], playerSpecial = {}, savedProgress = null, onProgress, onFinish }) {
   const p = persuade;
   // 魅力影响初始戒心：魅力高，NPC 天生更愿意听你说话，起手戒心低些。
   // 基准100，魅力每高于5一点降4、每低于5一点升4（魅力10→80，魅力0→120封顶100）。
@@ -36,7 +37,7 @@ export default function PersuasionScreen({ persuade, apiCfg, ownedFlags = [], pl
     onProgress?.({ guard, hitKeys, turns, done });
   }, [guard, hitKeys, turns, done]);
 
-  const t = zoneTheme || {};
+  const t = THEME_VARS;
   const accent = t.accent || "var(--ink-brass-lit)";
   const bg = t.bg || "var(--persuade-bg)";
   const panel = t.bgPanel || "var(--persuade-panel)";

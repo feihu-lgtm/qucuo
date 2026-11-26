@@ -147,7 +147,6 @@ export default function GlobalOverlays({
         varTree={varTree}
         time={time}
         turnToStr={getTimeStr}
-        zoneTheme={zoneTheme}
         onClose={() => closeOverlay(OVERLAY.LORE)}
       />
     )},
@@ -156,7 +155,6 @@ export default function GlobalOverlays({
         varTree={varTree}
         time={time}
         narratorStage={narratorStage}
-        zoneTheme={zoneTheme}
         onClose={() => closeOverlay(OVERLAY.QIJUZHU)}
       />
     )},
@@ -172,7 +170,7 @@ export default function GlobalOverlays({
       <TraceViewer theme={zoneTheme} onClose={() => closeOverlay(OVERLAY.TRACE)} onReport={() => openOverlay(OVERLAY.BUG_REPORT)} />
     )},
     { show: showCodex, render: () => (
-      <CodexScreen zoneTheme={zoneTheme} isDayMode={isDayMode} inv={inv} skills={skills} onClose={() => closeOverlay(OVERLAY.CODEX)} />
+      <CodexScreen isDayMode={isDayMode} inv={inv} skills={skills} onClose={() => closeOverlay(OVERLAY.CODEX)} />
     )},
     { show: showBugReport, render: () => (
       <BugReportModal
@@ -240,7 +238,6 @@ export default function GlobalOverlays({
         playerMoney={char.money || 0}
         playerIdentities={[]}
         playerSpecial={effectiveSpecialNow}
-        zoneTheme={zoneTheme}
         savedProgress={persuasionProgress[pkey] || null}
         onProgress={(prog) => savePersuasionProgress(pkey, prog)}
         onFinish={(result) => finishPersuasion(activePersuasion, result)}

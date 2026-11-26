@@ -17,6 +17,7 @@ import { ITEM_DISTRIBUTION, isPoolable } from "../../domain/data/items/distribut
 import { DISTRICT_REGION } from "../../domain/data/items/regionMap.js";
 import { moveEffectBrief, passiveBonusBrief } from "../../domain/rules/economy/itemEffectText.js";
 import ModalShell from "../primitives/ModalShell.jsx";
+import { THEME_VARS } from "../../utils/theme.js";
 
 const BASE = (import.meta.env && import.meta.env.BASE_URL) || "/";
 const S = (f) => `${BASE}stones/${f}`;
@@ -65,7 +66,7 @@ const Q_FILTERS = ["全部", ...QUALITY];
 // 一共两百多招在图鉴里一个都看不到，而且丢得毫无痕迹。
 const SRC_TABS = [MOVE_SOURCE.WUGUAN, MOVE_SOURCE.SIGNATURE, MOVE_SOURCE.STANDARD, MOVE_SOURCE.BURDEN];
 
-export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], skills = [], onClose }) {
+export default function CodexScreen({ isDayMode = false, inv = [], skills = [], onClose }) {
   // ESC 关闭：玩家把字号调大之后，图鉴内容会顶出屏幕高度，右上角那个叉点不到，
   // 除了刷新页面没有别的退路。键盘退路必须有——现在由 ModalShell 统一提供。
   const [tab, setTab] = useState("item"); // item | skill
@@ -104,7 +105,7 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], sk
   // 收集进度统计
   const itemOwnedCount = useMemo(() => CATALOG.filter(it => ownedItems.has(it.name)).length, [ownedItems]);
 
-  const T = zoneTheme;
+  const T = THEME_VARS;
   const paperText = "var(--codex-ink)"; // 卷轴纸永远是深色底纹，字用深棕
   const paperDim = "var(--codex-dim)";
   const paperAccent = "var(--codex-accent)";

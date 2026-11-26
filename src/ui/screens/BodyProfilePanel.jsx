@@ -13,9 +13,10 @@ import {
   ALL_BODY_PRESETS, BODY_TAG_POOL, applyBodyPreset, appendBodyTag,
 } from "../../domain/rules/character/bodyPresets.js";
 import ModalShell from "../primitives/ModalShell.jsx";
+import { THEME_VARS } from "../../utils/theme.js";
 
 export default function BodyProfilePanel({
-  profile, onChange, onClose, zoneTheme, nsfwOn, onRecommend, recommendState,
+  profile, onChange, onClose, nsfwOn, onRecommend, recommendState,
 }) {
   const [editing, setEditing] = useState(null);      // 当前展开成输入框的 key
   const [showIntimate, setShowIntimate] = useState(false); // 私密层是否揭码
@@ -23,7 +24,7 @@ export default function BodyProfilePanel({
   const p = profile || emptyBodyProfile();
   const filled = bodyProfileFilled(p);
 
-  const th = zoneTheme || {};
+  const th = THEME_VARS;
   const border = th.border || "var(--border)";
   const accent = th.accent || "var(--accent)";
   const textDim = th.textDim || "var(--ink-sage)";

@@ -263,7 +263,6 @@ export default function DungeonScreen({
             <DungeonNodeView
               run={run}
               effectiveSpecialNow={effectiveSpecialNow}
-              zoneTheme={zoneTheme}
               narration={narration}
               onSelectNode={handleSelectNode}
               onChoose={handleChoose}

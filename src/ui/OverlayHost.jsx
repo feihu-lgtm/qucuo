@@ -116,7 +116,6 @@ export default function OverlayHost({ ctx, apiReady, onCloseInitialSettings }) {
             profile={ctx.char.bodyProfile || emptyBodyProfile()}
             onChange={ctx.handleBodyProfileChange}
             onClose={() => closeOverlay(OVERLAY.BODY)}
-            zoneTheme={ctx.zoneTheme}
             nsfwOn={nsfwOn}
             onRecommend={ctx.recommendOutfit}
             recommendState={ctx.outfitState}

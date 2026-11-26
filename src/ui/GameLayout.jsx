@@ -156,7 +156,7 @@ export default function GameLayout({ layout }) {
       <div className="mobile-game-columns" style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative", minHeight: 0 }}>
         <LeftPanel
           isMobile={isMobile} mobileColumn={mobileColumn} faces={leftFaces}
-          zoneTheme={zoneTheme} S={ui.S}
+          zoneTheme={zoneTheme} zoneName={ui.zoneName} S={ui.S}
           room={room} innerRoomName={innerRoomName} time={time}
           varTree={varTree} char={char}
           inputRef={ui.inputRef} addLog={addLog}

@@ -112,8 +112,7 @@ function innScreen(c) {
 
 export const BUILDING_SCREENS = {
   [BUILDING_TYPE.FESTIVAL]: (c) => (
-    <FestivalScreen building={c.building} char={c.char} flags={c.flags} time={c.time} varTree={c.varTree} questProgress={c.questProgress} inline
-      zoneTheme={c.zoneTheme} onClose={c.closeBuilding}
+    <FestivalScreen building={c.building} char={c.char} flags={c.flags} time={c.time} varTree={c.varTree} questProgress={c.questProgress} inline onClose={c.closeBuilding}
       onEnter={c.handleFestivalEnter} onBet={c.handleFestivalBet} onInvite={c.handleFestivalInvite}
       onNight={c.handleFestivalNight} onWubi={c.handleFestivalWubi} onMidnight={c.handleFestivalMidnight} />
   ),
