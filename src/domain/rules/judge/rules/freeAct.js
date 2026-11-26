@@ -78,7 +78,9 @@ export function handleFreeAct(J, action) {
     }
     facts.push({ id: nextFactId(), op: "CHANGE_VITALS_SILVER", moneyDelta: -amt, witnesses: wit });
     J.money.run -= amt;
-    notes.push(`破费签发：-${amt} 银两（${source}${clampNote}）`);
+    // 协调裁决口径：破费=开销不回货——请茶/香火钱/打赏是泼出去的水，notes 必须
+    // 明示「开销」性质，正文写花销不写购得；实物交付闭环另属商店交互工单。
+    notes.push(`破费签发：-${amt} 银两（${source}${clampNote}）——纯开销不回货，正文写花销应酬，严禁写成购得实物`);
   } else if (outcome === "调息") {
     // 同一游戏时辰只签一次——时辰两回合一档（restKey 按 watch=turn/2 取整），
     // varTree 记账跨回合防重 + 本 verdict 内 signedRest 去重（快照同读）。

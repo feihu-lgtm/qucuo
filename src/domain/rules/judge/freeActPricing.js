@@ -40,17 +40,48 @@ export function parseStatedExpense(text) {
   const src = String(text || "");
   const re = /([零一二三四五六七八九十百千万\d]+)\s*(两银子|两银|银两|银|钱|两)/g;
   let m; let firstDefinite = null;
-  // 支付动词近旁优先于一切——「身上有50两银子，付5两房钱」余额不得当价；
-  // 无动词近旁时明确钱文（银/钱/两银）按文取先；裸「N两」是货量不落价。
+  // 动词候选收集（不再首个即返）——Review 五修保守原则：宁落兜底不超扣。
+  // 多个不同动词近旁数额=歧义（先付三两订金/再付五两尾款），玩家的真实支付
+  // 意图无法用正则确证，整句不签原话价落查价链兜底（小额，绝不超扣）。
+  const verbAmounts = [];
   while ((m = re.exec(src))) {
-    const n = parseCnNumeral(m[1]);
-    if (!(Number.isFinite(n) && n > 0)) continue;
+    const prevCh = m.index > 0 ? src[m.index - 1] : "";
+    const chBeforeDot = m.index > 1 ? src[m.index - 2] : "";
     const unit = m[2];
     const before = src.slice(Math.max(0, m.index - 3), m.index);
-    const verbNear = [...before].some((ch) => PAY_VERBS.has(ch));
-    if (verbNear) return n;
+    // 动词点币分数：动词紧贴点号或仅隔空白（付.5/付 .8=分数钱文）——
+    // 「付吧.8两」动词隔非空白字属前句句读，整数价不误伤。
+    const verbIdxBeforeDot = chBeforeDot;
+    const verbTouchingDot = PAY_VERBS.has(verbIdxBeforeDot)
+      || (/\s/.test(verbIdxBeforeDot || "") && PAY_VERBS.has(m.index > 2 ? src[m.index - 3] : ""));
+    const dotDigitBefore = /[0-9０-９]/.test(chBeforeDot);
+    const isDecimal = (prevCh === "." || prevCh === "．") && (dotDigitBefore || verbTouchingDot);
+    if (isDecimal) continue;
+    const n = parseCnNumeral(m[1]);
+    if (!(Number.isFinite(n) && n > 0)) continue;
+    // 动词近旁但动词带意图/否定前置（够付/要付/想付/未付/没付/别付）不算实际支付——
+    // 「囊中够付八两」是财力声明，真正的支付在后面的「先付三两」。
+    const verbMatch = [...before].some((ch) => PAY_VERBS.has(ch));
+    if (verbMatch) {
+      const beforeVerb1 = src.slice(Math.max(0, m.index - 4), m.index);
+      if (!/够|要|想|未|没|别/.test(beforeVerb1.replace(/付|掏|掷|赏|出|花|给|递/g, ""))) {
+        verbAmounts.push(n);
+      } else if (!/够付|要付|想付|未付|没付|别付|够掏|要掏/.test(beforeVerb1)) {
+        verbAmounts.push(n);
+      }
+      // 动词近旁优先于余额语境，进候选不进 firstDefinite
+      continue;
+    }
+    // 余额/欠账语境不是价——身上有/余额/囊中/身带/存有 近旁是财力声明；
+    // 「还有」已从名单剔除：「房钱还有五两没付」是待付账单不是余额（Review 五修）。
+    const beforeWide = src.slice(Math.max(0, m.index - 6), m.index);
+    if (/身上有|身上还有|余额|囊中|身带|存有|我还有|俺还有|咱还有/.test(beforeWide)) continue;
     if (unit !== "两" && firstDefinite == null) firstDefinite = n;
   }
+  // 动词候选唯一才取——零个回落钱文，多个不同额歧义保守 null，多个同额取同额。
+  const uniqVerb = [...new Set(verbAmounts)];
+  if (uniqVerb.length === 1) return uniqVerb[0];
+  if (uniqVerb.length > 1) return null;
   return firstDefinite;
 }
 

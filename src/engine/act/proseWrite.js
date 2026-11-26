@@ -21,8 +21,11 @@ export function writeTurnProse(args = {}) {
   try {
     const text = String(narrativeText || "").trim();
     if (!text || !Number.isFinite(turn) || turn <= 0) return;
-    const witnesses = isTalk && talkTarget
-      ? [playerName, talkTarget].filter(Boolean)
+    // F9：与 memoryFact 同一回落——搭话未点选且唯一在场者时，私语证人只有
+    // 玩家+这位在场者，绝不把密告内容按全屋目击者广播进 prose chunks。
+    const soleWitness = isTalk && !talkTarget && roomNpcNames.length === 1 ? roomNpcNames[0] : "";
+    const witnesses = (isTalk && talkTarget) || soleWitness
+      ? [playerName, talkTarget || soleWitness].filter(Boolean)
       : [playerName, ...roomNpcNames].filter(Boolean);
     if (typeof addChunks !== "function") return;
 
