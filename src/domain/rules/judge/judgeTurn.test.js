@@ -9,7 +9,7 @@ function seqRng(values) {
 }
 
 const NPCS = [
-  { name: "才旦", personality: "爽朗直率", brief: "猎户" },
+  { name: "才旦", personality: "爽朗直率", brief: "猎户", moves: [{ name: "猎叉刺" }] },
   { name: "八云", personality: "冷傲孤高", brief: "雪山弟子" },
 ];
 
@@ -441,17 +441,25 @@ describe("S2 hostile 敌意档：辱骂签负好感+怨，暴烈性情置生气"
     expect(social.ledgerKind).toBe("怨");
   });
 
-  it("暴烈性情 + hostile：同时置生气，缘由为玩家原话前 20 字", () => {
+  it("暴烈性情 + hostile：同时置生气（W-FIX2 缘由固定「当面羞辱」）", () => {
     const text = "你这黑心无赖掌柜又奸又猾今日非要当众揭穿你的丑恶嘴脸不可";
     const verdict = judgeTurn(hostileEnv(), hostileIntake("铁掌柜", text), { rng: seqRng([0.5]) });
     const social = verdict.facts.find((f) => f.op === "MUTATE_SOCIAL");
     expect(social.anger).toBeTruthy();
     expect(social.anger.active).toBe(true);
-    expect(social.anger.reason).toBe(text.slice(0, 20));
+    expect(social.anger.reason).toBe("当面羞辱");
   });
 
-  it("温善性情 + hostile：签负好感但不置生气", () => {
+  it("温善性情 + hostile：W-FIX2 统一附带 anger（非怯懦被骂该怒就怒）", () => {
     const verdict = judgeTurn(hostileEnv(), hostileIntake("温伙计", "当众羞辱你这窝囊伙计"), { rng: seqRng([0.5]) });
+    const social = verdict.facts.find((f) => f.op === "MUTATE_SOCIAL");
+    expect(social.affectionDelta).toBe(-3);
+    expect(social.anger?.active).toBe(true);
+  });
+
+  it("怯懦词条例外：胆小者被骂不敢怒", () => {
+    const env = { turn: 42, day: 2, place: "x", npcs: [{ name: "小六", personality: "胆小怯懦", brief: "杂役" }], varTree: { 角色: {} }, inv: [], entries: [], budget: { riskLevel: 1 } };
+    const verdict = judgeTurn(env, hostileIntake("小六", "当众羞辱你这窝囊废"), { rng: seqRng([0.5]) });
     const social = verdict.facts.find((f) => f.op === "MUTATE_SOCIAL");
     expect(social.affectionDelta).toBe(-3);
     expect(social.anger).toBeUndefined();
@@ -608,5 +616,32 @@ describe("S7 送银桥 Review 加固：金额只认玩家原文", () => {
   it("「千万收下」副词不误伤：5 两照签", () => {
     const v = judgeTurn(env2("温掌柜千万收下这5两银子"), act("温掌柜千万收下这5两银子"), { rng: seqRng([0.5]) });
     expect(v.facts.find((f) => f.op === "CHANGE_VITALS_SILVER")?.moneyDelta).toBe(-5);
+  });
+});
+
+describe("W-FIX2 即兴立约判官先定", () => {
+  const pactAction = { kind: "talk", target: "才旦", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "sincere", outcome: "无", risk: "无", confidence: 0.9, text: "三天之内我定去后山替你寻回旧物，你赏我十两银子如何", useKind: "" };
+  const dealProposal = { claim: "替才旦寻回旧物他赏银十两", kind: "social_deal", fit: "natural", questId: "", flag: "" };
+  const intake = (props) => ({ read: "", refIds: [], actions: [pactAction], proposals: props });
+
+  it("social_deal 非 absurd + 在场目标：掷骰通过则 allowSpontaneousPact=true+应约 notes", () => {
+    const v = judgeTurn(baseEnvelope(), intake([dealProposal]), { rng: seqRng([0.01]) });
+    expect(v.allowSpontaneousPact).toBe(true);
+    expect(v.notes.join()).toContain("已当面应下约定");
+    expect(v.notes.join()).toContain("不得留 null");
+  });
+  it("掷骰未过：allowSpontaneousPact=false+婉拒 notes（T1 高 tier 也压不过）", () => {
+    const v = judgeTurn(baseEnvelope({ budget: { riskLevel: 9 } }), intake([dealProposal]), { rng: seqRng([0.999]) });
+    expect(v.allowSpontaneousPact).toBe(false);
+    expect(v.notes.join()).toContain("未应下这桩口头约定");
+    expect(v.notes.join()).toContain("不得写成已立约");
+  });
+  it("absurd 提议不触发立约裁决（走原有口径）", () => {
+    const v = judgeTurn(baseEnvelope(), intake([{ ...dealProposal, fit: "absurd" }]), { rng: seqRng([0.01]) });
+    expect(v.notes.join()).not.toContain("已当面应下约定");
+  });
+  it("无 proposals 不触发（原有口径不变）", () => {
+    const v = judgeTurn(baseEnvelope(), intake([]), { rng: seqRng([0.01]) });
+    expect(v.notes.join()).not.toContain("应下");
   });
 });

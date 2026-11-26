@@ -23,5 +23,8 @@ export function handleAppease(J, action, npc, aff, stanceMod) {
     });
   } else {
     notes.push(`${npc.name}余怒未消，赔罪未收下`);
+    // W-FIX2（第 19 式）：掷骰失败同样补 rejected 信号——赔罪被拒后 UI/旁白
+    // 需要确定性拒收事实，与 perfunctory 否决同口径。
+    if (J.lastActionOutcome) { J.lastActionOutcome.rejected = true; J.lastActionOutcome.kind = "appease"; J.lastActionOutcome.target = npc.name; }
   }
 }

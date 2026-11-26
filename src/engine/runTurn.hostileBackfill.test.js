@@ -45,7 +45,7 @@ describe("S2 talkTarget 回填：敌意不点名不落空", () => {
     expect(social.affectionDelta).toBe(-3);
     expect(social.ledgerKind).toBe("怨");
     expect(social.anger?.active).toBe(true);
-    expect(social.anger?.reason).toBe("你这混蛋");
+    expect(social.anger?.reason).toBe("当面羞辱");
   });
 
   it("「我看你就是个混蛋」不误判成点名他人：点选/单人在场均落对象", async () => {

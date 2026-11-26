@@ -1,5 +1,6 @@
 // ── learn 求教收拒裁决（S4 纯搬家：原 judgeTurn.js learn 分支原样移入）──
 import { personaMod, affectionMod } from "./shared.js";
+import { NPC_SIGNATURE_MOVES } from "../../../data/npc/npcSignatureMoves.js";
 
 export function handleLearn(J, action, npc, aff, stanceMod) {
   const { envelope, roll, turn, day, place, budget, facts, warrants, notes, nextFactId, nextWarrantId } = J;
@@ -39,6 +40,19 @@ export function handleLearn(J, action, npc, aff, stanceMod) {
     }
     return;
   }
+  // W-FIX2 求教拒传防刷（第 15 式）：
+  // 非习武授业之人（unlearnable/兽类/无可授招式）直接拒传零事实——老账房稚童商贩
+  // 不会武功，求教不应产出任何潜能；习武之人检定未过同样零潜能（拒传就是拒传）；
+  // 只有检定通过而 causalTier T0 不足授真招，才走点拨 potDelta:2，
+  // 且加 learnPot 同时辰幂等锁（复用调息账通道）防同辰连刷。
+  const sigEntry = NPC_SIGNATURE_MOVES[npc.name];
+  const noTeachable = npc.unlearnable === true || npc.beast || sigEntry?.unlearnable === true
+    || (!sigEntry && !(Array.isArray(npc.moves) && npc.moves.length) && !(Array.isArray(npc.skills) && npc.skills.length));
+  if (noTeachable) {
+    notes.push(`「${npc.name}」并非习武授业之人，无从指点武艺。`);
+    if (J.lastActionOutcome) { J.lastActionOutcome.rejected = true; J.lastActionOutcome.kind = "learn"; J.lastActionOutcome.target = npc.name; }
+    return;
+  }
   const score = 0.3 + affectionMod(aff) + personaMod(npc.personality) + stanceMod;
   if (roll() < Math.max(0.05, Math.min(0.9, score))) {
     J.accept.value = true;
@@ -52,13 +66,22 @@ export function handleLearn(J, action, npc, aff, stanceMod) {
         origin: { turn, day, place, fromNpc: npc.name },
       });
     } else {
-      facts.push({
-        id: nextFactId(), op: "PROGRESS_CULTIVATION", npc: npc.name,
-        potDelta: 2, reason: "指点一二", witnesses: ["主角", npc.name],
-      });
-      notes.push(`因果 tier ${budget.tier} 不足授技，降为点拨`);
+      // 点拨同时辰幂等锁：learnPot_${npc.name}_${turn/2 取整}——同辰再求只压 notes 不涨潜能
+      const potKey = `learnPot_${npc.name}_${Math.floor(turn / 2)}`;
+      const done = (J.envelope?.varTree?.世界?.调息账 || []).includes(potKey)
+        || facts.some((f) => f.restKey === potKey);
+      if (done) {
+        notes.push(`本时辰已得${npc.name}点拨，再求也无新进益`);
+      } else {
+        facts.push({
+          id: nextFactId(), op: "PROGRESS_CULTIVATION", npc: npc.name,
+          potDelta: 2, reason: "指点一二", witnesses: ["主角", npc.name], restKey: potKey,
+        });
+        notes.push(`因果 tier ${budget.tier} 不足授技，降为点拨`);
+      }
     }
   } else {
+    // 习武之人但检定未过：零潜能拒传（事实一条不签）
     notes.push(`${npc.name}不肯传授`);
     if (J.lastActionOutcome) { J.lastActionOutcome.rejected = true; J.lastActionOutcome.kind = "learn"; J.lastActionOutcome.target = npc.name; }
   }

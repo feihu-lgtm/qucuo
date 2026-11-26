@@ -16,10 +16,11 @@ export function handleTalk(J, action, npc) {
     affectionDelta: delta, ledgerKind: delta > 0 ? "恩" : "怨",
     reason: delta > 0 ? "搭话投机" : "言语冲撞", witnesses: ["主角", npc.name],
   };
-  // S2：hostile 辱骂/羞辱/威胁——对方性情含暴烈/刚烈/阴鸷时同时置生气，
-  // 缘由写玩家原话前 20 字（与偷窃败露同 anger 形状，appease 链自动可消）。
-  if (action.stance === "hostile" && /暴烈|刚烈|阴鸷/.test(npc.personality || "")) {
-    fact.anger = { active: true, reason: (action.text || "").slice(0, 20) || "恶语相向", turnsLeft: 3 };
+  // S2+W-FIX2（第 18 式）：hostile 辱骂/羞辱/威胁统一附带 anger——不再只限暴烈
+  // 刚烈阴鸷（被骂的人该怒就怒，与老孙暴怒正文一致）；唯一例外是怯懦词条
+  // （胆小/怯懦/温顺）——被骂不敢怒。缘由写「当面羞辱」。
+  if (action.stance === "hostile" && !/胆小|怯懦|温顺/.test(npc.personality || "")) {
+    fact.anger = { active: true, reason: "当面羞辱", turnsLeft: 3 };
   }
   facts.push(fact);
 }
