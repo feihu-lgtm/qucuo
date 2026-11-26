@@ -151,7 +151,10 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
       }
       notes.push(conditionMetNote(action));
     }
-    if (action.intimate === true) continue; // V8：亲密动作不凑 kind 结算，回合级签发见下
+    // V8 Review 修：只有门禁真的介入过（intimateCtx 存在）才跳过 kind 结算——
+    // nsfw 关门禁不跑，intake 标的 intimate  flirt 动作必须落回 talk/free_act 正路，
+    // 否则调情搭话好感两头落空。
+    if (action.intimate === true && J.envelope?.intimateCtx?.npc) continue;
     if (action.kind === "free_act") { handleFreeAct(J, action); continue; }
     if (action.kind === "steal") { handleSteal(J, action); continue; }
 
@@ -187,7 +190,20 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
   }
 
   // ── V8 亲密回合社交结算：门禁放行（envelope.intimateCtx）才签发，回合至多一条 ──
-  handleIntimate(J);
+  // Review 修：带前提的亲密动作前提未成（condVerdicts=false）时行为未发生，
+  // 不得因门禁先行放行就照签好感——无任何 intimate 动作执行则本轮不签。
+  // （正则兜底路无 intimate 标动作——intimateActs 空时按旧口径签发。）
+  // Review 二轮修：签发与焚卡共用同一执行信号——门禁选定对象（intimateCtx.npc）的
+  // 亲密动作真的执行才算数。前提未成/只有别人对象的动作执行（多对象边缘）都不算：
+  // 不签好感（门槛好感是 gate 对象的，签给别人即错账），verdict 透出信号让
+  // judgePhase 不焚卡不烙印（行为未发生，卡不该没）。
+  const intimateActs = actions.filter((a) => a?.intimate === true);
+  const gateNpc = J.envelope?.intimateCtx?.npc;
+  const intimateCtxExecuted = !gateNpc || intimateActs.length === 0
+    ? true
+    : intimateActs.some((a) => condVerdicts.get(a) !== false
+        && (!a.target || a.target === "无" || a.target === gateNpc));
+  if (intimateCtxExecuted) handleIntimate(J);
 
   // ── 第三步：inspect_container 三关掷骰 ──
   // WO-16A：纯搭话回合不翻容器——搭话时翻箱倒柜本就不该发生，整段跳过。
@@ -250,6 +266,7 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
 
   // ── 第四步：签发 JudgeVerdict（契约 C） ──
   return {
+    intimateCtxExecuted,
     causalTier: budget.tier,
     pacingWords: Number.isInteger(envelope.pacingWords) ? envelope.pacingWords : 320,
     facts,

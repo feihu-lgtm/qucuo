@@ -397,7 +397,9 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
         .filter((t) => typeof t === "string" && t && t !== "无"))];
       deps.judgePipelineActive = true;
       // D8：亲密过线——门槛行注入 notes 随定案单进主叙事；凭卡 ticket 挂 verdict 待 commit 焚。
-      if (intimacyGateInfoOut.info && judgeVerdict) {
+      // V8 Review 修：门槛行注入与凭卡焚卡都以「门禁对象的亲密动作真执行」为前提——
+      // 前提未成/执行旁落时行为未发生，卡不该没、人不该烙、门槛行不该误导叙事。
+      if (intimacyGateInfoOut.info && judgeVerdict && judgeVerdict.intimateCtxExecuted !== false) {
         judgeVerdict.notes = [...(judgeVerdict.notes || []), intimacyGateInfoOut.info.note];
         if (intimacyGateInfoOut.info.ticket) judgeVerdict.intimateTicket = intimacyGateInfoOut.info.ticket;
       }

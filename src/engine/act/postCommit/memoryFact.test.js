@@ -154,3 +154,30 @@ describe("V4 在场收窄（验收）", () => {
     expect(Object.keys(Object.values(facts)[0].知晓者)).toEqual(["磨坊学徒"]);
   });
 });
+
+describe("V8 Review 修：判官事实级 witnesses 收窄优先", () => {
+  it("闺房密事 memoryFactWitnesses 只主角+对象——全屋其他 NPC 不记账", () => {
+    const out = registerMemoryFact({
+      p: { memory: "MUTATE_SOCIAL·元朵朵·闺房温存", memoryFactWitnesses: ["主角", "元朵朵"] },
+      room: { npcs: [{ name: "元朵朵" }, { name: "才旦" }, { name: "老孙" }] },
+      // 无点选无搭话对象的行动回合——旧路全屋三人都算目击
+      activeTarget: "", isTalk: false, talkTarget: "", time: 24, appendDayMaterial: null,
+    });
+    const tree = out.changes.varTree({ 世界: {} });
+    const facts = tree.世界.知识领域.事实 || {};
+    const entry = Object.values(facts)[0];
+    expect(Object.keys(entry.知晓者)).toEqual(["元朵朵"]);
+    expect(entry.知晓者.元朵朵.途径).toBe("亲历");
+  });
+  it("无 memoryFactWitnesses 时旧口径不变——全屋目击兜底", () => {
+    const out = registerMemoryFact({
+      p: { memory: "翻箱倒柜" },
+      room: { npcs: [{ name: "才旦" }, { name: "老孙" }] },
+      activeTarget: "", isTalk: false, talkTarget: "", time: 24, appendDayMaterial: null,
+    });
+    const tree = out.changes.varTree({ 世界: {} });
+    const facts = tree.世界.知识领域.事实 || {};
+    const entry = Object.values(facts)[0];
+    expect(Object.keys(entry.知晓者).sort()).toEqual(["才旦", "老孙"]);
+  });
+});

@@ -71,3 +71,58 @@ describe("V8 亲密回合社交结算", () => {
     expect(v.facts.filter((x) => x.op === "MUTATE_SOCIAL")).toHaveLength(1);
   });
 });
+
+describe("V8 Review 修：条件未成不颁奖/nsfw 关不吞调情", () => {
+  it("亲密动作前提未成（condition 不成立）不签发好感——行为未发生", () => {
+    const condAction = { ...intimateAction, condition: "到了地方", condition_text: "到了地方" };
+    // 无移动无到达——evaluateActionCondition 判未成的语境
+    const v = run({ npc: "元朵朵", ticket: false, threshold: 45, affection: 60 }, [condAction]);
+    expect(v.facts.filter((x) => x.op === "MUTATE_SOCIAL")).toHaveLength(0);
+  });
+  it("前提成立则照签不误", () => {
+    const v = run({ npc: "元朵朵", ticket: false, threshold: 45, affection: 60 });
+    expect(v.facts.filter((x) => x.op === "MUTATE_SOCIAL")).toHaveLength(1);
+  });
+  it("无 intimateCtx（nsfw 关/门禁未跑）时 intimate 动作落回 free_act 正路不吞", () => {
+    // nsfw 关：门禁不介入，flirt 动作按普通 free_act 处理——破费链可正常解读
+    const v = run(null, [{ ...intimateAction, outcome: "破费", text: "花五两银子买酒助兴" }]);
+    // 无亲密事实（无 ctx），但 free_act 破费链不被拦截——
+    // 验证点：动作未被「intimate 跳过」吞掉，freeAct 链有机会签发或留痕
+    expect(v.facts.filter((x) => x.op === "MUTATE_SOCIAL")).toHaveLength(0);
+    // 破费在册即证明没落黑洞（freeAct 签发 MUTATE_VITALS/CHANGE_MONEY 类或至少进 notes）
+    const signed = v.facts.length + v.notes.filter((n) => n.includes("破费") || n.includes("开销")).length;
+    expect(signed).toBeGreaterThan(0);
+  });
+});
+
+describe("V8 Review 二轮：执行信号贯通焚卡/多对象不错账", () => {
+  it("前提未成时 verdict.intimateCtxExecuted=false（judgePhase 据此不焚卡）", () => {
+    const condAction = { ...intimateAction, condition: "到了地方", condition_text: "到了地方" };
+    const v = run({ npc: "元朵朵", ticket: true, threshold: 45, affection: 10 }, [condAction]);
+    expect(v.intimateCtxExecuted).toBe(false);
+    expect(v.facts.filter((x) => x.op === "MUTATE_SOCIAL")).toHaveLength(0);
+  });
+  it("前提成立/无条件时 intimateCtxExecuted=true", () => {
+    const v = run({ npc: "元朵朵", ticket: false, threshold: 45, affection: 60 });
+    expect(v.intimateCtxExecuted).toBe(true);
+  });
+  it("多对象边缘：只有别人对象的亲密动作执行——不签门禁对象账、信号 false", () => {
+    const two = [
+      { ...intimateAction, target: "元朵朵", condition: "到了地方", condition_text: "到了地方" },
+      { ...intimateAction, target: "燕绾烟" },
+    ];
+    const base2 = { ...base, npcs: [NPC, { name: "燕绾烟", personality: "冷傲" }] };
+    const v = judgeTurn({ ...base2, intimateCtx: { npc: "元朵朵", ticket: false, threshold: 45, affection: 60 } },
+      intakeWith(two), { rng: () => 0.5 });
+    expect(v.facts.filter((x) => x.op === "MUTATE_SOCIAL")).toHaveLength(0);
+    expect(v.intimateCtxExecuted).toBe(false);
+  });
+  it("门禁对象与其他对象动作都执行——照签门禁对象（some 语义）", () => {
+    const two = [intimateAction, { ...intimateAction, target: "燕绾烟" }];
+    const base2 = { ...base, npcs: [NPC, { name: "燕绾烟", personality: "冷傲" }] };
+    const v = judgeTurn({ ...base2, intimateCtx: { npc: "元朵朵", ticket: false, threshold: 45, affection: 60 } },
+      intakeWith(two), { rng: () => 0.5 });
+    expect(v.facts.filter((x) => x.op === "MUTATE_SOCIAL")).toHaveLength(1);
+    expect(v.intimateCtxExecuted).toBe(true);
+  });
+});

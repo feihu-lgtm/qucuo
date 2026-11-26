@@ -333,7 +333,16 @@ async function runTurnSteps(ctx, cmd, opts) {
 
   // ── WO-16A memory 过渡（S4 拆到 turn/judgeTail.js）──
   const judgeMemoryText = composeJudgeMemory({ judgeVerdict, deps, judgeEffects, isTalk, ctx, cmd });
-  if (!isSettle && !(p && p.memory) && judgeMemoryText) p = { ...p, memory: judgeMemoryText };
+  if (!isSettle && !(p && p.memory) && judgeMemoryText) {
+    p = { ...p, memory: judgeMemoryText };
+    // V8 Review 修：memory 模板源自判官首条事实时，把事实级 witnesses 一并贴给
+    // 记忆登记——闺房密事/密行只主角+对象知情，不得按全屋目击者记账。
+    // （facts 非空时 memory 必取自首条事实——composeJudgeMemory 首分支优先。）
+    const firstFactWitnesses = judgeVerdict?.facts?.[0]?.witnesses;
+    if (judgeVerdict?.facts?.length && Array.isArray(firstFactWitnesses) && firstFactWitnesses.length) {
+      p = { ...p, memoryFactWitnesses: firstFactWitnesses };
+    }
+  }
 
   // WO-16H-H1 群聊尾章校对：parseGroupTalkSeal 按在场白名单过滤——越界名字
   // 安静丢弃并记 trace，绝不进状态（群聊不改任何游戏状态，只此一键）。

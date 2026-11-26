@@ -61,9 +61,16 @@ export function registerMemoryFact({ p, room, activeTarget, isTalk, talkTarget, 
   const witnessTarget = directTarget || soleWitness;
   // 途径区分：玩家明确交互的对象算「亲历」；soleWitness 在搭话回合就是私语对象
   // 同样「亲历」；非搭话密行（翻箱偷盗）时他只是唯一在场看到行为的人——记「目击」。
-  const witnesses = witnessTarget
-    ? [{ name: witnessTarget, 途径: (directTarget || isTalk) ? "亲历" : "目击" }]
-    : roomNpcs.map(n => ({ name: n.name, 途径: "目击" }));
+  // V8 Review 修：判官事实自带 witnesses 收窄名单时（闺房密事/密行只主角+对象），
+  // 以事实级名单为准——屋里再多人也不得算目击。「主角」是玩家本人不入 NPC 知情账。
+  const factNames = Array.isArray(p.memoryFactWitnesses)
+    ? p.memoryFactWitnesses.filter((nm) => typeof nm === "string" && nm && nm !== "主角")
+    : [];
+  const witnesses = factNames.length
+    ? factNames.map((nm) => ({ name: nm, 途径: "亲历" }))
+    : witnessTarget
+      ? [{ name: witnessTarget, 途径: (directTarget || isTalk) ? "亲历" : "目击" }]
+      : roomNpcs.map(n => ({ name: n.name, 途径: "目击" }));
   // 同一回合对同一对象可能有多条记忆（连聊两次时间不前进时 time 相同），
   // id 只按 time+对象 命名会让 registerFact 静默丢弃后一条——把摘要文本
   // 哈希进 id，内容不同即不同键；内容完全相同的重复条目被去重是正确的。
