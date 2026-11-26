@@ -129,6 +129,7 @@ export function createTurnContext({ plan, env }) {
         p: turnResult.p, mvuCommands: turnResult.mvuCommands, dealResult: turnResult.dealResult,
         derivedRespondedNpcs: turnResult.derivedRespondedNpcs || null,
         intakeTargets: turnResult.intakeTargets || null,
+        intakeRefIds: turnResult.intakeRefIds || null,
         judgePipelineActive: turnResult.judgePipelineActive || false,
         intimateTicket,
         pickupExtractionFailed: turnResult.pickupExtractionFailed,

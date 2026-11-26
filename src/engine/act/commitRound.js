@@ -184,6 +184,7 @@ export function commitRound(d) {
     p: d.p, room: d.room, activeTarget: d.activeTarget,
     isTalk: d.isTalk, talkTarget: d.talkTarget, time: d.time,
     appendDayMaterial: d.appendDayMaterial,
+    innerRoomName: d.innerRoomName ?? null, refIds: d.intakeRefIds || [],
   }));
   applyPostResult(d, markTalkAcquaintance({ isTalk: d.isTalk, talkTarget: d.talkTarget, room: d.room, p: d.p, derivedRespondedNpcs: d.derivedRespondedNpcs })); // 对话即认识
   applyPostResult(d, writeRoamLocks({  // W-ROAM 十回合交互驻足锁
@@ -191,7 +192,7 @@ export function commitRound(d) {
     activeTarget: d.activeTarget, talkTarget: d.talkTarget, settleNpc: d.settleNpc,
     presentNames: systemAcceptedNames, time: d.time,
   }));
-  applyPostResult(d, appendConvo({ newConvo: d.newConvo, rawFull: d.rawFull, p: d.p, time: d.time, derivedRespondedNpcs: d.derivedRespondedNpcs })); // convo 条目追加 memory/turn/respondedNpcs
+  applyPostResult(d, appendConvo({ newConvo: d.newConvo, rawFull: d.rawFull, p: d.p, time: d.time, derivedRespondedNpcs: d.derivedRespondedNpcs, roomName: d.room?.name || "", innerRoomName: d.innerRoomName ?? null })); // convo 条目追加 memory/turn/respondedNpcs/房间头
 
   // 回合完成登记：驱动"每 N 回合自动存档"。出错回滚的轮次不计数——
   // 状态没变，存了也是重复盘。计数收在 autosaveScheduler 模块状态（WO-06）。

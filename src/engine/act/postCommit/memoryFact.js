@@ -1,6 +1,7 @@
 // ── 信息领域·memory 登记为可传播事实（原 commitRound 内嵌块）──
 // 路线甲纯函数化：返回 { changes, refWrites } 由 commitRound 统一落盘。
 import { registerFact } from "../../../domain/rules/prompt/knowledge.js";
+import { isNpcVisibleInInnerRoom } from "../../../domain/rules/map/innerMap.js";
 
 // 单调用 JSON 可能把 memory 吐成数组/对象——所有消费口（writeMemoryNote/
 // appendDayMaterial/registerMemoryFact）共用这一归一，否则数组逐字哈希/拼接
@@ -22,21 +23,34 @@ export function normalizeMemoryText(memory) {
   return String(memory);
 }
 
-export function registerMemoryFact({ p, room, activeTarget, isTalk, talkTarget, time, appendDayMaterial }) {
+export function registerMemoryFact({ p, room, activeTarget, isTalk, talkTarget, time, appendDayMaterial, innerRoomName = null, refIds = [] }) {
   if (!p.memory) return null;
   if (typeof p.memory !== "string") {
     p = { ...p, memory: normalizeMemoryText(p.memory) };
     if (!p.memory) return null;
   }
-  const roomNpcs = (p.room && Array.isArray(p.room.npcs) ? p.room.npcs : room.npcs) || [];
-  // F9 知情隔离修：搭话回合未点选但场上只有一名 NPC 时，私语对象就是这位
-  // 唯一在场者（与 #531 intake soleTalkTarget 同一回落口径）——否则「压低声音
-  // 只对老孙说」的密告按 roomNpcs 全员目击者记账，秘密当场漏给所有知情人，
+  const factRoom = p.room && Array.isArray(p.room.npcs) ? p.room : room;
+  const districtName = factRoom?.name || "";
+  const allNpcs = factRoom?.npcs || [];
+  // V4 核心根因修：目击者池不再取整座据点 room.npcs（22-28 人全员知情），
+  // 改用 isNpcVisibleInInnerRoom（与 partitionPeople.present 同源口径）收窄到
+  // 本房真实在场者——在老孙饭馆翻酒坛，目击者绝无隔壁房间的人。
+  const roomNpcs = innerRoomName
+    ? allNpcs.filter(n => isNpcVisibleInInnerRoom(districtName, innerRoomName, n))
+    : allNpcs;
+  // F9+V4 知情隔离修：未点选但本房真实在场仅一名非随行 NPC 时，私语/密行对象
+  // 就是这位唯一在场者——V4 起不再要求 isTalk（翻箱、偷盗等非搭话密行同理），
+  // 否则「压低声音只对老孙说」的密告按全员目击者记账，秘密当场漏给所有知情人，
   // 换房间后不知情者也能接茬（真机 T22 穿透实证）。
-  const soleWitness = isTalk && !activeTarget && !talkTarget && roomNpcs.length === 1 ? roomNpcs[0]?.name : "";
-  const witnessTarget = activeTarget || (isTalk && talkTarget) || soleWitness;
+  // 随行同伴不计入「唯一在场者」判定——他们恒随玩家，不构成密告对象。
+  const nonCompanion = roomNpcs.filter(n => !n.companion);
+  const soleWitness = !activeTarget && !talkTarget && nonCompanion.length === 1 ? nonCompanion[0]?.name : "";
+  const directTarget = activeTarget || (isTalk && talkTarget);
+  const witnessTarget = directTarget || soleWitness;
+  // 途径区分：玩家明确交互的对象算「亲历」；soleWitness 在搭话回合就是私语对象
+  // 同样「亲历」；非搭话密行（翻箱偷盗）时他只是唯一在场看到行为的人——记「目击」。
   const witnesses = witnessTarget
-    ? [{ name: witnessTarget, 途径: "亲历" }]
+    ? [{ name: witnessTarget, 途径: (directTarget || isTalk) ? "亲历" : "目击" }]
     : roomNpcs.map(n => ({ name: n.name, 途径: "目击" }));
   // 同一回合对同一对象可能有多条记忆（连聊两次时间不前进时 time 相同），
   // id 只按 time+对象 命名会让 registerFact 静默丢弃后一条——把摘要文本
@@ -47,7 +61,15 @@ export function registerMemoryFact({ p, room, activeTarget, isTalk, talkTarget, 
     // 主叙事/对话的事实也进当日原料（日总结用）——经 io 注入回调推送，不出 app 层
     effects: appendDayMaterial ? [() => appendDayMaterial({ turn: time, text: p.memory })] : undefined,
     changes: witnesses.length ? {
-      varTree: (prev) => registerFact(prev, { id: `turn_${time}_${witnesses[0].name}_${hash.toString(36)}`, 摘要: p.memory, 标签: isTalk ? "私语" : "见闻", 知晓者: witnesses }, time),
+      // V4 密告入账：玩家援引场记板条目（refIds）向特定对象透露情报时，
+      // 标签落「密告」并带房间作用域——跨房组装上下文时据此对非目击者硬隔离。
+      varTree: (prev) => registerFact(prev, {
+        id: `turn_${time}_${witnesses[0].name}_${hash.toString(36)}`,
+        摘要: p.memory,
+        标签: witnessTarget && Array.isArray(refIds) && refIds.length ? "密告" : isTalk ? "私语" : "见闻",
+        ...(districtName ? { 房间: { district: districtName, inner: innerRoomName ?? null } } : {}),
+        知晓者: witnesses,
+      }, time),
     } : undefined,
   };
 }

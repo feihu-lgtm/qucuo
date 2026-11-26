@@ -246,7 +246,8 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
       judgeVerdict = judgeTurn({
         turn: timeNow, day: Math.floor(timeNow / 24) + 1, place: deps.room?.name || "",
         // V2 Review修：场所判定用前置路由刷新后的现场——移动回合后破费不在旧房间误判。
-        roomName: liveAfterRoutes?.room?.name || deps.room?.name || "", innerRoomName: liveAfterRoutes?.innerRoomName || "",
+        roomName: liveAfterRoutes?.room?.name || deps.room?.name || "",
+        innerRoomName: innerRoomNow ?? liveAfterRoutes?.innerRoomName ?? null,
         // S7 送银桥：玩家原文是金额唯一可信来源（ground truth）——
         // action.text 是模型复述不可信（Review 实证可编数），判官绝不从模型输出取钱数。
         playerInput: cmd,
@@ -298,6 +299,7 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
       deps.derivedRespondedNpcs = [...new Set(derivedTalk)];
       // W-ROAM 驻足锁数据源：本轮听意单全部具名对象（不只 talk——送礼/求教/赔罪
       // 都算「找过他」），commitRound 据此刻在场写 驻足锁[name]=time+10。
+      deps.intakeRefIds = Array.isArray(intakeResult.refIds) ? intakeResult.refIds : [];
       deps.intakeTargets = [...new Set((intakeResult.actions || [])
         .map((a) => a?.target)
         .filter((t) => typeof t === "string" && t && t !== "无"))];

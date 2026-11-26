@@ -667,3 +667,75 @@ describe("W-FIX2 即兴立约判官先定", () => {
     expect(v.notes.join()).not.toContain("应下");
   });
 });
+
+describe("V4 跨房密告硬隔离（验收）", () => {
+  // 玩家在才旦家密告账册线索（知识领域落密告事实，房间作用域=才旦家，
+  // 知晓者只有主角与才旦），随后切到老孙饭馆——老孙的 reactionGuides
+  // 必须自动把该事实归入 unknownRefIds，且才旦（亲历者）不受影响。
+  const secretTree = {
+    角色: { 才旦: { 好感度: 70 } },
+    世界: {
+      知识领域: {
+        事实: {
+          turn_40_才旦_ab12: {
+            id: "turn_40_才旦_ab12", 摘要: "玩家说出老土司真账册的下落", 标签: "密告",
+            诞生回合: 40, 房间: { district: "鱼定村", inner: "才旦家" },
+            知晓者: { 主角: { 途径: "亲历", 得知回合: 40 }, 才旦: { 途径: "亲历", 得知回合: 40 } },
+          },
+        },
+      },
+    },
+  };
+  const env = baseEnvelope({
+    place: "鱼定村", innerRoomName: "老孙饭馆", turn: 42,
+    varTree: secretTree,
+    npcs: [
+      { name: "老孙", personality: "暴烈", brief: "厨子" },
+      { name: "才旦", personality: "爽朗直率", brief: "猎户" },
+    ],
+  });
+
+  it("他处密告事实自动入非目击者 unknownRefIds，亲历者不隔离", () => {
+    const verdict = judgeTurn(env, { read: "", refIds: [], actions: [], proposals: [] }, { rng: seqRng([0.9]) });
+    const laosun = verdict.reactionGuides.find((g) => g.npc === "老孙");
+    expect(laosun.unknownRefIds).toContain("turn_40_才旦_ab12");
+    expect(laosun.guidance).toContain("严禁复述或默认知晓他处密谈细节");
+    const caidan = verdict.reactionGuides.find((g) => g.npc === "才旦");
+    expect(caidan.unknownRefIds).not.toContain("turn_40_才旦_ab12");
+  });
+
+  it("同房间密告不隔离（目击者池内不冤杀）", () => {
+    const sameRoomEnv = { ...env, innerRoomName: "才旦家" };
+    const verdict = judgeTurn(sameRoomEnv, { read: "", refIds: [], actions: [], proposals: [] }, { rng: seqRng([0.9]) });
+    const laosun = verdict.reactionGuides.find((g) => g.npc === "老孙");
+    expect(laosun.unknownRefIds).not.toContain("turn_40_才旦_ab12");
+  });
+
+  it("超过 30 回合的陈年密谈不再追隔离", () => {
+    const oldEnv = { ...env, turn: 99 };
+    const verdict = judgeTurn(oldEnv, { read: "", refIds: [], actions: [], proposals: [] }, { rng: seqRng([0.9]) });
+    const laosun = verdict.reactionGuides.find((g) => g.npc === "老孙");
+    expect(laosun.unknownRefIds).not.toContain("turn_40_才旦_ab12");
+  });
+
+  it("透露秘闻：talk 披露对方不知情条目时缘由落「透露秘闻」而非搭话投机", () => {
+    const verdict = judgeTurn(env, {
+      read: "", refIds: [],
+      actions: [{ kind: "talk", target: "才旦", stance: "sincere", text: "压低声音说出账册下落" }],
+      proposals: [],
+    }, { rng: seqRng([0.9]) });
+    // 才旦家密告对老孙是 foreign secret，但才旦本人是亲历者——才旦的 unknownRefIds 为空，
+    // 不触发透露秘闻；此用例验证机制不误报。
+    const social = verdict.facts.filter((x) => x.op === "MUTATE_SOCIAL");
+    expect(social[0]?.reason).toBe("搭话投机");
+    // 老孙版本：玩家向老孙透露他不知情的密告
+    const verdict2 = judgeTurn(env, {
+      read: "", refIds: [],
+      actions: [{ kind: "talk", target: "老孙", stance: "sincere", text: "把账册的事低声告诉老孙" }],
+      proposals: [],
+    }, { rng: seqRng([0.9]) });
+    const social2 = verdict2.facts.filter((x) => x.op === "MUTATE_SOCIAL");
+    expect(social2[0]?.reason).toBe("透露秘闻");
+    expect(social2[0]?.room).toBe("鱼定村");
+  });
+});

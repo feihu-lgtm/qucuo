@@ -48,16 +48,31 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
   const refEntries = refIds.map((id) => entries.find((e) => e?.id === id)).filter(Boolean);
   const missingRefIds = refIds.filter((id) => !entries.some((e) => e?.id === id));
   if (missingRefIds.length) notes.push(`查无此条目的引用：${missingRefIds.join("、")}`);
+  // V4 跨房密告硬隔离：知识领域里带房间作用域的密告/私语事实，若诞生于
+  // 别的房间（据点或内层房不同）且该 NPC 不在知晓者名单，自动并入 unknownRefIds——
+  // 玩家在才旦家密告账册后切到老孙饭馆，老孙绝不可复述或默认知晓他处密谈。
+  // 只追近 30 回合内的密谈，避免陈年老账噪声刷屏。
+  const curInner = envelope.innerRoomName ?? null;
+  const knowledgeFacts = Object.values(varTree?.世界?.知识领域?.事实 || {});
+  const crossRoomSecrets = knowledgeFacts.filter((fct) => {
+    if (!fct?.房间?.district) return false;
+    if (!["密告", "私语"].includes(fct.标签)) return false;
+    if (turn - (fct.诞生回合 || 0) > 30) return false;
+    const sameRoom = fct.房间.district === place && (fct.房间.inner ?? null) === curInner;
+    return !sameRoom;
+  });
   const reactionGuides = npcs.map((npc) => {
     const known = refEntries.filter((e) => knowsEntry(e, npc.name)).map((e) => e.id);
     const unknown = refEntries.filter((e) => !knowsEntry(e, npc.name)).map((e) => e.id);
+    const foreignSecrets = crossRoomSecrets.filter((fct) => !fct.知晓者?.[npc.name]);
+    const allUnknown = [...unknown, ...foreignSecrets.map((fct) => fct.id)];
     return {
       npc: npc.name,
       knownRefIds: known,
-      unknownRefIds: unknown,
-      // 不知情拆分：存在不知内情的引用时，给该角色单独的反应导引
-      guidance: unknown.length
-        ? `${npc.name}不知晓${unknown.join("、")}内情，只能按话语表面反应，禁写出知情暗示`
+      unknownRefIds: allUnknown,
+      // 不知情拆分：存在不知内情的引用或他处密谈时，给该角色单独的反应导引
+      guidance: allUnknown.length
+        ? `${npc.name}不知晓${allUnknown.join("、")}内情，只能按话语表面反应，禁写出知情暗示；严禁复述或默认知晓他处密谈细节`
         : "",
     };
   });
@@ -106,6 +121,7 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
       target: envelope.conditionCtx?.inviteRejectedTarget || "",
     },
     conditionCtx: envelope.conditionCtx || {},
+    reactionGuides,
     accept: { value: false },
     // S3 破费查价链修订：同一回合内 得财/破费 按签发顺序累计流水余额，
     // 先赚后花不再被开场余额误卡（materialize 按 facts 顺序落账，此处同序预演）。

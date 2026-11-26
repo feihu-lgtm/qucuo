@@ -112,7 +112,11 @@ async function runTurnSteps(ctx, cmd, opts) {
   const contextWindow = ctx.apiCfg?.contextWindow || 16;
   const histWindow = isSettle ? 6 : isTalk ? Math.max(contextWindow, 20) : contextWindow;
   const histSource = mainConvo.length > histWindow ? mainConvo.slice(-histWindow) : mainConvo;
-  const hist = buildHistBlock(histSource, { recentPairs: isTalk ? 3 : 2 });
+  const hist = buildHistBlock(histSource, {
+    recentPairs: isTalk ? 3 : 2,
+    currentRoom: ctx.room?.name || "",
+    currentInner: ctx.innerRoomName ?? null,
+  });
   const historySavings = histBlockSavings(histSource, { recentPairs: isTalk ? 3 : 2 });
   if (historySavings.savedChars > 0) {
     traceStep(ctx._trace, "历史压缩", "info", `${historySavings.legacyChars}→${historySavings.nowChars}字（省 ${historySavings.savedChars}，约 ${Math.round(historySavings.savedChars * 1.6)} tokens）`);
@@ -393,6 +397,7 @@ async function runTurnSteps(ctx, cmd, opts) {
     judgeEffects,
     derivedRespondedNpcs: deps.derivedRespondedNpcs || null,
     intakeTargets: deps.intakeTargets || null,
+    intakeRefIds: deps.intakeRefIds || null,
     judgePipelineActive: !!deps.judgePipelineActive,
     groupTalk: !!deps.groupTalkRuleBlock,
     // WO-16F-F2c：交互意向随 turn 对象带出——finalizeTurn 无需特别处理，

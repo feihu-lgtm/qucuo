@@ -11,10 +11,16 @@ export function handleTalk(J, action, npc) {
   if (npc?.intimacy?.forbidden || npc?.beast) return;
   const delta = TALK_STANCE_DELTA[action.stance] ?? 0;
   if (!delta) return; // perfunctory/未知：零事实
+  // V4 密告入账：玩家本轮援引了该 NPC 不知情的往事条目（reactionGuides unknownRefIds），
+  // 即向他透露了情报或秘密——事实缘由落「透露秘闻」并带房间作用域，不再只是空泛搭话投机。
+  const guide = J.reactionGuides?.find((g) => g.npc === npc.name);
+  const disclosing = delta > 0 && Array.isArray(guide?.unknownRefIds) && guide.unknownRefIds.length > 0;
   const fact = {
     id: nextFactId(), op: "MUTATE_SOCIAL", npc: npc.name,
     affectionDelta: delta, ledgerKind: delta > 0 ? "恩" : "怨",
-    reason: delta > 0 ? "搭话投机" : "言语冲撞", witnesses: ["主角", npc.name],
+    reason: disclosing ? "透露秘闻" : delta > 0 ? "搭话投机" : "言语冲撞",
+    witnesses: ["主角", npc.name],
+    ...(J.place ? { room: J.place } : {}),
   };
   // S2+W-FIX2（第 18 式）：hostile 辱骂/羞辱/威胁统一附带 anger——不再只限暴烈
   // 刚烈阴鸷（被骂的人该怒就怒，与老孙暴怒正文一致）；唯一例外是怯懦词条
