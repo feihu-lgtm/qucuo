@@ -251,7 +251,14 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
       if (conditioned.length) {
         trace("判官管线", "skip", `前提未裁，暂不路由 ${conditioned.length} 条：${conditioned.map((a) => `${a.kind}:${a.item}`).join("、")}（待 WO-16F 真条件裁决）`);
       }
-      const judgeRoutes = isTalk ? [] : routeCandidates.filter((a) => !(a?.condition && a.condition !== "无"));
+      // Review 修：本回合若已是系统移动回合（resolveIntent 锁定外层目的地/方向），
+      // 位移由移动链本身结算——judge 再路由 move 会双到达冲突（outer writeRoom 写目的地、
+      // innerMove 又进内层房）。此类回合 move 不路由，回执交给移动链自身。
+      const systemMoveTurn = !!(deps.lockedDestName || ctx.lockedDestName || deps.movingDir || ctx.movingDir);
+      const judgeRoutes = (isTalk || systemMoveTurn) ? [] : routeCandidates.filter((a) => !(a?.condition && a.condition !== "无"));
+      if (systemMoveTurn && routeCandidates.some((a) => a?.kind === "move")) {
+        trace("判官管线", "skip", "系统移动回合，move 不重复路由（位移由移动链结算）");
+      }
       if (isTalk && routeCandidates.length) {
         trace("判官管线", "skip", `talkOnly 回合禁止硬事实，${routeCandidates.length} 条 equip/use_item/take 不路由`);
       }

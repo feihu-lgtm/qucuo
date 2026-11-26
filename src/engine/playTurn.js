@@ -11,6 +11,9 @@ import { buildPresence } from "./prompt/index.js";
 export const ROLLBACK_KEYS = [
   "room", "char", "dao", "skills", "inv", "exp", "pot", "flags",
   "mapData", "time", "varTree", "convo",
+  // Review 修：move 路由叙事前结算内层位移后，若叙事中断/失败回滚，
+  // innerRoomName 必须随快照复位——否则玩家被留在目的地白走一趟。
+  "innerRoomName",
 ];
 
 function setterForKey(key) {
