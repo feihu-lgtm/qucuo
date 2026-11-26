@@ -211,6 +211,21 @@ describe("W-ROAM Review 修：子夜换名单不清驻足锁未过期者", () =>
     expect(npcs2.some((n) => n.name === "昨过客")).toBe(false);
   });
 
+  it("Review 三轮：不在当前时辰样本的游走池客重建时离场，锁未过期保留", () => {
+    // 不在池子里的化名池客永不入样本——重建即清；驻足锁未过期者保留
+    const stale = { name: "过气池客", isPoolNpc: true, innerRoom: "村口" };
+    const locked = { name: "锁中池客", isPoolNpc: true, innerRoom: "村口" };
+    const state = {
+      char: { special: { 气运: 5 } }, companionState: {}, flags: [], importedVer: 0,
+      questProgress: {}, room: { name: "鱼定村", npcs: [stale, locked] }, time: 10,
+      varTree: { 世界: { 驻足锁: { 锁中池客: 20 } } },
+    };
+    const out = residentNpcRule.run(state, { importedRegistry });
+    const npcs = out.changes.room(state.room).npcs;
+    expect(npcs.some((n) => n.name === "过气池客")).toBe(false);
+    expect(npcs.some((n) => n.name === "锁中池客")).toBe(true);
+  });
+
   it("Review 二轮：锁期内冒险者子夜仍被清——换防双身比锁更硬", () => {
     const stale = { name: "昨冒险", adventurerDay: 0, innerRoom: "村口" };
     const state = {

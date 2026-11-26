@@ -182,6 +182,9 @@ export const npcRoamRule = {
         }),
       },
       ...(logs.length ? { logs } : {}),
+      // W-ROAM 增量：本拍玩家视野内的进出动向带出给 app 层——roamReactionBackfill
+      // 据此前后落占位行+触发 roam.reaction 轻量调用（domain 不碰 AI 网关）。
+      ...(movements.length ? { roamMovements: movements } : {}),
     };
   },
 };

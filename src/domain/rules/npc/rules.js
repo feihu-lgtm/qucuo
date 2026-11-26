@@ -204,6 +204,7 @@ export const residentNpcRule = {
     const isStalePasser = (npc) => npc?.randomPasser != null && (npc.randomPasser !== dayIdx || !rosterNames.has(npc.name));
     const hasStalePassers = (room.npcs || []).some(isStalePasser);
     const toInject = [...poolNpcs, ...residentNpcs, ...activeEscortTargets, ...gambleBidders, ...importedNpcs, ...worldAdventurers, ...passers];
+    const injectNameSet = new Set(toInject.map((npc) => npc.name));
     // 不具名群众：按天固定，有内层地图的分散到各公共房间
     const crowdRooms = hasInnerMap(room.name) ? getPublicInnerRoomNames(room.name) : [];
     const crowd = getCrowd(room.name, time).map((label) => {
@@ -240,10 +241,15 @@ export const residentNpcRule = {
           // W-ROAM Review 修：子夜换名单不清驻足锁未过期的过路人——玩家正找着他办事说话，
           // 身份到期也留到锁过期后的下一次重建再离场。冒险者不保：他们按日在据点间
           // 换防，保留旧 copy 会与新驻地的当日新身撞出同名双身——换人比锁更硬。
+          // Review 三轮修：游走池按时辰抽样——已不在当前时辰样本里的池客（非时段表
+          // 走班的）同样算离场，不然名单只进不出、越聊越膨胀；锁未过期者同例保留。
           npcs: injectNpcs((previous.npcs || []).filter((npc) => {
             if (!(npc.imported || !staleNames.has(npc.name))) return false;
-            if (!isStalePasser(npc) && !isStaleAdventurer(npc)) return true;
-            return npc.randomPasser != null && (state.varTree?.世界?.驻足锁?.[npc.name] ?? -1) > time;
+            const injectedNames = injectNameSet;
+            const isStalePool = npc.isPoolNpc && !Array.isArray(npc.schedule)
+              && typeof npc.pursuitInnerRoom !== "string" && !injectedNames.has(npc.name);
+            if (!isStalePasser(npc) && !isStaleAdventurer(npc) && !isStalePool) return true;
+            return npc.adventurerDay == null && (state.varTree?.世界?.驻足锁?.[npc.name] ?? -1) > time;
           }), toInject),
           crowd,
         }),
