@@ -172,7 +172,12 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
           varTree: vtNow,
           prepBlock: prepMaterialBlock,
           // W-INPUT 指代候选：convo 末条回话角色（appendConvo 落条）喂前哨
-          lastResponder: [...(convo || [])].reverse().find((m) => m?.role === "assistant" && Array.isArray(m.respondedNpcs) && m.respondedNpcs.length)?.respondedNpcs?.[0] || "",
+          lastResponder: (() => {
+            // 只看最近一个 assistant 回合：中间隔了无回话的回合，再老的回话人就不是"上一轮"的了
+            const lastAssistant = [...(convo || [])].reverse().find((m) => m?.role === "assistant");
+            return Array.isArray(lastAssistant?.respondedNpcs) && lastAssistant.respondedNpcs.length
+              ? lastAssistant.respondedNpcs[0] : "";
+          })(),
         });
         // WO-16G-G2：前哨走提取链模型口径（玩家给双调用/提取链选的 extractionModel 优先），
         // 不再是主模型直传——#451 审查指出的前哨模型口径在此钉住。buildExtractionCfg 自带关思考。
