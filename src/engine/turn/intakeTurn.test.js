@@ -257,3 +257,23 @@ describe("S2 hasHostileHint 敌意提示", () => {
     expect(hasHostileHint("请问去雪山怎么走")).toBe(false);
   });
 });
+
+describe("F6-T17 复数称呼脱绑", () => {
+  const base = { read: "x", refIds: [], proposals: [] };
+  const act = (target, text) => ({
+    kind: "talk", target, item: "无", itemId: "", direction: "none", condition: "无",
+    condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text,
+  });
+  it("「众人/各位」原文未点名 → target 脱绑回无", () => {
+    const r = normalizeIntakeResult({ ...base, actions: [act("老孙", "冲在场的众人拱手笑道，各位今日气色不错")] });
+    expect(r.actions[0].target).toBe("无");
+  });
+  it("原文点名 + 复数词并存 → target 保留", () => {
+    const r = normalizeIntakeResult({ ...base, actions: [act("老孙", "冲老孙和大伙儿问好")] });
+    expect(r.actions[0].target).toBe("老孙");
+  });
+  it("无复数称呼 → 不受影响", () => {
+    const r = normalizeIntakeResult({ ...base, actions: [act("老孙", "老孙你近来可好")] });
+    expect(r.actions[0].target).toBe("老孙");
+  });
+});

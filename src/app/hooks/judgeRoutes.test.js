@@ -513,13 +513,12 @@ describe("S7 move 路由：内层移动确定性结算", () => {
       expect(receipts[0].ok).toBe(true);
       expect(receipts[0].text).toContain("赶至「山洞」");
       expect(gameStore.getState().room?.name).toBe("山洞");
-      // 格子未就绪（无缓存）：明确未移动、不编位移
+      // F3-T11：首访无缓存不再硬判负——合成空条目照样位移（驻场 NPC 由世界规则注入）
       gameActions.setRoom({ name: "雪山派", npcs: [], items: [], exits: ["e", "n"] });
       gameStore.setState({ roomCache: {} });
       const miss = executeJudgeRoutes([mkMove("n", "往北走")]);
-      expect(miss.receipts[0].ok).toBe(false);
-      expect(miss.receipts[0].text).toContain("系统未移动");
-      expect(gameStore.getState().room?.name).toBe("雪山派");
+      expect(miss.receipts[0].ok).toBe(true);
+      expect(gameStore.getState().room?.name).toBe("山洞");
     } finally {
       gameStore.setState({ roomCache: prevCache });
     }
@@ -589,6 +588,37 @@ describe("D4 外层自然语言移动确定性路由", () => {
   it("无地名无方向 → unknown", () => {
     const r = resolveMoveTarget(mkState(), mkAction({ text: "走走" }));
     expect(r.type).toBe("unknown");
+  });
+
+  it("F3-T13：虚构地名+方向词 → unknown 拦截，方向词救不回来", () => {
+    const state = mkState({ innerRoomName: "村口" });
+    const r = resolveMoveTarget(state, mkAction({ target: "忘忧谷", direction: "s", text: "往南边树林深处的忘忧谷走进去探探路" }));
+    expect(r.type).toBe("unknown");
+    expect(r.target).toBe("忘忧谷");
+  });
+  it("F3-T13：target 空时方向词仍走内层拓扑（不回归）", () => {
+    const state = mkState({ innerRoomName: "村口" });
+    const r = resolveMoveTarget(state, mkAction({ direction: "s", text: "往南走" }));
+    expect(r).toEqual({ type: "inner", dir: "s" });
+  });
+  it("F3-T11：首访无 roomCache 的相邻目的地真实位移（真机：大草甸）", () => {
+    const prevRoom = gameStore.getState().room;
+    const prevCache = gameStore.getState().roomCache;
+    const prevInner = gameStore.getState().innerRoomName;
+    try {
+      gameActions.setRoom({ name: "鱼定村", npcs: [], items: [], exits: ["w", "n", "s", "e"] });
+      // 首访：roomCache 没有大草甸
+      gameStore.setState({ roomCache: {}, innerRoomName: "村口" });
+      const { receipts } = executeJudgeRoutes([mkAction({ target: "大草甸", text: "顺着山路去大草甸看看" })]);
+      expect(receipts[0].ok).toBe(true);
+      expect(receipts[0].text).toContain("赶至「大草甸」");
+      expect(gameStore.getState().room?.name).toBe("大草甸");
+      // 落地骨架正确：exits/desc 取自固定地图节点
+      expect(gameStore.getState().room?.exits).toEqual(expect.arrayContaining(["n", "e", "s", "w"]));
+    } finally {
+      gameStore.setState({ roomCache: prevCache, innerRoomName: prevInner });
+      gameActions.setRoom(prevRoom);
+    }
   });
 
   it("executeJudgeRoutes：外层相邻已解锁真实位移且剥 time/convo；隔站/未解锁/未知三类零位移", () => {

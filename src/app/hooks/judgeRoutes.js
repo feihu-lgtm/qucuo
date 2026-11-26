@@ -73,10 +73,25 @@ export function resolveMoveTarget(state, action) {
     }
     // 方向型移动按内层【拓扑】判（resolveInnerExit 含锁房）——锁房不在可见出口里，
     // 但 innerMove 自己产锁因拦阻回执；拓扑没这个方向才落外层解析。
-    if (dirValid && resolveInnerExit(roomName, innerNow, dirValid)) return { type: "inner", dir: dirValid };
+    // F3-T13 修：target 填了地名时绝不走裸方向内层——否则「往南边忘忧谷」会被
+    // 方向词「南」接管走进鱼定商号，虚构地名就此漏网。
+    if (!target && dirValid && resolveInnerExit(roomName, innerNow, dirValid)) return { type: "inner", dir: dirValid };
   }
 
-  // 2. 外层：direction 优先
+  // 2. target 地名核验优先于方向词（F3-T13）：填了地名先按地名裁——
+  // 真实据点名走邻接/解锁裁决；查无此地一律 unknown 拦截，方向词救不回来。
+  if (target) {
+    if (QUCUO_MAP[target] && target !== roomName) {
+      const exits = QUCUO_MAP[roomName]?.exits || {};
+      const hitDir = Object.entries(exits).find(([, d]) => d === target)?.[0] || "";
+      if (!hitDir) return { type: "unreachable", target };
+      if (!isNodeUnlocked(target, unlockCtx)) return { type: "locked", dir: hitDir, dest: target };
+      return { type: "outer", dir: hitDir, dest: target };
+    }
+    return { type: "unknown", target };
+  }
+
+  // 3. 外层：direction 优先（target 为空时方向词才作数）
   if (dirValid) {
     const dest = resolveExit(roomName, dirValid);
     if (!dest) return { type: "noexit", dir: dirValid };
@@ -84,7 +99,7 @@ export function resolveMoveTarget(state, action) {
     return { type: "outer", dir: dirValid, dest };
   }
 
-  // 3. direction=none：target 或从原文提取据点名；「回村」在鱼定周边映射鱼定村
+  // 4. direction=none 且 target 空：从原文提取据点名；「回村」在鱼定周边映射鱼定村
   let destName = target;
   if (!destName) {
     for (const name of Object.keys(QUCUO_MAP)) {
@@ -126,11 +141,20 @@ function runMove(action) {
   }
 
   if (res.type === "outer") {
+    // F3-T11 修：roomCache 只是「到访过」的快照（MudRPG 按当前 room 写），首访必未命中——
+    // 之前按「格子未就绪」硬判负，相邻首访目的地永远到不了（真机 T11：大草甸相邻却原地不动）。
+    // 首访合成空条目 {npcs:[],items:[]} 复用 outerArrival 全账：desc/exits 取自固定地图节点、
+    // 格子预埋奖励照发、驻场 NPC 由 npc.residents 世界规则在 room 变更后确定性注入——
+    // 与 legacy writeRoom 首访（destNode 骨架+规则人口）同一血统，只是不再信 AI 报名单。
+    const firstVisit = !state.roomCache?.[res.dest];
+    const roomMap = firstVisit
+      ? { ...(state.roomCache || {}), [res.dest]: { npcs: [], items: [] } }
+      : state.roomCache || {};
     const arrival = outerArrival(state, {
       direction: res.dir, destName: res.dest,
       // 必传真实格子（Review 修）：否则格子预埋拾取/路遇永不发放，
       // squareOps 却照消耗——重访玩家永远错失当批奖励。
-      roomMap: state.roomCache || {}, squares: serializeSquares(),
+      roomMap, squares: serializeSquares(),
       command: action.text || res.dest,
     });
     if (arrival?.cached && arrival.changes) {
