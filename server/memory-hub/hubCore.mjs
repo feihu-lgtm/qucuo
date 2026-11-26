@@ -575,8 +575,9 @@ export function createHubStore(dbOrPath = ":memory:") {
       for (const row of rows) tombStmt.run(spaceId, row.slot_id, row.rev);
       deletedChunks = stmtDeleteChunks.run(spaceId).changes;
       deletedSaves = stmtDeleteSaves.run(spaceId).changes;
-      // E1：空间凭证一并清除——空间删了凭证不得残留（否则同 id 重建会被旧凭证把持）
-      db.prepare("DELETE FROM spaces WHERE space_id = ?").run(spaceId);
+      // E1 复审修：凭证行【保留】——wipe 是空间主自己的操作，删掉凭证行只会把主人
+      // 锁死在「绑定显示正常但永远 401」状态（备份无法恢复）；凭证只存哈希无正文泄漏，
+      // 且能删空间的本来就是持凭证者，删行没有安全收益。要换凭证走管理员 rotate。
       db.exec("COMMIT");
     } catch (err) {
       try { db.exec("ROLLBACK"); } catch { /* ignore */ }

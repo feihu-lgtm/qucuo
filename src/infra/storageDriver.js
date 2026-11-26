@@ -61,7 +61,10 @@ let _retryDelay = 1000;
 const QUEUE_CAP = 100;
 export function enqueueCloudPush(key, value, op = "put") {
   const queue = getCloudQueue().filter((e) => e.key !== key);
-  queue.push({ key, op, value: op === "put" ? value : undefined, queuedAt: Date.now() });
+  // 空间钉扎（Review 修）：条目记录入队时的 spaceId——玩家换空间后 flush 跳过
+  // 异空间条目（留在队列等换回），否则 del 重试会拿新空间凭证+巧合 rev 删掉别人备份。
+  const spaceId = hubBinding(loadStorageConfig()).spaceId || "";
+  queue.push({ key, op, value: op === "put" ? value : undefined, queuedAt: Date.now(), ...(spaceId ? { spaceId } : {}) });
   while (queue.length > QUEUE_CAP) {
     const dropped = queue.shift();
     console.warn(`[cloud] 推送队列超 ${QUEUE_CAP} 条上限，丢弃最老条目 ${dropped?.key}（该键云端将落后于本地，可手动重新同步）`);
@@ -115,6 +118,11 @@ async function _flushCloudQueueInner() {
   let failed = false;
   for (const entry of queue) {
     if (_wipeEpoch !== startEpoch) { failed = false; break; } // 抹除发生：立即停止，剩余条目已被清空不再推
+    // 异空间条目跳过（留队等换回）：无 spaceId 的 legacy 条目按当前空间处理（兼容）。
+    if (entry.spaceId && entry.spaceId !== binding.spaceId) {
+      remaining.push(entry);
+      continue;
+    }
     try {
       // rev 语义修正（PR-A 硬要求）：本地计数器不作 CAS 依据——expectedRev 只能取
       // serverRev 台账（首写 0），本地 rev 仅是排队参考不再上送。

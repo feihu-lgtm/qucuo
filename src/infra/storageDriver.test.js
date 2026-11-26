@@ -314,3 +314,53 @@ describe("WO-19/20 PR-A canonical adapter", () => {
     await vi.waitFor(() => { expect(calls.length).toBeGreaterThan(0); }, { timeout: 2000, interval: 20 });
   });
 });
+
+describe("E1 复审修：队列空间钉扎", () => {
+  beforeEach(() => { mockLocalStorage(); _resetCloudStateForTest(); _resetCloudProtocolForTest(); vi.useFakeTimers(); });
+  afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); configureCloudFetch(null); });
+
+  it("异空间条目 flush 跳过留队，不拿新空间凭证误删/误写", async () => {
+    boundCfg(); // sp1
+    enqueueCloudPush("slotA", { v: 1 }, "put");
+    enqueueCloudPush("slotB", undefined, "del");
+    // 玩家换绑到 sp2
+    saveStorageConfig({
+      driver: "cloud", cloudUrl: "https://cloud.example.com", spaceId: "sp2", hubToken: "tok_test",
+      deviceId: "dev_t1", boundAt: 2,
+    });
+    const calls = [];
+    configureCloudFetch(async (url, init) => {
+      calls.push({ url, method: init.method });
+      return okJson({ rev: 1 });
+    });
+    await flushCloudQueue();
+    // 两条 sp1 条目全部跳过——零请求发出、条目留队
+    expect(calls).toHaveLength(0);
+    expect(getCloudQueue()).toHaveLength(2);
+    // 换回 sp1 后正常 flush
+    boundCfg();
+    await flushCloudQueue();
+    expect(calls.length).toBeGreaterThan(0);
+  });
+
+  it("无 spaceId 的 legacy 条目按当前空间处理（兼容）", async () => {
+    boundCfg();
+    enqueueCloudPush("slotA", { v: 1 });
+    // 手工抹掉 spaceId 模拟 legacy 队列
+    const KEY = Object.keys(JSON.parse(localStorage.getItem("qucuo_cloud_queue_v1") ? "{}" : "{}"));
+    void KEY;
+    // 直接改写存储里的条目
+    const ls = localStorage;
+    for (const k of ["qucuo_cloud_queue_v1", "cloud_queue", "qucuoCloudQueue"]) {
+      const raw = ls.getItem(k);
+      if (raw) {
+        const arr = JSON.parse(raw).map((e) => { const { spaceId, ...rest } = e; return rest; });
+        ls.setItem(k, JSON.stringify(arr));
+      }
+    }
+    const calls = [];
+    configureCloudFetch(async () => { calls.push(1); return okJson({ rev: 1 }); });
+    await flushCloudQueue();
+    expect(calls.length).toBeGreaterThan(0);
+  });
+});

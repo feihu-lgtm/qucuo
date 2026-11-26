@@ -759,6 +759,15 @@ describe("HTTP server, DELETE /api/space/:spaceId + VACUUM, and API key rejectio
       assert.equal(delJson.vacuumed, true);
 
       assert.equal(store.getSave("spA", "slot1"), null);
+      // E1 复审修：wipe 删数据但【保留】凭证行——空间主用原凭证可重建/恢复备份，
+      // 不会被锁在「绑定显示正常但永远 401」状态
+      assert.ok(store.spaceTokenHash("spA"));
+      const rewrite = await fetch(`${base}/api/spaces/spA/saves/slot1`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...auth },
+        body: JSON.stringify({ expectedRev: 0, payloadEnc: "cipherA3", updatedAt: 7, force: true }),
+      });
+      assert.equal(rewrite.status, 200);
       const ftsLeft = store.db.prepare("SELECT count(*) AS n FROM prose_fts WHERE prose_fts MATCH ?").get('"青铜"');
       assert.equal(ftsLeft.n, 0);
       const freelist = store.db.prepare("PRAGMA freelist_count").get();
