@@ -491,11 +491,66 @@ function conditionalTurns() {
   }));
 }
 
+// S7 补样：15 个非 settle 可对账新回合——补分布不足且引入新纹理（非灌水重复）：
+// 4 free_act（读书/练剑/帮工/失眠新场景）、4 talk（新 stance 组合）、3 inspect
+// （声明容器无备料变体）、2 give（重量品级边界）、2 appease（空手低姿态）。
+function supplementTurns() {
+  const out = [];
+  const fa = [
+    ["读一夜剑谱", "少侠挑灯夜读，剑谱上的招式渐渐印进心里。", { pot: 1 }, "修习"],
+    ["清晨练剑半个时辰", "少侠挥剑如风，汗出如浆。", { pot: 2 }, "修习"],
+    ["帮厨劈柴挑水", "少侠忙活半日，掌柜连声道谢。", null, "其他"],
+    ["失眠整夜辗转", "少侠翻来覆去，天亮才合眼。", null, "无"],
+  ];
+  fa.forEach(([cmd, out_, delta, oc], i) => out.push(T(cmd, {
+    kind: "free_act", outcome: oc,
+    narrative: narrative(out_, delta ? { delta } : {}),
+    intake: intake1("free_act", "无", "", cmd, { outcome: oc }),
+    note: `S7补样 free_act ${oc}·新场景${i + 1}`,
+  })));
+  const tk = [
+    ["掌柜，请教个江湖规矩", "掌柜捻须讲了段掌故。", "sincere", "掌柜"],
+    ["跟伙计开玩笑逗乐", "伙计笑得直不起腰。", "casual", "伙计"],
+    ["逼问掌柜藏了什么好东西", "掌柜脸色一沉：「胡说八道！」", "forceful", "掌柜"],
+    ["冷嘲伙计笨手笨脚", "伙计涨红了脸低下头去。", "hostile", "伙计"],
+  ];
+  tk.forEach(([cmd, out_, stance, target], i) => out.push(T(cmd, {
+    kind: "talk",
+    plan: { isTalk: true, talkTarget: target, intent: { code: "TALK", label: "搭话" } },
+    narrative: narrative(out_),
+    intake: intake1("talk", target, "", cmd, { stance }),
+    note: `S7补样 talk stance=${stance}#${i + 1}`,
+  })));
+  for (let i = 0; i < 3; i++) {
+    out.push(T(`细查沉水石函暗格${i ? "再" + i : ""}`, {
+      kind: "inspect_container",
+      plan: { innerRoomName: "贡措海密室" },
+      setup: () => { gameActions.setRoom({ name: "贡措海", desc: "密室", exits: [], npcs: [], items: [] }); },
+      narrative: narrative(i === 0 ? "暗格深处藏着一卷残谱。" : "石函里只剩水渍。", i === 0 ? { delta: { items_add: ["残谱"] } } : {}),
+      intake: intake1("inspect_container", "沉水石函", "", "细查沉水石函暗格", i === 0 ? { proposals: [{ claim: "暗格藏残谱", kind: "find_item", fit: "natural" }] } : {}),
+      note: `S7补样 inspect 声明容器无备料·提案变体${i + 1}`,
+    }));
+  }
+  [["铁剑", "掌柜"], ["玉佩", "伙计"]].forEach(([item, target], i) => out.push(T(`双手奉上${item}给${target}`, {
+    kind: "give",
+    narrative: narrative(`${target}推辞一番终究还是收了。`, { mvu: `_.add('角色.${target}.好感度', 3);`, delta: { items_rm: [item] } }),
+    intake: intake1("give", target, item, `双手奉上${item}给${target}`),
+    note: `S7补样 give 重量品级边界${i + 1}`,
+  })));
+  [["掌柜"], ["伙计"]].forEach(([target], i) => out.push(T(`长揖到地向${target}认错`, {
+    kind: "appease",
+    narrative: narrative(`${target}叹了口气，摆摆手作罢。`, { mvu: `_.add('角色.${target}.好感度', 1);` }),
+    intake: intake1("appease", target, "", `长揖到地向${target}认错`, { stance: "sincere" }),
+    note: `S7补样 appease 空手低姿态${i + 1}`,
+  })));
+  return out;
+}
+
 const TURNS = [
   ...talkTurns(), ...moveTurns(), ...inspectTurns(), ...takeTurns(), ...giveTurns(),
   ...tradeTurns(), ...stealTurns(), ...duelTurns(), ...appeaseTurns(), ...learnTurns(),
   ...inviteTurns(), ...itemUseTurns(), ...equipTurns(), ...freeActTurns(),
-  ...settleTurns(), ...groupTalkTurns(), ...conditionalTurns(),
+  ...settleTurns(), ...groupTalkTurns(), ...conditionalTurns(), ...supplementTurns(),
 ];
 
 // ── per-kind/outcome 覆盖率透视 ──────────────────────────────────────────

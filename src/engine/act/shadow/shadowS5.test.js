@@ -164,12 +164,27 @@ describe("S7 Review 修：trade 豁免只对真被路由的意向生效", () => 
       { kind: "duel", target: "伙计", condition: "无" },
       { kind: "trade", target: "掌柜", condition: "无" },
     ], { npcs: [{ name: "掌柜" }, { name: "伙计" }] });
-    expect(cats).toEqual([]);
+    expect(cats.sort()).toEqual(["cultivation", "vitals"]); // duel 自身豁免 vitals+cultivation，trade 不占位不豁免
     // duel 在前但被拒（target 不在场）→ 不占位，trade 正常豁免
     const cats2 = featureRoutedCats([
       { kind: "duel", target: "路人", condition: "无" },
       { kind: "trade", target: "掌柜", condition: "无" },
     ], { npcs: [{ name: "掌柜" }] });
     expect(cats2.sort()).toEqual(["inv", "vitals"]);
+  });
+});
+
+describe("S7 duel 延期路由豁免", () => {
+  it("duel 被受理 → vitals+cultivation excluded 不含 inv；不在场/条件不豁免", () => {
+    const cats = featureRoutedCats([{ kind: "duel", target: "掌柜", condition: "无" }], { npcs: [{ name: "掌柜" }] });
+    expect(cats.sort()).toEqual(["cultivation", "vitals"]);
+    expect(cats).not.toContain("inv");
+    const diff = { categories: { vitals: { hp: -10 }, cultivation: { exp: 2 } }, excluded: [] };
+    const r = compareCategories(diff, {}, { featureRoutedCats: cats });
+    expect(r.verdicts.vitals.verdict).toBe("excluded");
+    expect(r.verdicts.cultivation.verdict).toBe("excluded");
+    expect(r.hasGap).toBe(false);
+    expect(featureRoutedCats([{ kind: "duel", target: "路人", condition: "无" }], { npcs: [{ name: "掌柜" }] })).toEqual([]);
+    expect(featureRoutedCats([{ kind: "duel", target: "掌柜", condition: "遇敌" }], { npcs: [{ name: "掌柜" }] })).toEqual([]);
   });
 });

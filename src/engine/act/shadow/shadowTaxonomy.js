@@ -45,6 +45,10 @@ export const FEATURE_ROUTED_KIND_CATS = {
   // 粒度说明：vitals 为整类目豁免（hp+money 不可分）——与 use_item 既有先例同口径；
   // trade 回合几乎无 hp 变动，误豁免风险可忽略，为最小正确实现。
   trade: ["inv", "vitals"],
+  // S7 补漏：duel 同属 DEFERRED_INTENT_KINDS 延期交互路由（deferredIntents.js:9），
+  // 交锋发生在后续战斗子系统回合机——同回合单调用直写 hp/exp 不参与对比。
+  // inv 无证据受影响（战斗掉落不进当回合 inv diff），按证据不加。
+  duel: ["vitals", "cultivation"],
 };
 
 export function featureRoutedCats(actions = [], { npcs = [] } = {}) {
