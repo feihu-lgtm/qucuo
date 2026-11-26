@@ -157,6 +157,38 @@ export async function insertWhenIdle(key, lines, { setLog, isStale, retryMs = 50
   return false;
 }
 
+// V6 原位替换模式：与 insertWhenIdle 同一套流式空闲等待，但不在占位行下面追加，
+// 而是把带 key 的极简占位行**原位改写**成补写回来的正文——公屏条数不变，
+// 杜绝占位行+白描双行重复（验收项 9.2）。占位行被回滚/读档抹掉时找不到 key，
+// 原样返回 false 静默作废。离线/失败永不触发本函数，占位行自然保底。
+export async function replaceWhenIdle(key, line, { setLog, isStale, retryMs = 500, maxTries = 1200 }) {
+  const text = String(line || "").trim();
+  if (!text) return false;
+  for (let tries = 0; tries < maxTries; tries++) {
+    if (isStale?.()) return false;
+    let deferred = false;
+    let missing = false;
+    setLog((log) => {
+      if (isStale?.()) return log;
+      if (streamingAfterFacts(log, key)) { deferred = true; return log; }
+      const index = (Array.isArray(log) ? log : []).findIndex((entry) => entry?.fillKey === key);
+      if (index < 0) { missing = true; return log; }
+      const copy = [...log];
+      const row = copy[index];
+      const stamped = { t: "desc", text: `  ${text}`, fillKey: key, fillProse: true };
+      if (typeof row.turn === "number") stamped.turn = row.turn;
+      if (typeof row.day === "number") stamped.day = row.day;
+      if (row.realTs != null) stamped.realTs = row.realTs;
+      copy[index] = stamped;
+      return copy;
+    });
+    if (isStale?.()) return false;
+    if (!deferred) return !missing;
+    await wait(retryMs);
+  }
+  return false;
+}
+
 // ask(): Promise<string|null>；parse(text) → { [slot]: 描写 } | 数组 | null
 export async function backfillInBackground(key, { ask, parse, setLog, canAsk = () => true, isStale, retryMs, maxTries }) {
   try {
