@@ -136,7 +136,29 @@ export function collectPigeons(state, { qty, dayIdx }) {
 
 export function processPigeons(state) {
   return (state.varTree?.世界?.飞鸽待回 || [])
-    .filter((letter) => state.time >= letter.arriveTime);
+    .filter((letter) => state.time >= letter.arriveTime)
+    // 夜班急修：超时重试中的信件在 nextRetryTime 前不重复触发
+    .filter((letter) => !letter.nextRetryTime || state.time >= letter.nextRetryTime);
+}
+
+// 夜班急修：上游抖动超时不许一次定死——信留待回名单，attempts+1、nextRetryTime
+// 延时重试（+2 时间单位，与 arriveTime 同刻度）；attempts 到 3 才走 failPigeonReply 兜底。
+export function retryPigeonReply(state, letter) {
+  const { id } = letter;
+  return {
+    changes: {
+      varTree: (previous) => {
+        const 世界 = { ...(previous?.世界 || {}) };
+        世界.飞鸽待回 = (世界.飞鸽待回 || []).map((pending) => (pending.id !== id ? pending : {
+          ...pending,
+          attempts: (pending.attempts || 0) + 1,
+          nextRetryTime: state.time + 2,
+        }));
+        return { ...previous, 世界 };
+      },
+    },
+    logs: [{ t: "sys", text: `  （寄往${letter.npcName}的回信一时未至，信鸽仍在路上——过些时辰再等。）` }],
+  };
 }
 
 export function applyPigeonReply(state, letter, responseText) {

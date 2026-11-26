@@ -50,6 +50,15 @@ export default function NpcsModule({ room, innerRoomName, varTree, char, addLog,
       {rightContent}
     </div>
   );
+  // 夜班急修小修：飞鸽入口提取共享——在附近（同据点别处）与不在此地两处同口径可寄信。
+  const pigeonEntry = (name) => (
+    <span onClick={() => {
+        if ((char.pigeons || 0) <= 0) { addLog([{ t: "sys", text: `  没有信鸽——去驿站买鸽子，或到驿站直接寄信/送礼给${name}。` }]); return; }
+        setInputCapsule({ kind: "pigeon", name }); setTimeout(() => inputRef.current?.focus(), 0);
+      }}
+      title={(char.pigeons || 0) > 0 ? `飞鸽传书（现有信鸽 ${char.pigeons} 只，寄一封耗一只·只送信）` : "需先去驿站买信鸽"}
+      style={{ fontSize: "var(--fs-2xs)", color: (char.pigeons || 0) <= 0 ? "var(--text-dim)" : (pigeonTarget === name ? "var(--accent)" : "var(--accent-dim)"), cursor: "pointer", flexShrink: 0 }}>飞鸽</span>
+  );
   const pigeonBadge = (
     <span style={{ fontSize: "var(--fs-2xs)", color: (char.pigeons || 0) > 0 ? "var(--accent-dim)" : "var(--text-dim)", flexShrink: 0 }} title={`现有信鸽 ${char.pigeons || 0} 只`}>
       信鸽 {char.pigeons || 0}
@@ -126,6 +135,7 @@ export default function NpcsModule({ room, innerRoomName, varTree, char, addLog,
                 <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)", marginLeft: 6 }}>{n.brief || ""}</span>
                 {!hasProfile && <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)", marginLeft: 6 }}>尚未认识</span>}
               </span>
+              {pigeonEntry(n.name)}
             </div>
             );
           })}
@@ -148,12 +158,7 @@ export default function NpcsModule({ room, innerRoomName, varTree, char, addLog,
                       return cls ? <span className={cls}>{name}</span> : name;
                     })()}
                   </span>
-                  <span onClick={() => {
-                      if ((char.pigeons || 0) <= 0) { addLog([{ t: "sys", text: `  没有信鸽——去驿站买鸽子，或到驿站直接寄信/送礼给${name}。` }]); return; }
-                      setInputCapsule({ kind: "pigeon", name }); setTimeout(() => inputRef.current?.focus(), 0);
-                    }}
-                    title={(char.pigeons || 0) > 0 ? `飞鸽传书（现有信鸽 ${char.pigeons} 只，寄一封耗一只·只送信）` : "需先去驿站买信鸽"}
-                    style={{ fontSize: "var(--fs-2xs)", color: (char.pigeons || 0) <= 0 ? "var(--text-dim)" : (pigeonTarget === name ? "var(--accent)" : "var(--accent-dim)"), cursor: "pointer", flexShrink: 0 }}>飞鸽</span>
+                  {pigeonEntry(name)}
                   {hasAff ? (
                     <span style={{ fontSize: "var(--fs-2xs)", flexShrink: 0, whiteSpace: "nowrap" }} title={`好感度 ${attrs.好感度}/100`}>
                       <span style={{ color: uiPink }}>{npcAffectionLabel(attrs.好感度)}</span>

@@ -33,19 +33,10 @@ export const LETTER_TUNE = {
   maxInbox: 60,
 };
 
-const 世界信箱 = (previous) => previous?.世界 || {};
+import { findNpcObject } from "../../domain/rules/npc/npcLookup.js";
+export { findNpcObject };
 
-// 名字 → 数据条目：在场名单 → 常驻人物表 → 地宫冒险者池；查不到给 {name} 裸壳。
-export function findNpcObject(state, npcName, importedRegistry = null) {
-  const imported = importedRegistry?.getImportedNpc?.(npcName) || null;
-  return (state.room?.npcs || []).find((npc) => npc.name === npcName)
-    || Object.values(RESIDENT_NPCS).flat().find((npc) => npc.name === npcName)
-    || ADVENTURER_BY_NAME[npcName]
-    || ADVENTURER_IP_BY_NAME[npcName]
-    || NPC_POOL.find((npc) => npc.name === npcName) // 游走池兜底：行脚僧等不在驻场表的 NPC 也有品阶/性情，否则裸壳 levelCap 缺失永远压不出斥责信
-    || imported // 导入角色兜底（复审）：高品阶导入 NPC 不在上述任何表，裸壳会丢斥责信
-    || { name: npcName };
-}
+const 世界信箱 = (previous) => previous?.世界 || {};
 
 // 送信人名单：已认识人物，滤掉兽类（不会写信）；好感越高权重越大。
 export function pickLetterSender(state, rng = Math.random) {
