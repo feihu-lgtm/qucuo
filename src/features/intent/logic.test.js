@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { stepEffect } from "./logic.js";
+import { stepEffect, findStepNpc } from "./logic.js";
 
 vi.mock("../npc/anger.js", () => ({
   appeaseAngryNpc: vi.fn(() => ({
@@ -38,5 +38,23 @@ describe("stepEffect 送礼回归（三态寻址形状修）", () => {
     // 若误传 {item,mismatch}，itemNameOf 取不到名会走 err「背包中没有这件物品」。
     expect(res.logs?.[0]?.t).not.toBe("err");
     expect(res.changes?.inv).toBeTruthy();
+  });
+});
+
+describe("findStepNpc 跟随同伴回退（D6 Review）", () => {
+  const state = {
+    room: { name: "鱼定村", npcs: [{ name: "才旦" }] },
+    innerRoomName: null,
+    companionState: {
+      pearl: { unlocked: true, active: false, data: { name: "珍珠" } },
+      asuka: { unlocked: true, active: false, data: { name: "明日香" }, stationed: { district: "鱼定村" } },
+    },
+  };
+  it("非出战跟随同伴也找得到，留守的找不到", () => {
+    const hit = findStepNpc(state, { target: "珍珠" });
+    expect(hit).toMatchObject({ name: "珍珠", companion: true });
+    expect(findStepNpc(state, { target: "明日香" })).toBeNull();
+    // 本地 NPC 优先，不受影响
+    expect(findStepNpc(state, { target: "才旦" })).toMatchObject({ name: "才旦" });
   });
 });

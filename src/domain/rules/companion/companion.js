@@ -308,6 +308,20 @@ export function companionKeyByName(name) {
   return s ? s.key : null;
 }
 
+// 按名字找跟随中（已解锁非留守）同伴的槽位键——形影不离的同伴坐标恒等于玩家
+// （buildPresence 在场口径），判官/听意看得见他们，执行与结算链也得按名找得到，
+// 否则「跟珍珠切磋」「把药囊交给雪豹」被接受后落空。
+export function followingCompanionKey(companionState, name) {
+  if (!name) return null;
+  for (const k of allCompanionKeys(companionState)) {
+    const c = companionState?.[k];
+    if (!c?.unlocked || c?.stationed || !c?.data) continue;
+    const meta = companionMeta(companionState, k);
+    if (meta.label === name || c.data.name === name) return k;
+  }
+  return null;
+}
+
 // 某个具名伙伴候选是否已解锁（供 NpcActionMenu 判断"邀请入队"按钮要不要收起）。
 export function isCompanionUnlockedByName(companionState, name) {
   const key = companionKeyByName(name);
