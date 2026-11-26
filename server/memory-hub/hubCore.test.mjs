@@ -595,7 +595,7 @@ describe("E1 空间分凭证", () => {
       const freshAuth = await fetch(`${base}/api/spaces/${created.spaceId}/saves`, { headers: { "x-memory-hub-token": rotated.token } });
       assert.equal(freshAuth.status, 200);
 
-      // claim 兼容期：未登记空间首个写请求登记凭证哈希，后续同一凭证可用
+      // 无 write-claim（复审必修）：任意写不能 claim 未登记空间——一律 401
       _resetWriteRateBuckets();
       const claimTok = { "x-memory-hub-token": "legacy-shared-token" };
       const claimPut = await fetch(`${base}/api/spaces/spLegacy/saves/slot1`, {
@@ -603,15 +603,47 @@ describe("E1 空间分凭证", () => {
         headers: { "Content-Type": "application/json", ...claimTok },
         body: JSON.stringify({ expectedRev: 0, payloadEnc: "c", updatedAt: 1 }),
       });
-      assert.equal(claimPut.status, 200);
-      const claimList = await fetch(`${base}/api/spaces/spLegacy/saves`, { headers: claimTok });
-      assert.equal(claimList.status, 200);
-      // 别的凭证对已 claim 空间无效
-      const claimBad = await fetch(`${base}/api/spaces/spLegacy/saves`, { headers: { "x-memory-hub-token": "wrong" } });
-      assert.equal(claimBad.status, 401);
-      // 读不参与 claim：未登记空间带凭证 GET 仍 401
-      const readNoClaim = await fetch(`${base}/api/spaces/spNever/saves`, { headers: { "x-memory-hub-token": "whatever" } });
-      assert.equal(readNoClaim.status, 401);
+      assert.equal(claimPut.status, 401);
+      // 该空间仍无凭证行——「先写即占」不存在
+      assert.equal(store.spaceTokenHash("spLegacy"), null);
+
+      // 最小安全迁移：管理员 rotate-token 为 legacy 空间 upsert 一次性新凭证
+      const provLegacy = await fetch(`${base}/api/spaces/spLegacy/rotate-token`, { method: "POST", headers: admin });
+      assert.equal(provLegacy.status, 200);
+      const legacyJson = await provLegacy.json();
+      assert.equal(legacyJson.spaceId, "spLegacy");
+      const legacyAuth = { "x-memory-hub-token": legacyJson.token };
+      const legacyPut = await fetch(`${base}/api/spaces/spLegacy/saves/slot1`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...legacyAuth },
+        body: JSON.stringify({ expectedRev: 0, payloadEnc: "c", updatedAt: 1 }),
+      });
+      assert.equal(legacyPut.status, 200);
+      // provision 后 admin token 仍读不到正文
+      const adminReadLegacy = await fetch(`${base}/api/spaces/spLegacy/saves/slot1`, { headers: admin });
+      assert.equal(adminReadLegacy.status, 401);
+
+      // 错误凭证写也计入限流（前置计数，不看凭证对错）
+      _resetWriteRateBuckets();
+      let wrongLast = 0;
+      for (let i = 0; i < 61; i += 1) {
+        const r = await fetch(`${base}/api/spaces/${created.spaceId}/saves/slot1`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", "x-memory-hub-token": "wrong-cred" },
+          body: JSON.stringify({ expectedRev: 0, payloadEnc: "c", updatedAt: i, force: true }),
+        });
+        wrongLast = r.status;
+      }
+      assert.equal(wrongLast, 429);
+
+      // create/rotate 也计入限流
+      _resetWriteRateBuckets();
+      let createLast = 0;
+      for (let i = 0; i < 61; i += 1) {
+        const r = await fetch(`${base}/api/space`, { method: "POST", headers: admin });
+        createLast = r.status;
+      }
+      assert.equal(createLast, 429);
 
       // 429：同一 IP 每分钟写超 60 次返 429
       _resetWriteRateBuckets();
@@ -641,9 +673,15 @@ describe("HTTP server, DELETE /api/space/:spaceId + VACUUM, and API key rejectio
     await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
     const { port } = server.address();
     const base = `http://127.0.0.1:${port}`;
-    const auth = { "x-memory-hub-token": "test-hub-token" };
+    let auth = { "x-memory-hub-token": "test-hub-token" };
 
     try {
+      // E1：空间数据不再认管理员 token——先 rotate provision 出 spA 的空间凭证
+      const prov = await fetch(`${base}/api/spaces/spA/rotate-token`, { method: "POST", headers: auth });
+      assert.equal(prov.status, 200);
+      const provJson = await prov.json();
+      auth = { "x-memory-hub-token": provJson.token };
+
       const saveRes = await fetch(`${base}/api/spaces/spA/saves/slot1`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", ...auth },

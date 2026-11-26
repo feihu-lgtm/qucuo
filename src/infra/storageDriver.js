@@ -193,7 +193,13 @@ export function resolveCloudConflict(key, choice) {
       const binding = hubBinding(loadStorageConfig());
       if (binding.bound) {
         void Promise.resolve(hubDeleteSave(binding, key, { expectedRev: expectedRevFor(key, binding.spaceId), force: true }))
-          .then((r) => { if (r.ok) clearServerRev(key, binding.spaceId); })
+          .then((r) => {
+            if (r.ok) { clearServerRev(key, binding.spaceId); return; }
+            // Review 修：force DELETE 撞 429/5xx 不能静默蒸发（裁决已清、云端未删、
+            // 无冲突可重试）——与 force push 同口径降级回普通队列退避重试，
+            // 不再带 force；后续 409 会重新登记冲突由玩家再裁。
+            enqueueCloudPush(key, undefined, "del");
+          })
           .catch(() => enqueueCloudPush(key, undefined, "del"));
       }
     }

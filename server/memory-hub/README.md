@@ -18,11 +18,14 @@ MEMORY_HUB_TOKEN=本地开发token PORT=8787 MEMORY_HUB_DB=./memory-hub.sqlite n
   `POST /api/spaces/:spaceId/rotate-token`（旋转凭证，新凭证同样只返回一次）、
   `GET /api/spaces/:spaceId/meta`（只返回计数/时间戳，**绝不返回存档或段落正文**）。
   管理员凭证**不能**读/写/删任何空间的玩家数据。
-- **兼容期 claim**：未登记凭证的空间（旧部署数据）收到首个写请求时，把所带凭证哈希登记为该空间凭证——
-  旧客户端 cloudUrl/spaceId/hubToken 三件套无需改造即可继续用同一凭证；读请求不参与 claim。
+- **无 write-claim**：普通写请求绝不自动登记空间凭证（防「先写即占」）。**legacy 空间迁移**：
+  管理员用 `POST /api/spaces/:spaceId/rotate-token` 为该 spaceId provision 一次性新凭证
+  （未登记空间 upsert 凭证行，已登记则旋转；此操作不读正文），转交用户替换客户端「空间凭证」。
+  旧客户端 cloudUrl/spaceId/hubToken 三件套字段、URL 形状、unbound 降级不变，只需换新凭证值。
 - **写限流**：同一来源 IP 每 60 秒最多 60 次写请求（PUT/POST/DELETE；query/has-after 属读不限），
-  超出返回 `429`。内存滑动窗口，键取 socket 地址（不盲信 `x-forwarded-for`；反代部署需自行保证
-  socket 地址可信或前置限流）。
+  超出返回 `429`。限流在鉴权与业务路由**之前**统一计数——无论凭证对错、空间存在与否都计入，
+  创建空间/旋转凭证全覆盖。内存滑动窗口，键取 socket 地址（不盲信 `x-forwarded-for`；
+  反代部署需自行保证 socket 地址可信或前置限流）。
 - 凭证头仍走 `x-memory-hub-token`，与任何模型 key 无关；`Authorization`/`x-api-key` 等 header 依然拒收。
 - `MEMORY_HUB_TOKEN` 缺失**拒绝启动**。唯一例外：显式 `ALLOW_INSECURE_LOCAL_ONLY=1` 的本机开发
   （此时跳过全部鉴权，必须自行确保只 bind loopback）。

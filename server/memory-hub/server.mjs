@@ -45,6 +45,7 @@ const writeBuckets = new Map(); // ip -> number[]（时间戳升序）
 function writeRateLimited(ip, now = Date.now()) {
   const key = ip || "unknown";
   const arr = (writeBuckets.get(key) || []).filter((t) => now - t < WRITE_RATE_WINDOW_MS);
+  if (!arr.length) writeBuckets.delete(key); // 窗口滑空即删 key——不无限留桶
   if (arr.length >= WRITE_RATE_LIMIT) {
     writeBuckets.set(key, arr);
     return true;
@@ -53,6 +54,7 @@ function writeRateLimited(ip, now = Date.now()) {
   writeBuckets.set(key, arr);
   return false;
 }
+
 export function _resetWriteRateBuckets() { writeBuckets.clear(); }
 
 function readJsonBody(req, limitBytes = 2 * 1024 * 1024) {
@@ -135,13 +137,22 @@ export function createHubServer({
         return;
       }
 
+      // E1 写限流前置（复审必修）：鉴权与业务路由之前统一计数——无论凭证对错、
+      // 空间存在与否，写请求（PUT/POST/DELETE；query/has-after 读型 POST 除外）
+      // 都计入同一 IP 60/min 配额，超出 429。错误凭证暴力试探、create/rotate 全覆盖。
+      const isWriteMethod = method === "PUT" || method === "POST" || method === "DELETE";
+      const readlikePostEarly = method === "POST" && /\/(query|has-after)$/.test(path);
+      if (token && isWriteMethod && !readlikePostEarly && writeRateLimited(req.socket?.remoteAddress)) {
+        sendJson(res, 429, { error: "rate_limited" });
+        return;
+      }
+
       // E1 鉴权模型：
       // · 空间数据路径（/api/spaces?/:spaceId/…）只认该空间自己的凭证——
       //   库内 SHA-256 比对；全站 MEMORY_HUB_TOKEN 在此一律无效（降为管理员凭证）。
       // · 运维端点（rotate/meta）只认管理员 token。
-      // · claim 兼容期：space 无凭证行时首个写请求把所带凭证哈希登记为该空间凭证
-      //   （旧客户端 cloudUrl/spaceId/hubToken 三件套无需改造即继续可用）；
-      //   读请求对未登记空间一律 401——读不参与 claim，避免探测即占空间。
+      // · 无 write-claim：未登记空间一律 401——legacy 空间须管理员 rotate-token
+      //   provision 一次性新凭证后用户替换；普通写请求绝不自动登记（防先写即占）。
       // · insecure 本机模式（无 token）跳过全部鉴权，仅限 loopback 开发。
       const presented = req.headers[HUB_TOKEN_HEADER];
       const insecure = !token;
@@ -169,12 +180,15 @@ export function createHubServer({
           return;
         }
         const spaceId = decodeURIComponent(rotateMatch[1]);
-        if (!store.spaceTokenHash(spaceId)) {
-          sendJson(res, 404, { error: "not_found" });
-          return;
-        }
         const next = randomBytes(24).toString("hex");
-        store.rotateSpaceToken(spaceId, sha256hex(next));
+        const nextHash = sha256hex(next);
+        if (store.spaceTokenHash(spaceId)) {
+          store.rotateSpaceToken(spaceId, nextHash);
+        } else {
+          // legacy provision（协调者裁决）：管理员可为未登记空间 upsert 凭证行——
+          // 一次性新凭证只返回一次，由管理员转交用户替换；此操作不读正文。
+          store.createSpace(spaceId, nextHash, Date.now());
+        }
         sendJson(res, 200, { spaceId, token: next, rotatedAt: Date.now() });
         return;
       }
@@ -193,31 +207,19 @@ export function createHubServer({
       if (spaceDataMatch) {
         const spaceId = decodeURIComponent(spaceDataMatch[1]);
         if (!insecure) {
-          let storedHash = store.spaceTokenHash(spaceId);
-          const isWrite = method === "PUT" || method === "POST" || method === "DELETE";
-          // query/has-after 是 POST 但属读——不参与 claim
-          const isReadlikePost = method === "POST" && /\/(query|has-after)$/.test(path);
-          if (!storedHash && isWrite && !isReadlikePost && presented) {
-            // claim：首个写请求登记凭证哈希（兼容期最小迁移机制）
-            store.createSpace(spaceId, sha256hex(presented), Date.now());
-            storedHash = store.spaceTokenHash(spaceId);
-          }
-          if (!hashEqual(presented, storedHash)) {
+          // write-claim 已删除（复审必修）：公网「先写即占空间」不可接受——
+          // 未登记空间一律 401，legacy 空间须由管理员 rotate/provision 登记。
+          if (!hashEqual(presented, store.spaceTokenHash(spaceId))) {
             sendJson(res, 401, { error: "unauthorized" });
             return;
           }
+          // 旋转竞态（Review SEC）：凭证在 body 解析期间被旋转时，旧凭证的在飞
+          // 写/读不得继续——handler 在 await 之后调 stillValid() 复核当前哈希。
+          req.__spaceRevalidate = (sid) => hashEqual(presented, store.spaceTokenHash(sid));
         }
       } else if (path.startsWith("/api/")) {
         // 非空间路径的 /api/*（当前无此类端点）默认拒绝
         sendJson(res, 404, { error: "not_found" });
-        return;
-      }
-
-      // E1 写限流：写请求（PUT/POST/DELETE，query/has-after 读型 POST 除外）超 60/min 返 429
-      const isWriteMethod = method === "PUT" || method === "POST" || method === "DELETE";
-      const readlikePost = method === "POST" && /\/(query|has-after)$/.test(path);
-      if (!insecure && isWriteMethod && !readlikePost && writeRateLimited(req.socket?.remoteAddress)) {
-        sendJson(res, 429, { error: "rate_limited" });
         return;
       }
 
@@ -232,6 +234,10 @@ export function createHubServer({
         }
         if (method === "PUT") {
           const body = await readJsonBody(req);
+          if (req.__spaceRevalidate && !req.__spaceRevalidate(spaceId)) {
+            sendJson(res, 401, { error: "unauthorized" });
+            return;
+          }
           assertNoApiKeyPayload(body);
           const result = store.putSave(spaceId, slotId, body);
           sendJson(res, result.status, result);
@@ -242,6 +248,10 @@ export function createHubServer({
           // 是玩家在客户端显式裁决「确认删除/本地覆盖云端」，自动流程绝不许带。
           let body = {};
           try { body = await readJsonBody(req); } catch { body = {}; }
+          if (req.__spaceRevalidate && !req.__spaceRevalidate(spaceId)) {
+            sendJson(res, 401, { error: "unauthorized" });
+            return;
+          }
           const force = url.searchParams.get("force") === "1" || body?.force === true;
           const expectedRev = Number.isInteger(body?.expectedRev)
             ? body.expectedRev
@@ -263,6 +273,10 @@ export function createHubServer({
       if (proseAppendMatch && method === "POST") {
         const spaceId = decodeURIComponent(proseAppendMatch[1]);
         const body = await readJsonBody(req);
+        if (req.__spaceRevalidate && !req.__spaceRevalidate(spaceId)) {
+          sendJson(res, 401, { error: "unauthorized" });
+          return;
+        }
         assertNoApiKeyPayload(body);
         const result = store.appendProseChunks(spaceId, body.batchId, body.chunks);
         sendJson(res, 200, result);
@@ -273,6 +287,10 @@ export function createHubServer({
       if (proseHasAfterMatch && method === "POST") {
         const spaceId = decodeURIComponent(proseHasAfterMatch[1]);
         const body = await readJsonBody(req);
+        if (req.__spaceRevalidate && !req.__spaceRevalidate(spaceId)) {
+          sendJson(res, 401, { error: "unauthorized" });
+          return;
+        }
         assertNoApiKeyPayload(body);
         const result = store.hasProseAfter(spaceId, body);
         sendJson(res, 200, result);
@@ -283,6 +301,10 @@ export function createHubServer({
       if (proseQueryMatch && method === "POST") {
         const spaceId = decodeURIComponent(proseQueryMatch[1]);
         const body = await readJsonBody(req);
+        if (req.__spaceRevalidate && !req.__spaceRevalidate(spaceId)) {
+          sendJson(res, 401, { error: "unauthorized" });
+          return;
+        }
         assertNoApiKeyPayload(body);
         const result = store.queryProseChunks(spaceId, body);
         sendJson(res, 200, result);
