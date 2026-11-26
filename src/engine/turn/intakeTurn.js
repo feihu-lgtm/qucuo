@@ -125,6 +125,8 @@ export function registerIntakeCalls() {
     reviewDesc: "契约 B 扁平听意单：关思考 maxTokens 1024（WO-16G roadmap 口径），原生 schema 通道，本地 validateJsonSchema 复核",
     defaultMaxTokens: 1024,
     cfg: (_apiCfg, ctx) => (ctx.cfg ? { ...ctx.cfg, thinkingMode: "off" } : undefined),
+    // A1：结构化小调用显式关思考——OpenAI 兼容通道 Gemini 3 下发 reasoning_effort minimal
+    modelOptions: { disableThinking: true },
     join: "",
     matrixBlocks: ["turn.intake.sys", "turn.intake.user"],
     blocks: ["turn.intake.sys", "turn.intake.user"],

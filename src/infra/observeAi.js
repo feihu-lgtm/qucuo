@@ -31,6 +31,17 @@ export async function observeAi(messages, opts, request) {
       ?? usage?.cache_read_input_tokens
       ?? usage?.cachedContentTokenCount
       ?? 0;
+    // A1：dev 下短调用（disableThinking→reasoning_effort minimal）思考 token 超 200
+    // 说明中转/端点吞了思考档参数——警告进 turnMonitor 全流程日志（TraceViewer 可见），
+    // 只记模型与调用 id，不记正文/密钥。
+    const reasoningTokens = usage?.completion_tokens_details?.reasoning_tokens;
+    if (import.meta.env?.DEV && modelOptions.disableThinking && Number(reasoningTokens) > 200) {
+      call.warn(`短调用 reasoning_tokens=${reasoningTokens} 超 200——中转可能吞了 reasoning_effort`, {
+        model: opts.model || getApiModel(cfg),
+        callId: result.raw?.id || "n/a",
+        reasoningTokens,
+      });
+    }
     call.end({ success: true, response: result.text, finishReason: result.finishReason, usage, cachedTokens });
     return result;
   } catch (error) {

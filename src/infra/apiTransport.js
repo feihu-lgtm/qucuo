@@ -172,8 +172,12 @@ export async function fetchOpenAI(cfg, systemPrompt, messages, opts, stream = fa
     });
     if (vertex && !res.ok) throw await vertex.vertexResponseError(res, auth.Authorization);
     if (stream) return res;
-    return vertex ? await res.json().catch(() => { throw new Error("Vertex AI 返回的内容无法解析"); })
-      : await readJsonOrThrow(res, "OpenAI 兼容调用", url);
+    if (!vertex) {
+      // A1 短调用思考档探测在 observeAi 按 usage 进 turnMonitor 全流程日志，
+      // 传输层保持纯净只回原始 json（raw.id 供调用 id 留痕）。
+      return await readJsonOrThrow(res, "OpenAI 兼容调用", url);
+    }
+    return await res.json().catch(() => { throw new Error("Vertex AI 返回的内容无法解析"); });
   } catch (error) {
     if (vertex && error.code === "network") throw new Error("Vertex AI 网络请求失败");
     throw error;

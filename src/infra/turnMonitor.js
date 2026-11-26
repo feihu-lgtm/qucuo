@@ -124,6 +124,9 @@ export function createTurnMonitor({ now = Date.now, strict = !!import.meta.env?.
       chunk() {
         if (!background && turn.phase === AI_WAIT) transition(turn, AI_STREAM);
       },
+      warn(message, extra = {}) {
+        add(turn, "engine", message, { kind: "ai-warning", status: "warn", ...extra });
+      },
       end(response) {
         node.durationMs = now() - startedAt;
         node.pipeline = { ...node.pipeline, ...response, ...ids, durationMs: node.durationMs };
