@@ -339,7 +339,10 @@ async function runTurnSteps(ctx, cmd, opts) {
       chain: "group",
       sealText,
       sealData: parsed.jsonOk ? parsed.data : null,
-      warnings: parsed.dropped.length ? [`dropped:${parsed.dropped.join("/")}`] : [],
+      warnings: [
+        ...(parsed.validationErrors || []),
+        ...(parsed.dropped.length ? [`dropped:${parsed.dropped.join("/")}`] : []),
+      ],
     });
   }
 

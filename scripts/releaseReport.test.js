@@ -46,9 +46,38 @@ describe("releaseReport 阈值评估", () => {
     rmSync(dir, { recursive: true, force: true });
   });
   it("旧行无 chain 归并 judge 不误伤群聊", () => {
-    const { dir, fp } = mk({ version: 2, cumulative: { intake: [intakeRow()], seal: [sealRow({ passed: 99 })] } });
+    const { dir, fp } = mk({ version: 2, cumulative: { intake: [intakeRow()], seal: [sealRow({ passed: 99 }), sealRow({ chain: "group", total: 5, passed: 5 })] } });
     const r = run(fp);
-    expect(r.code).toBe(0); // 99% judge 过线；无群聊样本不评
+    expect(r.code).toBe(0); // 99% judge 过线+群聊足额；旧行归并 judge 不进 group 桶
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("无样本不能算过线：空数据 exit 2", () => {
+    const { dir, fp } = mk({ version: 2, cumulative: { intake: [], seal: [] } });
+    const r = run(fp);
+    expect(r.code).toBe(2);
+    expect(r.out).toContain("没测不能算过线");
+    rmSync(dir, { recursive: true, force: true });
+  });
+  it("样本不足列 failure：intake 50 调用/judge 30 回合/group 2 回合", () => {
+    const { dir, fp } = mk({ version: 2, cumulative: {
+      intake: [intakeRow({ calls: 50, schemaOk: 50 })],
+      seal: [sealRow({ chain: "judge", total: 30, passed: 30 }), sealRow({ chain: "group", total: 2, passed: 2 })],
+    } });
+    const r = run(fp);
+    expect(r.code).toBe(2);
+    expect(r.out).toContain("intake 样本不足");
+    expect(r.out).toContain("判官尾章样本不足");
+    expect(r.out).toContain("群聊尾章样本不足");
+    rmSync(dir, { recursive: true, force: true });
+  });
+  it("足额全过：intake 100/judge 50/group 5 exit 0", () => {
+    const { dir, fp } = mk({ version: 2, cumulative: {
+      intake: [intakeRow()],
+      seal: [sealRow({ chain: "judge", total: 50, passed: 50 }), sealRow({ chain: "group", total: 5, passed: 5 })],
+    } });
+    const r = run(fp);
+    expect(r.code).toBe(0);
     rmSync(dir, { recursive: true, force: true });
   });
 });

@@ -84,6 +84,15 @@ export function parseGroupTalkSeal(sealText, presentNpcNames = []) {
   if (!data || typeof data !== "object") return out;
   out.jsonOk = true;
   out.data = data;
+  // 初审修：契约严格化——尾章只允许 respondedNpcs 一个键且必须是数组。
+  // validationErrors 透出供计量判 failed；缺键/非数组/额外键都算校验不过。
+  out.validationErrors = [];
+  const keys = Object.keys(data);
+  for (const k of keys) {
+    if (k !== "respondedNpcs") out.validationErrors.push(`extraKey:${k}`);
+  }
+  if (!("respondedNpcs" in data)) out.validationErrors.push("missingKey:respondedNpcs");
+  else if (!Array.isArray(data.respondedNpcs)) out.validationErrors.push("notArray:respondedNpcs");
   const names = Array.isArray(data.respondedNpcs) ? data.respondedNpcs : [];
   for (const raw of names) {
     const name = typeof raw === "string" ? raw.trim() : "";

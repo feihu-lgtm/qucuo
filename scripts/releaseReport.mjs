@@ -75,9 +75,19 @@ export const RELEASE_THRESHOLDS_B0 = {
   groupSealPassRate: 0.98,
 };
 
+// 初审修：无样本/样本不足不能算过线——三条线必须达标，登记最小样本线。
+export const MIN_SAMPLES_B0 = { intake: 100, judge: 50, group: 5 };
+
 const failures = [];
+// intake：无行=没测=不过
+if (!intake.size) {
+  failures.push("intake 无任何样本——没测不能算过线");
+}
 for (const r of intake.values()) {
   if (!r.calls) continue;
+  if (r.calls < MIN_SAMPLES_B0.intake) {
+    failures.push(`intake 样本不足 ${r.provider}/${r.model}: ${r.calls}<${MIN_SAMPLES_B0.intake} 调用`);
+  }
   const schemaRate = r.schemaOk / r.calls;
   const callRate = (r.calls - r.otherFailed) / r.calls;
   if (schemaRate < RELEASE_THRESHOLDS_B0.intakeSchemaPassRate) {
@@ -89,8 +99,17 @@ for (const r of intake.values()) {
 }
 for (const chain of ["judge", "group"]) {
   const threshold = chain === "judge" ? RELEASE_THRESHOLDS_B0.judgeSealPassRate : RELEASE_THRESHOLDS_B0.groupSealPassRate;
-  for (const r of [...seal.values()].filter((x) => x.chain === chain)) {
+  const chainRows = [...seal.values()].filter((x) => x.chain === chain);
+  if (!chainRows.length) {
+    failures.push(`${chain === "judge" ? "判官" : "群聊"}尾章无任何样本——没测不能算过线`);
+    continue;
+  }
+  const minSample = chain === "judge" ? MIN_SAMPLES_B0.judge : MIN_SAMPLES_B0.group;
+  for (const r of chainRows) {
     if (!r.total) continue;
+    if (r.total < minSample) {
+      failures.push(`${chain === "judge" ? "判官" : "群聊"}尾章样本不足 ${r.provider}/${r.model}: ${r.total}<${minSample} 回合`);
+    }
     const rate = r.passed / r.total;
     if (rate < threshold) {
       failures.push(`${chain === "judge" ? "判官" : "群聊"}尾章合格率 ${r.provider}/${r.model}: ${pct(r.passed, r.total)} < 98%（样本 ${r.total} 回合如实计入）`);

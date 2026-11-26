@@ -15,7 +15,10 @@ const record = (sealText, present) => {
   recordSealMetric({
     epoch: "e1", cfg, chain: "group", sealText,
     sealData: parsed.jsonOk ? parsed.data : null,
-    warnings: parsed.dropped.length ? [`dropped:${parsed.dropped.join("/")}`] : [],
+    warnings: [
+      ...(parsed.validationErrors || []),
+      ...(parsed.dropped.length ? [`dropped:${parsed.dropped.join("/")}`] : []),
+    ],
   });
 };
 
@@ -52,6 +55,28 @@ describe("群聊尾章计量（chain=group）", () => {
     expect(row.failed).toBe(1);
     expect(row.passed).toBe(0);
   });
+  it("{}：缺 respondedNpcs 键即 failed（初审修）", () => {
+    record('{}', ["温掌柜"]);
+    const row = releaseMetricAggregates("e1").seal[0];
+    expect(row.failed).toBe(1);
+    expect(row.passed).toBe(0);
+  });
+  it("额外键：契约外键即 failed", () => {
+    record('{"respondedNpcs":["温掌柜"],"mood":"happy"}', ["温掌柜"]);
+    const row = releaseMetricAggregates("e1").seal[0];
+    expect(row.failed).toBe(1);
+  });
+  it("非数组 respondedNpcs：failed", () => {
+    record('{"respondedNpcs":"温掌柜"}', ["温掌柜"]);
+    const row = releaseMetricAggregates("e1").seal[0];
+    expect(row.failed).toBe(1);
+  });
+  it("合法空数组：passed（无人接话是合法尾章）", () => {
+    record('{"respondedNpcs":[]}', ["温掌柜"]);
+    const row = releaseMetricAggregates("e1").seal[0];
+    expect(row.passed).toBe(1);
+  });
+
   it("接线断言：runTurn 群聊段 recordSealMetric chain=group", () => {
     const src = readFileSync(new URL("../runTurn.js", import.meta.url), "utf8");
     expect(src).toContain('chain: "group"');
