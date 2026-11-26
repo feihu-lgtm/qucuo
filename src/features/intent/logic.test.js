@@ -58,3 +58,23 @@ describe("findStepNpc 跟随同伴回退（D6 Review）", () => {
     expect(findStepNpc(state, { target: "才旦" })).toMatchObject({ name: "才旦" });
   });
 });
+
+describe("同伴携物非交互保管（D6 Review 二轮）", () => {
+  it("名册条目不暴露携物池——切磋掉落/战斗摸取/货架天然无的放矢", async () => {
+    const { companionNpcEntry } = await import("../../domain/rules/companion/companion.js");
+    const cs = { pearl: { unlocked: true, active: true, data: { name: "珍珠", carriedItems: [{ name: "青钢剑", id: "it_x" }] } } };
+    const entry = companionNpcEntry(cs, "pearl", { party: true });
+    expect(entry.carriedItems).toEqual([]);
+    // 正本不受影响
+    expect(cs.pearl.data.carriedItems).toHaveLength(1);
+  });
+
+  it("偷窃/交易同伴被确定性拒止", async () => {
+    const { stealFromNpc } = await import("../npc/learn.js");
+    const { tradeWithNpc } = await import("../npc/exchange.js");
+    const npc = { name: "珍珠", companion: true, carriedItems: [] };
+    const state = { varTree: { 角色: {} }, inv: [], room: { npcs: [] } };
+    expect(stealFromNpc(state, npc).logs[0].text).toContain("伙伴");
+    expect(tradeWithNpc(state, npc).logs[0].text).toContain("不做买卖");
+  });
+});

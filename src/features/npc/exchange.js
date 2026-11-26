@@ -281,6 +281,7 @@ export function giftSilver(state, npc, amount, now = Date.now()) {
 
 export function tradeWithNpc(state, npc) {
   if (!npc) return { logs: [{ t: "err", text: "  此地没有这位人物。" }] };
+  if (npc.companion) return { logs: [{ t: "sys", text: `  ${npc.name}是与你同行的伙伴，不做买卖——要什么直说便是。` }] };
   if (isNpcAngry(state.varTree, npc.name)) return appeaseAngryNpc(state, npc, { kind: "trade" });
   // WO-23C6 追杀令后果：随行同伴是被该势力通缉的叛徒 → deterministic 冷遇拒绝交易。
   // 纯读追杀令账，不改任何事实；叛徒不随行（留守/未入队）则照常交易。
