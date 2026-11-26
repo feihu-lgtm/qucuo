@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { featureCtx } from "../runtime/gameRuntime.js";
 import { gameActions, gameStore, getGameEpoch, isGameEpochStale } from "../../store/gameStore.js";
-import { sessionUiStore } from "../../store/sessionUiStore.js";
+import { sessionUiStore, setInputCapsule } from "../../store/sessionUiStore.js";
 import { applyResult } from "../../features/run.js";
 import { consumeItem, pickGroundItem } from "../../features/items/logic.js";
 import {
@@ -52,9 +52,9 @@ export function useScreenHandlers({
       setActiveTarget(npc.name);
       return;
     }
-    setInteractMode("talk");
-    setTalkTarget(npc.name);
-    setActiveTarget(npc.name);
+    // W-INPUT：点「对话」改生成一次性 @胶囊（发完即焚），不再常驻 pinning——
+    // 旧 interactMode/talkTarget 常驻会在底栏撤销后变成看不见的排他对象，回不去。
+    setInputCapsule({ kind: "target", name: npc.name });
   }, { feature: "npc.talkToNpc" }), [captureUndo]);
 
   const handleNpcGift = useCallback((npc, item) => applyResult(featureCtx(), () => {
