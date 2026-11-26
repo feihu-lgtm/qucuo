@@ -2,7 +2,7 @@
 import IntentConfirmBar from "../components/IntentConfirmBar.jsx";
 import { factionShopCoef } from "../../domain/rules/economy/factionRep.js";
 import { DevControls, TurnControls } from "./TopBar.jsx";
-import { chromeBtn } from "../../utils/theme.js";
+import { THEME_VARS, chromeBtn } from "../../utils/theme.js";
 import { useState, useEffect, lazy, Suspense } from "react";
 import { OVERLAY, closeOverlay, openOverlay, useOverlay } from "../../store/uiStore.js";
 import { gameActions, useGameStore } from "../../store/gameStore.js";
@@ -26,13 +26,12 @@ const BuildingScreens = lazy(async () => {
   return { default: ({ type, ctx }) => renderBuildingScreen(type, ctx) };
 });
 
-function ScreenFallback({ zoneTheme }) {
-  return <div style={{ padding: "12px 16px", fontSize: "var(--fs-sm)", color: zoneTheme.textDim }}>载入中…</div>;
+function ScreenFallback() {
+  return <div style={{ padding: "12px 16px", fontSize: "var(--fs-sm)", color: "var(--text-dim)" }}>载入中…</div>;
 }
 
 export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNote, setVarTree }) {
-  const {
-    zoneTheme, S,
+  const {  S,
     isDayMode, clr,
     logEnd,
   } = ui;
@@ -85,9 +84,9 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
     <span key={key} className="mobile-touch-target" onClick={() => setCraftTab(key)}
       style={{
         cursor: "pointer", padding: "2px 12px", fontSize: "var(--fs-sm)", borderRadius: 0,
-        color: craftTab === key ? zoneTheme.bg : zoneTheme.accent,
-        background: craftTab === key ? zoneTheme.accent : "transparent",
-        border: `1px solid ${craftTab === key ? zoneTheme.accent : zoneTheme.border}`,
+        color: craftTab === key ? "var(--bg)" : "var(--accent)",
+        background: craftTab === key ? "var(--accent)" : "transparent",
+        border: `1px solid ${craftTab === key ? "var(--accent)" : "var(--border)"}`,
       }}>{label}</span>
   );
   const tabs = (className) => (
@@ -105,13 +104,13 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
       <div className="mobile-hide" style={{ ...S.label, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span>江湖</span>
         <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <TurnControls theme={zoneTheme} loading={loading} stopRunning={turn.stopRunning} rollbackBlocked={turn.rollbackBlocked} rollbackOneStep={turn.rollbackOneStep} />
-          <DevControls theme={zoneTheme} addLog={addLog} />
+          <TurnControls theme={THEME_VARS} loading={loading} stopRunning={turn.stopRunning} rollbackBlocked={turn.rollbackBlocked} rollbackOneStep={turn.rollbackOneStep} />
+          <DevControls theme={THEME_VARS} addLog={addLog} />
         </span>
       </div>
 
       {showDebug && (
-        <Suspense fallback={<ScreenFallback zoneTheme={zoneTheme} />}>
+        <Suspense fallback={<ScreenFallback />}>
           <DebugPanel
             isMobile={isMobile}
             char={char} setChar={setChar} pot={pot} setPot={setPot} exp={exp} setExp={setExp}
@@ -136,7 +135,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
 
       <IntentConfirmBar />
       {duelPending && (
-        <div style={{ flexShrink: 0, padding: "10px 16px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(196,80,68,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ flexShrink: 0, padding: "10px 16px", borderBottom: `1px solid var(--border)`, background: "rgba(196,80,68,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ color: "var(--text)", fontSize: "var(--fs-sm)", flex: 1 }}>{duelPending.lethal
             ? `是否与「${duelPending.name}」生死相搏？既分高下，也决生死——这一战没有点到为止。`
             : `是否与「${duelPending.name}」正式切磋？一旦开打，就要见真章了。`}</span>
@@ -148,7 +147,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
       {(activeBuilding || tradingShop) && buildingPanelMinimized && (
         <div
           onClick={() => setBuildingPanelMinimized(false)}
-          style={{ flexShrink: 0, padding: "6px 16px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(255,255,255,0.03)", cursor: "pointer", fontSize: "var(--fs-sm)", color: "var(--info)", display: "flex", alignItems: "center", gap: 6 }}
+          style={{ flexShrink: 0, padding: "6px 16px", borderBottom: `1px solid var(--border)`, background: "rgba(255,255,255,0.03)", cursor: "pointer", fontSize: "var(--fs-sm)", color: "var(--info)", display: "flex", alignItems: "center", gap: 6 }}
         >
           <span>▸ {activeBuilding?.name || tradingShop?.shopName}（已最小化，点击展开）</span>
         </div>
@@ -160,7 +159,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
           className={`mobile-building-root${gambleStoneMinimized ? " mobile-building-minimized-root" : ""}${buildingPanelMinimized ? " mobile-building-hidden" : ""}`}
           style={{
             flex: 1, minHeight: 0, height: "100%", overflowY: "auto",
-            borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(255,255,255,0.02)",
+            borderBottom: `1px solid var(--border)`, background: "rgba(255,255,255,0.02)",
             display: buildingPanelMinimized ? "none" : "flex", flexDirection: "column",
             visibility: buildingPanelMinimized ? "hidden" : undefined,
             pointerEvents: buildingPanelMinimized ? "none" : undefined,
@@ -175,7 +174,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
           </div>
           {queueCount > 0 && !gambleStoneMinimized && !activeBuilding?.shopKey && !tradingShop && (
             <div role="status" aria-live="polite"
-              style={{ ...chromeBtn(zoneTheme), alignSelf: "flex-start", flexShrink: 0, margin: "4px 12px", cursor: "default" }}>
+              style={{ ...chromeBtn(THEME_VARS), alignSelf: "flex-start", flexShrink: 0, margin: "4px 12px", cursor: "default" }}>
               ⏳ 排队中 {queueCount} · 等待落盘后执行
             </div>
           )}
@@ -184,7 +183,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
             if (!activeBuilding) return null;
             if (showBasement && (activeBuilding.type === BUILDING_TYPE.RESTAURANT || activeBuilding.type === BUILDING_TYPE.THEATER)) return null;
             const ctx = {
-              building: activeBuilding, char, time, zoneTheme, inv, skills, flags, questProgress,
+              building: activeBuilding, char, time, inv, skills, flags, questProgress,
               dao, mapData, room, innerRoomName, varTree, queueCount, effectiveSpecialNow: turn.effectiveSpecialNow,
               craftTab, tabs, isJade, runCommand, act: turn.act, captureUndo: turn.captureUndo, setDao, setChar, setInv, addLog, jotNote,
               inspectItem: aiInspect.inspectItem, setGambleStoneMinimized, gambleNegotiation,
@@ -199,19 +198,19 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
               handlePostSend: pigeonHandlers.handlePostSend,
             };
             return (
-              <Suspense fallback={<ScreenFallback zoneTheme={zoneTheme} />}>
+              <Suspense fallback={<ScreenFallback />}>
                 <BuildingScreens type={activeBuilding.type} ctx={ctx} />
               </Suspense>
             );
           })()}
           {showBasement && (
-            <Suspense fallback={<ScreenFallback zoneTheme={zoneTheme} />}>
+            <Suspense fallback={<ScreenFallback />}>
               <BasementScreen char={char} time={time} inline
                 onClose={() => closeOverlay(OVERLAY.BASEMENT)} onOrder={buildingHandlers.handleServiceOrder} />
             </Suspense>
           )}
           {tradingShop && (
-            <Suspense fallback={<ScreenFallback zoneTheme={zoneTheme} />}>
+            <Suspense fallback={<ScreenFallback />}>
               <TradingScreen inline queueCount={queueCount} shopName={tradingShop.shopName} shopItems={tradingShop.items}
                 playerInv={inv} playerMoney={char.money || 0} playerWit={turn.effectiveSpecialNow?.智谋 ?? 5} repCoef={factionShopCoef(varTree, tradingShop.district ?? room?.name)} onInspect={aiInspect.inspectItem}
                 onClose={() => setTradingShop(null)}

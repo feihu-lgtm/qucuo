@@ -24,7 +24,7 @@ import { gameActions, gameStore } from "../../../store/gameStore.js";
 const DuelScreen = lazy(() => import("../DuelScreen.jsx"));
 
 export default function DungeonScreen({
-  building, char, inv, skills, effectiveSpecialNow, zoneTheme,
+  building, char, inv, skills, effectiveSpecialNow,
   onClose, inline, addLog, jotNote, captureUndo, runCommand, act,
 }) {
   const [run, setRun] = useState(() => createDungeonRun(building?.dungeonId, { char }));
@@ -168,8 +168,8 @@ export default function DungeonScreen({
       <div style={{ padding: 14 }}>
         <div style={{
           display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8,
-          fontSize: "var(--fs-sm)", color: zoneTheme.textDim, marginBottom: 10,
-          borderBottom: `1px solid ${zoneTheme.border}`, paddingBottom: 8,
+          fontSize: "var(--fs-sm)", color: "var(--text-dim)", marginBottom: 10,
+          borderBottom: `1px solid var(--border)`, paddingBottom: 8,
         }}>
           {mapRun ? (
             <>
@@ -202,7 +202,7 @@ export default function DungeonScreen({
                   onClick={handleMapRetreat}
                   style={{
                     marginTop: 10, padding: "4px 14px", fontSize: "var(--fs-sm)",
-                    border: `1px solid ${zoneTheme.border}`, color: zoneTheme.text,
+                    border: `1px solid var(--border)`, color: "var(--text)",
                     background: "transparent", cursor: "pointer",
                   }}
                 >
@@ -210,13 +210,13 @@ export default function DungeonScreen({
                 </button>
               )}
               {mapRun.map.rooms[mapRun.current]?.isBoss && (
-                <div style={{ marginTop: 8, fontSize: "var(--fs-xs)", color: zoneTheme.textDim }}>
+                <div style={{ marginTop: 8, fontSize: "var(--fs-xs)", color: "var(--text-dim)" }}>
                   此地有镇宫首领盘踞——决战接线中，先记下方位。
                 </div>
               )}
               {mapRun.log.length > 0 && (
                 <div style={{
-                  marginTop: 12, paddingTop: 8, borderTop: `1px solid ${zoneTheme.border}`,
+                  marginTop: 12, paddingTop: 8, borderTop: `1px solid var(--border)`,
                   fontSize: "var(--fs-xs)", color: "var(--text-dim)", lineHeight: 1.6,
                 }}>
                   {mapRun.log.slice(-5).map((line, i) => (
@@ -227,7 +227,7 @@ export default function DungeonScreen({
             </>
           ) : (
             <div style={{ fontSize: "var(--fs-sm)", lineHeight: 1.8 }}>
-              <div style={{ color: zoneTheme.accent, marginBottom: 6 }}>
+              <div style={{ color: "var(--accent)", marginBottom: 6 }}>
                 {mapRun.status === "victory" ? "打通内层地宫！" : mapRun.status === "retreated" ? "已撤回锚点之外。" : "负伤被逐出地宫……"}
               </div>
               <div>带出：{mapRun.loot.money} 两 · 物事 {mapRun.loot.items.length} 件</div>
@@ -236,7 +236,7 @@ export default function DungeonScreen({
                 onClick={handleMapSettleAndClose}
                 style={{
                   marginTop: 10, padding: "4px 14px", fontSize: "var(--fs-sm)",
-                  border: `1px solid ${zoneTheme.border}`, color: zoneTheme.text,
+                  border: `1px solid var(--border)`, color: "var(--text)",
                   background: "transparent", cursor: "pointer",
                 }}
               >
@@ -253,7 +253,7 @@ export default function DungeonScreen({
                 onClick={startInnerMap}
                 style={{
                   marginBottom: 10, padding: "4px 14px", fontSize: "var(--fs-sm)",
-                  border: `1px solid ${zoneTheme.accentDim}`, color: zoneTheme.accent,
+                  border: `1px solid var(--accent-dim)`, color: "var(--accent)",
                   background: "transparent", cursor: "pointer",
                 }}
               >
@@ -274,7 +274,7 @@ export default function DungeonScreen({
 
         {!mapRun && run.log.length > 0 && (
           <div style={{
-            marginTop: 12, paddingTop: 8, borderTop: `1px solid ${zoneTheme.border}`,
+            marginTop: 12, paddingTop: 8, borderTop: `1px solid var(--border)`,
             fontSize: "var(--fs-xs)", color: "var(--text-dim)", lineHeight: 1.6,
           }}>
             {run.log.slice(-5).map((line, i) => (

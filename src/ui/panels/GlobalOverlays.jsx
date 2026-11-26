@@ -35,6 +35,7 @@ import { OVERLAY, closeOverlay, openOverlay, useOverlay } from "../../store/uiSt
 import {
   useSessionUi, setActiveNpcMenu, setActiveItemMenu, setCharacterPageTarget,
 } from "../../store/sessionUiStore.js";
+import { THEME_VARS } from "../../utils/theme.js";
 
 const TutorialOverlay = lazy(() => import("../screens/TutorialOverlay.jsx"));
 const VersionHistoryPanel = lazy(() => import("../screens/VersionHistoryPanel.jsx"));
@@ -54,7 +55,6 @@ const TeamDuelScreen = lazy(() => import("../screens/TeamDuelScreen.jsx"));
 const CardImportScreen = lazy(() => import("../screens/CardImportScreen.jsx"));
 
 export default function GlobalOverlays({
-  zoneTheme,
   char, inv, skills, varTree, room, innerRoomName, time,
   flags, questProgress, effectiveSpecialNow, companionState,
   onImportNpcs, onImportPlayer, onImportWorld,
@@ -100,7 +100,7 @@ export default function GlobalOverlays({
   const entries = [
     { show: showTutorial, render: () => <TutorialOverlay onClose={closeTutorial} /> },
     { show: showVersionHistory, render: () => (
-      <VersionHistoryPanel onClose={() => closeOverlay(OVERLAY.VERSION_HISTORY)} accentDim={zoneTheme.accentDim} />
+      <VersionHistoryPanel onClose={() => closeOverlay(OVERLAY.VERSION_HISTORY)} accentDim={"var(--accent-dim)"} />
     )},
     { show: showCardImport, render: () => (
       <Suspense fallback={<div role="status" aria-live="polite">载入中</div>}>
@@ -167,7 +167,7 @@ export default function GlobalOverlays({
       />
     )},
     { show: showTrace, render: () => (
-      <TraceViewer theme={zoneTheme} onClose={() => closeOverlay(OVERLAY.TRACE)} onReport={() => openOverlay(OVERLAY.BUG_REPORT)} />
+      <TraceViewer theme={THEME_VARS} onClose={() => closeOverlay(OVERLAY.TRACE)} onReport={() => openOverlay(OVERLAY.BUG_REPORT)} />
     )},
     { show: showCodex, render: () => (
       <CodexScreen isDayMode={isDayMode} inv={inv} skills={skills} onClose={() => closeOverlay(OVERLAY.CODEX)} />

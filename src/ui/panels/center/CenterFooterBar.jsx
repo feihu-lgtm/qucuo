@@ -7,6 +7,7 @@ import {
 import { isQuestChoiceOpen } from "../../../domain/rules/quests/questEngine.js";
 import { partitionPeople } from "../left/peopleRoster.js";
 import { getGroundItems } from "../../../domain/rules/map/groundScope.js";
+import { THEME_VARS } from "../../../utils/theme.js";
 
 export default function CenterFooterBar({ ui, turn, handlers }) {
   const room = useGameStore(s => s.room);
@@ -16,7 +17,6 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
   const varTree = useGameStore(s => s.varTree);
   const inv = useGameStore(s => s.inv);
   const {
-    zoneTheme,
     availableQuestsHere,
     inputRef, composingRef,
   } = ui;
@@ -75,10 +75,10 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
       {(loading || pendingTalks > 0) && waitSecs > 0 && (
         <div style={{
           display: "flex", alignItems: "center", gap: 8, padding: "5px 14px",
-          borderTop: `1px solid ${zoneTheme.border}`, flexShrink: 0,
+          borderTop: `1px solid var(--border)`, flexShrink: 0,
           background: waitSecs >= 30 ? "var(--footer-stalled-bg)" : waitSecs >= 12 ? "var(--footer-slow-bg)" : "var(--bg-panel)",
           fontSize: "var(--fs-sm)",
-          color: waitSecs >= 30 ? "var(--footer-stalled-text)" : waitSecs >= 12 ? "var(--warn)" : zoneTheme.textDim,
+          color: waitSecs >= 30 ? "var(--footer-stalled-text)" : waitSecs >= 12 ? "var(--warn)" : "var(--text-dim)",
         }}>
           <span>{waitSecs >= 30 ? "🐢" : "⏳"}</span>
           <span>
@@ -90,7 +90,7 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
       )}
 
       {availableQuestsHere.some(e => e.stage.playerHint) && (
-        <div style={{ padding: "6px 14px", borderTop: `1px solid ${zoneTheme.border}`, flexShrink: 0, background: "var(--footer-hint-bg)" }}>
+        <div style={{ padding: "6px 14px", borderTop: `1px solid var(--border)`, flexShrink: 0, background: "var(--footer-hint-bg)" }}>
           {availableQuestsHere.filter(e => e.stage.playerHint).map(entry => (
             <div key={entry.quest.id} style={{ display: "flex", alignItems: "baseline", gap: 6, fontSize: "var(--fs-xs)", lineHeight: 1.6 }}>
               <span style={{ color: "var(--footer-hint-title)", flexShrink: 0 }}>💡 {entry.quest.title}</span>
@@ -103,7 +103,7 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
       {availableQuestsHere.some(e => !e.stage.choices?.length) && (
         <div style={{
           display: "flex", alignItems: "center", gap: 8, padding: "6px 14px",
-          borderTop: `1px solid ${zoneTheme.border}`, flexShrink: 0, flexWrap: "wrap", rowGap: 6,
+          borderTop: `1px solid var(--border)`, flexShrink: 0, flexWrap: "wrap", rowGap: 6,
           background: "var(--footer-progress-bg)",
         }}>
           <span style={{ color: "var(--ember)", fontSize: "var(--fs-xs)", flexShrink: 0 }}>❢ 此处可推进</span>
@@ -127,7 +127,7 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
       {availableQuestsHere.some(e => e.stage.choices?.length) && (
         <div style={{
           display: "flex", alignItems: "center", gap: 8, padding: "6px 14px",
-          borderTop: `1px solid ${zoneTheme.border}`, flexShrink: 0, flexWrap: "wrap", rowGap: 6,
+          borderTop: `1px solid var(--border)`, flexShrink: 0, flexWrap: "wrap", rowGap: 6,
           background: "var(--footer-choice-bg)",
         }}>
           <span style={{ color: "var(--clay)", fontSize: "var(--fs-xs)", flexShrink: 0 }}>◈ 行动抉择</span>
@@ -158,10 +158,10 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
         </div>
       )}
 
-      <GroundItemStrip items={groundItems} theme={zoneTheme} onPickUp={screenHandlers.handleCollectGround} />
+      <GroundItemStrip items={groundItems} theme={THEME_VARS} onPickUp={screenHandlers.handleCollectGround} />
 
       <div className="mobile-input-bar" style={{
-        borderTop: `1px solid ${zoneTheme.border}`,
+        borderTop: `1px solid var(--border)`,
         padding: "10px 16px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0,
         position: "relative",
       }}>
@@ -173,7 +173,7 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
           data-at-trigger="true"
           onClick={() => setAtMenuOpen(v => !v)}
           style={{
-            color: atMenuOpen || capsule ? zoneTheme.accent : zoneTheme.textDim,
+            color: atMenuOpen || capsule ? "var(--accent)" : "var(--text-dim)",
             flexShrink: 0, fontSize: "var(--fs-md)", cursor: "pointer", userSelect: "none",
           }}
         >@</span>
@@ -187,7 +187,7 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
               display: "flex", flexDirection: "column", gap: 2, padding: 4,
               minWidth: 168, maxWidth: "calc(100vw - 28px)", maxHeight: "min(60vh, 315px)",
               overflowY: "auto", boxSizing: "border-box",
-              background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, color: zoneTheme.text,
+              background: "var(--bg-panel)", border: `1px solid var(--border)`, color: "var(--text)",
             }}
           >
             <button
@@ -196,7 +196,7 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
               data-at-option="whisper"
               onClick={() => pickCapsule({ kind: "whisper", name: narratorName })}
               style={{
-                background: "transparent", border: "none", color: zoneTheme.text,
+                background: "transparent", border: "none", color: "var(--text)",
                 textAlign: "left", padding: "6px 10px", fontSize: "var(--fs-sm)",
                 fontFamily: "inherit", cursor: "pointer",
               }}
@@ -209,7 +209,7 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
                 data-at-option={`npc-${npc.name}`}
                 onClick={() => pickCapsule({ kind: "target", name: npc.name })}
                 style={{
-                  background: "transparent", border: "none", color: zoneTheme.text,
+                  background: "transparent", border: "none", color: "var(--text)",
                   textAlign: "left", padding: "6px 10px", fontSize: "var(--fs-sm)",
                   fontFamily: "inherit", cursor: "pointer",
                 }}
@@ -223,7 +223,7 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
             style={{
               flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 4,
               padding: "1px 8px", fontSize: "var(--fs-xs)", whiteSpace: "nowrap",
-              color: zoneTheme.accent, border: `1px solid ${zoneTheme.accent}`,
+              color: "var(--accent)", border: `1px solid var(--accent)`,
               background: "transparent",
             }}
           >
@@ -233,7 +233,7 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
               aria-label="取消指定"
               data-capsule-clear="true"
               onClick={() => setInputCapsule(null)}
-              style={{ cursor: "pointer", color: zoneTheme.textDim }}
+              style={{ cursor: "pointer", color: "var(--text-dim)" }}
             >×</span>
           </span>
         )}
@@ -248,7 +248,7 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
             loading ? "..." :
             "说话做事直接写，敲 @ 或 // 可私聊旁白与指定对象"
           }
-          style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: zoneTheme.text, fontFamily: "inherit", fontSize: "var(--fs-md)" }}
+          style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "var(--text)", fontFamily: "inherit", fontSize: "var(--fs-md)" }}
         />
         {/* 发送按钮：和回车同一个提交入口。手机上按回车不顺手，这里给一个看得见的按钮。
             pointerdown 时 preventDefault，点按钮不让输入框失焦，iOS 键盘不会收起。 */}
@@ -261,8 +261,8 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
           aria-label={capsule?.kind === "pigeon" ? "放飞信鸽" : "发送"}
           style={{
             flexShrink: 0, minWidth: 52, minHeight: 32, padding: "4px 12px",
-            border: `1px solid ${input.trim() ? zoneTheme.accent : zoneTheme.border}`, borderRadius: 0,
-            background: "transparent", color: input.trim() ? zoneTheme.accent : zoneTheme.textDim,
+            border: `1px solid ${input.trim() ? "var(--accent)" : "var(--border)"}`, borderRadius: 0,
+            background: "transparent", color: input.trim() ? "var(--accent)" : "var(--text-dim)",
             fontFamily: "inherit", fontSize: "var(--fs-md)", letterSpacing: "2px",
             cursor: input.trim() ? "pointer" : "default", opacity: input.trim() ? 1 : 0.5,
           }}
