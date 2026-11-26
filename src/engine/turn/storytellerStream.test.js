@@ -91,3 +91,25 @@ describe("V1 内部标记全量剥离", () => {
     expect(out.screenText).toBe("雪落无声。「走吧。」他说。");
   });
 });
+
+describe("V1 Review 修：安全区未闭合标记不半截漏屏", () => {
+  it("标记头在安全区、标记尾未到时分批推送，半截 ⟦PROGRESS 不裸泄", () => {
+    const stream = createStorytellerStream();
+    // 推一大段让安全区前移，末尾带半个标记头
+    stream.push("很长的正文铺垫。".repeat(8) + "⟦PROGRESS_CULTIV");
+    const mid = stream.screenText;
+    expect(mid).not.toContain("⟦");
+    expect(mid).not.toContain("PROGRESS");
+    stream.push("ATION·凝气⟧收尾。");
+    const out = stream.finish();
+    expect(out.screenText).not.toContain("⟦");
+    expect(out.screenText).not.toContain("⟧");
+    expect(out.screenText).toContain("收尾。");
+  });
+  it("流终了仍不闭合的 dangling 标记头按内部标记剥除", () => {
+    const stream = createStorytellerStream();
+    stream.push("正文写完⟦W8_");
+    const out = stream.finish();
+    expect(out.screenText).toBe("正文写完");
+  });
+});

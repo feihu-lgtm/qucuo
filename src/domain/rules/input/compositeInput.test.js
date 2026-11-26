@@ -110,3 +110,16 @@ describe("V1 呼语不拆段与盐价归 talk", () => {
     expect(isTradeInput("买两斤盐")).toBe(true);
   });
 });
+
+describe("V1 Review 修：呼语带硬行动不吃免费通道+疑问句形归搭话", () => {
+  it("「老孙，我喝一口酒」呼语开头但带硬行动动词，归 action 不归免费 talk", () => {
+    expect(routeAutoInput("老孙，我喝一口酒", [{ name: "老孙" }]).kind).toBe("action");
+  });
+  it("「老孙，今晚月色如何」呼语+疑问句形无行动，归免费 talk", () => {
+    expect(routeAutoInput("老孙，今晚月色如何", [{ name: "老孙" }]).kind).toBe("talk");
+  });
+  it("裸疑问句「盐价稳当吗」「最近行市如何」单段归免费 talk 不耗回合", () => {
+    expect(routeAutoInput("盐价稳当吗").kind).toBe("talk");
+    expect(routeAutoInput("最近行市如何").kind).toBe("talk");
+  });
+});

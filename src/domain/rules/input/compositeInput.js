@@ -81,8 +81,12 @@ export function routeAutoInput(raw, npcs = []) {
   if (lookedNpc) return { kind: "lookNpc", npc: lookedNpc };
   // 纯搭话才免费：必须整句一段、判为闲聊、且不是「送给/递给」这类
   // classifyIntent 为篇幅归进 TALK_CASUAL 的真行动。
+  // Review 修：呼语开头不代表整句是闲聊——「老孙，我喝一口酒」带硬行动动词，
+  // 仍须进行动路扣回合（否则喝酒/翻找类动作被免费搭话吞掉永不发生）。
+  const HARD_ACTION_RE = /喝|吃|拔|翻|搜|摸|掏|撬|掀|偷|服|练|睡|砍|杀|劈|刺|揍|挖|拆|砸|搬|扛|背|抱|掷|扔|追|骑|拜|跪|种|采|摘|钓|伐|修|装|卸|脱|穿|戴|点火烧|点燃|疗伤|打坐|运转|运功/;
   if (splitCompositeInput(s, { npcs }).length === 1
-    && classifyIntent(s).code === "TALK_CASUAL" && !isGiftInput(s) && !isTradeInput(s)) {
+    && classifyIntent(s).code === "TALK_CASUAL" && !isGiftInput(s) && !isTradeInput(s)
+    && !HARD_ACTION_RE.test(s)) {
     return { kind: "talk" };
   }
   return { kind: "action" };

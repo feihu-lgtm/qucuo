@@ -61,17 +61,30 @@ export function createStorytellerStream({ onScreen } = {}) {
         continue;
       }
       // 没找到完整 SEAL：可能是半截标记压在尾部。终审安全区 = 全长减 HOLD。
-      const safeLen = final ? pending.length : Math.max(0, pending.length - HOLD);
+      let safeLen = final ? pending.length : Math.max(0, pending.length - HOLD);
+      // Review 修：安全区内若有未闭合的 ⟦（标记头在安全区、标记尾在持有区），
+      // 半截标记会原样漏上屏——一律回退到该 ⟦ 之前持有，等闭合后整体剥除。
+      if (!final && safeLen > 0) {
+        const frag = pending.slice(0, safeLen);
+        const openIdx = frag.lastIndexOf("⟦");
+        if (openIdx !== -1 && frag.indexOf("⟧", openIdx) === -1) safeLen = openIdx;
+      }
       if (!safeLen) break;
       // 但安全区尾巴若像锚点/SEAL 的开头（⟦ 或 \n---），非 final 时也要再等等——
       // HOLD 已覆盖最长标记，此处直接判安全区可审。
-      emit(stripAnchors(pending.slice(0, safeLen)));
+      // final 终审段也剥 dangling 未闭合标记头——残头属内部标记不裸泄。
+      const strippedSafe = stripAnchors(pending.slice(0, safeLen));
+      emit(final ? strippedSafe.replace(/⟦[^⟧]{0,60}$/, "") : strippedSafe);
       pending = pending.slice(safeLen);
       if (!final) break;
     }
     if (final && pending.length) {
-      if (sealed) sealText += pending;
-      else emit(stripAnchors(pending));
+      if (sealed) {
+        sealText += pending;
+      } else {
+        // 永不闭合的 dangling ⟦ 残头也按内部标记剥除——宁可截尾不裸泄。
+        emit(stripAnchors(pending).replace(/⟦[^⟧]{0,60}$/, ""));
+      }
       pending = "";
     }
   };
