@@ -15,6 +15,9 @@ import { getZoneTheme } from "./utils/theme.js";
 
 loadDefaultContent();
 
+import { installPreloadErrorFallback, bestEffortAutoSave } from "./app/preloadErrorFallback.js";
+if (typeof window !== "undefined") installPreloadErrorFallback({ saveSnapshot: bestEffortAutoSave });
+
 // 游戏主体单独成块：开始界面先出，空闲时预取，点「开始」时通常已下载好。
 const loadMudRPG = () => import("./MudRPG.jsx");
 const MudRPG = lazy(loadMudRPG);

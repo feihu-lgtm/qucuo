@@ -97,6 +97,16 @@ export function useAutosave({
       },
     });
     schedulerRef.current = scheduler;
+    // A2：vite:preloadError 自动刷新前的兜底存档桥——注册在真正握有 snapshot/autoSave
+    // 装配的 hook 里，兜底模块本身零 import 倒挂（游戏未挂载即无状态可存，bridge 缺省跳过）。
+    if (typeof window !== "undefined") {
+      window.__qucuoAutosaveBridge = () => {
+        try {
+          const result = autoSave(snapshotFromStore({ squares: serializeSquares() }));
+          if (result?.ok) noteAutosaveSaved();
+        } catch { /* 尽力而为——刷新不该被存档失败拦住 */ }
+      };
+    }
     // WO-06：模块态进度随挂载重置——对齐旧 useRef 的每局语义，防止上一局的
     // playedThisSession 泄漏进新开局（未游玩的新档覆盖旧自动档）
     resetAutosaveProgress();
@@ -105,6 +115,7 @@ export function useAutosave({
       window.removeEventListener("keydown", arm, true);
       scheduler.dispose();
       if (schedulerRef.current === scheduler) schedulerRef.current = null;
+      if (typeof window !== "undefined") window.__qucuoAutosaveBridge = undefined;
     };
   }, []);
 
