@@ -157,3 +157,21 @@ describe("risk 两层兼容", () => {
     expect(input.riskLevel).toBe(3);
   });
 });
+
+describe("D1 use_item costPaid 仅真耗材", () => {
+  const base = { varTree: {}, char: {}, room: {}, turn: 1, encounter: null, questCandidates: [] };
+  it("兵刃演练/凭帖出示不加 costPaid，耗材才加", async () => {
+    const { buildCausalBudgetInput } = await import("./budgetInput.js");
+    const inv = [
+      { id: "it_w", name: "青稞酒", consumable: { hpDelta: 1 } },
+      { id: "it_s", name: "鱼定枪", category: "weapon" },
+      { id: "it_l", name: "赌石邀帖", category: "misc" },
+    ];
+    const drink = buildCausalBudgetInput({ ...base, inv }, { actions: [{ kind: "use_item", itemId: "it_w", item: "青稞酒" }] });
+    expect(drink.costPaid).toBe(3);
+    const wield = buildCausalBudgetInput({ ...base, inv }, { actions: [{ kind: "use_item", itemId: "it_s", item: "鱼定枪" }] });
+    expect(wield.costPaid).toBe(0);
+    const present = buildCausalBudgetInput({ ...base, inv }, { actions: [{ kind: "use_item", itemId: "it_l", item: "赌石邀帖" }] });
+    expect(present.costPaid).toBe(0);
+  });
+});

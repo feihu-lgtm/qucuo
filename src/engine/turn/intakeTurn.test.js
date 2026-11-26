@@ -193,7 +193,8 @@ describe("buildIntakeUserContent WO-16G 喂料", () => {
     // 物件清单
     expect(text).toContain("· 赠予：");
     expect(text).toContain("霜牙短刀(it_g2)");
-    expect(text).toContain("· 使用：");
+    expect(text).toContain("· 服用：");
+    expect(text).toContain("· 把玩或出示：");
     expect(text).toContain("青稞酒(it_g1)");
     expect(text).toContain("· 拾取：");
     expect(text).toContain("遗落的皮靴(it_p1)");

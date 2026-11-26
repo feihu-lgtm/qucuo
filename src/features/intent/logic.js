@@ -15,7 +15,7 @@ export function findStepNpc(state, step) {
 // 编号指定的那个副本，按名第一件会错杀/错穿/错捡。无 id 的老调用退回按名第一件。
 // 三态寻址（抽核 blocker 修）：id 命中且名匹配→按 id；id 不存在→按名；
 // id 命中但名不符→mismatch 绝不 fallback（否则字符串按名仍会动错物）。
-function findInvItem(state, name, id) {
+export function findInvItem(state, name, id) {
   if (id) {
     const byId = (state.inv || []).find((entry) => typeof entry === "object" && entry?.id === id);
     if (byId) return { item: itemNameOf(byId) === name ? byId : null, mismatch: itemNameOf(byId) !== name };

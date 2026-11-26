@@ -8,6 +8,10 @@ import { applyResult } from "../../features/run.js";
 import { stepEffect } from "../../features/intent/logic.js";
 import { ACTION_KINDS, UNEQUIP_RE } from "../../domain/rules/intent/actionKinds.js";
 import { innerMove } from "../../features/map/logic.js";
+import { consumeItem } from "../../features/items/logic.js";
+import { findInvItem } from "../../features/intent/logic.js";
+import { itemNameOf } from "../../domain/rules/intent/actionKinds.js";
+import { CATALOG_INDEX } from "../../domain/data/items/catalog.js";
 
 // S7 move 路由：intake.direction（n/s/e/w）直接消费，不从长文本重猜。
 const VALID_DIRS = new Set(["n", "s", "e", "w"]);
@@ -50,6 +54,75 @@ function runMove(action) {
   return { kind: "move", ok: false, text: "该方向属外层赶路，判官链暂不接外层移动——系统未结算，叙事不得写成已移动，也不可编造抵达。" };
 }
 
+// D1 用物分流纯函数：耗材服用 / 兵刃衣饰演练端详 / 凭帖钥匙信物出示。
+// consumable 口径与 consumeItem 完全一致：item.consumable 或未带 noCatalog 盾
+// 且命中 CATALOG_INDEX 药效——判官条件券新铸物撞图鉴名也不吃图鉴药效。
+// 返回 "consumable" | "wield" | "present"。
+export function classifyUseItem(state, itemObjOrName) {
+  const item = typeof itemObjOrName === "string"
+    ? (state?.inv || []).find((entry) => itemNameOf(entry) === itemObjOrName) || null
+    : itemObjOrName;
+  if (!item || typeof item !== "object") return "present";
+  const shielded = item.noCatalog;
+  const consumable = item.consumable || (shielded ? null : CATALOG_INDEX[itemNameOf(item)]?.consumable);
+  if (consumable) return "consumable";
+  // Review 修：accessory 里混着凭帖信物（赌石邀帖/私印等纸面物）——它们不带任何
+  // 数值加持（sixDim/effect/atk/def 皆无），不是拿来穿戴佩挂的装备，走出示而非演练。
+  // 真饰品（旧护身符/虎乳牙/红线等带 sixDim 或 effect）仍为 wield。
+  if (item.category === "weapon" || item.category === "armor") return "wield";
+  if (item.category === "accessory") {
+    // Review 四轮修：加成判定实例与图鉴双源——buildShopInventory 会丢实例加成
+    // （离堆水则牌等），图鉴有词条即真饰品；无任何加成（含图鉴）的纸面名目
+    // （帖/牌/书信/印/钥/令等）才是凭帖信物走出示。黑风寨木牌图鉴带 sixDim，
+    // 是可佩挂装备（佩戴有魅力/气运），按 wield——出示意图属工单 escalate 的
+    // 意图识别范畴，不由物类分流承担。
+    const bonusOf = (x) => !!(x && typeof x === "object" && (
+      (x.sixDim && Object.keys(x.sixDim).length)
+      || (x.effect && Object.keys(x.effect).length)
+      || Number.isFinite(x.atk) || Number.isFinite(x.def)
+      || (x.sixDimTemp && Object.keys(x.sixDimTemp).length)
+    ));
+    const catEntry = shielded ? null : CATALOG_INDEX[itemNameOf(item)];
+    if (bonusOf(item) || bonusOf(catEntry)) return "wield";
+    return /帖|牌|书信|信物|私印|印信|凭证|钥匙|令牌|路引|文书|残页/.test(itemNameOf(item)) ? "present" : "wield";
+  }
+  return "present";
+}
+
+// D1 用物分流路由：先按 id 优先/mismatch 拒动寻址背包目标物，再按物类分流。
+// 演练/出示零状态改动——不消耗、不加 costPaid、不豁免 inv/vitals（影子口径同步）。
+function runUseItem(action, itemLabel) {
+  const state = gameStore.getState();
+  const found = findInvItem(state, itemLabel, action?.itemId || "");
+  const failText = (why) => ({ kind: action?.kind, ok: false, text: `「${itemLabel}」未能如愿（${why}）——系统未结算，叙事不得写成成功。` });
+  if (found.mismatch) return failText("名/号矛盾，未动他物");
+  if (!found.item) return failText("背包里没有对应物件");
+  const itemName = itemNameOf(found.item);
+  const cls = classifyUseItem(state, found.item);
+  if (cls === "consumable") {
+    const result = consumeItem(state, found.item);
+    const hasChanges = !!(result && result.changes && Object.keys(result.changes).length > 0);
+    if (result && (result.changes || result.logs?.length)) {
+      applyResult(featureCtx(), stripTurnSpan(result), { feature: "judgeRoute.use_item" });
+    }
+    if (hasChanges) {
+      const logLine = (result.logs || []).map((l) => l.text?.trim()).filter(Boolean)[0];
+      return { kind: action.kind, ok: true, text: `「${itemName}」已服用生效（${logLine || "药力入喉"}），系统已结算，正文须照此描写药力或酒意，不得写物件仍在囊中。` };
+    }
+    const errLine = (result?.logs || []).map((l) => l.text?.trim()).filter(Boolean)[0];
+    return failText(errLine || "服用未成");
+  }
+  if (cls === "wield") {
+    return {
+      kind: action.kind, ok: true,
+      text: found.item.equipped
+        ? `玩家正在端详或演练随身已佩的「${itemName}」，并非吞服消耗，物件不损耗、属性无增减，正文只写演练或端详之态。`
+        : `玩家正在端详手中的「${itemName}」（当前尚未穿戴佩挂，可在叙事末顺带提一句随时可佩挂上身），并非吞服消耗，物件不损耗、属性无增减。`,
+    };
+  }
+  return { kind: action.kind, ok: true, text: `玩家取出了「${itemName}」当场出示或查验，物件未消耗、未易主，判官未签发任何额外得失事实，正文只写出示查验与在场者反应。` };
+}
+
 // intake 12 字段 kind（英文枚举）→ stepEffect 的 ACTION_KINDS（中文封闭集）
 const ROUTE_KIND = {
   equip: ACTION_KINDS.EQUIP,
@@ -73,6 +146,9 @@ function runOne(action) {
   if (!kind || !itemLabel) {
     return { kind: action?.kind, ok: false, text: `「${itemLabel || (isInvite ? "未名之人" : "未名之物")}」未能如愿：行动缺少明确的${isInvite ? "对象" : "物件"}，系统未结算。` };
   }
+  // D1：use_item 按物类分流（耗材服用/兵刃衣饰演练端详/凭帖钥匙信物出示），
+  // 非耗材零状态改动——不进 stepEffect/consumeItem 老路。
+  if (action?.kind === "use_item") return runUseItem(action, itemLabel);
   const state = gameStore.getState();
   // itemId 随步骤传递——stepEffect 按 id 优先寻址，同名两件不错副本
   const step = { kind, item: isInvite ? "" : itemLabel, itemId: action.itemId || "", target: isInvite ? itemLabel : action.target, text: action.text || "" };

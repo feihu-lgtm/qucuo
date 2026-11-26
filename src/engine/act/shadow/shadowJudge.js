@@ -245,7 +245,7 @@ export async function runShadowJudge({
     const diffOut = diffSnapshots(preState, postState, { moved });
     const proj = projectFacts(verdict?.facts || []);
     // S5：feature 路由 kind 对应类目不参与比较（equip/use_item/take/invite）
-    const result = compareCategories(diffOut, proj, { featureRoutedCats: featureRoutedCats(intakeResult?.actions, { npcs }) });
+    const result = compareCategories(diffOut, proj, { featureRoutedCats: featureRoutedCats(intakeResult?.actions, { npcs, inv: preState?.inv || [] }) });
     if (isStale?.()) { recordShadowStage(epoch, "droppedStale"); return null; }
     if (epochGuard?.()) { recordShadowStage(epoch, "droppedEpoch"); return null; }
     // compareDone 计在 stale/epoch 检查之后——完成与被丢弃互斥，恒等式才成立。
