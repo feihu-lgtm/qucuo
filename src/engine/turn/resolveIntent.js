@@ -79,7 +79,7 @@ export async function resolveIntent(cmd, env) {
     const visibleHere = (room?.npcs || []).filter((n) => !innerRoomName || isNpcVisibleInInnerRoom(room?.name, innerRoomName, n));
     const rt = resolveIntimateTarget({
       targetName: isTalk ? talkTarget : (talkTarget || activeTarget?.name || activeTarget),
-      cmd, npcs: visibleHere, convo,
+      cmd, npcs: visibleHere, convo, allNpcs: room?.npcs || [],
     });
     const npc = (room?.npcs || []).find((n) => n.name === rt.targetName)
       || rt.explicitHit;

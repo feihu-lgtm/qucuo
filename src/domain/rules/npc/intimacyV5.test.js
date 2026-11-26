@@ -91,3 +91,19 @@ describe("V5 Review 三修回归", () => {
     expect(r.targetName).toBe("罗琦");
   });
 });
+
+describe("V5 Review 二轮两修回归", () => {
+  it("点名别屋 NPC 不顶包唯一在场者", async () => {
+    const { resolveIntimateTarget: rit } = await import("./intimacy.js");
+    const visible = [{ name: "罗琦" }];
+    const all = [{ name: "罗琦" }, { name: "才旦" }];
+    const r = rit({ targetName: "", cmd: "去亲才旦一口", npcs: visible, allNpcs: all, convo: [] });
+    expect(r.targetName).toBe("");
+    expect(r.explicitHit?.name).toBe("才旦");
+  });
+  it("解开才旦腰间系着的裙带 命中亲密", async () => {
+    const { isIntimateInput: iii } = await import("../prompt/inputIntent.js");
+    expect(iii("解开才旦腰间系着的裙带")).toBe(true);
+    expect(iii("解开包袱的绳结")).toBe(false);
+  });
+});
