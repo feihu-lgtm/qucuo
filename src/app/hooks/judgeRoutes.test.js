@@ -625,6 +625,12 @@ describe("D4 外层自然语言移动确定性路由", () => {
     const r = resolveMoveTarget(mkState({ innerRoomName: "村口" }), mkAction({ target: "忘忧谷", text: "从村口出发去忘忧谷" }));
     expect(r.type).toBe("unknown");
   });
+  it("Review 四轮：限定名不做子串猜测——「鱼定村·村口」不许误进「村口·广场」", () => {
+    // 溪边小屋内层出口若含「村口·广场」而无「村口」，限定名剥前缀后精确不中 → 不落 inner 误位移
+    const st = mkState({ room: { name: "鱼定村", npcs: [], items: [], exits: [] }, innerRoomName: "溪边小屋" });
+    const r = resolveMoveTarget(st, mkAction({ target: "鱼定村·村口", direction: "无", text: "回鱼定村·村口" }));
+    expect(r.type).not.toBe("inner");
+  });
   it("Review 三轮：据点前缀限定的内层房——「喇嘛庙大殿」剥前缀进大殿北行", () => {
     const st = mkState({ room: { name: "喇嘛庙", npcs: [], items: [], exits: [] }, innerRoomName: "山门" });
     const r = resolveMoveTarget(st, mkAction({ target: "喇嘛庙大殿", direction: "无", text: "进喇嘛庙大殿" }));

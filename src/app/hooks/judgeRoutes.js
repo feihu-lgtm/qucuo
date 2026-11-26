@@ -49,10 +49,11 @@ function completedQuestIdSet(questProgress) {
 //   locked      相邻但 !isNodeUnlocked——前路未开启
 // 地名匹配（Review 修）：先精确，再唯一子串——玩家/模型常写短名（「饭馆」→「老孙饭馆」、
 // 「草甸」→「大草甸」），精确不等就拒太硬；但子串命中多个候选（如「庙」）时宁可 unknown 不猜。
-export function matchPlaceName(target, candidates) {
+export function matchPlaceName(target, candidates, { exactOnly = false } = {}) {
   if (!target) return "";
   const list = [...candidates].filter(Boolean);
   if (list.includes(target)) return target;
+  if (exactOnly) return "";
   if (target.length < 2) return "";
   // Review 二轮修：只认「短名含于全名」（饭馆⊂老孙饭馆、草甸⊂大草甸），
   // 不认反向——「大草甸营地」「山门施药棚」是更长的新名/虚构名，含了真名也不许别名过去。
@@ -84,8 +85,10 @@ export function resolveMoveTarget(state, action) {
       const stripped = target.startsWith(roomName) && target.length > roomName.length
         ? target.slice(roomName.length).replace(/^[·・\s\/—-]/, "")
         : target;
+      // Review 四轮修：剥前缀后的限定名只认精确——「鱼定村·村口」就是村口，
+      // 不许子串猜进「村口·广场」；未限定原样名才走短名子串。
       const hit = matchPlaceName(target, Object.values(visExits))
-        || (stripped !== target ? matchPlaceName(stripped, Object.values(visExits)) : "");
+        || (stripped !== target ? matchPlaceName(stripped, Object.values(visExits), { exactOnly: true }) : "");
       if (hit) {
         const d = Object.entries(visExits).find(([, destRoom]) => destRoom === hit)?.[0];
         if (d) return { type: "inner", dir: d };
