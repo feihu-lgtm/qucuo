@@ -38,11 +38,10 @@ export function verifyJudgeTail({ ctx, deps, judgeVerdict, sealParts, narrativeT
     try {
       const offer = parsePactOffer(deps.cmd || "");
       const pactNpc = (deps.derivedRespondedNpcs || [])[0] || deps.talkTarget || ctx.talkTarget || "";
-      // Review 修：按句切分——拒信词与「两/银/钱/加钱/太多/太少」同句是讨价还价
-      // （「不行，十两太多，五两吧」），按派工裁决不算拒；只有干净拒句才拦。
-      const refused = String(rawNarrative || "").split(/[。！？!?\n]/).some((sent) => (
-        PACT_REFUSAL_RE.test(sent) && !/两|银|钱|太多|太少|加钱|少点|便宜/.test(sent)
-      ));
+      // Review 四轮修：撤销讨价还价豁免——「不行，我没钱付你」证伪了同句含钱=反价
+      // 的假设。回到派工裁决优先级原文「宁可漏绑不可虚绑」：拒信词出现即不绑，
+      // 反价被误拦属漏绑（裁决明言可接受），虚绑 rejected offer 才是穿帮。
+      const refused = PACT_REFUSAL_RE.test(rawNarrative || "");
       if (offer && pactNpc && !refused) fallbackPact = { npc: pactNpc, ...offer };
     } catch { /* 解析器绝不阻塞主链 */ }
     const verified = verifySealAndMaterialize({
