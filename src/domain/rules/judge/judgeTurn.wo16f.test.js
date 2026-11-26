@@ -23,6 +23,11 @@ describe("WO-16F-F1 free_act 按表签发", () => {
     const v3 = judgeTurn(weak, act(fa("伤损", "低")), { rng: () => 0 });
     expect(v3.facts[0].hpDelta).toBe(-5);
   });
+  it("Review修：歇马居（客栈类型，名无商号字样）内无 target 也照签", () => {
+    const inInn = base({ roomName: "鱼定村", innerRoomName: "歇马居" });
+    const v = judgeTurn(inInn, act(fa("破费", "无", "要间上房住店")), { rng: () => 0.5 });
+    expect(v.facts.find((x) => x.op === "CHANGE_VITALS_SILVER")).toBeTruthy();
+  });
   it("V2 无消费对象拒决：村口喊不在场老孙买茶/无商铺处买茶买酒 → silverDelta 0", () => {
     // target 指名不在场的 NPC，且场所非商铺 → 拒决扣银
     const v = judgeTurn(base({ innerRoomName: "" }), act(fa("破费", "无", "喊老孙来壶茶", "老孙")), { rng: () => 0.5 });

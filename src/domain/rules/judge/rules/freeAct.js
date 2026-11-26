@@ -3,6 +3,8 @@
 // 身法/体魄检定（attr+rng()×6 ≥ 6）减半；得财 T0 2-10/T1 10-40/T2 40-120 且须
 // 有 fit 非 absurd 的对应 proposal；调息同时辰幂等；修习按 tier 定 potDelta。
 import { resolveFreeActExpense, parseStatedExpense } from "../freeActPricing.js";
+import { classifyRoomNature } from "../../world/containers.js";
+import { getInnerRoom } from "../../map/innerMap.js";
 
 export function handleFreeAct(J, action) {
   const { envelope, roll, turn, budget, facts, notes, nextFactId, talkOnly, varTree, proposalsPre, signedRestKeys, signedFreeActGainKeys } = J;
@@ -47,9 +49,17 @@ export function handleFreeAct(J, action) {
     // 不让说书人编造「银子掉河里」强行扣钱。
     const targetNpc = action.target && action.target !== "无"
       ? (envelope.npcs || []).find((n) => n?.name === action.target) : null;
-    const placeText = `${envelope.place || ""}${envelope.roomName || ""}${envelope.innerRoomName || ""}`;
+    // Review修：场所判定走 classifyRoomNature 建筑类型准确口径（歇马居=客栈类型
+    // 但名不带商号茶馆字样），类型查不到再落名字正则兜底。
+    const rn = envelope.roomName || envelope.place || "";
+    const irn = envelope.innerRoomName || "";
+    // 仅内层房用建筑类型判定——外层房间（村口/广场）的据点级类型会误把整村当商铺。
+    const innerDef = irn ? getInnerRoom(rn, irn) : null;
+    const nature = irn ? classifyRoomNature({ districtName: rn, innerRoomName: irn, innerDef }) : "";
+    const placeText = `${envelope.place || ""}${rn}${irn}`;
     const COMMERCE_RE = /商号|茶馆|酒肆|客栈|饭馆|杂货|商铺|店|摊|市|当铺|钱庄|驿站|赌/;
-    if (!targetNpc && !COMMERCE_RE.test(placeText)) {
+    const isCommerce = nature === "food" || nature === "shop" || COMMERCE_RE.test(placeText);
+    if (!targetNpc && !isCommerce) {
       notes.push("破费无消费对象（收款人不在场、此处亦非商铺），拒决扣银");
       return;
     }
