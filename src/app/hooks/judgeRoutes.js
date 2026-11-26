@@ -75,7 +75,11 @@ export function classifyUseItem(state, itemObjOrName) {
       || !!(item.effect && Object.keys(item.effect).length)
       || Number.isFinite(item.atk) || Number.isFinite(item.def)
       || !!(item.sixDimTemp && Object.keys(item.sixDimTemp).length);
-    return hasBonus ? "wield" : "present";
+    if (hasBonus) return "wield";
+    // Review 二轮修：商店买的饰品实例常不携带图鉴加成字段（如镀金钗），不能仅凭
+    // 无加成判凭帖——默认 accessory 是可佩挂装备（wield），只有名目明为凭帖/书信/
+    // 印章/钥匙/令牌类纸面信物的才走出示。
+    return /帖|书信|信物|私印|印信|凭证|钥匙|令牌|路引|文书|残页/.test(itemNameOf(item)) ? "present" : "wield";
   }
   return "present";
 }
