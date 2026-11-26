@@ -188,7 +188,7 @@ describe("resident NPC world rule", () => {
   it("depends on imported registry revision, quest progress, and flags", () => {
     const deps = residentNpcRule.deps(makeState());
     // WO-23C4：过滤所读状态进 deps——companionState/宿敌谱变化必须触发重算
-    expect(deps).toEqual(["鱼定村", 0, {}, [], 0, {}, undefined]);
+    expect(deps).toEqual(["鱼定村", 0, {}, [], 0, {}, undefined, undefined]);
   });
 });
 
@@ -209,5 +209,17 @@ describe("W-ROAM Review 修：子夜换名单不清驻足锁未过期者", () =>
     const out2 = residentNpcRule.run(state2, { importedRegistry });
     const npcs2 = out2.changes.room(state2.room).npcs;
     expect(npcs2.some((n) => n.name === "昨过客")).toBe(false);
+  });
+
+  it("Review 二轮：锁期内冒险者子夜仍被清——换防双身比锁更硬", () => {
+    const stale = { name: "昨冒险", adventurerDay: 0, innerRoom: "村口" };
+    const state = {
+      char: { special: { 气运: 5 } }, companionState: {}, flags: [], importedVer: 0,
+      questProgress: {}, room: { name: "鱼定村", npcs: [stale] }, time: 30,
+      varTree: { 世界: { 驻足锁: { 昨冒险: 99 } } },
+    };
+    const out = residentNpcRule.run(state, { importedRegistry });
+    const npcs = out.changes.room(state.room).npcs;
+    expect(npcs.some((n) => n.name === "昨冒险")).toBe(false);
   });
 });

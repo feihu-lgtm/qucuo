@@ -76,6 +76,9 @@ export const residentNpcRule = {
     // 过滤所读状态必须进 deps：companion 解锁/宿敌招抚后不重刷就滤不掉
     state.companionState,
     state.varTree?.世界?.宿敌谱,
+    // W-ROAM：驻足锁本身也是名单过滤输入——锁过期后下一次重建（任何交互写锁都会
+    // 触发 deps 变化）把身份到期的昨日过客清走，不会赖到子夜。
+    state.varTree?.世界?.驻足锁,
   ],
   run(state, { importedRegistry, roomMap, companionState = state.companionState }) {
     const { room, time, questProgress = {}, flags = [], char } = state;
@@ -234,12 +237,13 @@ export const residentNpcRule = {
       changes: {
         room: (previous) => ({
           ...previous,
-          // W-ROAM Review 修：子夜换名单不清驻足锁未过期者——玩家正找着他办事说话，
-          // 过路人/冒险者身份到期也得留到锁过期后的下一次重建再离场。
+          // W-ROAM Review 修：子夜换名单不清驻足锁未过期的过路人——玩家正找着他办事说话，
+          // 身份到期也留到锁过期后的下一次重建再离场。冒险者不保：他们按日在据点间
+          // 换防，保留旧 copy 会与新驻地的当日新身撞出同名双身——换人比锁更硬。
           npcs: injectNpcs((previous.npcs || []).filter((npc) => {
             if (!(npc.imported || !staleNames.has(npc.name))) return false;
             if (!isStalePasser(npc) && !isStaleAdventurer(npc)) return true;
-            return (state.varTree?.世界?.驻足锁?.[npc.name] ?? -1) > time;
+            return npc.randomPasser != null && (state.varTree?.世界?.驻足锁?.[npc.name] ?? -1) > time;
           }), toInject),
           crowd,
         }),
