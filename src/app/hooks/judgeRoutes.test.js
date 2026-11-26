@@ -308,6 +308,9 @@ describe("WO-16F-F2a 判官路由集成", () => {
     expect(classifyUseItem(state, { name: "青稞酒", category: "misc", consumable: { hpRestore: 0.05 } }, "举起青稞酒一口下肚")).toBe("consumable");
     // Review 三轮：物件名含动词用字（极品金创香膏的品）不算吞服意图
     expect(classifyUseItem(state, { name: "极品金创香膏", category: "misc", consumable: { hpRestore: 0.05 } }, "出示极品金创香膏给掌柜看")).toBe("present");
+    // Review 四轮：外敷=消耗（抹）；剥名 artifact「塞入口袋」不误判
+    expect(classifyUseItem(state, { name: "极品金创香膏", category: "misc", consumable: { hpRestore: 0.05 } }, "举起极品金创香膏往伤口上一抹")).toBe("consumable");
+    expect(classifyUseItem(state, { name: "干粮", category: "food" }, "把干粮塞入干粮口袋给掌柜看")).toBe("present");
   });
 
   it("Review 修：字符串名耗材按图鉴仍可服食（背包按钮老调用）", async () => {

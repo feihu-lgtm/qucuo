@@ -166,7 +166,10 @@ function runMove(action) {
 // 返回 "consumable" | "wield" | "present"。
 // Review 修：use_item 同时承载「吃」与「出示」两种意图（intake 不细分）——
 // 文本明示出示/亮出/展示且无吞服动词时，食物也不进 consumable 旁路。
-const EAT_VERB_RE = /吃|喝|服|吞|嚼|饮|啃|咬|下肚|入喉|入口|下咽|咽|尝|品|干杯/;
+// 动词表权衡（Review 四轮）：入口/下咽 在剥名 artifact（塞入[干粮]口袋）与
+// 日常语境碰撞率高而真服用场景几乎不用——删；抹/敷/涂/擦 是外敷药真消耗——补。
+// 单字动词只留吃/喝/服/吞/嚼/饮/啃/咬/咽/尝/品这些物件名剥除后歧义可控的。
+const EAT_VERB_RE = /吃|喝|服|吞|嚼|饮|啃|咬|下肚|入喉|咽|尝|品|干杯|抹|敷|涂|擦/;
 const SHOW_VERB_RE = /出示|亮出|展示|举起|过目|验看|给.{0,4}看/;
 export function classifyUseItem(state, itemObjOrName, actionText = "") {
   const item = typeof itemObjOrName === "string"
