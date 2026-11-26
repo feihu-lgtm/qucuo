@@ -210,6 +210,7 @@ export const FIELDS = Object.freeze({
     scale: "全江湖只记一值；公开义举如路见不平、兑现承诺可加5~15，广为人知的恶行同量扣减；私下态度不是威望。" },
   [FIELD.factionRep]: { label: "势力声誉", default: 0, min: -100, max: 100, ai: true, maxDelta: 10,
     scale: "玩家与一方势力的关系；替该势力办成事、护其人可加3~10，坏其大事、伤其门人同量扣减。" },
+  "varTree.世界.驻足锁.**": { label: "NPC交互驻足锁", ai: false },
   "varTree.世界.旁白.**": { label: "旁白个人线", ai: false },
   "varTree.世界.好感日增.**": { label: "好感日增账本", ai: false },
   "varTree.世界.起居注.**": { label: "起居注", ai: false, refs: {

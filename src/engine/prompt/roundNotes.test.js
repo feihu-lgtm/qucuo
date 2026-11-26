@@ -47,3 +47,27 @@ describe("buildQuestStageNote flags_add 指令压下", () => {
     expect(note).not.toContain("[说服判定]");
   });
 });
+
+describe("W-ROAM buildRecentMovementNote 主叙事同源感知", () => {
+  it("本拍进出拼入固定文案，离场者禁写开口", async () => {
+    const { buildRecentMovementNote } = await import("./roundNotes.js");
+    const room = { recentMovements: [
+      { name: "路人甲", kind: "depart", from: "村口", to: "歇马居", dir: "w", turn: 7 },
+      { name: "货郎", kind: "arrive", from: "歇马居", to: "村口", dir: "e", turn: 7 },
+    ] };
+    const note = buildRecentMovementNote(room, 7);
+    expect(note).toContain("【方才人物进出】");
+    expect(note).toContain("刚走入此处：货郎");
+    expect(note).toContain("刚离开此处：路人甲");
+    expect(note).toContain("严禁再写其开口搭话");
+  });
+
+  it("紧邻上一拍（time-1）也算；更早或没有记录返回空串", async () => {
+    const { buildRecentMovementNote } = await import("./roundNotes.js");
+    const room = { recentMovements: [{ name: "路人甲", kind: "depart", from: "村口", to: "歇马居", dir: "w", turn: 6 }] };
+    expect(buildRecentMovementNote(room, 7)).toContain("路人甲");
+    expect(buildRecentMovementNote(room, 8)).toBe("");
+    expect(buildRecentMovementNote({}, 7)).toBe("");
+    expect(buildRecentMovementNote(null, 7)).toBe("");
+  });
+});

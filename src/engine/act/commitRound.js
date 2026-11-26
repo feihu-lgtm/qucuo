@@ -18,6 +18,7 @@ import { registerMemoryFact, normalizeMemoryText } from "./postCommit/memoryFact
 import { markTalkAcquaintance } from "./postCommit/talkKnow.js";
 import { burnIntimateTicket } from "./postCommit/intimateTicket.js";
 import { appendConvo } from "./postCommit/convoAppend.js";
+import { writeRoamLocks } from "./postCommit/roamLock.js";
 import { noteRoundCompleted } from "../../features/autosaveScheduler.js";
 import { applyPostResult } from "./postCommit/applyPostResult.js";
 import { commitPatches } from "../../domain/rules/state/applyPatches.js";
@@ -185,6 +186,11 @@ export function commitRound(d) {
     appendDayMaterial: d.appendDayMaterial,
   }));
   applyPostResult(d, markTalkAcquaintance({ isTalk: d.isTalk, talkTarget: d.talkTarget, room: d.room, p: d.p, derivedRespondedNpcs: d.derivedRespondedNpcs })); // 对话即认识
+  applyPostResult(d, writeRoamLocks({  // W-ROAM 十回合交互驻足锁
+    intakeTargets: d.intakeTargets, respondedNpcs: d.p?.respondedNpcs, derivedRespondedNpcs: d.derivedRespondedNpcs,
+    activeTarget: d.activeTarget, talkTarget: d.talkTarget, settleNpc: d.settleNpc,
+    presentNames: systemAcceptedNames, time: d.time,
+  }));
   applyPostResult(d, appendConvo({ newConvo: d.newConvo, rawFull: d.rawFull, p: d.p, time: d.time })); // convo 条目追加 memory/turn
 
   // 回合完成登记：驱动"每 N 回合自动存档"。出错回滚的轮次不计数——

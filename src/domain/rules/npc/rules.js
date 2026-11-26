@@ -43,6 +43,8 @@ const NPC_FIELDS = [
   "ocAdventurer", "npcRef", "tradeStyle",
   // 时段表跟人走：npc.roam 要靠它判断"此刻该去哪"，innerMap 的可见性也认它（见 isNpcVisibleInInnerRoom）
   "schedule",
+  // W-ROAM 最小步距节流时间戳：驻场重刷时不能丢，丢了等于每刻都重新计步距
+  "lastRoamTurn",
 ];
 
 export function buildRoomNpcWithCombat(poolNpc, { existingNpc, luck = 5, trade } = {}) {

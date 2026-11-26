@@ -283,6 +283,11 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
         .filter((a) => a?.kind === "talk" && typeof a.target === "string" && a.target && a.target !== "无")
         .map((a) => a.target);
       deps.derivedRespondedNpcs = [...new Set(derivedTalk)];
+      // W-ROAM 驻足锁数据源：本轮听意单全部具名对象（不只 talk——送礼/求教/赔罪
+      // 都算「找过他」），commitRound 据此刻在场写 驻足锁[name]=time+10。
+      deps.intakeTargets = [...new Set((intakeResult.actions || [])
+        .map((a) => a?.target)
+        .filter((t) => typeof t === "string" && t && t !== "无"))];
       deps.judgePipelineActive = true;
       deps.judgeVerdict = judgeVerdict;
       deps.causalBudget = judgeVerdict.budget;
