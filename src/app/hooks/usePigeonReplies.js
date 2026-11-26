@@ -10,6 +10,7 @@ import {
   retryPigeonReply,
 } from "../../features/pigeon/logic.js";
 import { findNpcObject } from "../../features/pigeon/inbound.js";
+import * as importedRegistry from "../../domain/rules/cards/importedRegistry.js";
 import { createWebAi } from "../../engine/ports/ai.js";
 import { withAI } from "../../engine/ports/withAI.js";
 import "../../domain/rules/prompt/calls/sideCalls.js";
@@ -43,7 +44,7 @@ export function usePigeonReplies({
         state,
         // 夜班急修：不在场 NPC 不再裸壳进 prompt——按 pigeon.inbound 同口径全链路解析
         // 完整人设/随身/品阶，回信质量才立得住。
-        letter: { ...letter, npc: findNpcObject(state, letter.npcName) },
+        letter: { ...letter, npc: findNpcObject(state, letter.npcName, importedRegistry) },
         preset: state.preset,
         trace: (paths) => {
           const turn = turnMonitor.start("飞鸽回信", { background: true, source: "background-ai" });
