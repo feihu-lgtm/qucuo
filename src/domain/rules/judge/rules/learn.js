@@ -47,7 +47,12 @@ export function handleLearn(J, action, npc, aff, stanceMod) {
   // 且加 learnPot 同时辰幂等锁（复用调息账通道）防同辰连刷。
   const sigEntry = NPC_SIGNATURE_MOVES[npc.name];
   const noTeachable = npc.unlearnable === true || npc.beast || sigEntry?.unlearnable === true
-    || (!sigEntry && !(Array.isArray(npc.moves) && npc.moves.length) && !(Array.isArray(npc.skills) && npc.skills.length));
+    // Review 修：实战 NPC 招式装在 moveset（npcGeneration 口径）——漏读会把
+    // 才旦这类真能教的都是非习武之人。moveset 为对象形状时按槽位非空计。
+    || (!sigEntry
+      && !(Array.isArray(npc.moves) && npc.moves.length)
+      && !(Array.isArray(npc.skills) && npc.skills.length)
+      && !(npc.moveset && typeof npc.moveset === "object" && Object.keys(npc.moveset).length));
   if (noTeachable) {
     notes.push(`「${npc.name}」并非习武授业之人，无从指点武艺。`);
     if (J.lastActionOutcome) { J.lastActionOutcome.rejected = true; J.lastActionOutcome.kind = "learn"; J.lastActionOutcome.target = npc.name; }

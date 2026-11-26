@@ -190,13 +190,19 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
   let pactVerdict = null; // true=应约 false=婉拒 null=本轮无立约提议
   const socialDeals = proposalsPre.filter((pp) => pp?.kind === "social_deal" && pp.fit !== "absurd");
   if (socialDeals.length) {
-    // 目标 NPC：本轮动作指向的在场者里第一个非敌对、有好感轨道的
-    const targetNames = [...new Set(actions.map((a) => a?.target).filter((t) => t && t !== "无"))];
+    // Review 修两条：
+    // ②目标 NPC 取条件过滤后动作里「最后一个」有效在场目标——先寒暄张三再跟
+    //   李四谈价时，约定是李四的，不能掷到张三头上（立约句多在句尾压轴）。
+    // ③条件未成的动作不参与立约（前提黄了还拍板等于架空条件律）——
+    //   与容器/任务同走 condVerdicts 过滤口径。
+    const condFiltered = actions.filter((a) => condVerdicts.get(a) !== false);
+    const targetNames = [...new Set(condFiltered.map((a) => a?.target).filter((t) => t && t !== "无"))];
     const pactNpc = targetNames
       .map((nm) => npcs.find((n) => n?.name === nm))
-      .find((n) => n && !(n.intimacy?.forbidden || n.beast) && !n.anger?.active) || null;
+      .filter((n) => n && !(n.intimacy?.forbidden || n.beast) && !n.anger?.active)
+      .pop() || null;
     if (pactNpc) {
-      const pactAction = actions.find((a) => a?.target === pactNpc.name) || {};
+      const pactAction = condFiltered.find((a) => a?.target === pactNpc.name) || {};
       const pactStanceMod = pactAction.stance === "sincere" ? 0.1 : pactAction.stance === "perfunctory" ? -0.1 : pactAction.stance === "forceful" ? -0.15 : 0;
       const pactScore = 0.45 + personaMod(pactNpc.personality) + affectionMod(affectionOf(varTree, pactNpc.name)) + pactStanceMod;
       pactVerdict = roll() < Math.max(0.05, Math.min(0.9, pactScore));

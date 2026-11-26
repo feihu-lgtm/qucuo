@@ -35,6 +35,13 @@ describe("W-FIX2 求教拒传防刷", () => {
     handleLearn(J, { kind: "learn" }, { name: "虎王", unlearnable: true, moves: [{ name: "扑" }] }, 0, 0);
     expect(facts).toHaveLength(0);
   });
+  it("Review 修：moveset 装招的 NPC 不误判非习武（才旦形）", () => {
+    const { J, facts, notes } = mkJ(0.999);
+    handleLearn(J, { kind: "learn" }, { name: "才旦", personality: "豪爽", moveset: { 攻击: { name: "猎叉刺" } } }, 0, 0);
+    expect(notes.join()).not.toContain("并非习武授业之人");
+    expect(notes.join()).toContain("不肯传授");
+  });
+
   it("习武之人检定未过：零潜能拒传", () => {
     const { J, facts, notes } = mkJ(0.999);
     handleLearn(J, { kind: "learn" }, { name: "才旦", personality: "豪爽", moves: [{ name: "猎叉刺" }] }, 0, 0);
