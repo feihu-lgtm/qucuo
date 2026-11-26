@@ -20,6 +20,15 @@
 
 .ui-btn:disabled { cursor: not-allowed; }
 
+/* font="native"：退回浏览器给 <button> 的默认字体。迁移前本来就是 <button> 的按钮
+   一直显示系统字体（项目里没有让按钮继承页面字体的全局规则），加这个属性保持原样。
+   若决定所有按钮统一跟随页面字体，删掉这条规则即可。 */
+.ui-btn[data-font="native"] {
+  font-family: revert;
+  font-weight: revert;
+  font-style: revert;
+}
+
 /* settings：设置面板各页的按钮（原 settings/styles.js 的 btnStyle） */
 .ui-btn[data-variant="settings"] {
   display: inline-block;

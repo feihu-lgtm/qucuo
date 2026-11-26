@@ -26,8 +26,8 @@ export default function OtherTab({ uiScale, setUiScale, font, setFont }) {
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, padding: "8px 10px", background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0 }}>
         <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", flexShrink: 0 }}>字体</span>
-        <Button variant="chrome" active={font === "pixel"} type="button" aria-pressed={font === "pixel"} onClick={() => setFont("pixel")}>缝合像素</Button>
-        <Button variant="chrome" active={font === "song"} type="button" aria-pressed={font === "song"} onClick={() => setFont("song")}>宋体</Button>
+        <Button variant="chrome" font="native" active={font === "pixel"} type="button" aria-pressed={font === "pixel"} onClick={() => setFont("pixel")}>缝合像素</Button>
+        <Button variant="chrome" font="native" active={font === "song"} type="button" aria-pressed={font === "song"} onClick={() => setFont("song")}>宋体</Button>
       </div>
 
       <MusicSettings />

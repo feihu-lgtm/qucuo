@@ -79,6 +79,10 @@ describe("原语样式与原手写样式逐属性相等", () => {
     expectSameStyle([".ui-field-label", ".ui-field-label--block"], { ...labelStyle, display: "block" });
   });
 
+  it("font=\"native\" 退回浏览器的按钮默认字体", () => {
+    expect(rule('.ui-btn[data-font="native"]')["font-family"]).toBe("revert");
+  });
+
   it("按钮把浏览器默认样式重置回 <span> 的行为", () => {
     const base = rule(".ui-btn");
     for (const prop of ["font", "letter-spacing", "text-align", "text-transform"]) expect(base[prop], prop).toBe("inherit");
@@ -112,6 +116,8 @@ describe("原语渲染", () => {
     expect(html(Button, { variant: "nope" }, "x")).toContain('data-variant="settings"');
     expect(html(Button, { variant: "chrome", active: true }, "x")).toContain('aria-pressed="true"');
     expect(html(Button, { style: { flex: 1 } }, "x")).toContain('style="flex:1"');
+    expect(html(Button, { variant: "chrome", font: "native" }, "x")).toContain('data-font="native"');
+    expect(html(Button, { variant: "chrome" }, "x")).not.toContain("data-font");
   });
 
   it("Panel、FieldLabel、Field、List、Badge、Tabs 挂对应的类", () => {

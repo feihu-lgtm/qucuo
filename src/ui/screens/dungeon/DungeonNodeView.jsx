@@ -63,7 +63,7 @@ export default function DungeonNodeView({
             <div style={{ color: "var(--text-dim)" }}>消耗品：{run.usedItems.join("、")}</div>
           )}
         </div>
-        <Button variant="chrome" active={true} type="button" onClick={onSettleClose}>
+        <Button variant="chrome" font="native" active={true} type="button" onClick={onSettleClose}>
           收起战利品离开
         </Button>
       </div>
@@ -150,7 +150,7 @@ export default function DungeonNodeView({
         </div>
       ))}
       <div style={{ marginTop: 8 }}>
-        <Button variant="chrome" type="button" onClick={onRetreat}>
+        <Button variant="chrome" font="native" type="button" onClick={onRetreat}>
           见好就收 · 撤出地宫
         </Button>
       </div>

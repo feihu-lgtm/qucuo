@@ -7,7 +7,7 @@ export default function HomesteadModule({ innerRoomName }) {
   if (!home) return null;
   return <div>
     <div style={{ color: "var(--accent-dim)", fontSize: "var(--fs-xs)", marginBottom: 5 }}>家园设施</div>
-    <Button variant="chrome" active={false} type="button" onClick={() => openOverlay(OVERLAY.HOMESTEAD)}>🏠 {home.label || "家园"}</Button>
+    <Button variant="chrome" font="native" active={false} type="button" onClick={() => openOverlay(OVERLAY.HOMESTEAD)}>🏠 {home.label || "家园"}</Button>
     <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", marginTop: 4 }}>{home.features.map(f => f.name).join("·")}</div>
   </div>;
 }

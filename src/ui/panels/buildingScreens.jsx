@@ -220,7 +220,7 @@ function ClosedBuilding({ c, text }) {
     <div style={{ padding: 12, color: "var(--text)", fontSize: "var(--fs-sm)" }}>
       <div style={{ color: "var(--accent)", marginBottom: 6 }}>{c.building.name}</div>
       <div style={{ marginBottom: 10 }}>{text}</div>
-      <Button variant="chrome" type="button" onClick={c.closeBuilding}>离开</Button>
+      <Button variant="chrome" font="native" type="button" onClick={c.closeBuilding}>离开</Button>
     </div>
   );
 }

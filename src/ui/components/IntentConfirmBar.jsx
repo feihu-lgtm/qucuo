@@ -8,8 +8,8 @@ export default function IntentConfirmBar() {
   return (
     <div style={{ flexShrink: 0, padding: "10px 16px", borderBottom: `1px solid var(--border)`, background: `color-mix(in srgb, var(--accent) 6%, transparent)`, display: "flex", alignItems: "center", gap: 10 }}>
       <span style={{ color: "var(--text)", fontSize: "var(--fs-sm)", flex: 1 }}>{pending.text}</span>
-      <Button variant="chrome" active={true} type="button" onClick={pending.onConfirm}>是</Button>
-      <Button variant="chrome" type="button" onClick={pending.onCancel}>不是</Button>
+      <Button variant="chrome" font="native" active={true} type="button" onClick={pending.onConfirm}>是</Button>
+      <Button variant="chrome" font="native" type="button" onClick={pending.onCancel}>不是</Button>
     </div>
   );
 }

@@ -17,7 +17,7 @@ export default function BuildingsModule({ room, innerRoomName }) {
   return <div>
     <div style={{ color: "var(--accent-dim)", fontSize: "var(--fs-xs)", marginBottom: 5 }}>此地建筑</div>
     {list.map(b => <div key={b.id} style={{ marginBottom: 3 }}>
-      <Button variant="chrome" active={activeBuilding?.id === b.id} type="button" onClick={() => setActiveBuilding(activeBuilding?.id === b.id ? null : { ...b, district: room.name })}>{b.name}</Button>
+      <Button variant="chrome" font="native" active={activeBuilding?.id === b.id} type="button" onClick={() => setActiveBuilding(activeBuilding?.id === b.id ? null : { ...b, district: room.name })}>{b.name}</Button>
       <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", marginLeft: 6 }}>{BUILDING_TYPE_LABEL[b.type] || ""}</span>
     </div>)}
   </div>;
