@@ -74,7 +74,10 @@ describe("同伴携物非交互保管（D6 Review 二轮）", () => {
     const { tradeWithNpc } = await import("../npc/exchange.js");
     const npc = { name: "珍珠", companion: true, carriedItems: [] };
     const state = { varTree: { 角色: {} }, inv: [], room: { npcs: [] } };
-    expect(stealFromNpc(state, npc).logs[0].text).toContain("伙伴");
+    const stealRefusal = stealFromNpc(state, npc);
+    expect(stealRefusal.logs[0].text).toContain("伙伴");
+    // handleNpcSteal 契约：拒止必须带 kind:blocked，否则被当掷骰结果读 steal.success 崩掉
+    expect(stealRefusal.kind).toBe("blocked");
     expect(tradeWithNpc(state, npc).logs[0].text).toContain("不做买卖");
   });
 });
