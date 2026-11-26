@@ -245,6 +245,8 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
 
       judgeVerdict = judgeTurn({
         turn: timeNow, day: Math.floor(timeNow / 24) + 1, place: deps.room?.name || "",
+        // V2 Review修：场所判定用前置路由刷新后的现场——移动回合后破费不在旧房间误判。
+        roomName: liveAfterRoutes?.room?.name || deps.room?.name || "", innerRoomName: liveAfterRoutes?.innerRoomName || "",
         // S7 送银桥：玩家原文是金额唯一可信来源（ground truth）——
         // action.text 是模型复述不可信（Review 实证可编数），判官绝不从模型输出取钱数。
         playerInput: cmd,

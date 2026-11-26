@@ -34,7 +34,7 @@ const SHOP_TYPES = new Set([
 ]);
 const FOOD_NAME_RE = /酒馆|茶肆|茶馆|饭馆|食肆|庖厨|后厨|小馆/;
 const SHOP_NAME_RE = /商号|铺|坊|行|阁|堂|肆/;
-const HOME_NAME_RE = /家|居|屋|卧房|厢房|闺房|小院|禅房|弟子房/;
+const HOME_NAME_RE = /家|居|屋|府|宅|院|衙|卧房|厢房|闺房|小院|禅房|弟子房/;
 const WILD_DISTRICT_RE = /草甸|山|洞|峰|谷|林|海|滩|崖|口|道|坡/;
 const WILD_ROOM_RE = /后山|山口|山道|崖|洞|林|草|溪|潭/;
 

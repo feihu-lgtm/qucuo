@@ -62,6 +62,16 @@ export function matchPlaceName(target, candidates, { exactOnly = false } = {}) {
   return hits.length === 1 ? hits[0] : "";
 }
 
+// 原话点名判定：子串命中且后一个字不是建物后缀——「大草甸营地」里的「大草甸」
+// 不算点名（整词是另一地名），incidental 提及不误当目的地。
+const PLACE_SUFFIX_RE = /[营寨馆楼村庄镇城山谷甸滩口坪院宅府棚帐行店铺栈]/;
+export function mentionsPlaceName(text, name) {
+  const idx = String(text || "").indexOf(name);
+  if (idx < 0) return false;
+  const nextCh = String(text)[idx + name.length] || "";
+  return !(nextCh && PLACE_SUFFIX_RE.test(nextCh));
+}
+
 export function resolveMoveTarget(state, action) {
   const text = String(action?.text || "");
   const targetRaw = String(action?.target || "").trim();
@@ -71,6 +81,25 @@ export function resolveMoveTarget(state, action) {
   const roomName = state?.room?.name || "";
   const innerNow = state?.innerRoomName ?? null;
   const unlockCtx = { completedQuests: completedQuestIdSet(state?.questProgress), flags: state?.flags || [] };
+
+  // V2 出村防劫持：原话明确点名某个外层据点（非当前据点）时，外层据点第一优先——
+  // 即使 intake 把 target 填成同方向内层房（「离开鱼定村去大草甸」target 被写成
+  // 鱼定商号）也直接出村。内层小房间名不会撞外层据点名（两套命名空间），不误伤。
+  if (innerNow) {
+    // Review修：最长优先+后缀字护栏——「大草甸营地」里的「大草甸」不是点名据点
+    // （后紧跟营/寨/馆等建物后缀字的整词是另一地名）， incidental 提及不算数。
+    const outerNamed = Object.keys(QUCUO_MAP)
+      .filter((nm) => nm !== roomName)
+      .sort((a, b) => b.length - a.length)
+      .find((nm) => mentionsPlaceName(text, nm));
+    if (outerNamed) {
+      const exits0 = QUCUO_MAP[roomName]?.exits || {};
+      const hitDir0 = Object.entries(exits0).find(([, d]) => d === outerNamed)?.[0] || "";
+      if (!hitDir0) return { type: "unreachable", target: outerNamed };
+      if (!isNodeUnlocked(outerNamed, unlockCtx)) return { type: "locked", dir: hitDir0, dest: outerNamed };
+      return { type: "outer", dir: hitDir0, dest: outerNamed };
+    }
+  }
 
   // 1. 内层：在据点内层房间时，target/口话命中同据点内层相邻房间 → 反查 visibleInnerExits
   if (innerNow && hasInnerMap(roomName)) {
@@ -94,11 +123,11 @@ export function resolveMoveTarget(state, action) {
         const d = Object.entries(visExits).find(([, destRoom]) => destRoom === hit)?.[0];
         if (d) return { type: "inner", dir: d };
       }
-    } else if (/回村|出去|去村口/.test(text)) {
+    } else if (/回村|出去|去村口|出门|往外走|向外走|外出/.test(text)) {
       for (const [d, destRoom] of Object.entries(visExits)) {
-        if ((/村口/.test(text) && /村口/.test(destRoom)) || (/出去|回村/.test(text) && destRoom)) {
+        if ((/村口/.test(text) && /村口/.test(destRoom)) || (/出去|回村|出门|往外走|向外走|外出/.test(text) && destRoom)) {
           // 「出去/回村」无具体名时取第一个可见出口（多为出门方向）
-          if (/村口/.test(destRoom) || /出去|回村/.test(text)) return { type: "inner", dir: d };
+          if (/村口/.test(destRoom) || /出去|回村|出门|往外走|向外走|外出/.test(text)) return { type: "inner", dir: d };
         }
       }
     }
@@ -135,8 +164,8 @@ export function resolveMoveTarget(state, action) {
   // 4. direction=none 且 target 空：从原文提取据点名；「回村」在鱼定周边映射鱼定村
   let destName = target;
   if (!destName) {
-    for (const name of Object.keys(QUCUO_MAP)) {
-      if (name !== roomName && text.includes(name)) { destName = name; break; }
+    for (const name of Object.keys(QUCUO_MAP).sort((a, b) => b.length - a.length)) {
+      if (name !== roomName && mentionsPlaceName(text, name)) { destName = name; break; }
     }
   }
   if (!destName && /回村/.test(text) && roomName !== "鱼定村") destName = "鱼定村";

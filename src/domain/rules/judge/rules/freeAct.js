@@ -3,6 +3,9 @@
 // 身法/体魄检定（attr+rng()×6 ≥ 6）减半；得财 T0 2-10/T1 10-40/T2 40-120 且须
 // 有 fit 非 absurd 的对应 proposal；调息同时辰幂等；修习按 tier 定 potDelta。
 import { resolveFreeActExpense, parseStatedExpense } from "../freeActPricing.js";
+import { classifyRoomNature } from "../../world/containers.js";
+import { getInnerRoom } from "../../map/innerMap.js";
+import { getHomestead } from "../../map/homestead.js";
 
 export function handleFreeAct(J, action) {
   const { envelope, roll, turn, budget, facts, notes, nextFactId, talkOnly, varTree, proposalsPre, signedRestKeys, signedFreeActGainKeys } = J;
@@ -42,6 +45,30 @@ export function handleFreeAct(J, action) {
     J.money.run += amt;
     notes.push(`得财签发：+${amt} 银两（tier ${budget.tier}${natural ? "，natural上半" : ""}）`);
   } else if (outcome === "破费") {
+    // V2 无消费对象扣银拦截（R04/R24）：既无在场收款人（target 指名在场 NPC）
+    // 也无消费场所（商号/茶馆/酒肆/客栈/饭馆/杂货/店铺摊位类）时直接拒决——
+    // 不让说书人编造「银子掉河里」强行扣钱。
+    const targetNpc = action.target && action.target !== "无"
+      ? (envelope.npcs || []).find((n) => n?.name === action.target) : null;
+    // Review修：场所判定走 classifyRoomNature 建筑类型准确口径（歇马居=客栈类型
+    // 但名不带商号茶馆字样），类型查不到再落名字正则兜底。
+    const rn = envelope.roomName || envelope.place || "";
+    const irn = envelope.innerRoomName || "";
+    // 仅内层房用建筑类型判定——外层房间（村口/广场）的据点级类型会误把整村当商铺。
+    const innerDef = irn ? getInnerRoom(rn, irn) : null;
+    const nature = irn ? classifyRoomNature({ districtName: rn, innerRoomName: irn, innerDef }) : "";
+    const placeText = `${envelope.place || ""}${rn}${irn}`;
+    const COMMERCE_RE = /商号|茶馆|酒肆|客栈|饭馆|杂货|商铺|店|摊|市|当铺|钱庄|驿站|赌/;
+    // Review修：私家厨房/居所不算消费场所——灶房虽 food 类（KITCHEN 建筑型）但是
+    // 玩家自家或私宅，无商户在内，targetless 破费照样拒决。
+    // 私宅口径与 containers 对齐：privateHome 旗标/玩家家园覆盖——不套名字正则，
+    // 否则歇马居（客栈）带「居」字被误归私宅。food/shop 类型私厨由这两条兜住。
+    const privateHome = irn && (innerDef?.privateHome === true || getHomestead(irn));
+    const isCommerce = !privateHome && (nature === "food" || nature === "shop" || COMMERCE_RE.test(placeText));
+    if (!targetNpc && !isCommerce) {
+      notes.push("破费无消费对象（收款人不在场、此处亦非商铺），拒决扣银");
+      return;
+    }
     // S3 破费查价链：原话写数额按原话；没写依次查 驻场货架同名/同类价 →
     // 物件志 → priceForQuality(category,"白")；都查不到按 risk 默认 无2/低5/中10/高20。
     // 超囊中只扣到零并 notes 囊中不足。
