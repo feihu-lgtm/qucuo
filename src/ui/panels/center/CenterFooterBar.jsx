@@ -100,14 +100,14 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
         </div>
       )}
 
-      {availableQuestsHere.some(e => !e.stage.choices?.length) && (
+      {availableQuestsHere.some(e => !e.quest.hintOnly && !e.stage.choices?.length) && (
         <div style={{
           display: "flex", alignItems: "center", gap: 8, padding: "6px 14px",
           borderTop: `1px solid var(--border)`, flexShrink: 0, flexWrap: "wrap", rowGap: 6,
           background: "var(--footer-progress-bg)",
         }}>
           <span style={{ color: "var(--ember)", fontSize: "var(--fs-xs)", flexShrink: 0 }}>❢ 此处可推进</span>
-          {availableQuestsHere.filter(e => !e.stage.choices?.length).map(entry => (
+          {availableQuestsHere.filter(e => !e.quest.hintOnly && !e.stage.choices?.length).map(entry => (
             <span
               key={entry.quest.id}
               onClick={() => questPanel.triggerQuestFromPanel(entry)}

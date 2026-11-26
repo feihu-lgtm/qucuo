@@ -101,7 +101,7 @@ export function sendPigeonLetter(state, npcName, content, opts = {}) {
       },
     },
     logs: [
-      { t: "cmd", text: `> ${chLabel}致「${npcName}」：${text}${giftName ? `（附礼：${giftName}）` : ""}` },
+      { t: "cmd", text: `> ${chLabel} 致「${npcName}」 ${text}${giftName ? `（附礼 ${giftName}）` : ""}` },
       { t: "item", text: `  🕊 ${channel === "pigeon" ? "信鸽已放飞" : "书信已托驿卒送出"}，往「${loc}」，约 ${shichen} 个时辰后当有回音。` },
     ],
     note: {
@@ -199,8 +199,8 @@ export function applyPigeonReply(state, letter, responseText) {
     知晓者: [{ name: npcName, 途径: "亲历" }],
   };
   const logs = [
-    { t: "item", text: `  🕊 一只信鸽落下——${npcName}的回信到了。` },
-    { t: "narrator", text: `  「${npcName}来信」${reply}` },
+    { t: "item", text: `  🕊 一只信鸽落下，${npcName}的回信到了。`, standalone: true },
+    { t: "narrator", text: `  「${npcName}来信」${reply}`, standalone: true, letterFrom: npcName, letterBody: reply },
   ];
   if (affDelta !== 0) logs.push({ t: "affection", text: `  💗 ${npcName} 好感度 ${affDelta > 0 ? "+" : ""}${affDelta}（${curAff} → ${newAff}）` });
   if (doReturnGift) logs.push({ t: "item", text: `  🎁 随信附回礼一件：「${giftItem.name}」（${giftItem.quality}）。` });

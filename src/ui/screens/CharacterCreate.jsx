@@ -40,7 +40,7 @@ export default function CharacterCreate({ onConfirm }) {
   const [bodyTouched, setBodyTouched] = useState(false);
   const handleBodyChange = (next) => { setBodyTouched(true); setBodyProfile(next); };
   const [bodyProfile, setBodyProfile] = useState(() =>
-    applyBodyPreset(emptyBodyProfile(), getPortraitPreset("male"), { includeIntimate: false }),
+    applyBodyPreset(emptyBodyProfile(), getPortraitPreset("male"), { includeIntimate: true }),
   );
   const [special, setSpecial] = useState(baseSpecial);
   const [starterChoices, setStarterChoices] = useState([]);
@@ -62,13 +62,13 @@ export default function CharacterCreate({ onConfirm }) {
       const defId = defaultPortraitIdForGender(gender);
       setSelectedPortraitId(defId);
       if (!bodyTouched) {
-        setBodyProfile(applyBodyPreset(emptyBodyProfile(), getPortraitPreset(defId), { includeIntimate: false }));
+        setBodyProfile(applyBodyPreset(emptyBodyProfile(), getPortraitPreset(defId), { includeIntimate: true }));
       }
     }
     setStep("appearance");
   };
 
-  const handleSelectPortrait = (preset, { includeIntimate = false } = {}) => {
+  const handleSelectPortrait = (preset, { includeIntimate = true } = {}) => {
     setPortraitTouched(true);
     setSelectedPortraitId(preset.id);
     setBodyProfile((prev) => applyBodyPreset(prev, preset, { includeIntimate }));

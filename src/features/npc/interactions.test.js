@@ -70,7 +70,7 @@ describe("NPC conversation logic", () => {
     expect(result.changes.questProgress({ [escort.id]: { active: true } })[escort.id]).toEqual({ active: false });
     expect(result.logs.map(({ text }) => text)).toEqual([
       `  你找到了${escort.targetNpc}，交出货物，护镖任务「${escort.title}」圆满完成！`,
-      `  💰 报酬：${escort.reward} 两 · 潜能 +10`,
+      `  💰 报酬 ${escort.reward} 两 · 潜能 +10`,
     ]);
     expect(result.completedEscort).toBe(true);
   });

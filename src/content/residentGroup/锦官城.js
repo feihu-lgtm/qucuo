@@ -49,7 +49,7 @@ export default { residentGroup: {
     },
     {
       name: "虚白道姑", innerRoom: "峨眉剑庐", id: "resident_xubai", levelCap: 4,
-      brief: "峨眉道门那一半的当家，站十二庄站到第九庄用了二十二年",
+      brief: "峨眉道门当家，站十二庄第九庄廿二年",
       personality: "慢，说话慢做事慢，被催了也慢；跟玄尘师太共事三十年没红过脸，也没真同意过她一件事",
       carry: [
         { name: "松纹剑", category: "weapon", quality: "蓝" },
@@ -77,7 +77,7 @@ export default { residentGroup: {
     },
     {
       name: "铁莲和尚", innerRoom: "峨眉剑庐", id: "resident_tielian", levelCap: 3,
-      brief: "峨眉枪传人，剑庐里唯一的男僧，抄了三个月经才准碰兵器",
+      brief: "峨眉枪传人，剑庐里唯一抄经入武的男僧",
       personality: "闷，一天说不了十句话，说的多半是「让开」；枪杆磨得发亮，握处一层包浆",
       carry: [
         { name: "红缨枪", category: "weapon", quality: "绿" },
@@ -119,7 +119,7 @@ export default { residentGroup: {
     },
     {
       name: "簪娘", innerRoom: "峨眉剑庐", id: "resident_zanniang", levelCap: 2,
-      brief: "在剑庐后院打峨眉刺的老妇，峨眉刺形似发簪，她真拿它当簪子卖",
+      brief: "剑庐后院打峨眉刺的老妇，常当发簪叫卖",
       personality: "耳朵背嘴不饶人，一边锉钢一边骂；给女弟子打的刺都比制式的短半寸——「插头上得好看」",
       carry: [
         { name: "峨眉刺", category: "weapon", quality: "蓝" },
@@ -204,7 +204,7 @@ export default { residentGroup: {
     // 合稿·锦官城「三、人物」原创角色补驻场。
     {
       name: "孙文墨", innerRoom: "都事府", id: "resident_sunwenmo", levelCap: 2,
-      brief: "都事府刑名师爷，省城户房安插在锦官城的旧派文吏",
+      brief: "都事府刑名师爷，省城派来的旧派文吏",
       personality: "圆滑世故，迷信官场资历；表面唯唯诺诺，背地里屡向省城递密折催收曲措乡税卡",
       carry: [
         { name: "乌木铁骨折扇", category: "weapon", quality: "绿" },
@@ -218,7 +218,7 @@ export default { residentGroup: {
     },
     {
       name: "裴九江", innerRoom: "巡检校场·锦官武馆后院", id: "resident_peijiujiang", levelCap: 3,
-      brief: "锦官城北巡检司总捕头，兼管锦官武馆后院校场操练",
+      brief: "锦官北巡检司总捕头，兼管武馆校场操练",
       personality: "刚正务实，厌恶油滑；恨血刀部入骨，对黑风寨巴桑却存三分敬意",
       carry: [
         { name: "熟铜双铁尺", category: "weapon", quality: "蓝" },
@@ -232,7 +232,7 @@ export default { residentGroup: {
     },
     {
       name: "宋小乙", innerRoom: "清风茶馆", id: "resident_songxiaoyi", levelCap: 1,
-      brief: "快班年轻捕快，清风茶馆常客，跑锦官城、雅江、鱼定村一线传信",
+      brief: "快班年轻捕快，清风茶馆常客，跑西路传信",
       personality: "热心嘴碎，贪吃好凑热闹，查案盯梢时却比猎犬还敏锐；极崇拜柳青鸢与裴九江",
       carry: [
         { name: "轻铁雁翎短刀", category: "weapon", quality: "绿" },
@@ -246,7 +246,7 @@ export default { residentGroup: {
     },
     {
       name: "沈归尘", innerRoom: "刑名东厢·卷宗库房", id: "resident_shenguichen", levelCap: 2,
-      brief: "都事府卷宗阁守库老吏，六年前失踪上司的贴身书办",
+      brief: "都事府卷宗阁老吏，旧年失踪上司的书办",
       personality: "古板执拗，过目不忘，对人冷淡却对每一页纸敬若神明",
       carry: [
         { name: "紫檀铜头戒尺", category: "weapon", quality: "白" },

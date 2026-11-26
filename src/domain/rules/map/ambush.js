@@ -21,7 +21,7 @@ export const AMBUSH_SQUADS = [
     member: {
       name: "唐门暗弩手",
       levelCap: 3,
-      brief: "唐门暗杀组，玄衣蒙面，袖藏连珠毒弩，奉命清理门户。",
+      brief: "唐门暗杀组弩手，玄衣蒙面袖藏毒弩",
       faction: "唐门",
       tag: "tangmen_assassin",
     },
@@ -39,7 +39,7 @@ export const AMBUSH_SQUADS = [
     member: {
       name: "欢喜教内院弟子",
       levelCap: 2,
-      brief: "老何手下的内院弟子，粗布短褂，腰插擦得雪亮的短弯刀，袖里藏着迷香。",
+      brief: "欢喜教内院弟子，腰插弯刀袖藏迷香",
       faction: "欢喜教",
       tag: "huanxi_guard",
     },
@@ -52,7 +52,7 @@ export const AMBUSH_SQUADS = [
     member: {
       name: "巡捕营校尉",
       levelCap: 3,
-      brief: "土司府巡捕营的带队校尉，白玛次仁麾下，挎长矛背海捕文书。",
+      brief: "土司府巡捕营校尉，背负海捕文书",
       faction: "鱼定土司府",
       tag: "tusi_patrol",
     },
@@ -65,7 +65,7 @@ export const AMBUSH_SQUADS = [
     member: {
       name: "雪山派截杀弟子",
       levelCap: 4,
-      brief: "随陆寒枝守山的雪山弟子，白衣负剑，结阵封住山口。",
+      brief: "随陆寒枝守山的雪山剑阵弟子",
       faction: "雪山派",
       tag: "xueshan_warrior",
     },
@@ -78,7 +78,7 @@ export const AMBUSH_SQUADS = [
     member: {
       name: "守塔武僧",
       levelCap: 3,
-      brief: "罗布桑率领的守塔僧团成员，持镔铁禅杖，守山门与白塔。",
+      brief: "罗布桑麾下守塔武僧，持镔铁禅杖",
       faction: "喇嘛庙",
       tag: "lama_guard",
     },
@@ -91,7 +91,7 @@ export const AMBUSH_SQUADS = [
     member: {
       name: "快班捕头",
       levelCap: 3,
-      brief: "锦官城都事府快班捕头，奉裴九江之命围捕甲等通缉犯。",
+      brief: "锦官都事府快班捕头，奉命缉拿要犯",
       faction: "锦官城",
       tag: "jinguan_constable",
     },
@@ -104,7 +104,7 @@ export const AMBUSH_SQUADS = [
     member: {
       name: "雾隐寨守卫",
       levelCap: 3,
-      brief: "守在五仙教北坛藤桥隘口的守卫，袖缠蛊铃，见外人便放信虫。",
+      brief: "五仙教北坛藤桥守卫，袖缠蛊铃",
       faction: "五仙教",
       tag: "wuxian_guard",
     },
@@ -117,7 +117,7 @@ export const AMBUSH_SQUADS = [
     member: {
       name: "寨门刀口",
       levelCap: 3,
-      brief: "黑风寨寨门上值守的刀口，脸罩兽皮，握环首宽刀。",
+      brief: "黑风寨寨门刀口，蒙面握宽刀",
       faction: "黑风寨",
       tag: "heifeng_blade",
     },
@@ -130,7 +130,7 @@ export const AMBUSH_SQUADS = [
     member: {
       name: "丐帮执法弟子",
       levelCap: 3,
-      brief: "跟胡三爷守分舵的执法弟子，竹杖青布，眼神不善。",
+      brief: "跟胡三爷守分舵的丐帮执法弟子",
       faction: "丐帮三星分舵",
       tag: "gaibang_enforcer",
     },
@@ -143,7 +143,7 @@ export const AMBUSH_SQUADS = [
     member: {
       name: "青城剑阵弟子",
       levelCap: 3,
-      brief: "松鹤道长座下守山弟子，青袍双剑，在山门列剑阵。",
+      brief: "松鹤道长座下青城守山剑阵弟子",
       faction: "青城派",
       tag: "qingcheng_sword",
     },

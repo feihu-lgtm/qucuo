@@ -64,7 +64,7 @@ export function talkToNpc(state, npc, { now = Date.now() } = {}) {
     };
     result.logs = [
       { t: "sys", text: `  你找到了${npc.name}，交出货物，护镖任务「${activeEscort.title}」圆满完成！` },
-      { t: "item", text: `  💰 报酬：${activeEscort.reward} 两 · 潜能 +10` },
+      { t: "item", text: `  💰 报酬 ${activeEscort.reward} 两 · 潜能 +10` },
       ...(activeEscort.factionRep
         ? Object.entries(activeEscort.factionRep).map(([faction, rep]) => ({ t: "affection", text: `  ✦ ${faction}声誉 +${rep}` }))
         : []),

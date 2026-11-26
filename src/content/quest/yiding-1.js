@@ -59,7 +59,6 @@ export default { quest: {
       {
         id: "s3_report",
         description: "回禀老猎户，他若有所思：「温泉？虎王？管家要虎胆做什么……那东西能炼药，也能炼蛊。管家跟天都镇那边走动频繁，老朽早就觉得不对。」管家在查熊山温泉，想要虎胆自用而非献给土司。",
-        playerHint: "回去找老猎户复命，他有东西给你。",
         playerHint: "回鱼定村找老猎户复命，把熊山口的事告诉他。",
         completionFlag: "quest_village1_s3",
         onReach: { exp: 2, favorability: { "老猎户": 15 }, flags: ["rumor_guanjia_sixin"] },

@@ -24,7 +24,7 @@ describe("lookNpcInBackground", () => {
   it("卡片先落、时辰 +1，描写插在卡片下面", async () => {
     const { deps, getLog } = harness();
     const done = lookNpcInBackground(npc, [stat], deps);
-    expect(getLog().map(r => r.text)).toEqual(["> 看 才旦", "  才旦：村长之女", "  装束：鱼定猎刀", stat.text]);
+    expect(getLog().map(r => r.text)).toEqual(["> 看 才旦", "  才旦 村长之女", "  装束 鱼定猎刀", stat.text]);
     expect(deps.setTime).toHaveBeenCalledTimes(1);
     expect(deps.noteAction).toHaveBeenCalledWith("action");
     await done;

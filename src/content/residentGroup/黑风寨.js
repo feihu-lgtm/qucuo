@@ -110,7 +110,7 @@ export default { residentGroup: {
     // 合稿·黑风寨「三、人物」原创角色补驻场。
     {
       name: "贡布", innerRoom: "打铁坡与药棚", id: "resident_gongbu", levelCap: 3,
-      brief: "黑风寨二当家兼铁匠，原鱼定村老佃户，右腿被陆福生打瘸",
+      brief: "黑风寨二当家兼铁匠，原鱼定村老佃户",
       personality: "厚道直爽，嘴硬心软，护着寨里老弱；最恨彭老四那伙不守寨规的亡命徒",
       carry: [
         { name: "百炼锻铁锤", category: "weapon", quality: "蓝" },
@@ -124,7 +124,7 @@ export default { residentGroup: {
     },
     {
       name: "旺堆", innerRoom: "寨后岩洞", id: "resident_wangdui", levelCap: 2,
-      brief: "黑风寨眼线头目兼暗库管事，原川西马帮脚夫",
+      brief: "黑风寨眼线头目兼暗库管事，马帮出身",
       personality: "嘴碎精明，滑不留手，看似贪财怕死，实则死忠于救过他命的巴桑",
       carry: [
         { name: "马帮短弯匕", category: "weapon", quality: "绿" },
@@ -138,7 +138,7 @@ export default { residentGroup: {
     },
     {
       name: "彭老四", innerRoom: "寨内公共区", id: "resident_penglaosi", levelCap: 3,
-      brief: "黑风寨外乡亡命徒头目，外号「铁爪鹞」，寨内主战逐利派",
+      brief: "黑风寨亡命徒头目，外号铁爪鹞，主战逐利",
       personality: "贪婪暴躁，阴狠现实，视巴桑的寨规为妇人之仁，一心抢一票大的远走高飞",
       carry: [
         { name: "血锈铁链钩", category: "weapon", quality: "蓝" },

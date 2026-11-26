@@ -75,13 +75,13 @@ export function settleDungeonRun(state, run, { now = Date.now() } = {}) {
     if (settled.money > 0) parts.push(`银两 +${settled.money}`);
     if (settled.exp > 0) parts.push(`江湖经验 +${settled.exp}`);
     if (settled.pot > 0) parts.push(`潜能 +${settled.pot}`);
-    logs.push({ t: LOG_T.STAT, text: `  ⊙ 收获：${parts.join("，")}。` });
+    logs.push({ t: LOG_T.STAT, text: `  ⊙ 收获 ${parts.join("，")}` });
   }
   if (settled.items.length > 0) {
-    logs.push({ t: LOG_T.ITEM, text: `  ⊙ 带出物事：${settled.items.map(lootItemName).join("、")}。` });
+    logs.push({ t: LOG_T.ITEM, text: `  ⊙ 带出物事 ${settled.items.map(lootItemName).join("、")}` });
   }
   if (run.usedItems?.length) {
-    logs.push({ t: LOG_T.ITEM, text: `  ⊙ 途中消耗：${run.usedItems.join("、")}。` });
+    logs.push({ t: LOG_T.ITEM, text: `  ⊙ 途中消耗 ${run.usedItems.join("、")}` });
   }
   if (shouldSetFlag) {
     logs.push({ t: LOG_T.SYS, text: `  ★ 首次击退「${run.dungeonName}」镇宫首领！` });

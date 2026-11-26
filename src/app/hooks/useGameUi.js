@@ -172,8 +172,8 @@ export function useGameUi({
   const AV_BASE = ((import.meta.env && import.meta.env.BASE_URL) || "/") + "portraits/player/";
   const genderAvatar = { "男": AV_BASE + "male.webp", "女": AV_BASE + "female.webp" };
   const playerAvatar = playerAvatarCustom || genderAvatar[char.gender] || (AV_BASE + "other.webp");
-  const clrNight = { sys: "var(--ink-good)", cmd: "var(--ink-warn)", desc: "var(--ink-text)", room: "var(--ink-accent)", item: "var(--gold)", stat: "var(--log-stat)", skill: "var(--violet)", err: "var(--red-soft)", choice: "var(--log-choice)", narrator: "var(--pink)", crash: "var(--red-soft)", confess: "var(--ember)", affection: "var(--log-affection)", quest: "var(--ember)" };
-  const clrDay = { sys: "var(--good)", cmd: "var(--warn)", desc: "var(--log-desc)", room: "var(--log-room)", item: "var(--log-item)", stat: "var(--info)", skill: "var(--log-skill)", err: "var(--accent)", choice: "var(--log-choice)", narrator: "var(--log-narrator)", crash: "var(--accent)", confess: "var(--log-quest)", affection: "var(--log-affection)", quest: "var(--log-quest)" };
+  const clrNight = { sys: "var(--log-sys)", cmd: "var(--log-cmd)", desc: "var(--log-desc)", room: "var(--log-room)", item: "var(--log-item)", stat: "var(--log-stat)", skill: "var(--log-skill)", err: "var(--log-err)", choice: "var(--log-choice)", narrator: "var(--log-narrator)", crash: "var(--log-crash)", confess: "var(--log-confess)", affection: "var(--log-affection)", quest: "var(--log-quest)" };
+  const clrDay = { sys: "var(--log-sys)", cmd: "var(--log-cmd)", desc: "var(--log-desc)", room: "var(--log-room)", item: "var(--log-item)", stat: "var(--log-stat)", skill: "var(--log-skill)", err: "var(--log-err)", choice: "var(--log-choice)", narrator: "var(--log-narrator)", crash: "var(--log-crash)", confess: "var(--log-confess)", affection: "var(--log-affection)", quest: "var(--log-quest)" };
   const clr = isDayMode ? clrDay : clrNight;
   // NPC 名与好感的语义色，取值在 tokens.css，随日夜切换。
   const uiPink = "var(--npc-affection)";

@@ -4,12 +4,15 @@ export default { quest: {
   "type": "QT_COLLECT",
   "title": "收复雪豹",
   "giver": null,
+  "hintOnly": true,
   "description": "鱼定村有头无主的雪豹，长长久久卧在村口那块青石上，不亲近谁，也不归谁所有，只静静等着一个它自己认准的人。它只认有灵之人；七样灵性占得五样，才肯随你踏遍山川。",
   "rewardText": "雪豹以额抵掌，从此山长水远，与你同行。",
   "stages": [
     {
       "id": "s1",
       "title": "证明与山川有缘",
+      "at": "鱼定村·村口",
+      "playerHint": "留心青石上那头前爪带伤的雪豹，喂肉、上药、挠痒或攒够名望声势皆可与它结缘。",
       "description": "先莫急着招手。割肉喂它，留心它为何坐立不安，治好前爪旧伤；或为鱼定村出力，练得体魄七分、魅力七分，打赢一个恶人。七样灵性占得五样，青石上的金瞳自会认你。",
       "completionFlag": "snow_leopard_trusted"
     },

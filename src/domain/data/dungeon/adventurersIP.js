@@ -15,7 +15,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 3,
     gender: "女",
     faction: "巫山",
-    brief: "【冒险者·飞燕穿云】巫山神偷女贼，贪财机灵，实则仗义常劫富济贫。",
+    brief: "巫山神偷女贼，贪财机灵却常劫富济贫",
     personality: "嘴上从不饶人，见钱眼开，看似唯利是图的市侩丫头，真遇到不平之事却总忍不住出手相助。",
     fullBio: "自幼流落康藏街头，靠偷摸滚打长大。因轻功天赋被巫山高人收留，出师后在曲措乡专门光顾为富不仁者的府邸，毁誉参半。",
     carry: [
@@ -61,7 +61,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 2,
     gender: "女",
     faction: "玉泉",
-    brief: "【冒险者·娇憨灵厨】玉泉派小师妹，天真烂漫，厨艺精湛且极爱撒娇。",
+    brief: "玉泉派小师妹，天真爱撒娇的灵厨",
     personality: "性格活泼娇憨，极度黏人，对喜爱之人毫无防备。看似没心没肺，实则用一手好厨艺温暖着身边人。",
     fullBio: "本是富商千金，因不喜拘束拜入玉泉派门下。在康藏边镇常以寻找珍稀食材为名四处游荡，凭着甜美笑容与厨艺混得如鱼得水。",
     carry: [
@@ -107,7 +107,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "女",
     faction: "百花",
-    brief: "【冒险者·幽兰绝影】百花谷清冷女侠，貌若水仙，身带幽香且身世成谜。",
+    brief: "百花谷清冷女侠，貌若水仙身世成谜",
     personality: "外表冷若冰霜，生人勿近，对世俗名利嗤之以鼻。唯有面对娇花时方显温柔，内里藏着一颗重情重义的孤傲之心。",
     fullBio: "传闻是某位武林魔头之女，自幼被百花派隐世高人收养。长居曲措乡外的幽谷之中，日日与奇花异草为伴，非遇大变故绝不出谷。",
     carry: [
@@ -153,7 +153,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 3,
     gender: "女",
     faction: "锦官",
-    brief: "【冒险者·霹雳烈刃】锦官城冷艳女刀客，性烈如火，刀法狠辣且嫉恶如仇。",
+    brief: "锦官城冷艳女刀客，嫉恶如仇刀法狠辣",
     personality: "性格刚烈，雷厉风行，眼中容不得半点沙子。虽然脾气火爆，对待属下与朋友却极其护短，不善表达柔情。",
     fullBio: "锦官城精锐护卫出身，奉命驻守曲措乡镇压边陲恶匪。因行事作风狠辣果决，手中长刀沾满绿林败类的鲜血，在黑道中凶名赫赫。",
     carry: [
@@ -199,7 +199,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "女",
     faction: "巫山",
-    brief: "【冒险者·巫山兽娇】巫山御兽一脉的传人，能与康藏百兽通灵。",
+    brief: "巫山御兽传人，能与康藏百兽通灵",
     personality: "性格火爆率真，行事单凭直觉，不通人情世故，对认定的朋友两肋插刀，对仇敌则如猛兽般撕咬。",
     fullBio: "自幼在巫山深谷中与野兽为伍，饮虎奶食生肉长大。后随豹群流浪至康藏边镇，凭借一手百兽通灵的本事在曲措乡立足，威慑一方。",
     carry: [
@@ -245,7 +245,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 3,
     gender: "女",
     faction: "锦官",
-    brief: "【冒险者·锦官千面】锦官城出身的千面娇女，巧言令色擅长伪装。",
+    brief: "锦官城出身的千面娇女，最擅伪装游说",
     personality: "娇俏黏人，极会察言观色。满嘴谎言中偶尔夹杂着真心，看似爱慕虚荣，实则内心渴望真正的江湖侠义与依靠。",
     fullBio: "出身锦官城三教九流之地，由老骗子抚养长大，学得一身易容与骗术。为躲避仇家逃至曲措乡，常伪装成落难的大家闺秀骗取各路大侠的庇护与钱财。",
     carry: [
@@ -291,7 +291,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 3,
     gender: "女",
     faction: "百花",
-    brief: "【冒险者·百花名伶】百花谷外围的梨园名角，身娇体柔却极富韧性。",
+    brief: "百花谷梨园名角，外柔内韧",
     personality: "平素温婉柔弱，带着小家碧玉的乖巧。但在大是大非面前绝不退缩，极重孝道与侠义，为了保护亲人可以豁出性命。",
     fullBio: "父亲曾是拳法名家，因伤退隐后在曲措乡搭起草台班子。齐丽自幼随父卖艺，将武术融入戏曲中，不仅唱腔绝代，软骨功更是江湖一绝，深得当地各族喜爱。",
     carry: [
@@ -337,7 +337,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "女",
     faction: "玉泉",
-    brief: "【冒险者·玉泉灵枢】玉泉派神医之女，天生通灵，医术超凡绝伦。",
+    brief: "玉泉派神医之女，天生通灵医术超群",
     personality: "娴雅端秀，对病患温柔如水，对厌恶的恶徒则冷若冰霜、不留情面。偶尔会有傲娇任性的小脾气，对纸伞有着近乎痴迷的执念。",
     fullBio: "母亲早逝，随神医父亲隐居玉泉。天生拥有一双能见鬼神的通灵阴阳眼，这使她性格带有几分清冷脱俗。为寻觅失传医书与稀有药材，她带着满身丹药孤身踏入曲措乡的纷争中。",
     carry: [
@@ -383,7 +383,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "女",
     faction: "五仙",
-    brief: "【冒险者·毒蛊明妃】敢爱敢恨的苗疆毒宗圣女，热情奔放。",
+    brief: "敢爱敢恨的苗疆毒宗圣女，热情奔放",
     personality: "行事率性而为，对恩人百倍相报，对仇敌万毒噬心，不拘泥于中原世俗礼法。",
     fullBio: "原为云贵五仙教主，因教内叛乱流落康藏，在曲措乡重建势力，欲借高原生灵炼制绝世金蛊。",
     carry: [
@@ -429,7 +429,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "女",
     faction: "锦官",
-    brief: "【冒险者·傲雪凌风】男装英挺女装柔媚，潜伏雪域的双面杀手。",
+    brief: "潜伏雪域的双面杀手，男装英挺女装媚",
     personality: "外冷内热，极重承诺。作为男儿时豪气干云，卸下伪装后却有着小女子的细腻与孤独。",
     fullBio: "高丽遗孤，被刺客组织洗脑，后得高人点化脱离组织，隐入锦官暗部，在康藏边镇执行密令。",
     carry: [
@@ -475,7 +475,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "女",
     faction: "玉泉",
-    brief: "【冒险者·绝代琴仙】抚琴隐居的绝世音宗，清冷出尘不食烟火。",
+    brief: "抚琴隐居的绝世音宗，清冷出尘",
     personality: "淡泊名利，以琴为伴，视天下凡夫俗子如无物，唯有精通音律的知音能令她动容。",
     fullBio: "昔年百花谷琴宗传人，因情伤远走高原，在曲措乡外的玉泉冰湖结庐而居，谱写百鸟朝凤残卷。",
     carry: [
@@ -521,7 +521,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 3,
     gender: "女",
     faction: "昆仑",
-    brief: "【冒险者·西域明珠】骄矜高贵的西域和亲公主，暗藏复国之志。",
+    brief: "骄矜西域和亲公主，暗藏复国之志",
     personality: "傲慢矜持，金枝玉叶的做派下隐藏着深沉的政治手腕，为达目的不惜利用一切资源。",
     fullBio: "西域小国公主，本欲嫁入土司府和亲以换取兵力，却因政变流落江湖，靠智谋在多方势力间周旋。",
     carry: [
@@ -567,7 +567,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "女",
     faction: "天龙",
-    brief: "【冒险者·艳绝天龙】天龙教夜叉护法，红衣如火，轻功绝顶。",
+    brief: "天龙教夜叉护法，红衣如火轻功绝顶",
     personality: "强势果敢，重情重义，行事作风大胆泼辣，骨子里却极度渴望能征服自己的霸道强者。",
     fullBio: "早年被天龙教主收养，凭借过人天赋与狠辣手段坐上夜叉护法之位。常年游走于康藏边镇，负责刺探各派机密，红衣所过之处，留下一地风流与杀机。",
     carry: [
@@ -614,7 +614,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "女",
     faction: "天龙",
-    brief: "【冒险者·修罗霸凤】天龙教阿修罗护法，蓝袍冷艳，武功莫测。",
+    brief: "天龙教阿修罗护法，蓝袍冷艳武功莫测",
     personality: "冷艳威严，性情乖戾，因情伤而极度厌恶男子，行事狂野不羁，对麾下女弟子却极为护短。",
     fullBio: "曾与江湖浪子有过一段刻骨铭心的旧情，惨遭背叛后性情大变，自创修罗霸凤功，成为天龙教阿修罗护法。常年隐居于曲措乡深处的修罗宫，极少涉足中原。",
     carry: [
@@ -661,7 +661,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 3,
     gender: "女",
     faction: "锦官",
-    brief: "【冒险者·绝影紫燕】蜀中来的神秘少女，常女扮男装在边镇游走。",
+    brief: "蜀中神秘少女，常女扮男装游走边镇",
     personality: "古灵精怪，聪慧狡黠，遇事冷静且总有奇思妙想，对看重之人极其护短。",
     fullBio: "本是锦官城大户千金，却因厌倦繁文缛节偷跑至康藏边镇，凭一身轻功与毒术在江湖中周旋，暗中调查某桩武林悬案。",
     carry: [
@@ -707,7 +707,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "女",
     faction: "百花",
-    brief: "【冒险者·丹青照夜】潇湘画舫的主人，画技通神，实则暗藏绝顶轻功。",
+    brief: "潇湘画舫主人，画技通神轻功暗藏",
     personality: "清冷孤高，才情绝代，看似不食人间烟火，内心却极具侠义心肠与傲骨。",
     fullBio: "昔日名门之后，家道中落后流落江湖，以百花谷外门弟子身份在曲措乡包下画舫，暗中化身侠盗劫富济贫。",
     carry: [
@@ -755,7 +755,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 3,
     gender: "女",
     faction: "五毒",
-    brief: "【冒险者·诡蛊医仙】亦正亦邪的毒医之女，嬉笑怒骂间以毒救人。",
+    brief: "亦正亦邪毒医之女，嬉笑间以毒救人",
     personality: "嘴硬心软，行事乖张，喜欢用下毒来试探人心，实则对生命抱有敬畏。",
     fullBio: "出身五毒教叛教支系，自幼与毒蛊为伴，来到曲措乡只为寻找传说中的雪山冰蟾，常在街头摆设悬赏毒局。",
     carry: [
@@ -802,7 +802,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "女",
     faction: "明教",
-    brief: "【冒险者·焚莲玄女】明教玄阳护法，行事狠辣的赤衣刀客。",
+    brief: "明教玄阳护法，行事狠辣的赤衣刀客",
     personality: "孤傲决绝，雷厉风行，对敌人毫不留情，唯独对认可的同伴会流露出一丝温情。",
     fullBio: "无父无母的孤儿，被明教高层收养并在残酷的试炼中存活，手持焚莲刀来到康藏边镇执行秘密清剿任务。",
     carry: [
@@ -849,7 +849,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "女",
     faction: "剑门关",
-    brief: "【冒险者·傲雪素弦】剑门关门主千金，不喜杀伐，独爱于雪中抚琴鸣剑。",
+    brief: "剑门关门主千金，独爱雪中抚琴鸣剑",
     personality: "清冷孤高，不苟言笑，对江湖俗事抱有厌倦，唯有面对精妙古谱或绝世名琴时方露痴态。",
     fullBio: "避世于康藏边镇的剑庐，本是为寻传说中的凤凰遗音，却被卷入曲措乡的纷争。常在雪山之巅奏响素弦。",
     carry: [
@@ -895,7 +895,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 3,
     gender: "女",
     faction: "锦官",
-    brief: "【冒险者·锦官飞英】锦官城出身的豪爽侠女，一杆长枪挑破康藏不平事。",
+    brief: "锦官出身的豪爽侠女，长枪闯荡康藏",
     personality: "爽朗利落，嫉恶如仇。行事不拘小节，笑声清脆如银铃，对待朋友肝胆相照，眼中揉不得沙子。",
     fullBio: "本是锦官城大户千金，却偏爱舞枪弄棒。因不满地方土司欺压百姓，单枪匹马杀入曲措乡，誓要荡平此地恶霸。",
     carry: [
@@ -941,7 +941,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "女",
     faction: "点苍",
-    brief: "【冒险者·碧水秋漪】点苍派年少成名的女剑客，剑法如秋水连绵，一袭绿衫。",
+    brief: "点苍派年轻女剑客，剑法如秋水连绵",
     personality: "外柔内刚，聪慧灵动。虽年少成名却不骄不躁，对待武学极为痴迷，偶尔会展露小女儿的狡黠。",
     fullBio: "师承点苍，十六岁便以一套碧水剑法名动滇藏。为寻传闻中的神兵来到曲措乡，常于雨中练剑，悟得烟霞剑意。",
     carry: [
@@ -987,7 +987,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 3,
     gender: "女",
     faction: "天山",
-    brief: "【冒险者·疾风无痕】天山绝顶的无情女剑客，来去如风人狠话少，只论生死。",
+    brief: "天山无情女剑客，人狠话少只论生死",
     personality: "极度冷酷，沉默寡言。奉行“拔剑即分生死”的准则，对任何道德束缚嗤之以鼻，只在乎自身存活与报酬。",
     fullBio: "曾是天山派最锋利的暗杀者，因厌倦门派倾轧而叛逃。流落至曲措乡隐姓埋名，化身为拿钱办事的无情猎手。",
     carry: [
@@ -1033,7 +1033,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 3,
     gender: "女",
     faction: "五仙教",
-    brief: "【冒险者·彤云穿花】身世成谜的活泼灵动少女，苗疆出走至康藏。",
+    brief: "苗疆出走的灵动少女，身世成谜",
     personality: "性格古灵精怪，看似没心没肺、活泼俏皮，实则内心缺乏安全感，对认定的人极为依赖且护短，偶尔流露出一丝狡黠与机警。",
     fullBio: "本是西南苗疆隐秘部族的血脉，因族内斗争从小被送至康藏边镇生活，身上藏有连她自己都不甚清楚的毒蛊隐秘，如今在江湖四处游荡。",
     carry: [
@@ -1079,7 +1079,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "女",
     faction: "巫山派",
-    brief: "【冒险者·巫山云杳】气质空灵冷傲，行踪缥缈不定，常伴云雾。",
+    brief: "巫山空灵女侠，行踪缥缈常伴云雾",
     personality: "言语轻柔却透着疏离，行事毫无江湖正邪的规矩可言，仿佛置身事外看客，只对古老机关和远古遗迹表现出狂热的执念。",
     fullBio: "传闻是巫山派某位避世长老的关门弟子，常年游走于三星堆、古格王朝等废墟遗迹，似乎在寻找某种能够逆转阴阳的先秦机关术。",
     carry: [
@@ -1126,7 +1126,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 3,
     gender: "女",
     faction: "百花谷",
-    brief: "【冒险者·悬壶素心】精通药理的温婉女子，背着药篓行走江湖。",
+    brief: "背着药篓行走江湖的温婉女医",
     personality: "性情温和端庄，悲天悯人却不迂腐，深知江湖险恶但仍愿施以援手。面对恶徒时，亦能果断使用烈性毒药以自保。",
     fullBio: "世代经营药材生意的商氏家族独女，因家族卷入武林纷争被灭门，被百花谷神医救下传授医理。如今在康藏一带收购雪莲冬虫，一边行医一边暗查当年仇家。",
     carry: [
@@ -1172,7 +1172,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "女",
     faction: "天山派",
-    brief: "【冒险者·傲雪凌霜】一袭白衣如雪，剑气凛冽如霜的天山女侠。",
+    brief: "白衣如雪的天山女侠，剑气凛冽",
     personality: "性格外冷内热，极重承诺与江湖道义。行事果决凌厉，嫉恶如仇，对剑道有着极高的追求，不擅长应对过于热情的寒暄。",
     fullBio: "天山派掌门首徒，自幼在冰天雪地中练剑，心性如冰雪般纯粹。此次奉命下山前往康藏边镇，是为了追剿一名叛逃的魔教妖孽，并寻回本门失落的名剑。",
     carry: [
@@ -1219,7 +1219,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "男",
     faction: "剑门关",
-    brief: "【冒险者·蜀中剑仙】剑门关俗家弟子，好酒重义，剑法轻灵卓绝。",
+    brief: "剑门关俗家弟子，好酒重义剑法轻灵",
     personality: "表面吊儿郎当、油嘴滑舌，骨子里却极重情义。逢不平事必拔剑相助，是个至情至性的游侠。",
     fullBio: "本是康边客栈跑堂的小二，偶遇剑门关高人传授剑法。后踏入江湖，因资质卓绝名动川藏，却始终牵挂几位红颜知己。",
     carry: [
@@ -1266,7 +1266,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "女",
     faction: "天龙门",
-    brief: "【冒险者·幽谷神女】天龙门隐秘血脉，精通五行秘术，外柔内刚。",
+    brief: "天龙门隐秘传人，精通五行秘术",
     personality: "温婉纯善，悲天悯人。看似柔弱如水，实则内心极具韧性，为守护苍生与所爱之人可牺牲一切。",
     fullBio: "自幼隐居曲措乡外的翠灵岛，身负天龙圣族古老血脉。后因变故步入风波诡谲的江湖，在宿命与私情之间艰难跋涉。",
     carry: [
@@ -1313,7 +1313,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "女",
     faction: "锦官派",
-    brief: "【冒险者·锦官傲梅】锦官第一世家千金，性格刁蛮，鞭剑双绝。",
+    brief: "锦官世家刁蛮千金，鞭剑双绝",
     personality: "骄傲要强，嘴硬心软。行事带着千金大小姐的刁蛮任性，一旦认准了人却又敢爱敢恨，生死相随。",
     fullBio: "锦官城武林盟主之女，自幼集万千宠爱于一身。设下比武招亲本是骄傲作祟，却不想败给那个混混般的游侠，从此甘愿随他浪迹康藏。",
     carry: [
@@ -1360,7 +1360,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 3,
     gender: "女",
     faction: "五仙教",
-    brief: "【冒险者·五仙圣童】五仙教古灵精怪的少女，擅使蛊毒，纯真烂漫。",
+    brief: "五仙教灵怪少女，纯真而擅使蛊毒",
     personality: "天真无邪，活泼好动，对世俗礼法一无所知。爱恨直接，为帮心上人可以毫不犹豫地使用残忍蛊术。",
     fullBio: "生长于康藏边境的五仙教秘境，自幼与毒虫蛊兽为伴。为寻找走失的圣物来到曲措乡，邂逅了那位剑客，从此一心一意跟在他身后。",
     carry: [
@@ -1407,7 +1407,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "男",
     faction: "锦官",
-    brief: "【冒险者·飞星揽月】锦官城当铺的机灵小伙计，爱钱如命却重情义。",
+    brief: "锦官当铺机灵伙计，爱财却重情义",
     personality: "嘴碎滑头，看似贪财市侩，实则古道热肠。遇到稀世古董便走不动道，危急时刻却总能拔剑挺身而出。",
     fullBio: "原是锦官城永安当的打杂伙计，偶然获得一柄神秘古剑，自此卷入康藏江湖的风波。据说其前世乃是镇守雪域的绝世神将。",
     carry: [
@@ -1453,7 +1453,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 3,
     gender: "女",
     faction: "唐门",
-    brief: "【冒险者·飞花落叶】唐门掌上明珠，性情娇蛮却敢爱敢恨。",
+    brief: "唐门娇蛮千金，性情热烈敢爱敢恨",
     personality: "娇纵任性，脾气火爆，一言不合便使暗器。内心其实极度渴望关爱，对认定的朋友毫无保留。",
     fullBio: "并非唐门门主亲生，实乃雪域高原神树之果化身，后被唐门收养。因身世之谜被逐出家门，流落康藏边镇寻找亲人的线索。",
     carry: [
@@ -1500,7 +1500,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "女",
     faction: "三星堆",
-    brief: "【冒险者·千年剑影】古蜀国末代公主，殉国投炉化为魔剑之灵。",
+    brief: "古蜀末代公主，殉国化为魔剑之灵",
     personality: "蓝衣时温婉柔弱、楚楚可怜；一旦遇到危险，便会化身红衣，性格暴烈狠辣、毫不留情。",
     fullBio: "千年前古蜀国破，为助王兄铸成魔剑，毅然跃入铸剑炉中。千年后魂魄寄宿剑中重见天日，一路追随兄长的转世来到曲措乡。",
     carry: [
@@ -1547,7 +1547,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "女",
     faction: "五仙",
-    brief: "【冒险者·幽谷情花】五仙教圣女，为保容颜不老苦等情郎三世。",
+    brief: "五仙教圣女，驻颜苦等情郎三世",
     personality: "成熟端庄，风姿绰约，行事稳重。对天下苍生有着天生的悲悯，但在感情上固执痴狂，甘愿飞蛾扑火。",
     fullBio: "拥有上古神明血脉，本该守护苗疆，却因爱上汉人修道者而历经三世情劫。为寻觅转世恋人，独自来到这风雪交加的康藏边陲。",
     carry: [
@@ -1593,7 +1593,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "男",
     faction: "昆仑",
-    brief: "【冒险者·昆仑野狐】昆仑雪山长大的野少年，不知世事但凭一腔赤诚。",
+    brief: "昆仑雪山野少年，懵懂涉世却极赤诚",
     personality: "懵懂质朴，不通人情世故，认死理。信奉“我命由我不由天”，对朋友倾尽所有。",
     fullBio: "自幼随隐居父亲在昆仑冰峰狩猎为生，未曾涉足江湖。父亲过世后，为寻猎物误入曲措乡，凭借天生神力和一把重弓在康藏边镇引起轩然大波。",
     carry: [
@@ -1639,7 +1639,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "女",
     faction: "三星堆",
-    brief: "【冒险者·盗墓飞燕】身背家族短寿宿命的盗墓少女，狡黠灵动。",
+    brief: "背负短寿宿命的盗墓少女，狡黠灵动",
     personality: "活泼机灵，常带三分促狭笑意。看似贪财好利，实则重情重义，深知命不久矣而更显通透。",
     fullBio: "出生于世代盗墓的韩氏家族，因惊扰阴脉世代短命。为寻长生之法解除诅咒，拜入三星堆研究古蜀秘墓，一路追踪风水异象来到康藏边镇。",
     carry: [
@@ -1687,7 +1687,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "女",
     faction: "百花",
-    brief: "【冒险者·幻瞑幽香】气质雍容的百花谷客卿，精通音律与摄魂幻术。",
+    brief: "百花谷雍容客卿，精通音律与幻术",
     personality: "娴静温婉，知书达理。外表柔弱实则内心坚韧，对妖与人一视同仁，带有看透世俗的疏离感。",
     fullBio: "本是西域幻瞑界梦貘一族的少主，幼时流落中原被官宦人家收养。成年后为追寻身世之谜，携一尾焦尾琴行遍康藏，借居于百花谷，以琴音安抚边镇暴戾之气。",
     carry: [
@@ -1735,7 +1735,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 3,
     gender: "男",
     faction: "黑风",
-    brief: "【冒险者·狂风魔尊】黑风寨少当家，体内流淌着蚩尤魔血的豪爽青年。",
+    brief: "黑风寨少当家，身负魔血的豪爽青年",
     personality: "大大咧咧，为人极讲义气。即便知晓自己魔族血脉，也坚守本心，不愿滥杀无辜，乐观开朗。",
     fullBio: "自幼在黑风寨土匪窝长大，被当做少寨主培养。一次偶然冲突中觉醒了被封印的魔族血脉，为寻找压制魔气的方法，他离开山寨，手持双刃踏入曲措乡的复杂江湖。",
     carry: [
@@ -1781,7 +1781,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 3,
     gender: "男",
     faction: "锦官",
-    brief: "【冒险者·浮云遮目】身世成谜的独眼少年，机敏灵动，极重情义。",
+    brief: "身世成谜的独眼少年，机敏重义",
     personality: "看似圆滑世故、巧言令色，实则心思缜密，对认定的同伴有着绝对的保护欲，行事不拘小节。",
     fullBio: "自幼便失去了过往记忆，与越祈相伴流落康藏边镇，凭借过人的反应与市井智慧在锦官门下混得风生水起，暗中追查自身身世的蛛丝马迹。",
     carry: [
@@ -1827,7 +1827,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "女",
     faction: "三星堆",
-    brief: "【冒险者·鲲鹏化海】心智犹如孩童的神秘少女，力大无穷。",
+    brief: "心智如童的神秘少女，天生力大无穷",
     personality: "性格天真烂漫，不谙世事，行事全凭直觉与对今朝的依赖，情绪纯粹，不懂掩饰，对食物极其执着。",
     fullBio: "似从古老遗迹中苏醒，身负着三星堆一脉无法解释的庞大异能。没有善恶之分，只知紧紧跟在越今朝身边，将他视为世上唯一的归宿。",
     carry: [
@@ -1873,7 +1873,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "男",
     faction: "独孤",
-    brief: "【冒险者·焚焰噬魂】身负骇人煞气的沉默剑客，外冷内热。",
+    brief: "身负骇人煞气的剑客，外冷内热",
     personality: "沉默寡言，面冷心热，习惯将痛苦与责任一力承担。面对强敌坚韧不拔，对亲近之物却有一丝不易察觉的温柔。",
     fullBio: "本是中原名门弟子，因体内封印着上古煞气与半道残魂而屡遭排挤。为寻找解煞之法，背负着一把凶剑踏入康藏边镇，成为了独孤门下最特立独行的游侠。",
     carry: [
@@ -1919,7 +1919,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "女",
     faction: "巫山",
-    brief: "【冒险者·幽明引路】来自幽冥之地的灵女，温柔坚韧，通晓祝由。",
+    brief: "幽冥灵女，温柔坚韧而通晓祝由之术",
     personality: "善良且充满朝气，对生老病死有着超然的理解。为了守护重要之人，拥有不惧任何诅咒与天命的坚定意志。",
     fullBio: "来自隐秘的巫山神女幽谷，自幼与毒瘴灵体为伴。为寻找并治愈命中注定的那名煞气剑客，孤身踏入这混乱交织的曲措乡，以引路人之姿施展诡秘而温暖的巫术。",
     carry: [
@@ -1965,7 +1965,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 3,
     gender: "男",
     faction: "三星堆",
-    brief: "【冒险者·偃机巧手】醉心于青铜偃甲机关之术的开朗少年。",
+    brief: "醉心青铜偃甲机关的开朗少年",
     personality: "乐天派，好奇心极强，对江湖恩怨不感兴趣，只对各类古怪机关和图谱双眼发光，为人仗义慷慨。",
     fullBio: "原为锦官城富商之子，偶然接触到古蜀三星堆遗留的青铜机关术后离家出走，来到康藏边镇寻找失落的偃甲部件与上古图纸。",
     carry: [
@@ -2012,7 +2012,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "女",
     faction: "剑门关",
-    brief: "【冒险者·破阵惊龙】镇守边关的女长枪将，英气逼人，豪爽重诺。",
+    brief: "镇守边关的女长枪将，英气豪爽重诺",
     personality: "极具军人作风，行事雷厉风行且充满正义感。看似严肃不可接近，实则内心柔软，对平民多有庇护之意。",
     fullBio: "出身于剑门关军镇的枪法世家，自幼在边关厮杀中长大。为了调查师父失踪的真相，带着一杆长枪踏入曲措乡的复杂江湖。",
     carry: [
@@ -2059,7 +2059,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "男",
     faction: "独孤",
-    brief: "【冒险者·孤渊龙影】身负神秘王族血脉的冷峻剑客，战力深不可测。",
+    brief: "身负古族血脉的冷峻剑客，深不可测",
     personality: "外表冷漠孤傲，说话毫不留情，但骨子里却是个靠谱且护短的人。重承诺，对弱小虽嘴上嫌弃却常暗中出手相助。",
     fullBio: "本是西域某个避世王族的后裔，幼时流落中原被独孤一脉的剑客收养。血脉觉醒后拥有撕裂空间的力量，现隐居曲措乡暂避仇家。",
     carry: [
@@ -2106,7 +2106,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "女",
     faction: "巫山",
-    brief: "【冒险者·餍月惊梦】活了数千年的巫山大妖，清冷绝尘的神秘熟女。",
+    brief: "活了数千年的巫山大妖，清冷绝尘",
     personality: "阅尽沧桑后的淡漠与从容，不苟言笑，气质清冷高贵。偶尔流露出的疲惫与温柔，带着令人沉沦的致命成熟风韵。",
     fullBio: "传闻中掌控梦境的巫山大妖，曾历经数代王朝更迭。因早年受创而实力受损，如今隐入曲措乡的黑夜中，借吸食世人梦境疗伤。",
     carry: [
@@ -2153,7 +2153,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 3,
     gender: "男",
     faction: "玉泉",
-    brief: "【冒险者·遗尘孤影】故国遗孤，温雅如玉的玉泉观俗家弟子。",
+    brief: "故国遗孤，温雅如玉的玉泉俗家弟子",
     personality: "性格温和仁厚，遇事总留余地。不喜争斗，却因身负师门重托与复族之愿，不得不涉足边镇风雨。",
     fullBio: "本是中原落魄世家之后，被师父带至康藏边镇的玉泉观修道。本性恬淡，只想吹笛度日，却被卷入曲措乡的诸多纷争与阴谋之中。",
     carry: [
@@ -2200,7 +2200,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "女",
     faction: "三星堆",
-    brief: "【冒险者·霜华圣女】三星堆秘教圣女，满头白发，心怀苍生。",
+    brief: "三星堆秘教白发圣女，心怀苍生",
     personality: "极其温柔善良，见不得人间疾苦。虽身怀上古秘力，却总是自卑怯懦，但在关键时刻愿为同伴牺牲一切。",
     fullBio: "曲措乡外雪山脚下被发现的白发孤女，体内流淌着奇异的石之灵力。被三星堆祭司收为圣女，束缚于神庙，却向往凡俗的温暖与自由。",
     carry: [
@@ -2248,7 +2248,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 3,
     gender: "女",
     faction: "血刀",
-    brief: "【冒险者·惊鸿烈刃】血刀门异族女煞星，行事泼辣，敢爱敢恨。",
+    brief: "血刀门异族女煞星，泼辣直率",
     personality: "刁蛮任性，性如烈火，容不得半点沙子。实则外刚内柔，极重情义，一旦认准了人便会以命相托。",
     fullBio: "本是塞外游牧部落的大小姐，部落覆灭后流落康藏边镇，拜入血刀门下。凭借一股狠劲与过人天赋，在曲措乡的腥风血雨中杀出赫赫威名。",
     carry: [
@@ -2295,7 +2295,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "男",
     faction: "逍遥派",
-    brief: "【冒险者·逍遥无极】逍遥派神秘小师弟，手段百出，正邪难辨。",
+    brief: "逍遥派神秘小师弟，手段百出难辨",
     personality: "机灵圆滑，看似不着调，实则胸有沟壑。行事全凭本心，遇善则善，遇恶更恶，是个不折不扣的武学奇才。",
     fullBio: "仿佛凭空出现在曲措乡的年轻人，自称来自现代，满嘴听不懂的胡话。凭借一套奇特的拳法在边镇站稳脚跟，悄然创立了逍遥一派。",
     carry: [
@@ -2343,7 +2343,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "男",
     faction: "昆仑",
-    brief: "【冒险者·逍遥玉龙】昆仑派大弟子，一身正气，拳掌功夫冠绝同侪。",
+    brief: "昆仑派大弟子，拳掌冠绝同侪",
     personality: "温润如玉，重情重义。行事端方不阿，极具长兄风范，遇事总将他人护在身后，不计个人得失。",
     fullBio: "乃辽东大侠遗孤，幼年被昆仑掌门收养。在风雪苦寒中练就刚柔并济的拳法，初入康藏边镇曲措乡，旨在追寻当年杀父仇人的一线线索，并调停各派纷争。",
     carry: [
@@ -2390,7 +2390,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "男",
     faction: "独孤",
-    brief: "【冒险者·狂骨桀刃】独孤派二弟子，傲骨天生，左手刀右手剑横行边镇。",
+    brief: "独孤派二弟子，左刀右剑傲骨横行",
     personality: "嘴硬心软，狂放不羁。表面对人嗤之以鼻，实则暗中回护。极度讨厌被说教，只服拳头比自己硬的人。",
     fullBio: "幼时在曲措乡外的荆棘丛中被捡回，故以为名。天资极高但性情暴烈，强行融合刀剑双绝之术。为向世人证明自己，独自踏入这片修罗场打拼。",
     carry: [
@@ -2437,7 +2437,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 3,
     gender: "男",
     faction: "丐帮",
-    brief: "【冒险者·虎啸藏边】丐帮新晋弟子，身具虎煞之气，憨厚热血的江南少年。",
+    brief: "丐帮新晋江南少年，身具虎煞极热血",
     personality: "憨直质朴，嫉恶如仇。脑筋虽不转弯，但有一腔热血，认准的事情十头牛也拉不回来，极具正义感。",
     fullBio: "本是江南水乡少年，机缘巧合吞噬上古虎煞之气。为控制体内煞气，随丐帮长老入康藏苦修，在曲措乡历练心性，以期将煞气化为正道武学匡扶正义。",
     carry: [
@@ -2484,7 +2484,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     levelCap: 4,
     gender: "男",
     faction: "三星堆",
-    brief: "【冒险者·贪狼妖星】三星堆秘派门徒，身怀妖血的痞气少年，精通卜算。",
+    brief: "三星堆门徒，身怀妖血精于卜算",
     personality: "油嘴滑舌，痞气十足。表面是个贪财好色的小混混，遇到危险跑得比谁都快，但大是大非前却敢于舍命相搏。",
     fullBio: "因体内流淌着上古贪狼妖血而不容于正道。流落至曲措乡后加入神秘的三星堆派，平日靠半吊子占卜术招摇撞骗，月圆之夜却需强压狼化之苦。",
     carry: [
@@ -2533,7 +2533,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     gender: "女",
     faction: "锦官",
     homeDistrict: "鱼定村",
-    brief: "【冒险者·散财娇蕊】锦官首富元家掌上明珠，带着机关老仆铁伯落脚鱼定村开万事屋，王八拳乱打乱撒金叶子扰敌，全靠机关随从硬抗。\"这笔买卖本小姐投了！我可是和武当掌门喝过茶的，稳赚不赔！\"",
+    brief: "锦官元家千金，带机关老仆在村开店",
     personality: "迷之自信的商业奇才妄想家，娇憨仗义见不得别人受苦。",
     fullBio: "锦官首富元家掌上明珠，仗家底穿西域胡服乱投资次次血本无归，靠机关人偶兜底至今觉得「只差一点运气」。她有辆机关叮叮车，平日铁伯推着在万事屋门口支摊，车里塞满她四处收来的杂七杂八——垃圾居多，偶尔翻得出真宝贝；货架天天换新，逢年逢节还搞大促。",
     carry: [

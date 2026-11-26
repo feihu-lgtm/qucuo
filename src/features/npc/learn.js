@@ -75,7 +75,7 @@ export function stealFromNpc(state, npc, { now = Date.now() } = {}) {
       logs: [
         { t: "cmd", text: `> 偷窃 ${npc.name}` },
         { t: "desc", text: `  你运指如风，趁${npc.name}不备，将「${target.name}」（${target.quality}）神不知鬼不觉地顺入了自己怀中。` },
-        { t: "loot", text: `🤫 妙手空空：「${target.name}」`, item: fullItem, source: "steal", fromNpc: npc.name },
+        { t: "loot", text: `🤫 妙手空空 「${target.name}」`, item: fullItem, source: "steal", fromNpc: npc.name },
       ],
       note: { text: `从${npc.name}身上顺走了「${target.name}」，他毫无察觉。`, source: NOTE_SOURCE.DUMB },
       noteAction: "steal",
@@ -89,7 +89,7 @@ export function stealFromNpc(state, npc, { now = Date.now() } = {}) {
     logs: [
       { t: "cmd", text: `> 偷窃 ${npc.name}` },
       { t: "desc", text: `  你悄然窥破${npc.name}出手的门道，趁其不备，竟将「${result.move.name}」这一手偷学了去！` },
-      { t: "loot", text: `🤫 偷師得手：「${result.move.name}」`, skill: { name: result.move.name, quality: result.move.quality || result.skill?.quality || "白", moveType: result.move.type }, desc: result.move.desc, source: "steal", fromNpc: npc.name },
+      { t: "loot", text: `🤫 偷师得手 「${result.move.name}」`, skill: { name: result.move.name, quality: result.move.quality || result.skill?.quality || "白", moveType: result.move.type }, desc: result.move.desc, source: "steal", fromNpc: npc.name },
     ],
     note: { text: `偷看${npc.name}出手的门道，把「${result.move.name}」这一手学了去，他没有察觉。`, source: NOTE_SOURCE.DUMB },
     noteAction: "steal",

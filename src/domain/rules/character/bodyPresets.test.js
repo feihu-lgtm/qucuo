@@ -5,6 +5,7 @@ import { BODY_FIELDS, INTIMATE_FIELDS, PUBLIC_FIELDS, emptyBodyProfile } from ".
 import {
   ALL_BODY_PRESETS,
   BODY_PRESETS,
+  BODY_SNIPPET_GROUPS,
   BODY_TAG_POOL,
   PLAYER_PORTRAIT_PRESETS,
   appendBodyTag,
@@ -42,6 +43,10 @@ describe("bodyPresets & companion humanized body profiles", () => {
     }
     for (const field of BODY_FIELDS) {
       expect((BODY_TAG_POOL[field.key] || []).length, field.key).toBeGreaterThanOrEqual(4);
+    }
+    expect(BODY_SNIPPET_GROUPS.map((g) => g.id)).toEqual(["abs", "butt", "cock", "balls", "chest_vulva"]);
+    for (const group of BODY_SNIPPET_GROUPS) {
+      expect(group.items.length, group.id).toBeGreaterThanOrEqual(4);
     }
   });
 

@@ -7,8 +7,8 @@ export function npcLookCard(npc, opts = {}) {
   if (!npc?.name) return [];
   const { gear, exposure } = deriveAppearance(npc, opts);
   return [
-    { t: "sys", text: `  ${npc.name}${npc.brief ? `：${npc.brief}` : ""}` },
-    gear.length ? { t: "sys", text: `  装束：${gear.join("、")}` } : null,
+    { t: "desc", text: `  ${npc.name}${npc.brief ? ` ${npc.brief}` : ""}` },
+    gear.length ? { t: "sys", text: `  装束 ${gear.join("、")}` } : null,
     exposure ? { t: "sys", text: `  ⚠ ${exposure}——浑身上下再找不出一件完整的行头。` } : null,
   ].filter(Boolean);
 }

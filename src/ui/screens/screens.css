@@ -364,6 +364,70 @@
   cursor: pointer;
 }
 
+.body-snippet-composer {
+  margin-top: 8px;
+  padding: 8px 9px;
+  border: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+  background: rgba(0, 0, 0, 0.25);
+}
+.body-snippet-title {
+  font-size: var(--fs-2xs);
+  color: var(--body-nsfw);
+  margin-bottom: 6px;
+}
+.body-snippet-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.body-snippet-tab {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  color: var(--ink-tan);
+  font-size: var(--fs-2xs);
+  padding: 2px 7px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.body-snippet-tab[data-on="true"] {
+  border-color: var(--body-nsfw);
+  color: var(--body-nsfw);
+  background: rgba(200, 90, 106, 0.14);
+}
+.body-snippet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.body-snippet-chip {
+  text-align: left;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid color-mix(in srgb, var(--border) 45%, transparent);
+  color: var(--text);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  padding: 4px 7px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.body-snippet-chip[data-picked="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.body-intimate-preview-head {
+  color: var(--body-nsfw);
+  font-size: var(--fs-xs);
+  margin-top: 6px;
+  margin-bottom: 3px;
+}
+.body-intimate-preview-row {
+  margin-bottom: 3px;
+}
+.body-intimate-preview-label {
+  color: var(--body-nsfw);
+}
+
 /* ui/screens/quickBattle/ModePick.jsx */
 .mode-pick-1 {
   position: relative;

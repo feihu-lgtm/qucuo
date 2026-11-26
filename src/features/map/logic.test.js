@@ -63,7 +63,7 @@ describe("inner movement logic", () => {
     const nextVarTree = result.changes.varTree(state.varTree);
     expect(nextVarTree.世界.曾经出现人物).toEqual(["客商"]);
     expect(nextVarTree.世界.上次同框回合).toEqual({ 客商: 6 });
-    expect(result.logs.at(-1)).toEqual({ t: "sys", text: "  ※ 新人物出现：客商（点击可细看其人）" });
+    expect(result.logs.at(-1)).toEqual({ t: "sys", text: "  ※ 新人物出现 客商（点击可细看其人）" });
   });
 
   it("applies movement awareness to the latest varTree without dropping intervening edits", () => {
@@ -213,7 +213,7 @@ describe("inner movement logic", () => {
       ["room", ""],
       ["desc", "  格子里的到达描述。"],
       ["item", "  石缝中露出一角  ✓ 你拾得「雪山当归」，收入行囊。"],
-      ["sys", "  ※ 新人物出现：客商（点击可细看其人）"],
+      ["sys", "  ※ 新人物出现 客商（点击可细看其人）"],
     ]);
     expect(result.changes.convo).toEqual([
       { role: "user", content: "走 东" },

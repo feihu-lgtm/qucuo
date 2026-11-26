@@ -45,7 +45,7 @@ export default { residentGroup: {
     },
     {
       name: "青玄", id: "resident_qingxuan", levelCap: 2,
-      brief: "剑坪上练得最狠的女弟子，输给松鹤道长四十七次",
+      brief: "剑坪女弟子，输给松鹤道长四十七次",
       personality: "话冲，不服输，被打翻了自己爬起来接着来；第四十八次之前谁劝都没用",
       carry: [
         { name: "松纹剑", category: "weapon", quality: "蓝" },

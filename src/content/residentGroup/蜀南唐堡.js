@@ -31,7 +31,7 @@ export default { residentGroup: {
     },
     {
       name: "唐听竹", innerRoom: "千机演武坪", id: "resident_tangtingzhu", levelCap: 3,
-      brief: "唐门年轻机关师，幼年试弩伤了右耳，听力不全",
+      brief: "唐门年轻机关师，幼年试弩伤了右耳",
       personality: "寡言倔强，只认机括不认人情；对唐三少敬重，对二房的私账看不过眼",
       carry: [
         { name: "机括子母弩", category: "weapon", quality: "蓝" },
@@ -59,7 +59,7 @@ export default { residentGroup: {
     },
     {
       name: "陈默", innerRoom: "外姓竹坞", id: "resident_chenmo", levelCap: 2,
-      brief: "外姓锻匠，人称阿哑，口不能言，靠炭笔木牌说话",
+      brief: "外姓锻匠阿哑，口不能言，靠炭笔说话",
       personality: "沉默坚忍，手艺极精；吃过本家冒功的亏，信公道不信人情",
       carry: [
         { name: "淬火锻铁锤", category: "weapon", quality: "蓝" },

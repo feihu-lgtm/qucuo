@@ -49,9 +49,10 @@ const isNotNpcDialogue = (m, name) =>
   // 是搭话不是看卡，得留着。
   || new RegExp(`^看[\\s　]+${escapeRe(name)}$`).test(m?.content || "")
   || (m?.role === "assistant"
-    && (/装束：|在场：|出口：/.test(m.content || "")
+    && (/装束[：:\s]|在场[：:\s]|出口[：:\s]/.test(m.content || "")
       || String(m.content || "").trim() === name
-      || m.content.startsWith(`${name}：`)));
+      || m.content.startsWith(`${name}：`)
+      || m.content.startsWith(`${name} `)));
 
 function collectNpcContext(state, npc) {
   const name = npc?.name || "";

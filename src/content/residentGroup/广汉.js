@@ -60,7 +60,7 @@ export default { residentGroup: {
     // ── 丐帮三星分舵（破庙一带；合稿·丐帮第 3 节）──
     {
       name: "樊枯", innerRoom: "铸铜地窖·赤炉窟", id: "resident_fanku", levelCap: 4,
-      brief: "三星派赤炉长老，守墟派，赤着胳膊守了六十年铸铜炉，满手烫疤",
+      brief: "三星派赤炉长老，守铜炉六十年满手烫疤",
       personality: "寡言固执、手艺至上；认定古墟的东西一件也不能流出去，对外人冷，对肯替神树出力的人却舍得掏家底",
       carry: [
         { name: "赤炉铸铜锤", category: "weapon", quality: "紫" },
@@ -74,7 +74,7 @@ export default { residentGroup: {
     },
     {
       name: "姜泠", innerRoom: "鸭子河畔", id: "resident_jiangling", levelCap: 3,
-      brief: "三星派墟外听风人、古墟秘藏阁管事，常年在鸭子河界碑一带走动，腰挂一面小铜镜",
+      brief: "三星派墟外听风人，常年在界碑一带走动",
       personality: "机敏清冷、心思细；主张三星派该和外面打交道，常替古墟和丐帮之间传话，看人先听脚步声",
       carry: [
         { name: "柳叶青铜剑", category: "weapon", quality: "蓝" },
@@ -88,7 +88,7 @@ export default { residentGroup: {
     },
     {
       name: "严九斤", innerRoom: "土地庙正殿·聚义堂", id: "resident_yanjiujin", levelCap: 4,
-      brief: "丐帮八袋长老、三星分舵主，花白乱发，左手缺半截小指，腰挂紫皮葫芦",
+      brief: "丐帮八袋长老兼分舵主，腰挂紫皮葫芦",
       personality: "外粗内细、豪爽护短，把恩义看得比命重；平时醉眼惺忪，认准了是非便寸步不让。三十年前受老土司桑杰一饭一裘之恩，至今不信其子会害民",
       carry: [
         { name: "老油青竹棒", category: "weapon", quality: "紫" },
@@ -102,7 +102,7 @@ export default { residentGroup: {
     },
     {
       name: "周小满", innerRoom: "西厢鸽舍与察世房", id: "resident_zhouxiaoman", levelCap: 3,
-      brief: "丐帮察世堂五袋弟子，分舵情报与账目总管，戴缺腿铜框水晶镜",
+      brief: "丐帮察世堂五袋弟子，总管分舵情报账目",
       personality: "博闻强记、敏锐机警，极擅从市井流言和残缺账册里拼出真相；温和风趣，偏对造假账和糟蹋粮食近乎偏执地厌恶",
       carry: [
         { name: "铁算盘尺", category: "weapon", quality: "蓝" },
@@ -116,7 +116,7 @@ export default { residentGroup: {
     },
     {
       name: "胡三爷", innerRoom: "破庙前院·粥棚与竹坪", id: "resident_husanye", levelCap: 3,
-      brief: "丐帮六袋执法长老、破庙竹坪教习，黑脸虬髯，右腿膝下截断，拄乌铁枣木拐",
+      brief: "丐帮六袋执法长老，断腿拄乌铁枣木拐",
       personality: "脾气火爆、疾恶如仇、嘴硬心软；看不得欺压穷苦人，竹坪上骂得震天响，夜里却默默给流民娃盖自己的破棉袄",
       carry: [
         { name: "乌铁独脚拐", category: "weapon", quality: "紫" },
@@ -130,7 +130,7 @@ export default { residentGroup: {
     },
     {
       name: "白婶", innerRoom: "破庙前院·粥棚与竹坪", id: "resident_baishen", levelCap: 2,
-      brief: "丐帮净衣派四袋管事，掌管破庙粥棚与分舵义坊，梳一丝不苟的圆髻",
+      brief: "丐帮净衣派四袋管事，执掌粥棚与义坊",
       personality: "刀子嘴豆腐心、精明持家；把上百号叫花子与逃民当自家孩子管，算账一文不让，见谁饿极了又悄悄往碗底多压两勺稠米",
       carry: [
         { name: "铁柄大汤勺", category: "weapon", quality: "绿" },
@@ -144,7 +144,7 @@ export default { residentGroup: {
     },
     {
       name: "多吉", innerRoom: "破庙前院·粥棚与竹坪", id: "resident_duoji", levelCap: 1,
-      brief: "丐帮二袋新弟子，玉泉寨逃民，外号「草鞋多吉」，晒成紫铜色，瘦得颧骨高耸",
+      brief: "丐帮二袋新弟子，原是玉泉寨逃出的汉子",
       personality: "质朴倔强、重情重义，恨透了土司管家陆福生，牵挂玉泉寨乡亲；初学棒法笨拙，却有高原汉子咬死不松口的狠劲",
       carry: [
         { name: "牧羊青竹棍", category: "weapon", quality: "白" },
@@ -158,7 +158,7 @@ export default { residentGroup: {
     },
     {
       name: "哑巴七", innerRoom: "三星镇西口集市", id: "resident_yabaqi", levelCap: 3,
-      brief: "丐帮三袋老乞，墟界守约人，枯瘦如老树皮，披发黑蓑衣，少时被割去半截舌头",
+      brief: "丐帮三袋老乞兼墟界守约人，孤僻寡言",
       personality: "沉默孤僻、洞察人心，不理银两与名声，只凭一个人的呼吸、脚步和眼神判断心性；不说话，只用膝头青竹板笃笃轻敲",
       carry: [
         { name: "残纹青竹板", category: "weapon", quality: "蓝" },
@@ -172,7 +172,7 @@ export default { residentGroup: {
     },
     {
       name: "秦小鹊", innerRoom: "三星镇西口集市", id: "resident_qinxiaoque", levelCap: 3,
-      brief: "丐帮四袋弟子，锦官城汉家姑娘，十九岁，高马尾系红绳，腰挂酒葫芦与一副莲花落竹板",
+      brief: "丐帮四袋女弟子，腰挂酒葫芦与莲花竹板",
       personality: "洒脱爽利、爱笑爱闹，说走就走、拿得起放得下；嫌锦官城绣楼里的规矩闷，偷跑出来跟着叫花子走江湖。好酒好赌却从不赖账，输了也笑；见不得恃强凌弱，打抱不平时比谁都快，打不过就拉人一起跑",
       carry: [
         { name: "鹊尾竹节棍", category: "weapon", quality: "蓝" },

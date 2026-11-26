@@ -478,11 +478,44 @@
 
   /* 导卡/审改流程：选中态浅绿高亮（收录 #bce8ac #cdeebf #b4ecdc #c8dfc0 一族） */
   --ci-pick: #bce8ac;
-  /* 提示词注入块小标签 + 日志夜色调色板（随昼夜切换各收各色） */
+  /* 提示词注入块小标签 */
   --inject-worldbook: #c07a9a;
+
+  /* ── 中栏（江湖）颜色 · 字体 · 字号 · 排版集中配置 ──
+     修改中栏字体、字号、行距、缩进、箱内外层级与日志语义色统一改此处；
+     日间覆盖在 :root[data-theme="day"]，固定暗夜镜像在 [data-theme="night"]。 */
+  --font-center: var(--font-body);
+  --fs-center-body: var(--fs-lg);
+  --fs-center-card: var(--fs-base);
+  --fs-center-cmd: var(--fs-md);
+  --fs-center-meta: var(--fs-xs);
+  --fs-center-badge: var(--fs-2xs);
+  --lh-center-body: var(--lh-narrative);
+  --lh-center-card: var(--lh-snug);
+  --center-prose-indent: 2em;
+  --center-group-bg: rgba(255, 255, 255, 0.015);
+  --center-group-border: color-mix(in srgb, var(--border) 68%, transparent);
+  --center-group-divider: color-mix(in srgb, var(--border) 48%, transparent);
+  --center-outside-text: var(--text-dim);
+  --center-outside-room: var(--log-room);
+  --center-letter-bg: rgba(214, 138, 138, 0.06);
+  --center-letter-border: color-mix(in srgb, var(--pink) 38%, var(--border));
+  --center-letter-accent: var(--pink);
+  --center-letter-body: var(--ink-text);
+  --log-sys: var(--ink-good);
+  --log-cmd: var(--ink-warn);
+  --log-desc: var(--ink-text);
+  --log-room: var(--ink-accent);
+  --log-item: var(--gold);
   --log-stat: #8ab4d4;
+  --log-skill: var(--violet);
+  --log-err: var(--red-soft);
   --log-choice: #6aaa8a;
+  --log-narrator: var(--pink);
+  --log-crash: var(--red-soft);
+  --log-confess: var(--ember);
   --log-affection: #f0a0c0;
+  --log-quest: var(--ember);
   --log-dialogue: #e8a0d8;
   /* NPC 名与好感/私聊的语义色（原 theme.js 的 ink("green") / ink("pink")），随日夜切换。 */
   --npc-name: #c07050;
@@ -513,15 +546,29 @@
   --muted: #5a5448;
   --plate: #f4f2e9;
   --qc-hi: #201d18;
-  /* 日志白昼调色板 */
+  /* 中栏与日志白昼调色板（与 :root / [data-theme="night"] 变量序列保持一致） */
+  --center-group-bg: rgba(32, 29, 24, 0.025);
+  --center-group-border: color-mix(in srgb, var(--border) 42%, transparent);
+  --center-group-divider: color-mix(in srgb, var(--border) 28%, transparent);
+  --center-outside-text: var(--text-dim);
+  --center-outside-room: var(--log-room);
+  --center-letter-bg: rgba(138, 42, 106, 0.045);
+  --center-letter-border: color-mix(in srgb, var(--log-narrator) 35%, var(--border));
+  --center-letter-accent: var(--log-narrator);
+  --center-letter-body: var(--text);
+  --log-sys: var(--good);
+  --log-cmd: var(--warn);
   --log-desc: #3d3626;
   --log-room: #1e5a6a;
   --log-item: #7a5410;
+  --log-stat: var(--info);
   --log-skill: #5a3a7a;
+  --log-err: var(--accent);
   --log-choice: #2e6a4a;
   --log-narrator: #8a2a6a;
-  --log-affection: #a0305a;
+  --log-crash: var(--accent);
   --log-confess: #8a5a0a;
+  --log-affection: #a0305a;
   --log-quest: #8a5a0a;
   --log-dialogue: #8a1e6a;
   --npc-name: #8a4a2a;
@@ -545,15 +592,29 @@
   --muted: #8a8270;
   --plate: #111110;
   --qc-hi: #e8e4d6;
-  --log-desc: initial; /* 暗夜下本无此变量（只给日间日志配色用），子树里同样置空 */
-  --log-room: initial; /* 暗夜下本无此变量（只给日间日志配色用），子树里同样置空 */
-  --log-item: initial; /* 暗夜下本无此变量（只给日间日志配色用），子树里同样置空 */
-  --log-skill: initial; /* 暗夜下本无此变量（只给日间日志配色用），子树里同样置空 */
+  --center-group-bg: rgba(255, 255, 255, 0.015);
+  --center-group-border: color-mix(in srgb, var(--border) 68%, transparent);
+  --center-group-divider: color-mix(in srgb, var(--border) 48%, transparent);
+  --center-outside-text: var(--text-dim);
+  --center-outside-room: var(--log-room);
+  --center-letter-bg: rgba(214, 138, 138, 0.06);
+  --center-letter-border: color-mix(in srgb, var(--pink) 38%, var(--border));
+  --center-letter-accent: var(--pink);
+  --center-letter-body: var(--ink-text);
+  --log-sys: var(--ink-good);
+  --log-cmd: var(--ink-warn);
+  --log-desc: var(--ink-text);
+  --log-room: var(--ink-accent);
+  --log-item: var(--gold);
+  --log-stat: #8ab4d4;
+  --log-skill: var(--violet);
+  --log-err: var(--red-soft);
   --log-choice: #6aaa8a;
-  --log-narrator: initial; /* 暗夜下本无此变量（只给日间日志配色用），子树里同样置空 */
+  --log-narrator: var(--pink);
+  --log-crash: var(--red-soft);
+  --log-confess: var(--ember);
   --log-affection: #f0a0c0;
-  --log-confess: initial; /* 暗夜下本无此变量（只给日间日志配色用），子树里同样置空 */
-  --log-quest: initial; /* 暗夜下本无此变量（只给日间日志配色用），子树里同样置空 */
+  --log-quest: var(--ember);
   --log-dialogue: #e8a0d8;
   --npc-name: #c07050;
   --npc-affection: #d68a8a;

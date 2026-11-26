@@ -283,8 +283,10 @@ export function useAutosave({
     const startPreset = () => {
       setPreset(p); setRoom(p.room); setChar(p.char); setDao(p.dao);
       setSkills(p.skills.map(s => ({ ...s }))); setInv([...p.inv]);
-      setLog(stampLogEntries([{ t: "sys", text: `MUD引擎 · 「${CURRENT_VERSION.codename}」${CURRENT_VERSION.time} · ${p.name}` }, ...p.opening], 6));
+      setLog(stampLogEntries([{ t: "sys", text: `MUD引擎 · 「${CURRENT_VERSION.codename}」${CURRENT_VERSION.time} · ${p.name}`, standalone: true }, ...p.opening], 6));
       setConvo([]); setExp(0); setPot(0); setFlags([]); setTime(6);
+      setQuestProgress({}); setPersuasionProgress({});
+      setInnerRoomName(hasInnerMap(p.room.name) ? getDistrictAnchor(p.room.name) : null);
       setMapData({ [p.room.name]: { x: 0, y: 0 } });
       setNarrator(initialNarratorState());
       setVarTree(prev => seedKnowledge(prev, p.知识基底, 0)); // 换预设开新局也灌基底（registerFact 幂等）

@@ -151,7 +151,7 @@ export function innerMove(state, dirOrRoom) {
       { t: "room", text: `    ${state.room.name}·${decision.innerDest}` },
       { t: "room", text: "" },
       ...decision.arrivalLines,
-      ...decision.newFaces.map((name) => ({ t: "sys", text: `  ※ 新人物出现：${name}（点击可细看其人）` })),
+      ...decision.newFaces.map((name) => ({ t: "sys", text: `  ※ 新人物出现 ${name}（点击可细看其人）` })),
     ],
   };
 }
@@ -235,7 +235,7 @@ export function outerArrival(state, { direction, destName, roomMap, squares, com
   const newFaces = detectNewFaces(state.varTree || {}, gridNpcs).map((npc) => npc.name);
   logs.push(...newFaces.map((name) => ({
     t: "sys",
-    text: `  ※ 新人物出现：${name}（点击可细看其人）`,
+    text: `  ※ 新人物出现 ${name}（点击可细看其人）`,
   })));
 
   const changes = {

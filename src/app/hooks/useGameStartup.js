@@ -104,7 +104,7 @@ export function useGameStartupOpeningFaces({
     const newFaces = detectNewFaces(varTreeRef.current, visible);
     if (newFaces.length) {
       const recordOpeningFaces = () => {
-        addLog(newFaces.map(n => ({ t: "sys", text: `  ※ 新人物出现：${n.name}（点击可细看其人）` })));
+        addLog(newFaces.map(n => ({ t: "sys", text: `  ※ 新人物出现 ${n.name}（点击可细看其人）` })));
         setVarTree(prev => markAsSeen(prev, newFaces.map(n => n.name)));
         setVarTree(prev => updateLastSeen(prev, visible.map(n => n.name), time));
       };

@@ -12,8 +12,8 @@ export function roomLookFact({ place = "", exits = {}, npcs = [] } = {}) {
   const npcText = (npcs || []).map((n) => n?.name || n).filter(Boolean).join("、");
   return [
     `此处是${place || "未知之地"}`,
-    `出口：${exitText || "无"}`,
-    npcText ? `在场：${npcText}` : "",
+    `出口 ${exitText || "无"}`,
+    npcText ? `在场 ${npcText}` : "",
   ].filter(Boolean).join("；");
 }
 

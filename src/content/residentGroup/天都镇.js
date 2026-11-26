@@ -201,7 +201,7 @@ export default { residentGroup: {
     },
     {
       name: "苏折柳", id: "resident_suzheliu", levelCap: 3,
-      brief: "百花楼账房先生，听风雅阁主事，精于易容与仿墨验契",
+      brief: "百花楼账房，兼管听风雅阁，擅易容验契",
       personality: "温文惫懒、嘴毒心细、嫉恶如仇；被土司府逼得家破人亡的蜀南落魄书生，誓要用账本和假脸替底层人算真账。",
       carry: [
         { name: "点墨铁骨扇", category: "weapon", quality: "蓝" },
@@ -229,7 +229,7 @@ export default { residentGroup: {
     },
     {
       name: "小蝉", id: "resident_xiaochan", levelCap: 1,
-      brief: "百花前厅歌女，彩雀暗檐传讯手，玉泉寨逃民遗孤",
+      brief: "百花前厅歌女兼暗檐传讯手，玉泉寨遗孤",
       personality: "机灵嘴甜、爱凑热闹却极守口风，记性过目不忘；一心守住百花楼这个收留自己的家。",
       carry: [
         { name: "双股铜花簪", category: "weapon", quality: "白" },

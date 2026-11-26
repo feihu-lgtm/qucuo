@@ -2,7 +2,7 @@ export default { residentGroup: {
 鱼定村: [
     {
       name: "周铭章", id: "resident_zhoumingzhang", levelCap: 2,
-      brief: "鱼定商号大掌柜，四十六岁，中等身材略显清癯，穿锦官城裁制的暗纹绸缎长衫，十指白净无茧；村内顺时求安派的代表，与土司府陆管家暗有茶马分利",
+      brief: "鱼定商号大掌柜，圆滑精明，暗有茶马分利",
       personality: "圆滑世故、利己怯乱、重商轻义；见人先拱手带三分温和笑意，眼底算盘打得比霜还冷，既帮陆管家游说村民换签新契，又忌惮锦官城设卡抢生意。口吻：「咱们做买卖的，和气才生财嘛。」",
       carry: [
         { name: "铁骨湘妃折扇", category: "weapon", quality: "绿" },
@@ -16,7 +16,7 @@ export default { residentGroup: {
     },
     {
       name: "泽仁", id: "resident_zeren", levelCap: 3,
-      brief: "鱼定村老村长，才旦之父，五十八岁，干瘦微驼，古铜色额头横着修水渠砸出的白疤，穿泛灰的旧羊皮袍，右手攥着半杆黑檀旱烟杆；三十年前老土司立界石的亲历者",
+      brief: "鱼定村老村长，才旦之父，握黑檀烟杆",
       personality: "外懦内韧：在土司差役面前赔笑弯腰比谁都快，背地里却把老土司留下的真账册捂了整整三十年；怕流血、怕连累乡邻，真被逼到绝境时骨头比青石还硬。口吻：「年轻人，刀出鞘只需一眨眼，可收进鞘里要拿一村人的命去填……」",
       carry: [
         { name: "黑檀铜嘴旱烟杆", category: "weapon", quality: "绿" },
@@ -30,7 +30,7 @@ export default { residentGroup: {
     },
     {
       name: "才旦", innerRoom: "才旦家", id: "resident_caidan", levelCap: 1, archetype: "gentle",
-      brief: "村长之女，鱼定村实际的账房，二十二岁，瓜子脸被高原风吹出健康的红晕，两条乌亮长辫用红绳扎得极紧，蓝布藏袍袖口总蹭着算盘木油；账算得滴水不漏",
+      brief: "村长之女，鱼定村算账最精明的年轻账房",
       personality: "工于心计说话不留破绽，卸下防备才露出年纪相符的脆弱",
       carry: [
         { name: "鱼定猎刀", category: "weapon", quality: "白" },
@@ -44,7 +44,7 @@ export default { residentGroup: {
     },
     {
       name: "老孙", innerRoom: "老孙饭馆", id: "resident_laosun", levelCap: 1,
-      brief: "老孙饭馆的掌柜，汉人移民二代，五十一岁，宽肩厚背微微发福，满脸灶火烤出的红光，蒲扇大手虎口结着颠勺与早年走镖留下的厚茧",
+      brief: "老孙饭馆掌柜，颠勺走镖出身的汉人汉子",
       personality: "实在憨厚，藏着当年被岳父嫌弃的心结，嘴上不饶人心里认账",
       carry: [
         { name: "市集杀猪刀", category: "weapon", quality: "白" },
@@ -58,7 +58,7 @@ export default { residentGroup: {
     },
     {
       name: "鱼定大娘", id: "resident_yudingdaniang", levelCap: 1,
-      brief: "村里的厨娘兼媒婆，四十九岁，圆脸红润，灰白发髻插一根磨秃的粗银簪，腰间拴着两个鼓囊囊的炒面布袋；热心肠，谁上山都塞一包炒面，是曲措乡底层的活地图",
+      brief: "村里厨娘兼媒婆，热心肠，曲措乡活地图",
       personality: "爽利豪快爱张罗，主张藏汉不分家（「水都不分家，人分什么家」），儿子小孙与张商人之女私定终身，正为两家老人不点头发愁",
       carry: [
         { name: "熊山柴斧", category: "weapon", quality: "白" },
@@ -88,7 +88,7 @@ export default { residentGroup: {
     {
       name: "雪豹", innerRoom: "村口", id: "resident_snow_leopard", levelCap: 2,
       beast: true, cannotSpeak: true, companionCandidate: true,
-      brief: "无主的雪白灵兽，前爪有旧伤，只认有灵之人，长卧村口青石",
+      brief: "长卧村口青石的雪白灵兽，前爪有旧伤",
       personality: "不惧生人也不主动亲近，只是静静看着，仿佛在等一个自己认准的人",
       fullBio: `归属与命定（重要·纠正旧误传）：这头通体雪白的雪豹，并非嘎则或任何人的
 兽——嘎则养的是白虎雪团，与它无关。它无主，自雪线之上而来，长长久久卧在村口
@@ -108,7 +108,7 @@ export default { residentGroup: {
     {
       name: "珍珠", innerRoom: "村口", id: "resident_pearl", levelCap: 2,
       beast: true, cannotSpeak: true, companionCandidate: true, affectionable: true,
-      brief: "村口一匹通体雪白的小白马，睫毛长长，丰神俊朗，此刻正低着头专心啃草",
+      brief: "村口通体雪白的小白马，爱低头啃草",
       personality: "志不在驰骋，平生最爱干饭与躺平，看着惫懒，认主后却忠心无二、脚力惊人",
       carry: [
         { name: "珍珠的缰绳", category: "accessory", quality: "蓝" },

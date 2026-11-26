@@ -7,17 +7,18 @@
 import React, { useState } from "react";
 import { PUBLIC_FIELDS, INTIMATE_FIELDS, BODY_LAYER, emptyBodyProfile, bodyProfileFilled } from "../../domain/rules/character/bodyProfile.js";
 import {
-  ALL_BODY_PRESETS, BODY_TAG_POOL, applyBodyPreset, appendBodyTag,
+  ALL_BODY_PRESETS, BODY_SNIPPET_GROUPS, BODY_TAG_POOL, applyBodyPreset, appendBodyTag,
 } from "../../domain/rules/character/bodyPresets.js";
 import ModalShell from "../primitives/ModalShell.jsx";
 import { THEME_VARS } from "../../utils/theme.js";
 import { maskText, previewText } from "../format/bodyProfile.js";
+import BodySnippetComposer from "../components/BodySnippetComposer.jsx";
 
 export default function BodyProfilePanel({
   profile, onChange, onClose, nsfwOn, onRecommend, recommendState,
 }) {
   const [editing, setEditing] = useState(null);      // 当前展开成输入框的 key
-  const [showIntimate, setShowIntimate] = useState(false); // 私密层是否揭码
+  const [showIntimate, setShowIntimate] = useState(() => Boolean(nsfwOn)); // 默认随■模式开启揭码
   const [showPresets, setShowPresets] = useState(false);   // 体貌库模板折叠态
   const p = profile || emptyBodyProfile();
   const filled = bodyProfileFilled(p);
@@ -123,8 +124,14 @@ export default function BodyProfilePanel({
         </div>
         {showPresets && (
           <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
+            <BodySnippetComposer
+              groups={BODY_SNIPPET_GROUPS}
+              onAppend={appendBodyTag}
+              bodyProfile={p}
+              onBodyChange={onChange}
+            />
             <div style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", lineHeight: 1.5 }}>
-              默认仅填入公开层 7 项；开启 ■ 模式并揭开私密层后可一键填入完整 12 项。
+              整套模板：默认仅填入公开层 7 项；开启 ■ 模式并揭开私密层后可一键填入完整 12 项。
             </div>
             {ALL_BODY_PRESETS.map((preset) => (
               <div
