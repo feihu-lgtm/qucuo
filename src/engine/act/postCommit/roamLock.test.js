@@ -37,6 +37,17 @@ describe("W-ROAM 十回合交互驻足锁", () => {
     expect(tree.世界.驻足锁).toEqual({ 元朵朵: 20 });
   });
 
+  it("Review 修：respondedNpcs 形状畸形（对象/字符串）不抛不滚回合", () => {
+    const prev = { 世界: {} };
+    const out = writeRoamLocks({
+      intakeTargets: ["老孙"], respondedNpcs: { 0: "元朵朵" }, derivedRespondedNpcs: "元朵朵",
+      activeTarget: null, talkTarget: null, settleNpc: null,
+      presentNames: present, time: 5,
+    });
+    expect(() => apply(out, prev)).not.toThrow();
+    expect(apply(out, prev).世界.驻足锁).toEqual({ 老孙: 15 });
+  });
+
   it("再次交互刷新到最新 time+10", () => {
     const prev = { 世界: { 驻足锁: { 老孙: 12 } } };
     const out = writeRoamLocks({

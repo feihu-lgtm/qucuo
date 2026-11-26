@@ -191,3 +191,23 @@ describe("resident NPC world rule", () => {
     expect(deps).toEqual(["鱼定村", 0, {}, [], 0, {}, undefined]);
   });
 });
+
+describe("W-ROAM Review 修：子夜换名单不清驻足锁未过期者", () => {
+  it("锁期内的昨日过路人子夜后仍在；锁过期才被清", () => {
+    // day0 的过路人（randomPasser=0），time 进到第二天（24+6=30，dayIdx=1）
+    const stale = { name: "昨过客", randomPasser: 0, innerRoom: "村口" };
+    const state = {
+      char: { special: { 气运: 5 } }, companionState: {}, flags: [], importedVer: 0,
+      questProgress: {}, room: { name: "鱼定村", npcs: [stale] }, time: 30,
+      varTree: { 世界: { 驻足锁: { 昨过客: 35 } } },
+    };
+    const out = residentNpcRule.run(state, { importedRegistry });
+    const npcs = out.changes.room(state.room).npcs;
+    expect(npcs.some((n) => n.name === "昨过客")).toBe(true);
+    // 锁过期（31<=time…驻足锁 35>30 存，34 时 35>34 仍存；测过期态 40>=35）
+    const state2 = { ...state, time: 40 };
+    const out2 = residentNpcRule.run(state2, { importedRegistry });
+    const npcs2 = out2.changes.room(state2.room).npcs;
+    expect(npcs2.some((n) => n.name === "昨过客")).toBe(false);
+  });
+});

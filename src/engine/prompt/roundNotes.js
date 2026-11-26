@@ -212,11 +212,15 @@ export function buildPresence({ isTalk, lockedDestName, room, innerRoomName, com
 // 的进出必须让说书人知道，否则人会「凭空消失/出现」。读 room.recentMovements
 // （roam 世界规则写入的瞬态记录），本拍或紧邻上一拍有进出就拼一段钉进动态现场：
 // 离场者本轮严禁再写其开口搭话或接物（人已不在屋内）。
-export function buildRecentMovementNote(room, time) {
+export function buildRecentMovementNote(room, time, innerRoomName) {
+  // Review 修：记录是「移动那一刻」的玩家视野——玩家随后跟过去，旧房间的离场
+  // 不能算「离开此处」（人明明就在玩家新站的地方）。按此刻视野房再滤一遍：
+  // 进场只认 to===playerSpot，离场只认 from===playerSpot。
+  const playerSpot = innerRoomName || getDistrictAnchor(room?.name);
   const list = (room?.recentMovements || []).filter((m) => m && (m.turn === time || m.turn === time - 1));
   if (!list.length) return "";
-  const arrivals = [...new Set(list.filter((m) => m.kind === "arrive").map((m) => m.name))];
-  const departs = [...new Set(list.filter((m) => m.kind === "depart").map((m) => m.name))];
+  const arrivals = [...new Set(list.filter((m) => m.kind === "arrive" && m.to === playerSpot).map((m) => m.name))];
+  const departs = [...new Set(list.filter((m) => m.kind === "depart" && m.from === playerSpot).map((m) => m.name))];
   if (!arrivals.length && !departs.length) return "";
   const parts = [];
   if (arrivals.length) parts.push(`刚走入此处：${arrivals.join("、")}`);

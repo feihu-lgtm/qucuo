@@ -85,7 +85,7 @@ export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo)
   const arrivalNote = input.buildArrivalNote?.({ isTalk, movingDir, lockedDestName, outerDepart, room }) || "";
   // W-ROAM 11 号位动态现场段：玩家眼前的人物进出与公屏同源——公屏去噪后
   // 主叙事不能跟着失明，否则正聊着的人走了叙事还在让他开口。
-  const movementNote = buildRecentMovementNote(room, time);
+  const movementNote = buildRecentMovementNote(room, time, innerRoomName);
   const encounterNote = input.encounter
     ? input.buildEncounterNote?.(input.encounter, lockedDestName) || ""
     : "";

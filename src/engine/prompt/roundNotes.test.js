@@ -55,7 +55,8 @@ describe("W-ROAM buildRecentMovementNote 主叙事同源感知", () => {
       { name: "路人甲", kind: "depart", from: "村口", to: "歇马居", dir: "w", turn: 7 },
       { name: "货郎", kind: "arrive", from: "歇马居", to: "村口", dir: "e", turn: 7 },
     ] };
-    const note = buildRecentMovementNote(room, 7);
+    room.name = "鱼定村";
+    const note = buildRecentMovementNote(room, 7, "村口");
     expect(note).toContain("【方才人物进出】");
     expect(note).toContain("刚走入此处：货郎");
     expect(note).toContain("刚离开此处：路人甲");
@@ -64,10 +65,27 @@ describe("W-ROAM buildRecentMovementNote 主叙事同源感知", () => {
 
   it("紧邻上一拍（time-1）也算；更早或没有记录返回空串", async () => {
     const { buildRecentMovementNote } = await import("./roundNotes.js");
-    const room = { recentMovements: [{ name: "路人甲", kind: "depart", from: "村口", to: "歇马居", dir: "w", turn: 6 }] };
-    expect(buildRecentMovementNote(room, 7)).toContain("路人甲");
-    expect(buildRecentMovementNote(room, 8)).toBe("");
+    const room = { name: "鱼定村", recentMovements: [{ name: "路人甲", kind: "depart", from: "村口", to: "歇马居", dir: "w", turn: 6 }] };
+    expect(buildRecentMovementNote(room, 7, "村口")).toContain("路人甲");
+    expect(buildRecentMovementNote(room, 8, "村口")).toBe("");
     expect(buildRecentMovementNote({}, 7)).toBe("");
     expect(buildRecentMovementNote(null, 7)).toBe("");
+  });
+
+  it("Review 修：玩家跟进隔壁后，旧房间的离场不再禁言——按此刻视野房过滤", async () => {
+    const { buildRecentMovementNote } = await import("./roundNotes.js");
+    // 路人甲从村口去了歇马居；玩家跟到歇马居（innerRoomName=歇马居）——
+    // 人在玩家眼前，绝不许写「刚离开此处」
+    const room = { name: "鱼定村", recentMovements: [
+      { name: "路人甲", kind: "depart", from: "村口", to: "歇马居", dir: "e", turn: 7 },
+    ] };
+    expect(buildRecentMovementNote(room, 7, "歇马居")).toBe("");
+    // 玩家还在村口：离场成立
+    expect(buildRecentMovementNote(room, 7, "村口")).toContain("刚离开此处：路人甲");
+    // 玩家在内层（未跟进）也成立
+    const arr = { name: "货郎", kind: "arrive", from: "歇马居", to: "村口", dir: "w", turn: 7 };
+    const room2 = { name: "鱼定村", recentMovements: [arr] };
+    expect(buildRecentMovementNote(room2, 7, "村口")).toContain("刚走入此处：货郎");
+    expect(buildRecentMovementNote(room2, 7, "歇马居")).toBe("");
   });
 });

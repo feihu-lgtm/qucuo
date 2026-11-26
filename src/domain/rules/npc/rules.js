@@ -234,7 +234,13 @@ export const residentNpcRule = {
       changes: {
         room: (previous) => ({
           ...previous,
-          npcs: injectNpcs((previous.npcs || []).filter((npc) => !isStalePasser(npc) && !isStaleAdventurer(npc) && (npc.imported || !staleNames.has(npc.name))), toInject),
+          // W-ROAM Review 修：子夜换名单不清驻足锁未过期者——玩家正找着他办事说话，
+          // 过路人/冒险者身份到期也得留到锁过期后的下一次重建再离场。
+          npcs: injectNpcs((previous.npcs || []).filter((npc) => {
+            if (!(npc.imported || !staleNames.has(npc.name))) return false;
+            if (!isStalePasser(npc) && !isStaleAdventurer(npc)) return true;
+            return (state.varTree?.世界?.驻足锁?.[npc.name] ?? -1) > time;
+          }), toInject),
           crowd,
         }),
       },

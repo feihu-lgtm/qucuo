@@ -7,10 +7,13 @@
 // 软结算对象 settleNpc。只钉此刻在场者（systemAcceptedNames 口径，含随行同伴），
 // 隔空提及不钉；顺手清理 unlockAt <= currentTurn 的过期键防存档膨胀。
 export function writeRoamLocks({ intakeTargets, respondedNpcs, derivedRespondedNpcs, activeTarget, talkTarget, settleNpc, presentNames, time }) {
+  // Review 修：单调用旧路 parseMainResponse 不校验 respondedNpcs 形状——模型
+  // 返回对象/字符串时展开即抛，整回合回滚。三源一律先收拢成真数组。
+  const asArr = (v) => (Array.isArray(v) ? v : []);
   const names = [...new Set([
-    ...(intakeTargets || []),
-    ...(respondedNpcs || []),
-    ...(derivedRespondedNpcs || []),
+    ...asArr(intakeTargets),
+    ...asArr(respondedNpcs),
+    ...asArr(derivedRespondedNpcs),
     activeTarget, talkTarget, settleNpc,
   ].filter((n) => typeof n === "string" && n && n !== "无" && presentNames?.has(n)))];
   return {
