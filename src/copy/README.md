@@ -5,8 +5,11 @@
 代码里用 Vite 的 `?raw` 原样引入：
 
 ```js
-import ROAM_REACTION_SYS from "./copy/roamReaction.sys.txt?raw";
+import { loadCopy } from "./copy/loadCopy.js";
+const ROAM_REACTION_SYS = loadCopy("roamReaction.sys.txt");
 ```
+
+（不要直接 `import txt from "./x.txt?raw"`——vite/vitest 能吃，但纯 node 门禁脚本会崩；loadCopy 同构封装两头通吃。）
 
 铁律：
 - 逐字即权威——外部图纸给什么就粘什么，删一个字 `copy-gate` 不说但天理不容；改动走 PR diff 可见。

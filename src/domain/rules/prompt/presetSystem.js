@@ -1,6 +1,7 @@
 import { upgradeLegacyDefaults } from "./presetLegacy.js";
 // W-STYLE：长文案单源——文体铁律全文逐字存 src/copy/wenfeng.txt（copy-gate 新规，禁止内联）
-import wenfengCopy from "../../../copy/wenfeng.txt?raw";
+import { loadCopy } from "../../../copy/loadCopy.js";
+const wenfengCopy = loadCopy("wenfeng.txt");
 // 酒馆式预设系统（结构沿用 SillyTavern 的 Chat Completion 预设；编辑器和导入导出已下线）
 // 核心概念：
 // - prompts：素材库，每条独立的 prompt 片段（id/name/role/content/isMarker）
