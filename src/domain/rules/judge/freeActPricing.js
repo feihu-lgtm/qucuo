@@ -52,16 +52,20 @@ export function parseStatedExpense(text) {
     // ① 点号前紧邻数字（含全角）：1.5两/１.5两 的 5 是角分尾数不是整两；
     // ② 点号前非数字但支付动词近旁（付.5两=半两钱文）：动词+点币形必是分数，
     //    保守拒收不误当五两；「茶.5两」无动词近旁仍按 ASCII 句读整数价认。
+    // Review 四修②：动词点币分数只在动词**紧贴**点号时成立（付.5=半两钱文）——
+    // 「付吧.8两」动词隔字属前句，点号是句读，整数价不误伤。
+    const verbTouchingDot = PAY_VERBS.has(chBeforeDot);
     const dotDigitBefore = /[0-9０-９]/.test(chBeforeDot);
-    const isDecimal = (prevCh === "." || prevCh === "．") && (dotDigitBefore || verbNear);
+    const isDecimal = (prevCh === "." || prevCh === "．") && (dotDigitBefore || verbTouchingDot);
     if (isDecimal) continue;
-    // Review 三修：余额语境不是价——身上有/余额/囊中/存有/身带 近旁的银两陈述
-    // 是财力声明不是支付数额，整段跳过（既不当价也不占 firstDefinite）。
-    const beforeWide = src.slice(Math.max(0, m.index - 6), m.index);
-    if (/身上有|余额|囊中|身带|存有/.test(beforeWide)) continue;
     const n = parseCnNumeral(m[1]);
     if (!(Number.isFinite(n) && n > 0)) continue;
+    // Review 四修①②：支付动词近旁优先于余额语境——「从囊中掏八两付房钱」囊中
+    // 是取钱出处不是余额声明，动词近旁就是支付数额先返回；无动词的余额陈述
+    // （身上有/还有/余额/囊中/身带/存有）才整段跳过不当价。
     if (verbNear) return n;
+    const beforeWide = src.slice(Math.max(0, m.index - 6), m.index);
+    if (/身上有|身上还有|还有|余额|囊中|身带|存有/.test(beforeWide)) continue;
     if (unit !== "两" && firstDefinite == null) firstDefinite = n;
   }
   return firstDefinite;
