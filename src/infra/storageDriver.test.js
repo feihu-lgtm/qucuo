@@ -364,3 +364,46 @@ describe("E1 复审修：队列空间钉扎", () => {
     expect(calls.length).toBeGreaterThan(0);
   });
 });
+
+describe("E1 复审三轮：合并键加空间维度 + wipe 只清本空间", () => {
+  beforeEach(() => { mockLocalStorage(); _resetCloudStateForTest(); _resetCloudProtocolForTest(); vi.useFakeTimers(); });
+  afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); configureCloudFetch(null); });
+
+  it("异空间同键（autosave）条目互不顶掉", () => {
+    boundCfg(); // sp1
+    enqueueCloudPush("autosave", { v: "sp1-data" });
+    // 换 sp2 后同键入队——sp1 条目必须保留
+    saveStorageConfig({
+      driver: "cloud", cloudUrl: "https://cloud.example.com", spaceId: "sp2", hubToken: "tok_test",
+      deviceId: "dev_t1", boundAt: 2,
+    });
+    enqueueCloudPush("autosave", { v: "sp2-data" });
+    const q = getCloudQueue();
+    expect(q).toHaveLength(2);
+    expect(q.find((e) => e.spaceId === "sp1")?.value).toEqual({ v: "sp1-data" });
+    expect(q.find((e) => e.spaceId === "sp2")?.value).toEqual({ v: "sp2-data" });
+    // 同空间同键仍合并只留最新
+    enqueueCloudPush("autosave", { v: "sp2-newer" });
+    const q2 = getCloudQueue();
+    expect(q2).toHaveLength(2);
+    expect(q2.find((e) => e.spaceId === "sp2")?.value).toEqual({ v: "sp2-newer" });
+  });
+
+  it("wipeCloudAll 只清当前空间条目，异空间钉扎条目留队", async () => {
+    boundCfg(); // sp1
+    enqueueCloudPush("autosave", { v: "sp1-data" });
+    saveStorageConfig({
+      driver: "cloud", cloudUrl: "https://cloud.example.com", spaceId: "sp2", hubToken: "tok_test",
+      deviceId: "dev_t1", boundAt: 2,
+    });
+    enqueueCloudPush("autosave", { v: "sp2-data" });
+    configureCloudFetch(async () => okJson({ ok: true }));
+    // wipe 的是当前空间 sp2
+    const r = await wipeCloudAll();
+    expect(r.ok).toBe(true);
+    const q = getCloudQueue();
+    // sp2 条目被清，sp1 钉扎条目保留
+    expect(q).toHaveLength(1);
+    expect(q[0].spaceId).toBe("sp1");
+  });
+});

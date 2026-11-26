@@ -60,10 +60,12 @@ let _retryDelay = 1000;
 // 是 flush 时从本地存档现取，留待 WO-20 服务端语义落定后改造。
 const QUEUE_CAP = 100;
 export function enqueueCloudPush(key, value, op = "put") {
-  const queue = getCloudQueue().filter((e) => e.key !== key);
   // 空间钉扎（Review 修）：条目记录入队时的 spaceId——玩家换空间后 flush 跳过
   // 异空间条目（留在队列等换回），否则 del 重试会拿新空间凭证+巧合 rev 删掉别人备份。
   const spaceId = hubBinding(loadStorageConfig()).spaceId || "";
+  // 合并键 = key+spaceId（Review 修）：异空间同键条目（两个空间共用 autosave 键）
+  // 互不顶掉——否则换空间后第一次存档就把上一空间的待推行磨掉，换回也救不回。
+  const queue = getCloudQueue().filter((e) => !(e.key === key && (e.spaceId || "") === spaceId));
   queue.push({ key, op, value: op === "put" ? value : undefined, queuedAt: Date.now(), ...(spaceId ? { spaceId } : {}) });
   while (queue.length > QUEUE_CAP) {
     const dropped = queue.shift();
@@ -250,7 +252,9 @@ export async function wipeCloudAll() {
     _wipeEpoch += 1; // 服务端确认删除后才翻代——在飞 flush 即刻停推
     try { _activeAbort?.abort(); } catch { /* */ }
     _activeAbort = null;
-    _lsWrite(QUEUE_KEY, []);
+    // Review 修：wipe 只抹当前空间——队列里异空间钉扎条目与本次抹除无关，
+    // 必须留队等换回后照推；无戳 legacy 条目按当前空间语义一并清掉。
+    _lsWrite(QUEUE_KEY, getCloudQueue().filter((e) => e.spaceId && e.spaceId !== binding.spaceId));
     clearAllServerRevs(binding.spaceId);
     _lsWrite(CONFLICTS_KEY, []);
     // prose 上行队列同清（Review SEC 修）：服务端 wipe 连 prose_chunks 一起抹，
