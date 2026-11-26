@@ -4,6 +4,7 @@ import {
   buildCompositeNote, findLookTargetsInText, matchWholeLook,
   routeAutoInput, splitCompositeInput,
 } from "./compositeInput.js";
+import { classifyIntent } from "../prompt/inputIntent.js";
 
 const NPCS = [{ name: "铁伯" }, { name: "元朵朵" }, { name: "燕绾烟" }];
 
@@ -87,4 +88,63 @@ describe("WO-16F-F2c isTradeInput 交易意向不进免费纯搭话", () => {
     expect(isTradeInput("什么叫交易")).toBe(false);
   });
 
+});
+
+describe("V1 呼语不拆段与盐价归 talk", () => {
+  it("句首呼语（老孙，…/周掌柜，…）不拆成两段", () => {
+    expect(splitCompositeInput("老孙，雅江盐价可稳当")).toHaveLength(1);
+    expect(splitCompositeInput("周掌柜，最近行市如何")).toHaveLength(1);
+  });
+  it("在场 NPC 名呼语不拆段，「周掌柜，雅江盐价可稳当」走免费 talk", () => {
+    const npcs = [{ name: "周掌柜" }];
+    expect(splitCompositeInput("周掌柜，雅江盐价可稳当", { npcs })).toHaveLength(1);
+    expect(routeAutoInput("周掌柜，雅江盐价可稳当", npcs).kind).toBe("talk");
+  });
+  it("非呼语首段照常拆段——往东走，翻柜子 仍两段", () => {
+    expect(splitCompositeInput("往东走，翻柜子").length).toBe(2);
+  });
+  it("盐价稳当吗/最近行市如何 归 talk 不归 trade", async () => {
+    const { isTradeInput } = await import("../prompt/inputIntent.js");
+    expect(isTradeInput("盐价稳当吗")).toBe(false);
+    expect(isTradeInput("最近行市如何")).toBe(false);
+    expect(isTradeInput("有什么货色卖")).toBe(true);
+    expect(isTradeInput("买两斤盐")).toBe(true);
+  });
+});
+
+describe("V1 Review 修：呼语带硬行动不吃免费通道+疑问句形归搭话", () => {
+  it("「老孙，我喝一口酒」呼语开头但带硬行动动词，归 action 不归免费 talk", () => {
+    expect(routeAutoInput("老孙，我喝一口酒", [{ name: "老孙" }]).kind).toBe("action");
+  });
+  it("「老孙，今晚月色如何」呼语+疑问句形无行动，归免费 talk", () => {
+    expect(routeAutoInput("老孙，今晚月色如何", [{ name: "老孙" }]).kind).toBe("talk");
+  });
+  it("裸疑问句「盐价稳当吗」「最近行市如何」单段归免费 talk 不耗回合", () => {
+    expect(routeAutoInput("盐价稳当吗").kind).toBe("talk");
+    expect(routeAutoInput("最近行市如何").kind).toBe("talk");
+  });
+});
+
+describe("V1 Review 二轮：移动不被对话吞/问句不扣回合", () => {
+  it("「往北走吧」「往东北走？」判为 MOVE 不落 TALK", () => {
+    expect(classifyIntent("往北走吧").code).toBe("MOVE");
+    expect(classifyIntent("往东北走？").code).toBe("MOVE");
+  });
+  it("「老孙，今晚吃什么」问句豁免硬行动排除，归免费 talk", () => {
+    expect(routeAutoInput("老孙，今晚吃什么", [{ name: "老孙" }]).kind).toBe("talk");
+    expect(routeAutoInput("周掌柜，这种盐价稳当吗", [{ name: "周掌柜" }]).kind).toBe("talk");
+  });
+  it("陈述句硬行动仍归 action 不被误放", () => {
+    expect(routeAutoInput("老孙，我喝一口酒", [{ name: "老孙" }]).kind).toBe("action");
+  });
+});
+
+describe("V1 Review 三轮：行动软尾吧不被问句豁免吞掉", () => {
+  it("「我先翻一下桌上的册子吧」吧是行动软尾非疑问，归 action", () => {
+    expect(routeAutoInput("我先翻一下桌上的册子吧").kind).toBe("action");
+  });
+  it("真问句仍归免费 talk 不回退", () => {
+    expect(routeAutoInput("盐价稳当吗").kind).toBe("talk");
+    expect(routeAutoInput("老孙，今晚吃什么", [{ name: "老孙" }]).kind).toBe("talk");
+  });
 });

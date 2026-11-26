@@ -433,7 +433,7 @@ export function usePrivateTalk({
         const inc = Math.max(-n.affection, Math.min(affDelta, 100 - n.affection));
         if (inc !== 0) {
           const next = n.affection + inc;
-          addLog([{ t: "affection", text: `  💗 好感度 ${inc > 0 ? "+" : ""}${inc}（${n.affection} → ${next}）` }]);
+          addLog([{ t: "affection", text: `  💗 ${n.name || "旁白"}好感度 ${inc > 0 ? "+" : ""}${inc}（${n.affection} → ${next}）` }]);
           return { ...n, affection: next };
         }
         return n;

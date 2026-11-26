@@ -6,7 +6,9 @@
 const ANCHOR_RE = /⟦(F\d+_\d+)⟧/g;
 const SEAL_MARK = "\n---SEAL---";
 // 锚点/SEAL 标记可能跨 chunk 到达：尾部保留 HOLD 字不复查，防半截标记上屏。
-const HOLD = 16;
+// V1：⟦⟧ 内部标记最长 60 字内容+双括号，跨 chunk 半截标记至少需保留 62 字不复查，
+// 否则 ⟦PROGRESS_CULTIVATION·...⟧ 一类长标记会截半裸泄公屏。
+const HOLD = 64;
 
 export function createStorytellerStream({ onScreen } = {}) {
   let pending = "";        // 未终审的滑动缓冲
@@ -22,6 +24,9 @@ export function createStorytellerStream({ onScreen } = {}) {
   };
 
   // 剥锚点并记录段落；sealBefore=true 时这段已确定在 SEAL 之前。
+  // V1：F\d+_\d+ 抽取记账保留，其余全部 ⟦...⟧ 内部标记（⟦W8_1⟧/⟦PROGRESS_CULTIVATION·...⟧
+  // /⟦OP·...⟧ 等）在写入玩家可见正文前一并剥除，杜绝裸泄公屏。
+  const INNER_MARK_RE = /⟦[^⟧]{1,60}⟧/g;
   const stripAnchors = (text) => {
     let out = "";
     let last = 0;
@@ -34,7 +39,8 @@ export function createStorytellerStream({ onScreen } = {}) {
       last = m.index + m[0].length;
     }
     out += text.slice(last);
-    return out;
+    INNER_MARK_RE.lastIndex = 0;
+    return out.replace(INNER_MARK_RE, "");
   };
 
   // 把 pending 中可终审的部分推到屏幕/尾章。
@@ -55,17 +61,30 @@ export function createStorytellerStream({ onScreen } = {}) {
         continue;
       }
       // 没找到完整 SEAL：可能是半截标记压在尾部。终审安全区 = 全长减 HOLD。
-      const safeLen = final ? pending.length : Math.max(0, pending.length - HOLD);
+      let safeLen = final ? pending.length : Math.max(0, pending.length - HOLD);
+      // Review 修：安全区内若有未闭合的 ⟦（标记头在安全区、标记尾在持有区），
+      // 半截标记会原样漏上屏——一律回退到该 ⟦ 之前持有，等闭合后整体剥除。
+      if (!final && safeLen > 0) {
+        const frag = pending.slice(0, safeLen);
+        const openIdx = frag.lastIndexOf("⟦");
+        if (openIdx !== -1 && frag.indexOf("⟧", openIdx) === -1) safeLen = openIdx;
+      }
       if (!safeLen) break;
       // 但安全区尾巴若像锚点/SEAL 的开头（⟦ 或 \n---），非 final 时也要再等等——
       // HOLD 已覆盖最长标记，此处直接判安全区可审。
-      emit(stripAnchors(pending.slice(0, safeLen)));
+      // final 终审段也剥 dangling 未闭合标记头——残头属内部标记不裸泄。
+      const strippedSafe = stripAnchors(pending.slice(0, safeLen));
+      emit(final ? strippedSafe.replace(/⟦[^⟧]{0,60}$/, "") : strippedSafe);
       pending = pending.slice(safeLen);
       if (!final) break;
     }
     if (final && pending.length) {
-      if (sealed) sealText += pending;
-      else emit(stripAnchors(pending));
+      if (sealed) {
+        sealText += pending;
+      } else {
+        // 永不闭合的 dangling ⟦ 残头也按内部标记剥除——宁可截尾不裸泄。
+        emit(stripAnchors(pending).replace(/⟦[^⟧]{0,60}$/, ""));
+      }
       pending = "";
     }
   };

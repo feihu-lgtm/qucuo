@@ -165,8 +165,8 @@ export async function resolveIntent(cmd, env) {
     setCmdHistory(p => [cmd, ...p].slice(0, 50));
     setHistIdx(-1);
     addLog([
-      { t: "sys", text: "  ▸ 方向 n/s/e/w 移动 · look 查看 · 输入框上方可切换「◈行动 / ◎对话 / ◆私聊旁白」三种模式" },
-      { t: "sys", text: "  ▸ 对话模式：只跟房间里的人说话，不移动、不消耗回合；私聊旁白：直接找旁白聊天，同样不消耗回合" },
+      { t: "sys", text: "  ▸ 方向 n/s/e/w 移动 · look 查看 · 单框直接输入即行动或搭话" },
+      { t: "sys", text: "  ▸ 输入 @ 唤起选人或飞鸽，`//`、`(( ))` 前缀直发旁白私语，均不消耗回合" },
       { t: "sys", text: "  ▸ 完整玩法说明见右上角 ⚙ 设置 →「玩法说明」" },
     ]);
     return { proceed: false };
