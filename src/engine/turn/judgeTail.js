@@ -31,11 +31,16 @@ export function verifyJudgeTail({ ctx, deps, judgeVerdict, sealParts, narrativeT
     const rawNarrative = narrativeText || rawFull;
     // F7：口头契约系统兜底——玩家原话三重门槛（要约+期限+酬谢）全齐且锁定谈锋对象时，
     // 解析产物作为 fallbackPact 进尾章校验；模型 SEAL 填了仍以模型为准。
+    // 派工裁决①：offer 不即绑——本回合正文有明确拒绝信号（休想/不行/免谈/做梦/
+    // 凭什么/拒绝）则不立约；无明确拒绝（含沉默含糊讨价还价）则绑为未了之约。
+    // 宁可漏绑不可虚绑：被拒还挂倒计时契约比漏一单更穿帮。
+    const PACT_REFUSAL_RE = /休想|不行|免谈|做梦|凭什么|拒绝/;
     let fallbackPact = null;
     try {
       const offer = parsePactOffer(deps.cmd || "");
       const pactNpc = (deps.derivedRespondedNpcs || [])[0] || deps.talkTarget || ctx.talkTarget || "";
-      if (offer && pactNpc) fallbackPact = { npc: pactNpc, ...offer };
+      const refused = PACT_REFUSAL_RE.test(rawNarrative || "");
+      if (offer && pactNpc && !refused) fallbackPact = { npc: pactNpc, ...offer };
     } catch { /* 解析器绝不阻塞主链 */ }
     const verified = verifySealAndMaterialize({
       fallbackPact,

@@ -31,8 +31,9 @@ export function parsePactOffer(text) {
   const om = t.match(OFFER_RE);
   const rm = t.match(REWARD_RE);
   if (!dm || !om || !rm) return null;
-  // Review 修：要约从句含「过/了」是过去式追忆（我去过后山），不是 forward 承诺——拒。
-  if (/[过了]/.test(om[0])) return null;
+  // Review 二轮修：追忆拒约改框架副词扫描（前两天/上次/以前/昨天）——
+  //  blankets 过/了 会误伤「送过去」「修好了再回来」等真 forward 承诺。
+  if (/(?:前|上)[一二两三四五六七八九十\d]+(?:天|日|周|个?月)|上次|以前|之前|当年|昨天|昨日/.test(t)) return null;
   const n = cnNum(dm[1]);
   if (!Number.isFinite(n) || n <= 0) return null;
   const unit = dm[2];

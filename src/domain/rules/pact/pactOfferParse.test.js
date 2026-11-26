@@ -23,6 +23,9 @@ describe("F7 parsePactOffer 口头契约系统兜底解析", () => {
     expect(parsePactOffer("三天前我替你跑过一趟，你还欠我顿酒")).toBeNull();
     // 带内的真立约不受误伤
     expect(parsePactOffer("三天之内我定替你跑一趟，你赏我顿酒")).toBeTruthy();
+    // Review 二轮：forward 从句含过/了不再误伤（送过去/修好了再回来）
+    expect(parsePactOffer("三天之内我定把货送过去，你赏我二两银子")).toBeTruthy();
+    expect(parsePactOffer("两天之内我帮你修好了再回来，你谢我一两银子")).toBeTruthy();
   });
 
   it("中文数字：十日=240h", () => {
