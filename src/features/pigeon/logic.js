@@ -2,6 +2,7 @@ import { add, applyWrite, set, updateField } from "../../domain/rules/state/appl
 import { random } from "../../utils/rng.js";
 import { AFFECTION_RULES } from "../../domain/rules/state/fields.js";
 import { makeItem } from "../../domain/rules/economy/equipment.js";
+import { findNpcObject } from "../../domain/rules/npc/npcLookup.js";
 import { registerFact } from "../../domain/rules/prompt/knowledge.js";
 import { makeItemSmart } from "../../domain/data/items/catalog.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
@@ -45,6 +46,10 @@ export function sendPigeonLetter(state, npcName, content, opts = {}) {
   const giftName = opts.gift || null;
   const text = (content || "").trim();
   if (!npcName) return { logs: [{ t: "sys", text: "  未指定收信之人。" }] };
+  // Review 修：兽类（村口大公鸡之流）不通书信——系统级拒信不耗鸽，防各入口漏拦。
+  if (findNpcObject(state, npcName).beast) {
+    return { logs: [{ t: "sys", text: `  ${npcName}是禽兽之流，不通书信——信鸽绕了两圈又落回你肩头。` }] };
+  }
   if (!text) return { logs: [{ t: "sys", text: "  信笺空空，无从落笔。" }] };
   if (channel === "pigeon" && (state.char?.pigeons || 0) <= 0) {
     return { logs: [{ t: "sys", text: "  你手头没有信鸽——去驿站买鸽子，或直接到驿站寄信。" }] };

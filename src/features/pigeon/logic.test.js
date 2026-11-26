@@ -234,3 +234,19 @@ describe("夜班急修：回信超时重试不丢信", () => {
     expect(processPigeons(baseState())).toHaveLength(1);
   });
 });
+
+describe("Review 修：兽类不通书信系统级拒信", () => {
+  it("寄信给 beast NPC 不耗鸽不入队，直接拒信", () => {
+    const state = {
+      time: 10,
+      room: { name: "鱼定村", npcs: [{ name: "测试兽", beast: true }] },
+      char: { name: "主角", pigeons: 2 },
+      inv: [],
+      varTree: { 世界: {}, 角色: {} },
+    };
+    const r = sendPigeonLetter(state, "测试兽", "你好");
+    expect(r.sent).toBeFalsy();
+    expect(r.logs[0].text).toContain("禽兽");
+    expect(r.changes).toBeUndefined();
+  });
+});
