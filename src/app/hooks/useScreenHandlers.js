@@ -62,8 +62,10 @@ export function useScreenHandlers({
     setActiveTarget(npc.name);
     // WO-16F-F4a：判官链激活（与 runTurn 闸门同源 judgePipelineEnabled && extractionEnabled）
     // 时普通送礼走先裁后落——feature 不前置扣物/写好感，settle 回合判官裁定后落账。
+    // Review 修：GM/创造回合判官被 turnContext 关掉（extractionEnabled 派生 false），
+    // defer 了也无人裁定——GM 不 defer，走 feature 直接落账。
     const cfg = sessionUiStore.getState().apiCfg;
-    const deferToJudge = !!(cfg?.judgePipelineEnabled && cfg?.extractionEnabled);
+    const deferToJudge = !!(cfg?.judgePipelineEnabled && cfg?.extractionEnabled) && !sessionUiStore.getState().gm;
     applyResult(featureCtx(), giftNpc(gameStore.getState(), npc, item, undefined, { deferToJudge }));
   }, { feature: "npc.giftNpc" }), [captureUndo]);
 
@@ -173,7 +175,7 @@ export function useScreenHandlers({
     // WO-16F-F4b：谓词与 runTurn 闸门同源（judgePipelineEnabled && extractionEnabled）——
     // 错位最多退化 legacy 前置硬结算，绝不双结算。
     const cfg = sessionUiStore.getState().apiCfg;
-    const deferToJudge = !!(cfg?.judgePipelineEnabled && cfg?.extractionEnabled);
+    const deferToJudge = !!(cfg?.judgePipelineEnabled && cfg?.extractionEnabled) && !sessionUiStore.getState().gm;
     const result = learnNpcSkillLogic(gameStore.getState(), npc, { deferToJudge });
     if (result.changes) {
       captureUndo();
