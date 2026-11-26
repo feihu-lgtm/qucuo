@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { clearNotice, useNotice } from "../../store/uiStore.js";
 
-export default function NoticeToast({ zoneTheme }) {
+export default function NoticeToast() {
   const notice = useNotice();
   const [top, setTop] = useState(0);
 
@@ -42,11 +42,12 @@ export default function NoticeToast({ zoneTheme }) {
         className="blocked-direction-toast"
         onClick={() => clearNotice(notice.id)}
         style={{
-          position: "fixed", top, left: "50%", zIndex: 55, transform: "translateX(-50%)",
+          // 定位与层级在 tokens.css 的 .blocked-direction-toast（--z-hud），这里只留随顶栏高度变化的 top。
+          top, transform: "translateX(-50%)",
           width: "max-content", maxWidth: "min(92vw, 420px)", boxSizing: "border-box",
           padding: "9px 14px", whiteSpace: "pre-line", textAlign: "center",
-          background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`,
-          borderLeft: `3px solid ${zoneTheme.accent}`, color: zoneTheme.text,
+          background: "var(--bg-panel)", border: `1px solid var(--border)`,
+          borderLeft: `3px solid var(--accent)`, color: "var(--text)",
           font: "inherit", lineHeight: 1.5, cursor: "pointer",
           animation: "blocked-notice-in 160ms ease-out",
         }}

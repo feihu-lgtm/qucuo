@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { DIRS } from "../../utils/mudHelpers.js";
-import { chromeBtn, getZoneTheme } from "../../utils/theme.js";
+import { THEME_VARS } from "../../utils/theme.js";
+import { Button } from "../primitives/index.js";
 
 // 地宫内层地图房间面板（docs/设计_地宫内层地图.md §A 呈现顺序）。
 // 纯受控组件：不读 domain/store 状态，接线方传入 room/runState 与三个回调。
@@ -10,8 +11,9 @@ import { chromeBtn, getZoneTheme } from "../../utils/theme.js";
 // runState 目前只用于展示 hp/loot/step 等底栏信息，可缺省。
 const DIR_KEYS = ["n", "s", "e", "w", "u", "d"];
 
-export default function DungeonMapPanel({ room, runState, onMove, onAction, onText, zoneTheme }) {
-  const theme = zoneTheme || getZoneTheme(room?.name);
+export default function DungeonMapPanel({ room, runState, onMove, onAction, onText }) {
+  // 唯一的调用方地牢屏每次都传主题，原先的暗夜兜底走不到；颜色统一取 CSS 变量。
+  const theme = THEME_VARS;
   const [text, setText] = useState("");
   const exits = room?.exits || {};
   const options = room?.roomEvent?.options || [];
@@ -72,21 +74,17 @@ export default function DungeonMapPanel({ room, runState, onMove, onAction, onTe
             const target = exits[dir];
             const enabled = Boolean(target);
             return (
-              <button
+              <Button variant="chrome" font="native" active={enabled}
                 key={dir}
                 type="button"
                 disabled={!enabled}
                 aria-disabled={!enabled}
                 onClick={() => enabled && onMove?.(dir)}
-                title={enabled ? `${DIRS[dir]}：${target}` : DIRS[dir]}
-                style={{
-                  ...chromeBtn(theme, { active: enabled }),
-                  opacity: enabled ? 1 : 0.35,
-                  cursor: enabled ? "pointer" : "default",
-                }}
+                title={enabled ? `${DIRS[dir]}：${target}` : DIRS[dir]} style={{ opacity: enabled ? 1 : 0.35,
+                  cursor: enabled ? "pointer" : "default" }}
               >
                 {DIRS[dir]}
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -98,9 +96,9 @@ export default function DungeonMapPanel({ room, runState, onMove, onAction, onTe
           <div style={label}>可行之事</div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {options.map((o, i) => (
-              <button key={i} type="button" onClick={() => onAction?.(o.label)} style={chromeBtn(theme)}>
+              <Button variant="chrome" font="native" key={i} type="button" onClick={() => onAction?.(o.label)}>
                 {o.label}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -118,7 +116,7 @@ export default function DungeonMapPanel({ room, runState, onMove, onAction, onTe
             background: "transparent", border: `1px solid ${theme.border}`, color: theme.text, outline: "none",
           }}
         />
-        <button type="button" onClick={submit} style={chromeBtn(theme, { active: Boolean(text.trim()) })}>行</button>
+        <Button variant="chrome" font="native" active={Boolean(text.trim())} type="button" onClick={submit}>行</Button>
       </div>
 
       {/* 底栏：runState 摘要（可选） */}

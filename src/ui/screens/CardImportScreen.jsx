@@ -9,7 +9,7 @@
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { parseCharacterCard } from "../../domain/rules/cards/cardParse.js";
-import { planScan, runScan, runClassify, peopleAfterClassify } from "../../engine/ports/cardScan.js";
+import { planScan, runScan, runClassify, peopleAfterClassify } from "../../app/calls/screenCalls.js";
 import * as scanStore from "../../infra/scanStore.js";
 import { bucketStatus } from "../../domain/rules/cards/rateLimiter.js";
 import {
@@ -21,6 +21,7 @@ import EmptyPane from "./cards/EmptyPane.jsx";
 import ParsedPane from "./cards/ParsedPane.jsx";
 import ReviewPane from "./cards/ReviewPane.jsx";
 import ImportSelfTutorial, { IMPORT_SELF_TUTORIAL_KEY } from "./cards/ImportSelfTutorial.jsx";
+import ModalShell from "../primitives/ModalShell.jsx";
 
 // 【为什么 asPlayer 改由入口(playerMode)决定，不再是界面里的勾选】
 // 「角色入册」这个入口只做一件事：把别人写进江湖（NPC／世界观）。
@@ -30,14 +31,15 @@ import ImportSelfTutorial, { IMPORT_SELF_TUTORIAL_KEY } from "./cards/ImportSelf
 // 名单上方的「当江湖众人／只当背景传闻」一行。
 // 注意：解构块里不要插多行注释——scripts/propsFlow.mjs 的守卫按纯参数列表解析，
 // 内嵌注释会让它漏认后面的 prop、误报「传了没解构」。
+// accent：游戏内不传，跟随日夜；开始页由 main.jsx 传固定暗夜的 var(--ink-accent)。
+const DEFAULT_ACCENT = "var(--accent)";
 export default function CardImportScreen({
   onClose, apiCfg, playerName = "少侠",
-  onImportNpcs, onImportPlayer, onImportWorld, zoneTheme,
+  onImportNpcs, onImportPlayer, onImportWorld, accent = DEFAULT_ACCENT,
   currentDistrict = "",
   playerMode = false,
   onImportStarterCompanion,
 }) {
-  const accent = zoneTheme?.accent || "var(--warn)";
 
   const [stage, setStage] = useState("empty");   // empty | parsed | scanning | review
   const [fileName, setFileName] = useState("");
@@ -259,9 +261,8 @@ export default function CardImportScreen({
     onClose?.();
   };
 
+  // 定位、层级与居中由 ModalShell 负责，这里只留暖色遮罩、模糊与字体。
   const shell = {
-    position: "fixed", inset: 0, zIndex: 400,
-    display: "flex", alignItems: "center", justifyContent: "center",
     background: "rgba(6,4,2,.82)", backdropFilter: "blur(3px)",
     fontFamily: "'Noto Serif SC','Songti SC','STSong',serif",
   };
@@ -285,94 +286,95 @@ export default function CardImportScreen({
     boxShadow: "inset 0 0 120px rgba(0,0,0,.6)",
   };
 
+  // 长表单编辑，原先没有 Esc 关闭，误按会丢掉编辑内容，所以不开 Esc。面板撑满，遮罩不可见。
   return (
-    <div className="mobile-overlay-root" style={shell} onClick={e => { if (e.target === e.currentTarget) onClose?.(); }}>
-      <div className="mobile-overlay-panel mobile-card-import-panel" style={panel}>
-        <div className="mobile-overlay-header" style={{
-          display: "flex", alignItems: "center", gap: 10,
-          ...barFrame(S("ui/bar_paper.webp")),
-          padding: "0 12px", minHeight: 52,
-        }}>
-          <img src={S("ui/scroll_ic.webp")} alt="" style={{ width: 22, height: 22, opacity: .9 }} />
-          <span style={{ color: "var(--tutorial-title)", fontSize: "var(--fs-lg)", letterSpacing: 5, textShadow: "0 1px 4px var(--black)" }}>{playerMode ? "导入角色卡当自己" : "角色入册"}</span>
-          {fileName && <span style={{ fontSize: "var(--fs-xs)", color: "var(--muted)" }}>{fileName}</span>}
-          <span style={{ flex: 1 }} />
-          {playerMode && (
-            <span onClick={() => setShowTutorial(true)} title="重看这条流程的教程"
-              style={{
-                cursor: "pointer", userSelect: "none", fontSize: "var(--fs-xs)", color: accent,
-                border: `1px solid color-mix(in srgb, ${accent} 40%, transparent)`, borderRadius: 0, padding: "3px 10px", marginRight: 8,
-              }}>教程</span>
-          )}
-          <span title={`调用额度 ${bucket.tokens}/${bucket.cap}，每 12 秒回一次`}
-            style={{ display: "flex", gap: 3, alignItems: "center", marginRight: 6 }}>
-            {Array.from({ length: bucket.cap }).map((_, i) => (
-              <span key={i} style={{
-                width: 8, height: 8, borderRadius: "50%",
-                background: i < bucket.tokens ? accent : "transparent",
-                border: `1px solid ${i < bucket.tokens ? accent : "var(--border)"}`,
-              }} />
-            ))}
-          </span>
-          <span className="mobile-card-import-close" onClick={onClose} role="button" aria-label="关闭角色入册">
-            <img src={S("ui/btn_close.webp")} alt="" style={{ width: 24, height: 24, cursor: "pointer", opacity: .85 }} />
-          </span>
-        </div>
-
-        <div className="mobile-card-import-body" style={{ flex: 1, overflow: "hidden", display: "flex" }}>
-          {stage === "empty" && (
-            <EmptyPane dragOver={dragOver} setDragOver={setDragOver} err={err}
-              onPick={() => fileRef.current?.click()} onFile={loadFile} accent={accent} />
-          )}
-          {(stage === "parsed" || stage === "scanning") && parsed && (
-            <ParsedPane
-              parsed={parsed} accent={accent} plan={plan} stage={stage}
-              playerMode={playerMode} asPlayer={asPlayer}
-              insertMode={insertMode} setInsertMode={setInsertMode}
-              picked={picked} setPicked={setPicked}
-              classified={classified} classifying={classifying} onClassify={doClassify}
-              openingIdx={openingIdx} setOpeningIdx={setOpeningIdx}
-              waitMs={waitMs} err={err} term={term} onExpandTerm={() => setTermBig(true)}
-              onScan={doScan} onSkip={skipScan} onImportLore={importAsLore}
-              onAbort={() => { abortRef.current.aborted = true; }}
-            />
-          )}
-          {stage === "review" && result && (
-            <ReviewPane
-              parsed={parsed} result={result} accent={accent}
-              detail={detail} setDetail={setDetail}
-              patchNpc={patchNpc} patchPlayer={patchPlayer} patchWorld={patchWorld}
-              setResult={setResult} asPlayer={asPlayer} apiCfg={apiCfg} cardImage={cardImage}
-              currentDistrict={currentDistrict}
-              autoPlace={insertMode === "npc" && !playerMode}
-              term={term} onExpandTerm={() => setTermBig(true)}
-              onBack={() => setStage("parsed")} onFinish={finish}
-            />
-          )}
-        </div>
-
-        {termBig && (
-          <div onClick={() => setTermBig(false)}
+    <ModalShell onClose={() => onClose?.()} layer="dialog" chrome={false} showClose={false} closeOnEsc={false}
+      ariaLabel={playerMode ? "导入角色卡当自己" : "角色入册"}
+      rootStyle={shell} panelClassName="mobile-card-import-panel" panelStyle={panel}>
+      <div className="mobile-overlay-header" style={{
+        display: "flex", alignItems: "center", gap: 10,
+        ...barFrame(S("ui/bar_paper.webp")),
+        padding: "0 12px", minHeight: 52,
+      }}>
+        <img src={S("ui/scroll_ic.webp")} alt="" style={{ width: 22, height: 22, opacity: .9 }} />
+        <span style={{ color: "var(--tutorial-title)", fontSize: "var(--fs-lg)", letterSpacing: 5, textShadow: "0 1px 4px var(--black)" }}>{playerMode ? "导入角色卡当自己" : "角色入册"}</span>
+        {fileName && <span style={{ fontSize: "var(--fs-xs)", color: "var(--muted)" }}>{fileName}</span>}
+        <span style={{ flex: 1 }} />
+        {playerMode && (
+          <span onClick={() => setShowTutorial(true)} title="重看这条流程的教程"
             style={{
-              position: "absolute", inset: 0, zIndex: 10, background: "rgba(8,10,14,.92)",
-              display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
-            }}>
-            <div onClick={e => e.stopPropagation()}
-              style={{ width: "100%", maxWidth: 760, background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, overflow: "hidden" }}>
-              <Terminal lines={term} height={440} />
-              <div style={{ padding: "6px 10px", textAlign: "right", borderTop: "1px solid var(--border)" }}>
-                <span onClick={() => setTermBig(false)}
-                  style={{ cursor: "pointer", fontFamily: TERM_MONO, fontSize: "var(--fs-2xs)", color: "var(--info)" }}>关闭 ✕</span>
-              </div>
+              cursor: "pointer", userSelect: "none", fontSize: "var(--fs-xs)", color: accent,
+              border: `1px solid color-mix(in srgb, ${accent} 40%, transparent)`, borderRadius: 0, padding: "3px 10px", marginRight: 8,
+            }}>教程</span>
+        )}
+        <span title={`调用额度 ${bucket.tokens}/${bucket.cap}，每 12 秒回一次`}
+          style={{ display: "flex", gap: 3, alignItems: "center", marginRight: 6 }}>
+          {Array.from({ length: bucket.cap }).map((_, i) => (
+            <span key={i} style={{
+              width: 8, height: 8, borderRadius: "50%",
+              background: i < bucket.tokens ? accent : "transparent",
+              border: `1px solid ${i < bucket.tokens ? accent : "var(--border)"}`,
+            }} />
+          ))}
+        </span>
+        <span className="mobile-card-import-close" onClick={onClose} role="button" aria-label="关闭角色入册">
+          <img src={S("ui/btn_close.webp")} alt="" style={{ width: 24, height: 24, cursor: "pointer", opacity: .85 }} />
+        </span>
+      </div>
+
+      <div className="mobile-card-import-body" style={{ flex: 1, overflow: "hidden", display: "flex" }}>
+        {stage === "empty" && (
+          <EmptyPane dragOver={dragOver} setDragOver={setDragOver} err={err}
+            onPick={() => fileRef.current?.click()} onFile={loadFile} accent={accent} />
+        )}
+        {(stage === "parsed" || stage === "scanning") && parsed && (
+          <ParsedPane
+            parsed={parsed} accent={accent} plan={plan} stage={stage}
+            playerMode={playerMode} asPlayer={asPlayer}
+            insertMode={insertMode} setInsertMode={setInsertMode}
+            picked={picked} setPicked={setPicked}
+            classified={classified} classifying={classifying} onClassify={doClassify}
+            openingIdx={openingIdx} setOpeningIdx={setOpeningIdx}
+            waitMs={waitMs} err={err} term={term} onExpandTerm={() => setTermBig(true)}
+            onScan={doScan} onSkip={skipScan} onImportLore={importAsLore}
+            onAbort={() => { abortRef.current.aborted = true; }}
+          />
+        )}
+        {stage === "review" && result && (
+          <ReviewPane
+            parsed={parsed} result={result} accent={accent}
+            detail={detail} setDetail={setDetail}
+            patchNpc={patchNpc} patchPlayer={patchPlayer} patchWorld={patchWorld}
+            setResult={setResult} asPlayer={asPlayer} apiCfg={apiCfg} cardImage={cardImage}
+            currentDistrict={currentDistrict}
+            autoPlace={insertMode === "npc" && !playerMode}
+            term={term} onExpandTerm={() => setTermBig(true)}
+            onBack={() => setStage("parsed")} onFinish={finish}
+          />
+        )}
+      </div>
+
+      {termBig && (
+        <div onClick={() => setTermBig(false)}
+          style={{
+            position: "absolute", inset: 0, zIndex: 10, background: "rgba(8,10,14,.92)",
+            display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+          }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ width: "100%", maxWidth: 760, background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, overflow: "hidden" }}>
+            <Terminal lines={term} height={440} />
+            <div style={{ padding: "6px 10px", textAlign: "right", borderTop: "1px solid var(--border)" }}>
+              <span onClick={() => setTermBig(false)}
+                style={{ cursor: "pointer", fontFamily: TERM_MONO, fontSize: "var(--fs-2xs)", color: "var(--info)" }}>关闭 ✕</span>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {showTutorial && <ImportSelfTutorial accent={accent} onClose={dismissTutorial} />}
+      {showTutorial && <ImportSelfTutorial accent={accent} onClose={dismissTutorial} />}
 
-        <input ref={fileRef} type="file" accept=".png,.json" style={{ display: "none" }}
-          onChange={e => { const f = e.target.files?.[0]; if (f) loadFile(f); e.target.value = ""; }} />
-      </div>
-    </div>
+      <input ref={fileRef} type="file" accept=".png,.json" style={{ display: "none" }}
+        onChange={e => { const f = e.target.files?.[0]; if (f) loadFile(f); e.target.value = ""; }} />
+    </ModalShell>
   );
 }

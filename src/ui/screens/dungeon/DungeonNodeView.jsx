@@ -2,7 +2,7 @@
 import React from "react";
 import { DUNGEON_NODE_TYPE } from "../../../domain/data/dungeon/catalog.js";
 import { calcDungeonCheckRate, computeSettledLoot } from "../../../domain/rules/dungeon/engine.js";
-import { chromeBtn } from "../../../utils/theme.js";
+import { Button } from "../../primitives/index.js";
 
 const NODE_BADGE = {
   [DUNGEON_NODE_TYPE.TRAP]: "机关",
@@ -29,15 +29,15 @@ function renderNodeTitle(node) {
   );
 }
 
-const cardStyle = (zoneTheme) => ({
-  border: `1px solid ${zoneTheme.border}`,
+const cardStyle = () => ({
+  border: `1px solid var(--border)`,
   background: "var(--bg-panel)",
   padding: "10px 12px",
   marginBottom: 8,
 });
 
 export default function DungeonNodeView({
-  run, effectiveSpecialNow, zoneTheme, narration,
+  run, effectiveSpecialNow, narration,
   onSelectNode, onChoose, onRetreat, onSettleClose,
 }) {
   if (run.status === "victory" || run.status === "retreated" || run.status === "defeated") {
@@ -48,8 +48,8 @@ export default function DungeonNodeView({
         ? "稳步撤退 · 保留全部收获"
         : "负伤脱身 · 银两折半保命";
     return (
-      <div style={cardStyle(zoneTheme)}>
-        <div style={{ color: zoneTheme.accent, fontSize: "var(--fs-md)", marginBottom: 6 }}>{title}</div>
+      <div style={cardStyle()}>
+        <div style={{ color: "var(--accent)", fontSize: "var(--fs-md)", marginBottom: 6 }}>{title}</div>
         <div style={{ fontSize: "var(--fs-sm)", color: "var(--text-dim)", marginBottom: 8 }}>
           已探节点 {run.clearedNodes} 处 · 剩余气血 {Math.max(1, run.hp[0])}/{run.hp[1]}
         </div>
@@ -63,9 +63,9 @@ export default function DungeonNodeView({
             <div style={{ color: "var(--text-dim)" }}>消耗品：{run.usedItems.join("、")}</div>
           )}
         </div>
-        <button type="button" onClick={onSettleClose} style={chromeBtn(zoneTheme, { active: true })}>
+        <Button variant="chrome" font="native" active={true} type="button" onClick={onSettleClose}>
           收起战利品离开
-        </button>
+        </Button>
       </div>
     );
   }
@@ -73,15 +73,15 @@ export default function DungeonNodeView({
   if (run.status === "node" && run.activeNode) {
     const node = run.activeNode;
     return (
-      <div style={cardStyle(zoneTheme)}>
+      <div style={cardStyle()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-          <span style={{ color: zoneTheme.accent, fontSize: "var(--fs-md)" }}>{renderNodeTitle(node)}</span>
-          <span style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accentDim }}>
+          <span style={{ color: "var(--accent)", fontSize: "var(--fs-md)" }}>{renderNodeTitle(node)}</span>
+          <span style={{ fontSize: "var(--fs-xs)", color: "var(--accent-dim)" }}>
             [{NODE_BADGE[node.type] || "节点"}]
           </span>
         </div>
         {node.adventurer && (
-          <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.textDim, marginBottom: 6 }}>
+          <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 6 }}>
             {node.adventurer.personality}
           </div>
         )}
@@ -93,19 +93,18 @@ export default function DungeonNodeView({
             const statVal = choice.stat ? (effectiveSpecialNow?.[choice.stat] ?? 5) : null;
             const rate = choice.stat ? calcDungeonCheckRate(statVal, choice.dc ?? 5) : null;
             return (
-              <button
+              <Button variant="chrome"
                 key={choice.id}
                 type="button"
-                onClick={() => onChoose(choice.id)}
-                style={{ ...chromeBtn(zoneTheme), textAlign: "left", padding: "7px 10px" }}
+                onClick={() => onChoose(choice.id)} style={{ textAlign: "left", padding: "7px 10px" }}
               >
                 <div>{choice.label}</div>
                 {choice.stat && (
-                  <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.textDim, marginTop: 2 }}>
+                  <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginTop: 2 }}>
                     检定：{choice.stat}（当前 {statVal} / 难度 {choice.dc ?? 5} · 胜算 {rate}%）
                   </div>
                 )}
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -117,44 +116,43 @@ export default function DungeonNodeView({
     <div>
       {narration && (
         <div style={{
-          ...cardStyle(zoneTheme),
+          ...cardStyle(),
           borderStyle: "dashed",
           fontSize: "var(--fs-sm)",
-          color: zoneTheme.textDim,
+          color: "var(--text-dim)",
           lineHeight: 1.6,
         }}>
           {narration}
         </div>
       )}
-      <div style={{ fontSize: "var(--fs-sm)", color: zoneTheme.textDim, marginBottom: 6 }}>
+      <div style={{ fontSize: "var(--fs-sm)", color: "var(--text-dim)", marginBottom: 6 }}>
         选择前方去路：
       </div>
       {(run.choices || []).map((node) => (
-        <div key={node.nodeId} style={cardStyle(zoneTheme)}>
+        <div key={node.nodeId} style={cardStyle()}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-            <span style={{ color: zoneTheme.accent, fontSize: "var(--fs-md)" }}>{renderNodeTitle(node)}</span>
-            <span style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accentDim }}>
+            <span style={{ color: "var(--accent)", fontSize: "var(--fs-md)" }}>{renderNodeTitle(node)}</span>
+            <span style={{ fontSize: "var(--fs-xs)", color: "var(--accent-dim)" }}>
               {NODE_BADGE[node.type] || "节点"}
             </span>
           </div>
           <div style={{ fontSize: "var(--fs-sm)", color: "var(--text-dim)", lineHeight: 1.55, marginBottom: 8 }}>
             {node.desc}
           </div>
-          <button
+          <Button variant="chrome"
             type="button"
             onClick={() => onSelectNode(node.nodeId)}
-            style={chromeBtn(zoneTheme)}
           >
             {node.type === DUNGEON_NODE_TYPE.COMBAT || node.type === DUNGEON_NODE_TYPE.BOSS
               ? "迎战"
               : "上前查看"}
-          </button>
+          </Button>
         </div>
       ))}
       <div style={{ marginTop: 8 }}>
-        <button type="button" onClick={onRetreat} style={chromeBtn(zoneTheme)}>
+        <Button variant="chrome" font="native" type="button" onClick={onRetreat}>
           见好就收 · 撤出地宫
-        </button>
+        </Button>
       </div>
     </div>
   );

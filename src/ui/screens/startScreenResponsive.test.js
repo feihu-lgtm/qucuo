@@ -84,7 +84,11 @@ describe("StartScreen mobile layout", () => {
     expect(landscape).toMatch(/\.settings-panel \{\s*width:\s*100%/);
     expect(landscape).toMatch(/\.settings-home-grid \{\s*grid-template-columns:\s*repeat\(4,/);
     const settings = readFileSync(join(HERE, "SettingsPanel.jsx"), "utf-8");
-    expect(settings).toContain("mobile-overlay-root settings-root");
+    // 设置面板套 ModalShell：根节点的 mobile-overlay-root 由外壳在默认（全屏）手机形态下加上，
+    // 这里确认它用外壳、没有关掉全屏，且根节点与面板带着 iOS 适配规则要的类。
+    expect(settings).toContain("<ModalShell");
+    expect(settings).not.toMatch(/mobile="(?:none|sheet)"/);
+    expect(settings).toContain('className="settings-root"');
     expect(settings).toContain("mobile-settings-panel settings-panel");
     expect(settings).toContain('className="settings-home-grid"');
     expect(settings).toContain('className="settings-home-card"');

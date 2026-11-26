@@ -72,18 +72,6 @@ export function bodyProfileFilled(profile) {
   return { public: cnt(PUBLIC_FIELDS), intimate: cnt(INTIMATE_FIELDS), total: cnt(BODY_FIELDS) };
 }
 
-// 面板里的折叠预览：不完整显示，只露前 n 个字，剩下的用 … 收掉。
-// 私密层默认整条打码，要点一下才展开——这个面板是会在别人面前打开的。
-export function previewText(text, n = 14) {
-  const s = String(text || "").trim();
-  if (!s) return "";
-  return s.length > n ? s.slice(0, n) + "…" : s;
-}
-export function maskText(text) {
-  const s = String(text || "").trim();
-  return s ? "•".repeat(Math.min(12, Math.max(4, Math.ceil(s.length / 2)))) : "";
-}
-
 // 关键词通道：玩家这句话明显在提身体/衣着/相貌时，即便场合本来是灭灯的也点亮。
 const PUBLIC_KEYS = [
   "长什么样", "长得", "相貌", "样貌", "外貌", "体貌", "身材", "身量", "个子", "高矮",

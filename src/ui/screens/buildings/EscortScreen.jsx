@@ -3,7 +3,7 @@ import { Overlay, Header, Btn } from "./common.jsx";
 import { ESCORT_QUESTS } from "../../../domain/data/quests/escortQuests.js";
 export { ESCORT_QUESTS } from "../../../domain/data/quests/escortQuests.js";
 
-export default function EscortScreen({ building, char, flags, questProgress, currentRoom, zoneTheme, onClose, inline, onAcceptEscort, time }) {
+export default function EscortScreen({ building, char, flags, questProgress, currentRoom, onClose, inline, onAcceptEscort, time }) {
   const money = char.money || 0;
 
   // 过滤：只显示从当前据点出发的任务，且未接取也未完成的
@@ -18,8 +18,8 @@ export default function EscortScreen({ building, char, flags, questProgress, cur
   const active = ESCORT_QUESTS.filter(q => questProgress[q.id]?.active);
 
   return (
-    <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
+    <Overlay onClose={onClose} inline={inline}>
+      <Header name={building.name} onClose={onClose} />
       <div style={{ padding: 16 }}>
         <div style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)", marginBottom: 12 }}>
           {building.desc}
@@ -45,7 +45,7 @@ export default function EscortScreen({ building, char, flags, questProgress, cur
           </div>
         )}
 
-        <div style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-xs)", marginBottom: 8 }}>
+        <div style={{ color: "var(--accent-dim)", fontSize: "var(--fs-xs)", marginBottom: 8 }}>
           可接任务（{available.length}）：
         </div>
 
@@ -56,7 +56,7 @@ export default function EscortScreen({ building, char, flags, questProgress, cur
         )}
 
         {available.map(q => (
-          <div key={q.id} style={{ marginBottom: 10, padding: "10px 12px", background: "var(--bg-ink)", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
+          <div key={q.id} style={{ marginBottom: 10, padding: "10px 12px", background: "var(--bg-ink)", borderRadius: 0, border: `1px solid var(--border)` }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
               <span style={{ color: "var(--ink-text)", fontSize: "var(--fs-md)" }}>{q.title}</span>
               <span style={{ color: "var(--ink-fern)", fontSize: "var(--fs-sm)" }}>报酬 {q.reward} 两</span>
@@ -65,7 +65,7 @@ export default function EscortScreen({ building, char, flags, questProgress, cur
             <div style={{ color: "var(--escort-hint)", fontSize: "var(--fs-2xs)", marginBottom: 8 }}>
               → 前往 {q.targetLocation} · 找 {q.targetNpc} 完成交货
             </div>
-            <Btn label="接受任务" zoneTheme={zoneTheme} onClick={() => onAcceptEscort(q)} />
+            <Btn label="接受任务" onClick={() => onAcceptEscort(q)} />
           </div>
         ))}
       </div>

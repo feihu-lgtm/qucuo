@@ -1,6 +1,7 @@
 // 赌石屏的子组件：石头视觉、竞价者卡牌（桌面扇形/竖屏轮播）、放大抉择、相石弹层、操作按钮。
 // 从 GambleStoneScreen.jsx 拆出；所有样式常量来自 gambleStoneAssets.js，行为与原实现一致。
 import { JADE_TIERS, GRADE } from "../../../domain/rules/economy/gambleStone.js";
+import ModalShell from "../../primitives/ModalShell.jsx";
 import {
   S, UI, FRAME, P, WIN, ROLE_BY_NAME,
   CUT_POS, SHARDS, SHARD_COLOR, OUTCOME_LABEL, SLASH_ROT,
@@ -198,9 +199,7 @@ export function BidderCarousel({ bidders, carouselIdx, setCarouselIdx, touchRef,
       {bidders.length > 1 && (
         <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
           {bidders.map((_, i) => (
-            <div key={i} onClick={() => setCarouselIdx(i)}
-              style={{ width: 8, height: 8, borderRadius: "50%", cursor: "pointer",
-                background: i === carouselIdx ? "var(--gold-light)" : "rgba(255,255,255,.25)" }} />
+            <div key={i} onClick={() => setCarouselIdx(i)} className="gamble-pick-card" data-on={Boolean(i === carouselIdx)} />
           ))}
         </div>
       )}
@@ -210,39 +209,37 @@ export function BidderCarousel({ bidders, carouselIdx, setCarouselIdx, touchRef,
 
 // ── 相石评语弹层：系统裁决线索、AI 演口诀（轻量挂载，一石一次缓存） ──
 export function SkinModal({ changKouLabel, skinLabel, text, loading, onClose }) {
+  // 挂在赌桌舞台里，层级只需压过舞台的顶栏（260）与底栏（250），取 screen-high 档。
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 290, background: "rgba(5,4,2,.55)",
-      display: "flex", alignItems: "center", justifyContent: "center" }}
-      onClick={onClose}>
-      <div style={{ maxWidth: "min(560px, 82vw)", background: "var(--gamble-panel)", border: "1px solid var(--ink-brass)",
-        borderRadius: 0, padding: "22px 26px", boxShadow: "0 12px 40px rgba(0,0,0,.7)" }}
-        onClick={(e) => e.stopPropagation()}>
-        <div style={{ color: "var(--gold-light)", fontSize: "var(--fs-lg)", letterSpacing: 2, marginBottom: 12 }}>
-          相石 · {changKouLabel} · {skinLabel}
-        </div>
-        <div style={{ color: "var(--qb-text-dim)", fontSize: "var(--fs-base)", lineHeight: 2, whiteSpace: "pre-wrap" }}>
-          {text || (loading ? "老师傅眯眼端详，指腹在皮壳上缓缓摩挲……" : "（相石不语）")}
-        </div>
-        <div style={{ color: "var(--ink-brass)", fontSize: "var(--fs-xs)", marginTop: 12, letterSpacing: 1 }}>
-          看皮只断表象，种水深浅终归要刀下见真章 · 点空白处收起
-        </div>
+    <ModalShell onClose={onClose} layer="screen-high" mobile="none" chrome={false} showClose={false}
+      className="gamble-veil" ariaLabel="相石评语"
+      panelStyle={{ maxWidth: "min(560px, 82vw)", background: "var(--gamble-panel)", border: "1px solid var(--ink-brass)",
+        padding: "22px 26px", boxShadow: "0 12px 40px rgba(0,0,0,.7)" }}>
+      <div style={{ color: "var(--gold-light)", fontSize: "var(--fs-lg)", letterSpacing: 2, marginBottom: 12 }}>
+        相石 · {changKouLabel} · {skinLabel}
       </div>
-    </div>
+      <div style={{ color: "var(--qb-text-dim)", fontSize: "var(--fs-base)", lineHeight: 2, whiteSpace: "pre-wrap" }}>
+        {text || (loading ? "老师傅眯眼端详，指腹在皮壳上缓缓摩挲……" : "（相石不语）")}
+      </div>
+      <div style={{ color: "var(--ink-brass)", fontSize: "var(--fs-xs)", marginTop: 12, letterSpacing: 1 }}>
+        看皮只断表象，种水深浅终归要刀下见真章 · 点空白处收起
+      </div>
+    </ModalShell>
   );
 }
 
 // ── 点选放大：大卡 + 成交/谈价抉择 ──
 export function SelCardModal({ card, offerLabel, sellTo, startTalk, onClose }) {
+  // 大卡与抉择栏并排放在同一个去壳面板里；两者之间 3vw 的空隙原先点了会收起，现在属于面板，不再收起。
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(5,4,2,.72)",
-      backdropFilter: "blur(3px)", display: "flex", alignItems: "center", justifyContent: "center", gap: "3vw" }}
-      onClick={onClose}>
+    <ModalShell onClose={onClose} layer="screen-high" mobile="none" chrome={false} showClose={false}
+      className="gamble-veil-deep" ariaLabel={`${card.name} 的报价`}
+      panelStyle={{ display: "flex", alignItems: "center", gap: "3vw" }}>
       <div style={{ height: "84vh", aspectRatio: "941/1672", position: "relative",
-        filter: "drop-shadow(0 18px 40px rgba(0,0,0,.8))" }} onClick={(e) => e.stopPropagation()}>
+        filter: "drop-shadow(0 18px 40px rgba(0,0,0,.8))" }}>
         <CardFront name={card.name} />
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "2.4vh", maxWidth: "30vw" }}
-        onClick={(e) => e.stopPropagation()}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "2.4vh", maxWidth: "30vw" }}>
         <div style={{ color: "var(--gold-light)", fontSize: "3.2vh", letterSpacing: 3 }}>{card.name}</div>
         <div style={{ color: "var(--ink-bronze)", fontSize: "1.7vh", marginTop: "-1.2vh" }}>{ROLE_BY_NAME[card.name] || ""}</div>
         <div style={{ color: "var(--ink-gold-soft)", fontSize: "2.3vh" }}>出价 {offerLabel(card)}</div>
@@ -257,7 +254,7 @@ export function SelCardModal({ card, offerLabel, sellTo, startTalk, onClose }) {
         )}
         <div style={{ color: "var(--ink-brass)", fontSize: "1.3vh" }}>谈价走主对话（赌桌自动收起，谈妥的价回来即见）</div>
       </div>
-    </div>
+    </ModalShell>
   );
 }
 

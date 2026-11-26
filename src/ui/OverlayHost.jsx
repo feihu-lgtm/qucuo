@@ -45,7 +45,6 @@ export default function OverlayHost({ ctx, apiReady, onCloseInitialSettings }) {
           setUiScale={setUiScale}
           font={font}
           setFont={setFont}
-          zoneTheme={ctx.zoneTheme}
           narrator={ctx.narrator}
           setNarrator={(update) => ctx.dispatchCommand("settings", () => ctx.setNarrator(update))}
         />
@@ -80,7 +79,6 @@ export default function OverlayHost({ ctx, apiReady, onCloseInitialSettings }) {
           setInv={ctx.setInv}
           char={ctx.char}
           setChar={ctx.setChar}
-          zoneTheme={ctx.zoneTheme}
           onClose={() => closeOverlay(OVERLAY.HOMESTEAD)}
           addLog={ctx.addLog}
           dispatchCommand={ctx.dispatchCommand}
@@ -106,7 +104,6 @@ export default function OverlayHost({ ctx, apiReady, onCloseInitialSettings }) {
             setUiScale={setUiScale}
             font={font}
             setFont={setFont}
-            zoneTheme={ctx.zoneTheme}
             narrator={ctx.narrator}
             setNarrator={(update) => ctx.dispatchCommand("settings", () => ctx.setNarrator(update))}
             getLiveBlockText={ctx.getLiveBlockText}
@@ -119,7 +116,6 @@ export default function OverlayHost({ ctx, apiReady, onCloseInitialSettings }) {
             profile={ctx.char.bodyProfile || emptyBodyProfile()}
             onChange={ctx.handleBodyProfileChange}
             onClose={() => closeOverlay(OVERLAY.BODY)}
-            zoneTheme={ctx.zoneTheme}
             nsfwOn={nsfwOn}
             onRecommend={ctx.recommendOutfit}
             recommendState={ctx.outfitState}

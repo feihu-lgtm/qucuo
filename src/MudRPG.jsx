@@ -41,7 +41,7 @@ import { useWorldRulesRunner } from "./app/hooks/useWorldRulesRunner.js";
 import { DEFAULT_PRESETS } from "./engine/newGame.js";
 import { selectEffectiveStats } from "./features/stats/logic.js";
 import { hasApiCredentials } from "./infra/apiConfig.js";
-import { chromeBtn } from "./utils/theme.js";
+import { THEME_VARS, chromeBtn } from "./utils/theme.js";
 
 export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings = false, onReturnToStart } = {}) {
   const bootedForSettingsRef = useRef(initialOpenSettings);
@@ -392,7 +392,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
           <p style={{ color: "var(--red-soft)" }}>尚未配置 API 凭证</p>
           <p>打开设置，填入 API Key 或导入 Vertex AI 的 ADC JSON 文件后即可开始游戏。</p>
           <span onClick={() => openOverlay(OVERLAY.SETTINGS)} style={{ cursor: "pointer", color: "var(--accent)", padding: "6px 14px", background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, display: "inline-block", marginTop: 10 }}>⚙ 打开设置</span>
-          <button type="button" onClick={returnToStart} style={{ ...chromeBtn(ui.zoneTheme), marginTop: 10, marginLeft: 8 }}>返回主菜单</button>
+          <button type="button" onClick={returnToStart} style={{ ...chromeBtn(THEME_VARS), marginTop: 10, marginLeft: 8 }}>返回主菜单</button>
         </div>
         {overlayHost}
       </div>

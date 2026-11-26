@@ -6,7 +6,7 @@ import { DISTRICTS } from "../../../domain/rules/cards/reviewRules.js";
 import { hasInnerMap, getPublicInnerRoomNames } from "../../../domain/rules/map/innerMap.js";
 import { buildPlacementPlan, sanitizePlacementPlan, PLAN_MAX_TOKENS } from "../../../domain/rules/cards/placementPlan.js";
 import { acquire } from "../../../domain/rules/cards/rateLimiter.js";
-import { callCardModel } from "../../../engine/ports/cardScan/scanCalls.js";
+import { callCardModel } from "../../../app/calls/screenCalls.js";
 import { normalizePlacement } from "../../../domain/rules/cards/importedRegistry.js";
 import { parseJsonLoose } from "../../../domain/rules/cards/scanPrompts.js";
 

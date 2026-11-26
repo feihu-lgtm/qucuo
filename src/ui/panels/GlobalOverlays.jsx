@@ -8,14 +8,16 @@
 // 收录（按 zIndex 大致由低到高）：
 //   TraceViewer(70) · PersuasionScreen(60) · Duel/TeamDuelScreen
 //   CharacterPage/QuestLogScreen/LoreScreen/PortraitManager/CodexScreen(300)
-//   BugReportModal/NpcActionMenu(400) · ItemActionMenu(410)
-//   TutorialOverlay/VersionHistoryPanel(500)
+//   BugReportModal(400) · NpcActionMenu/ItemActionMenu（ModalShell dialog 档，
+//   ItemActionMenu 排在后面，同档压在上面）
+//   TutorialOverlay(500) · VersionHistoryPanel（ModalShell top 档）
 //
 // 弹层可见性读 uiStore，游戏数据与业务回调经 props 下传。切磋界面额外包了一层
 // ErrorBoundary——战斗引擎报错时不该把整局游戏拖崩，能退回房间重来。
 //
 // 结构：下面 entries 是一张有序条目表，每行 = {show, render}。新增浮层只需
 // 在表尾登记一行；数组顺序即 DOM 顺序（与原条件分支的书写顺序一致）。
+// 已迁到 ModalShell 的弹层同档之间靠 DOM 顺序决定上下，所以这张表的顺序不能随意调。
 import { Fragment, lazy, Suspense, useCallback } from "react";
 import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { listCharacters } from "../../domain/rules/prompt/mvu.js";
@@ -33,6 +35,7 @@ import { OVERLAY, closeOverlay, openOverlay, useOverlay } from "../../store/uiSt
 import {
   useSessionUi, setActiveNpcMenu, setActiveItemMenu, setCharacterPageTarget,
 } from "../../store/sessionUiStore.js";
+import { THEME_VARS } from "../../utils/theme.js";
 
 const TutorialOverlay = lazy(() => import("../screens/TutorialOverlay.jsx"));
 const VersionHistoryPanel = lazy(() => import("../screens/VersionHistoryPanel.jsx"));
@@ -52,7 +55,6 @@ const TeamDuelScreen = lazy(() => import("../screens/TeamDuelScreen.jsx"));
 const CardImportScreen = lazy(() => import("../screens/CardImportScreen.jsx"));
 
 export default function GlobalOverlays({
-  zoneTheme,
   char, inv, skills, varTree, room, innerRoomName, time,
   flags, questProgress, effectiveSpecialNow, companionState,
   onImportNpcs, onImportPlayer, onImportWorld,
@@ -98,7 +100,7 @@ export default function GlobalOverlays({
   const entries = [
     { show: showTutorial, render: () => <TutorialOverlay onClose={closeTutorial} /> },
     { show: showVersionHistory, render: () => (
-      <VersionHistoryPanel onClose={() => closeOverlay(OVERLAY.VERSION_HISTORY)} accentDim={zoneTheme.accentDim} />
+      <VersionHistoryPanel onClose={() => closeOverlay(OVERLAY.VERSION_HISTORY)} accentDim={"var(--accent-dim)"} />
     )},
     { show: showCardImport, render: () => (
       <Suspense fallback={<div role="status" aria-live="polite">载入中</div>}>
@@ -106,7 +108,6 @@ export default function GlobalOverlays({
         onClose={() => closeOverlay(OVERLAY.CARD_IMPORT)}
         apiCfg={apiCfg}
         playerName={char.name}
-        zoneTheme={zoneTheme}
         onImportNpcs={onImportNpcs}
         onImportPlayer={onImportPlayer}
         onImportWorld={onImportWorld}
@@ -127,19 +128,16 @@ export default function GlobalOverlays({
     { show: showQuestLog, render: () => (
       <QuestLogScreen
         questProgress={questProgress} flags={flags}
-        zoneTheme={zoneTheme}
         onClose={() => closeOverlay(OVERLAY.QUEST_LOG)}
       />
     )},
     { show: showLetters, render: () => (
       <LetterPanel
-        zoneTheme={zoneTheme}
         onClose={() => closeOverlay(OVERLAY.LETTERS)}
       />
     )},
     { show: showPacts, render: () => (
       <PactPanel
-        zoneTheme={zoneTheme}
         onClose={() => closeOverlay(OVERLAY.PACTS)}
         onRecruitNemesis={handleRecruitNemesis}
       />
@@ -149,7 +147,6 @@ export default function GlobalOverlays({
         varTree={varTree}
         time={time}
         turnToStr={getTimeStr}
-        zoneTheme={zoneTheme}
         onClose={() => closeOverlay(OVERLAY.LORE)}
       />
     )},
@@ -158,7 +155,6 @@ export default function GlobalOverlays({
         varTree={varTree}
         time={time}
         narratorStage={narratorStage}
-        zoneTheme={zoneTheme}
         onClose={() => closeOverlay(OVERLAY.QIJUZHU)}
       />
     )},
@@ -171,10 +167,10 @@ export default function GlobalOverlays({
       />
     )},
     { show: showTrace, render: () => (
-      <TraceViewer theme={zoneTheme} onClose={() => closeOverlay(OVERLAY.TRACE)} onReport={() => openOverlay(OVERLAY.BUG_REPORT)} />
+      <TraceViewer theme={THEME_VARS} onClose={() => closeOverlay(OVERLAY.TRACE)} onReport={() => openOverlay(OVERLAY.BUG_REPORT)} />
     )},
     { show: showCodex, render: () => (
-      <CodexScreen zoneTheme={zoneTheme} isDayMode={isDayMode} inv={inv} skills={skills} onClose={() => closeOverlay(OVERLAY.CODEX)} />
+      <CodexScreen isDayMode={isDayMode} inv={inv} skills={skills} onClose={() => closeOverlay(OVERLAY.CODEX)} />
     )},
     { show: showBugReport, render: () => (
       <BugReportModal
@@ -196,7 +192,6 @@ export default function GlobalOverlays({
     { show: activeNpcMenu, render: () => (
       <NpcActionMenu
         npc={activeNpcMenu}
-        zoneTheme={zoneTheme}
         inv={inv}
         onClose={() => setActiveNpcMenu(null)}
         onLook={handleNpcLook}
@@ -222,7 +217,6 @@ export default function GlobalOverlays({
         mode={activeItemMenu.mode}
         canConsume={activeItemMenu.canConsume}
         roomNpcs={(room.npcs || []).filter((npc) => isNpcVisibleInInnerRoom(room.name, innerRoomName, npc))}
-        zoneTheme={zoneTheme}
         onClose={() => setActiveItemMenu(null)}
         onInspect={(it) => inspectItem("item", typeof it === "object" ? it.name : it, null, typeof it === "object" ? it : null, { worldLook: true })}
         onConsume={handleConsumeItem}
@@ -244,7 +238,6 @@ export default function GlobalOverlays({
         playerMoney={char.money || 0}
         playerIdentities={[]}
         playerSpecial={effectiveSpecialNow}
-        zoneTheme={zoneTheme}
         savedProgress={persuasionProgress[pkey] || null}
         onProgress={(prog) => savePersuasionProgress(pkey, prog)}
         onFinish={(result) => finishPersuasion(activePersuasion, result)}
@@ -267,7 +260,6 @@ export default function GlobalOverlays({
           playerInv={inv}
           playerMoveset={char.moveset}
           playerSkills={skills}
-          zoneTheme={zoneTheme}
           onFinish={duelFinishHandler}
         />
       ) : (
@@ -278,7 +270,6 @@ export default function GlobalOverlays({
           playerInv={inv}
           playerMoveset={char.moveset}
           playerSkills={skills}
-          zoneTheme={zoneTheme}
           onFinish={duelFinishHandler}
         />
       )}

@@ -1,4 +1,5 @@
 import React from "react";
+import { isMobileViewport } from "../../utils/viewport.js";
 
 // 新手教程覆盖层：半透明遮罩铺满全屏，按三栏（左/中/右）+ 顶部 + 底部按钮区的
 // 实际位置贴说明便签，指向它介绍的界面区域。点任意处或右上角最小化收起。
@@ -13,7 +14,8 @@ export default function TutorialOverlay({ onClose }) {
     <div
       className="tutorial-overlay"
       onClick={onClose}
-      style={{ position: "fixed", inset: 0, zIndex: 500, background: "rgba(6,6,12,0.72)", cursor: "pointer",
+      // 整屏定位与层级在 tokens.css 的 .tutorial-overlay（top 档，原 z 500）。
+      style={{ background: "rgba(6,6,12,0.72)", cursor: "pointer",
         display: "flex", flexDirection: "column", fontFamily: "'Songti SC','STSong','SimSun',serif" }}
     >
       {/* 顶部提示条 */}
@@ -24,7 +26,7 @@ export default function TutorialOverlay({ onClose }) {
 
       {/* 三栏说明便签，按 flex 25/55/30 的实际位置横向铺开 */}
       <div className="tutorial-columns" onClick={event => {
-        if (window.matchMedia("(max-width: 767px)").matches) event.stopPropagation();
+        if (isMobileViewport()) event.stopPropagation();
       }} style={{ display: "flex", flex: 1, alignItems: "flex-start", padding: "0 14px", gap: 12, overflow: "hidden" }}>
         {/* 左栏 flex 25 */}
         <div className="tutorial-column" style={{ flex: 25, display: "flex", justifyContent: "center", paddingTop: 20 }}>
@@ -55,7 +57,7 @@ export default function TutorialOverlay({ onClose }) {
 
       {/* 底部按钮区说明，贴着底部（对应输入框上方那排模式按钮） */}
       <div className="tutorial-footer" onClick={event => {
-        if (window.matchMedia("(max-width: 767px)").matches) event.stopPropagation();
+        if (isMobileViewport()) event.stopPropagation();
       }} style={{ padding: "0 14px 16px", display: "flex", justifyContent: "center" }}>
         <div className="tutorial-note" style={{ ...note, maxWidth: 620 }}>
           <span style={title}>▼ 底部 · 交互模式（输入框上方那排按钮）</span>

@@ -1,8 +1,8 @@
 import LogEntry from "../../components/LogEntry.jsx";
-import { LOG_T } from "../../../domain/rules/log/logTypes.js";
 import { getGameDay } from "../../../utils/mudHelpers.js";
 import { useGameStore } from "../../../store/gameStore.js";
 import { openOverlay, OVERLAY } from "../../../store/uiStore.js";
+import { LOG_T } from "../../../domain/data/log/logTypes.js";
 
 function formatEntryTurnLabel(entry) {
   if (typeof entry?.turn !== "number" || !Number.isFinite(entry.turn)) return "";
@@ -25,7 +25,7 @@ function NarrativeSkeleton() {
 }
 
 export default function NarrativeLogFeed({
-  hidden, zoneTheme, clr, isDayMode, act,
+  hidden, clr, isDayMode, act,
   collapsedGroups, setCollapsedGroups,
   loading, queueCount, pendingTalks, inspecting, logEnd,
 }) {
@@ -95,12 +95,12 @@ export default function NarrativeLogFeed({
             <div key={gi}>
               <LogEntry entry={g.standalone} color={clr[g.standalone.t] || clr.desc} onAction={handleEntryAction} isDayMode={isDayMode} />
               {standaloneLabel && g.standalone.t === LOG_T.ROOM && (
-                <div style={{ textAlign: "center", color: zoneTheme.textDim, fontSize: "var(--fs-2xs)", marginTop: -2, marginBottom: 4, fontVariantNumeric: "tabular-nums" }}>
+                <div style={{ textAlign: "center", color: "var(--text-dim)", fontSize: "var(--fs-2xs)", marginTop: -2, marginBottom: 4, fontVariantNumeric: "tabular-nums" }}>
                   {standaloneLabel}
                 </div>
               )}
               {standaloneLabel && g.standalone.t !== LOG_T.ROOM && g.standalone.text?.trim() && (
-                <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-2xs)", marginBottom: 4, fontVariantNumeric: "tabular-nums" }}>
+                <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)", marginBottom: 4, fontVariantNumeric: "tabular-nums" }}>
                   {standaloneLabel}
                 </div>
               )}
@@ -123,7 +123,7 @@ export default function NarrativeLogFeed({
           <div
             key={gi}
             style={{
-              border: `1px solid ${zoneTheme.border}`,
+              border: `1px solid var(--border)`,
               borderRadius: 0,
               marginBottom: 10,
               background: "rgba(255,255,255,0.015)",
@@ -140,26 +140,26 @@ export default function NarrativeLogFeed({
                 }}
                 onClick={toggleCollapse}
               >
-                <span style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-2xs)", flexShrink: 0, width: 10 }}>
+                <span style={{ color: "var(--accent-dim)", fontSize: "var(--fs-2xs)", flexShrink: 0, width: 10 }}>
                   {canCollapse ? (collapsed ? "▶" : "▼") : ""}
                 </span>
                 <div style={{ flex: 1 }}>
                   <LogEntry entry={g.cmd} color={clr[g.cmd.t] || clr.desc} onAction={handleEntryAction} isDayMode={isDayMode} />
                 </div>
                 {groupTurnLabel && (
-                  <span style={{ color: zoneTheme.textDim, fontSize: "var(--fs-2xs)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
+                  <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
                     {groupTurnLabel}
                   </span>
                 )}
                 {collapsed && (
-                  <span style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-2xs)", flexShrink: 0 }}>
+                  <span style={{ color: "var(--accent-dim)", fontSize: "var(--fs-2xs)", flexShrink: 0 }}>
                     +{replyCount}条
                   </span>
                 )}
               </div>
             )}
             {!g.cmd && groupTurnLabel && g.replies.length > 0 && (
-              <div style={{ display: "flex", justifyContent: "flex-end", padding: "6px 12px 0", color: zoneTheme.textDim, fontSize: "var(--fs-2xs)", fontVariantNumeric: "tabular-nums" }}>
+              <div style={{ display: "flex", justifyContent: "flex-end", padding: "6px 12px 0", color: "var(--text-dim)", fontSize: "var(--fs-2xs)", fontVariantNumeric: "tabular-nums" }}>
                 {groupTurnLabel}
               </div>
             )}
@@ -176,25 +176,25 @@ export default function NarrativeLogFeed({
         );
       })}
       {loading && (
-        <div style={{ color: zoneTheme.accentDim, padding: "6px 0", display: "flex", alignItems: "center", gap: 6 }}>
+        <div style={{ color: "var(--accent-dim)", padding: "6px 0", display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ animation: "pulse 1.2s ease-in-out infinite" }}>▌</span>
           <span>引擎运转中</span>
           <span style={{ display: "inline-flex", gap: 2 }}>
             {[0, 1, 2].map(i => (
-              <span key={i} style={{ width: 4, height: 4, borderRadius: "50%", background: zoneTheme.accent, animation: `pulse 0.8s ease-in-out ${i * 0.2}s infinite` }} />
+              <span key={i} style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--accent)", animation: `pulse 0.8s ease-in-out ${i * 0.2}s infinite` }} />
             ))}
           </span>
-          {queueCount > 0 && <span style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-xs)" }}>排队中 {queueCount}</span>}
+          {queueCount > 0 && <span style={{ color: "var(--accent-dim)", fontSize: "var(--fs-xs)" }}>排队中 {queueCount}</span>}
         </div>
       )}
       {pendingTalks > 0 && <div style={{ color: "var(--pink)", animation: "pulse 1.2s ease-in-out infinite" }}>  {pendingTalks} 条对话处理中...</div>}
       {inspecting && (
-        <div style={{ color: zoneTheme.accentDim, padding: "6px 0", display: "flex", alignItems: "center", gap: 6 }}>
+        <div style={{ color: "var(--accent-dim)", padding: "6px 0", display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ animation: "pulse 1.2s ease-in-out infinite" }}>▌</span>
           <span>端详「{inspecting}」中</span>
           <span style={{ display: "inline-flex", gap: 2 }}>
             {[0, 1, 2].map(i => (
-              <span key={i} style={{ width: 4, height: 4, borderRadius: "50%", background: zoneTheme.accent, animation: `pulse 0.8s ease-in-out ${i * 0.2}s infinite` }} />
+              <span key={i} style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--accent)", animation: `pulse 0.8s ease-in-out ${i * 0.2}s infinite` }} />
             ))}
           </span>
         </div>

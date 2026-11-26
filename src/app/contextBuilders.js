@@ -22,7 +22,7 @@ export function buildOverlayCtx({ ui, game, overlayState, autosave, actions, add
     narrator: game.narrator, setNarrator: game.setNarrator, getLiveBlockText: ui.getLiveBlockText,
     showSettings, showCharCreate, showOpening, showBody, showMusicPanel, showHomestead,
     char: game.char, setChar: game.setChar, inv: game.inv, setInv: game.setInv,
-    innerRoomName: game.innerRoomName, addLog, zoneTheme: ui.zoneTheme,
+    innerRoomName: game.innerRoomName, addLog,
     recommendOutfit: outfitAdvice.recommendOutfit, outfitState: ui.outfitState,
     handleCreateCharacter: (...args) => {
       onGameStarted?.();
@@ -32,7 +32,6 @@ export function buildOverlayCtx({ ui, game, overlayState, autosave, actions, add
     handleBodyProfileChange: cardImportHandlers.handleBodyProfileChange,
     globalOverlays: {
       // isDayMode/apiCfg/activeNpcMenu/activeItemMenu/characterPageTarget 已迁 sessionUiStore。
-      zoneTheme: ui.zoneTheme,
       char: game.char, inv: game.inv, skills: game.skills,
       varTree: game.varTree, room: game.room, innerRoomName: game.innerRoomName, time: game.time,
       flags: game.flags, questProgress: game.questProgress,

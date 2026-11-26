@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useOverlayCloseGuard } from "../../../utils/overlayClose.js";
+import ModalShell from "../../primitives/ModalShell.jsx";
 import {
   TECHNIQUES, TECHNIQUE_IDS, COOKWARE, COOKWARE_BY_ID, DEFAULT_COOKWARE_ID,
   matchRecipe, canUseTechnique, computeDish, genericDishEffect,
@@ -55,7 +56,7 @@ const CK_CSS = `
   .ck-chip:hover{ transform:translateY(-2px); filter:brightness(1.15); }
 `;
 
-export default function CookingScreen({ building, char, inv, zoneTheme, inline, onClose, onCook }) {
+export default function CookingScreen({ building, char, inv, inline, onClose, onCook }) {
   const closeGuard = useOverlayCloseGuard(onClose);
   const [slots, setSlots] = useState([null, null, null, null]); // 料①~④，调味料/食材混装
   const [techniqueId, setTechniqueId] = useState("炖");
@@ -322,14 +323,18 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
   if (inline) return panel;
 
   // 非 inline：浮层（极少用到，保底）
+  // 遮罩原透明度 0.88，并入 --ink-overlay；面板自带黄铜描边与渐变底，外壳去壳。
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(4,4,10,0.88)", zIndex: 120,
-      display: "flex", alignItems: "center", justifyContent: "center" }}
-      onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
-      <div style={{ width: 520, maxWidth: "92vw", maxHeight: "86vh", overflowY: "auto",
-        border: "1px solid var(--ink-brass-deep)", borderRadius: 0 }} onClick={e => e.stopPropagation()}>
-        {panel}
-      </div>
-    </div>
+    <ModalShell
+      onClose={onClose}
+      layer="building"
+      mobile="none"
+      chrome={false}
+      showClose={false}
+      ariaLabel="建筑面板"
+      panelStyle={{ width: 520, maxWidth: "92vw", maxHeight: "86vh", overflowY: "auto", border: "1px solid var(--ink-brass-deep)" }}
+    >
+      {panel}
+    </ModalShell>
   );
 }

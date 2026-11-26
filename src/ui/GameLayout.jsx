@@ -7,6 +7,7 @@ import { didOpenCenterContent } from "../utils/mobileColumn.js";
 import { OVERLAY, useOverlay } from "../store/uiStore.js";
 import { gameActions, useGameStore } from "../store/gameStore.js";
 import { useSessionUi, setInteractMode, setMobileColumn } from "../store/sessionUiStore.js";
+import { THEME_VARS } from "../utils/theme.js";
 
 const BigMapModal = lazy(() => import("./components/BigMapModal.jsx"));
 
@@ -42,7 +43,7 @@ export default function GameLayout({ layout }) {
   const previousCenterContent = useRef(null);
   const narrativeView = useRef({ visible: false, log: null });
 
-  const { zoneTheme, logEnd } = ui;
+  const { logEnd } = ui;
   const isMobile = useSessionUi(s => s.isMobile);
   const mobileColumn = useSessionUi(s => s.mobileColumn);
   const uiScale = useSessionUi(s => s.uiScale);
@@ -140,10 +141,9 @@ export default function GameLayout({ layout }) {
   return (
     <div
       className="game-layout"
-      style={{ "--ui-scale": uiScale, display: "flex", flexDirection: "column", height: `${100 / uiScale}vh`, width: `${100 / uiScale}vw`, zoom: uiScale, background: zoneTheme.bg, color: zoneTheme.text, fontFamily: "var(--font-body)", fontSize: "var(--fs-md)", overflow: "hidden", transition: "background 1.2s ease, color 1.2s ease" }}
+      style={{ "--ui-scale": uiScale, display: "flex", flexDirection: "column", height: `${100 / uiScale}vh`, width: `${100 / uiScale}vw`, zoom: uiScale, background: "var(--bg)", color: "var(--text)", fontFamily: "var(--font-body)", fontSize: "var(--fs-md)", overflow: "hidden", transition: "background 1.2s ease, color 1.2s ease" }}
     >
       <TopBar
-        zoneTheme={zoneTheme}
         dispatchCommand={turn.dispatchCommand}
         autoSaveError={autosave.autoSaveError} lastAutoSave={autosave.lastAutoSave}
         playerAvatarCustom={ui.playerAvatarCustom} setPlayerAvatarCustom={ui.setPlayerAvatarCustom}
@@ -156,8 +156,7 @@ export default function GameLayout({ layout }) {
 
       <div className="mobile-game-columns" style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative", minHeight: 0 }}>
         <LeftPanel
-          isMobile={isMobile} mobileColumn={mobileColumn} faces={leftFaces}
-          zoneTheme={zoneTheme} S={ui.S}
+          isMobile={isMobile} mobileColumn={mobileColumn} faces={leftFaces} zoneName={ui.zoneName} S={ui.S}
           room={room} innerRoomName={innerRoomName} time={time}
           varTree={varTree} char={char}
           inputRef={ui.inputRef} addLog={addLog}
@@ -172,8 +171,7 @@ export default function GameLayout({ layout }) {
 
         <RightPanel
           isMobile={isMobile} mobileColumn={mobileColumn} faces={rightFaces}
-          questProgress={questProgress} flags={flags}
-          zoneTheme={zoneTheme} S={ui.S}
+          questProgress={questProgress} flags={flags} S={ui.S}
           char={char} inv={inv} skills={skills} exp={exp} pot={pot}
           playerAvatar={ui.playerAvatar}
           companionState={companionState} onSwitchCompanion={playerActionHandlers.handleSwitchCompanion}
@@ -190,28 +188,27 @@ export default function GameLayout({ layout }) {
         />
       </div>
 
-      {isMobile && <MobileTabBar theme={zoneTheme} column={mobileColumn} onSelect={setMobileColumn}
+      {isMobile && <MobileTabBar theme={THEME_VARS} column={mobileColumn} onSelect={setMobileColumn}
         leftFaces={leftFaces} rightFaces={rightFaces} />}
 
       {mapBig && (
         <Suspense fallback={null}>
           <BigMapModal
-            zoneTheme={zoneTheme}
             act={turn.act}
             autoTravelTo={turn.autoTravelTo}
           />
         </Suspense>
       )}
 
-      <NoticeToast zoneTheme={zoneTheme} />
+      <NoticeToast />
 
       <style>{`
         @keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
         ::-webkit-scrollbar{width:3px}
         ::-webkit-scrollbar-track{background:transparent}
-        ::-webkit-scrollbar-thumb{background:${zoneTheme.border};border-radius:2px}
-        ::selection{background:${zoneTheme.accentDim}}
-        input::placeholder{color:${zoneTheme.textDim}}
+        ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+        ::selection{background:var(--accent-dim)}
+        input::placeholder{color:var(--text-dim)}
         .log-streaming{opacity:0.92}
         .qbtn{transition:filter .15s ease,border-color .15s ease}
         .qbtn:hover{filter:brightness(1.25)}

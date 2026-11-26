@@ -19,7 +19,7 @@ import {
 // （被拒时的那句话），什么时候能做什么让玩家从她的反应里自己摸出来。
 // 心结进度是例外——那是叙事进度不是数值，给玩家看是应该的。
 export default function SeaOfMindScreen({
-  narratorVars, invNames = [], zoneTheme,
+  narratorVars, invNames = [],
   onComfort, onResolve, onClose, inline,
 }) {
   const comfort = narratorVars.comfort || {};
@@ -30,7 +30,7 @@ export default function SeaOfMindScreen({
 
   return (
     <div style={{
-      flexShrink: 0, borderBottom: `1px solid ${zoneTheme.border}`,
+      flexShrink: 0, borderBottom: `1px solid var(--border)`,
       background: "linear-gradient(180deg, rgba(232,200,106,0.07), transparent)",
       padding: "10px 16px",
     }}>
@@ -38,7 +38,7 @@ export default function SeaOfMindScreen({
         <span style={{ color: "var(--mind-gold)", fontSize: "var(--fs-sm)" }}>⟡ 她蜷在沙发角落里</span>
         <span style={{ flex: 1 }} />
         {onClose && (
-          <span onClick={onClose} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "var(--fs-2xs)" }}>▾ 收起</span>
+          <span onClick={onClose} style={{ cursor: "pointer", color: "var(--text-dim)", fontSize: "var(--fs-2xs)" }}>▾ 收起</span>
         )}
       </div>
 
@@ -63,20 +63,13 @@ export default function SeaOfMindScreen({
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         {Object.entries(COMFORT_ACTIONS).map(([key, spec]) => {
           const gate = canComfort(key, comfort, invNames);
+          // 越级/缺物**不置灰也不禁用**——玩家该被允许试，然后从她的反应里
+          // 知道时候未到。置灰等于把机制摊开，那一段的手感就没了。
           return (
             <span
               key={key}
               onClick={() => onComfort(key)}
-              title={spec.needItem ? `需要「${spec.needItem}」` : ""}
-              style={{
-                cursor: "pointer", userSelect: "none",
-                fontSize: "var(--fs-xs)", padding: "4px 11px", borderRadius: 0,
-                // 越级/缺物**不置灰也不禁用**——玩家该被允许试，然后从她的反应里
-                // 知道时候未到。置灰等于把机制摊开，那一段的手感就没了。
-                color: gate.ok ? "var(--mind-gate-ok)" : "var(--text-dim)",
-                border: `1px solid ${gate.ok ? "var(--mind-gate-ok-edge)" : "var(--mind-gate-edge)"}`,
-                background: gate.ok ? "rgba(232,200,106,.08)" : "transparent",
-              }}
+              title={spec.needItem ? `需要「${spec.needItem}」` : ""} className="mind-gate-btn" data-on={Boolean(gate.ok)}
             >
               {spec.label}
               {spec.needItem && !invNames.includes(spec.needItem) && (
@@ -90,12 +83,7 @@ export default function SeaOfMindScreen({
       {/* 收束入口：三结说尽且心防够低才出现 */}
       {resolvable && (
         <div
-          onClick={onResolve}
-          style={{
-            marginTop: 9, padding: "7px 10px", borderRadius: 0, cursor: "pointer",
-            border: "1px solid var(--mind-button-edge)", background: "rgba(232,200,106,.13)",
-            color: "var(--mind-button-text)", fontSize: "var(--fs-sm)", textAlign: "center",
-          }}
+          onClick={onResolve} className="mind-confess-btn"
         >
           ⟡ 跟她说那句她自己说不出口的话
         </div>
@@ -103,7 +91,7 @@ export default function SeaOfMindScreen({
 
       {/* 引导：只在她还没开口时提一句，且不提数值 */}
       {!resolvable && (
-        <div style={{ marginTop: 7, fontSize: "var(--fs-2xs)", color: zoneTheme.textDim, lineHeight: 1.7 }}>
+        <div style={{ marginTop: 7, fontSize: "var(--fs-2xs)", color: "var(--text-dim)", lineHeight: 1.7 }}>
           {/* 只给感受与方向，不报数值、不列门槛清单——什么时候该做什么让玩家从她的
               反应里摸。但"心防够了却因为方式不对开不了下一条"这种情况必须给个方向，
               否则玩家会以为卡住了（他会一直说话，而说话正是推不动那一条的原因）。 */}

@@ -3,7 +3,7 @@ import { DEFAULT_PRESETS } from "../../engine/newGame.js";
 import { canBypassExclusive, getCurrentStage, isQuestGateOpen } from "../../domain/rules/quests/questEngine.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { getLocalQuestStage } from "../../domain/rules/quests/localStages.js";
-import { getZoneTheme, ink } from "../../utils/theme.js";
+import { getZoneName } from "../../utils/theme.js";
 
 import { isNpcVisibleInInnerRoom as isVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { loadPortraits, getSnowLeopardForm, getPearlForm } from "../../domain/rules/companion/portraits.js";
@@ -24,6 +24,7 @@ import { getGroundItems } from "../../domain/rules/map/groundScope.js";
 import { isAtQuestPlace } from "../../domain/rules/quests/questPlace.js";
 import { stampLogEntries } from "../../domain/rules/log/logTypes.js";
 import { gameStore } from "../../store/gameStore.js";
+import { isMobileViewport } from "../../utils/viewport.js";
 
 const AVATAR_GENDER_DEFAULT = "__gender_default__";
 
@@ -74,7 +75,7 @@ export function useGameUi({
   useEffect(() => {
     refreshApiCfg();
     setSettingsInitialTab(null);
-    setIsMobile(typeof window !== "undefined" && window.innerWidth < 768);
+    setIsMobile(isMobileViewport());
   }, []);
   const [outfitState, setOutfitState] = useState({ loading: false, picks: [], error: "" });
   const pigeonTarget = useSessionUi(s => s.pigeonTarget);
@@ -171,22 +172,19 @@ export function useGameUi({
   const AV_BASE = ((import.meta.env && import.meta.env.BASE_URL) || "/") + "portraits/player/";
   const genderAvatar = { "男": AV_BASE + "male.webp", "女": AV_BASE + "female.webp" };
   const playerAvatar = playerAvatarCustom || genderAvatar[char.gender] || (AV_BASE + "other.webp");
-  const zoneTheme = getZoneTheme(room.name, isDayMode);
   const clrNight = { sys: "var(--ink-good)", cmd: "var(--ink-warn)", desc: "var(--ink-text)", room: "var(--ink-accent)", item: "var(--gold)", stat: "var(--log-stat)", skill: "var(--violet)", err: "var(--red-soft)", choice: "var(--log-choice)", narrator: "var(--pink)", crash: "var(--red-soft)", confess: "var(--ember)", affection: "var(--log-affection)", quest: "var(--ember)" };
   const clrDay = { sys: "var(--good)", cmd: "var(--warn)", desc: "var(--log-desc)", room: "var(--log-room)", item: "var(--log-item)", stat: "var(--info)", skill: "var(--log-skill)", err: "var(--accent)", choice: "var(--log-choice)", narrator: "var(--log-narrator)", crash: "var(--accent)", confess: "var(--log-quest)", affection: "var(--log-affection)", quest: "var(--log-quest)" };
   const clr = isDayMode ? clrDay : clrNight;
-  const uiPink = ink("pink", isDayMode);
-  const uiGreen = ink("green", isDayMode);
-  const uiTurquoise = ink("turquoise", isDayMode);
-  const uiGold = ink("gold", isDayMode);
-  const uiCrimson = ink("crimson", isDayMode);
-  const inkDivider = `linear-gradient(90deg, transparent, ${zoneTheme.border}, transparent)`;
+  // NPC 名与好感的语义色，取值在 tokens.css，随日夜切换。
+  const uiPink = "var(--npc-affection)";
+  const uiGreen = "var(--npc-name)";
+  const inkDivider = `linear-gradient(90deg, transparent, var(--border), transparent)`;
   const S = {
-    panel: { display: "flex", flexDirection: "column", borderRight: `1px solid ${zoneTheme.border}`, minWidth: 0, overflow: "hidden" },
+    panel: { display: "flex", flexDirection: "column", borderRight: `1px solid var(--border)`, minWidth: 0, overflow: "hidden" },
     label: {
       padding: isMobile ? "6px 14px" : "0 14px", minHeight: 38, boxSizing: "border-box", display: "flex", alignItems: "center", gap: 6,
-      color: zoneTheme.accentDim, fontSize: "11px", letterSpacing: "2px",
-      borderBottom: "none", backgroundImage: `linear-gradient(180deg, transparent, transparent calc(100% - 1px), ${zoneTheme.border} calc(100% - 1px))`,
+      color: "var(--accent-dim)", fontSize: "11px", letterSpacing: "2px",
+      borderBottom: "none", backgroundImage: `linear-gradient(180deg, transparent, transparent calc(100% - 1px), var(--border) calc(100% - 1px))`,
       flexShrink: 0,
     },
     scroll: { flex: 1, padding: "10px 16px", overflowY: "auto", overflowX: "hidden", fontSize: "12.5px", lineHeight: 1.8, wordBreak: "break-word" },
@@ -216,8 +214,10 @@ export function useGameUi({
     activePersuasion, setActivePersuasion, activeBuilding, setActiveBuilding,
     gambleNegotiation, setGambleNegotiation, buildingPanelMinimized, setBuildingPanelMinimized,
     justMeditated, setJustMeditated, tradingShop, setTradingShop, inputRef, logEnd, composingRef,
-    availableQuestsHere, AV_BASE, genderAvatar, playerAvatar, zoneTheme,
-    clr, uiPink, uiGreen, uiTurquoise, uiGold, uiCrimson, inkDivider, S,
+    availableQuestsHere, AV_BASE, genderAvatar, playerAvatar,
+    // 分区名是文案数据（如「人间烟火·昼」），与颜色分开提供；颜色一律走 CSS 变量。
+    zoneName: getZoneName(room.name, isDayMode),
+    clr, uiPink, uiGreen, inkDivider, S,
     buildBugReportTurns, getLiveBlockText,
   };
 }

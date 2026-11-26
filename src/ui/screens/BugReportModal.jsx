@@ -13,6 +13,7 @@ import { submitBugReport } from "../../infra/bugReport.js";
 import { CURRENT_VERSION } from "../../utils/version.js";
 import { getRngState } from "../../utils/rng.js";
 import { buildModalDebugBundle, getSelectedBugReportTurns } from "./bugReportDebugBundle.js";
+import ModalShell from "../primitives/ModalShell.jsx";
 
 const EMPTY_DEBUG_SOURCES = Object.freeze({ version: CURRENT_VERSION, rngState: getRngState });
 
@@ -116,134 +117,127 @@ export default function BugReportModal({
   };
   const labelStyle = { fontSize: "var(--fs-sm)", color: C.accent, fontWeight: "bold" };
 
+  // 标题栏沿用自己的（粗体大标题、✕ 按钮），外壳只管遮罩、层级、关闭与手机全屏。
+    // 原先在遮罩上按下即关闭，现在走外壳的防拖选判定：按下和松开都在遮罩上才关。
   return (
-    <div
-      className="mobile-overlay-root"
-      style={{ position: "fixed", inset: 0, background: C.overlay, zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
-      onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className="mobile-overlay-panel mobile-report-panel" style={{ position: "relative", width: 440, maxWidth: "94vw", maxHeight: "88vh", overflowY: "auto", background: C.panel, border: `1px solid ${C.border}`, borderRadius: 0, padding: "22px 24px", color: C.text }}>
-        <div className="mobile-overlay-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, background: C.panel }}>
-          <div style={{ fontSize: "var(--fs-lg)", fontWeight: "bold", color: C.accent, marginBottom: 4 }}>🐞 上报 Bug · 意见信箱</div>
-          <span className="mobile-overlay-close" onClick={onClose} aria-label="关闭上报窗口" style={{ cursor: "pointer", fontSize: "var(--fs-xl)", color: C.dim }}>✕</span>
-        </div>
-        <div style={{ fontSize: "var(--fs-sm)", color: C.dim, marginBottom: 16, lineHeight: 1.7 }}>
-          遇到问题、想要的功能、任何想说的，都可以留在这里。
-        </div>
-
-        {result?.ok ? (
-          <div style={{ textAlign: "center", padding: "24px 0" }}>
-            <div style={{ fontSize: "var(--fs-base)", color: "var(--bug-ok)", marginBottom: 8 }}>✓ 已收到，多谢！</div>
-            <div style={{ fontSize: "var(--fs-sm)", color: C.dim, marginBottom: result.pipelineWarning ? 6 : 18 }}>你的反馈已送达开发者，会尽快看到。</div>
-            {result.pipelineWarning && (
-              <div style={{ fontSize: "var(--fs-xs)", color: "var(--bug-warn)", marginBottom: 18 }}>{result.pipelineWarning}</div>
-            )}
-            <span onClick={onClose} style={{ cursor: "pointer", padding: "6px 20px", border: `1px solid ${C.border}`, borderRadius: 0, color: C.text }}>关闭</span>
-          </div>
-        ) : (
-          <>
-            <div style={{ marginBottom: 12 }}>
-              <div style={labelStyle}>描述遇到的 Bug（可选）</div>
-              <textarea value={bugDesc} onChange={e => setBugDesc(e.target.value)} rows={2} placeholder="比如：从A箱庭走到B，新人物没刷新…" style={inputStyle} />
-            </div>
-            <div style={{ marginBottom: 12 }}>
-              <div style={labelStyle}>想加的功能（可选）</div>
-              <textarea value={featureWish} onChange={e => setFeatureWish(e.target.value)} rows={2} placeholder="希望游戏加点什么…" style={inputStyle} />
-            </div>
-            <div style={{ marginBottom: 14 }}>
-              <div style={labelStyle}>任何意见建议（可选）</div>
-              <textarea value={misc} onChange={e => setMisc(e.target.value)} rows={2} placeholder="吐槽、夸奖、随便说…" style={inputStyle} />
-            </div>
-
-            {/* 选择附带的聊天记录（按回合勾选，可展开看内容）——仅游戏内有 turns */}
-            {turns.length > 0 && (
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                  <span style={labelStyle}>附带聊天记录（选要发的回合）</span>
-                  <span onClick={toggleAll} style={{ cursor: "pointer", fontSize: "var(--fs-xs)", color: C.accent }}>
-                    {allSelected ? "全不选" : "全选"}（已选 {selectedTurns.size}/{turns.length}）
-                  </span>
-                </div>
-                <div style={{ maxHeight: 180, overflowY: "auto", border: `1px solid ${C.border}`, borderRadius: 0, padding: 4 }}>
-                  {turns.map((t, i) => (
-                    <div key={i} style={{ borderBottom: i < turns.length - 1 ? `1px solid color-mix(in srgb, ${C.border} 33%, transparent)` : "none", padding: "3px 2px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <input type="checkbox" checked={selectedTurns.has(i)} onChange={() => toggleTurn(i)} style={{ flexShrink: 0 }} />
-                        <span onClick={() => toggleTurn(i)} style={{ flex: 1, cursor: "pointer", fontSize: "var(--fs-sm)", color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.label}</span>
-                        <span onClick={() => setExpandedTurn(expandedTurn === i ? null : i)} style={{ cursor: "pointer", fontSize: "var(--fs-xs)", color: C.dim, flexShrink: 0 }}>
-                          {expandedTurn === i ? "收起" : "查看"}
-                        </span>
-                      </div>
-                      {expandedTurn === i && (
-                        <div style={{ marginLeft: 22, marginTop: 4, marginBottom: 4, padding: "6px 8px", background: C.inputBg, borderRadius: 0, fontSize: "var(--fs-xs)", color: C.dim, lineHeight: 1.7, whiteSpace: "pre-wrap", maxHeight: 160, overflowY: "auto" }}>
-                          {t.preview || "（无文本内容）"}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div style={{ marginBottom: 14, padding: "8px 10px", border: `1px solid ${C.border}` }}>
-              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: "var(--fs-sm)", color: C.text }}>
-                <input type="checkbox" checked={includeDebugBundle} onChange={e => setIncludeDebugBundle(e.target.checked)} />
-                <span>附带调试包（存档、游戏日志、错误；对话和行动记录按勾选附带）</span>
-              </label>
-              {actionTrees.length > 0 && (
-                <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, fontSize: "var(--fs-sm)", color: C.dim }}>
-                  <input type="checkbox" disabled={!includeDebugBundle} checked={includeActionTrees} onChange={e => setIncludeActionTrees(e.target.checked)} />
-                  <span>附带全流程行动记录（{actionTrees.length} 条，含 AI 输入和回复）</span>
-                </label>
-              )}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginTop: 7, fontSize: "var(--fs-xs)", color: C.dim }}>
-                <span>调试包大小：{formattedBundleSize}</span>
-                <button type="button" onClick={() => downloadDebugBundle(debugBundle)} style={{ cursor: "pointer", padding: "4px 8px", color: C.text, background: C.inputBg, border: `1px solid ${C.border}` }}>
-                  仅下载调试包
-                </button>
-              </div>
-            </div>
-
-            {/* 知情声明 + 勾选 */}
-            <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer", padding: "10px 12px", background: dark ? "rgba(212,168,83,0.08)" : "rgba(138,90,18,0.06)", borderRadius: 0, marginBottom: 14 }}>
-              <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} style={{ marginTop: 2, flexShrink: 0 }} />
-              <span style={{ fontSize: "var(--fs-sm)", color: C.dim, lineHeight: 1.7 }}>
-                我同意在提交时，将<b style={{ color: C.text }}>本局的聊天/游戏记录</b>一并发送给开发者用于排查问题。
-                这些记录<b style={{ color: C.text }}>仅用于 debug</b>，不收集你的任何其他数据（不涉及账号、位置、设备指纹等）。
-              </span>
-            </label>
-
-            {result && !result.ok && (
-              <div style={{ fontSize: "var(--fs-sm)", color: "var(--bug-error)", marginBottom: 10, lineHeight: 1.6 }}>
-                提交失败：{result.error}
-                {failedReport && (
-                  <button type="button" onClick={() => {
-                    const config = typeof debugSources?.apiConfig === "function" ? debugSources.apiConfig() : debugSources?.apiConfig;
-                    downloadFailedReport(failedReport, config);
-                  }} style={{ display: "block", cursor: "pointer", marginTop: 8, padding: "5px 9px", color: C.text, background: C.inputBg, border: `1px solid ${C.border}` }}>
-                    下载未提交报告
-                  </button>
-                )}
-              </div>
-            )}
-
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, alignItems: "center" }}>
-              <span onClick={onClose} style={{ cursor: "pointer", fontSize: "var(--fs-sm)", color: C.dim, padding: "6px 14px" }}>取消</span>
-              <span
-                onClick={submit}
-                style={{
-                  cursor: agreed && !sending ? "pointer" : "not-allowed",
-                  padding: "6px 20px", borderRadius: 0, fontSize: "var(--fs-md)", fontWeight: "bold",
-                  background: agreed && !sending ? C.accent : (dark ? "var(--border)" : "var(--bug-button-off-light)"),
-                  color: agreed && !sending ? (dark ? "var(--bug-button-text-dark)" : "var(--white)") : C.dim,
-                  border: "none",
-                }}
-              >{sending ? "上传中…" : "提交"}</span>
-            </div>
-            {!agreed && <div style={{ fontSize: "var(--fs-xs)", color: C.dim, textAlign: "right", marginTop: 6 }}>需先勾选同意才能提交</div>}
-          </>
-        )}
+    // 有三个文本框，原先也没有 Esc 关闭，误按会丢掉已写的内容，所以不开 Esc。
+    <ModalShell onClose={onClose} layer="dialog" showClose={false} closeOnEsc={false} ariaLabel="上报 Bug · 意见信箱"
+      rootStyle={{ background: C.overlay, padding: 16 }}
+      panelClassName="mobile-report-panel"
+      panelStyle={{ width: 440, maxWidth: "94vw", maxHeight: "88vh", background: C.panel, border: `1px solid ${C.border}`, padding: "22px 24px", color: C.text }}>
+      <div className="mobile-overlay-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, background: C.panel }}>
+        <div style={{ fontSize: "var(--fs-lg)", fontWeight: "bold", color: C.accent, marginBottom: 4 }}>🐞 上报 Bug · 意见信箱</div>
+        <span className="mobile-overlay-close" onClick={onClose} aria-label="关闭上报窗口" style={{ cursor: "pointer", fontSize: "var(--fs-xl)", color: C.dim }}>✕</span>
       </div>
-    </div>
+      <div style={{ fontSize: "var(--fs-sm)", color: C.dim, marginBottom: 16, lineHeight: 1.7 }}>
+        遇到问题、想要的功能、任何想说的，都可以留在这里。
+      </div>
+
+      {result?.ok ? (
+        <div style={{ textAlign: "center", padding: "24px 0" }}>
+          <div style={{ fontSize: "var(--fs-base)", color: "var(--bug-ok)", marginBottom: 8 }}>✓ 已收到，多谢！</div>
+          <div style={{ fontSize: "var(--fs-sm)", color: C.dim, marginBottom: result.pipelineWarning ? 6 : 18 }}>你的反馈已送达开发者，会尽快看到。</div>
+          {result.pipelineWarning && (
+            <div style={{ fontSize: "var(--fs-xs)", color: "var(--bug-warn)", marginBottom: 18 }}>{result.pipelineWarning}</div>
+          )}
+          <span onClick={onClose} className="bug-report-modal-1" style={{ border: `1px solid ${C.border}`, color: C.text }}>关闭</span>
+        </div>
+      ) : (
+        <>
+          <div style={{ marginBottom: 12 }}>
+            <div style={labelStyle}>描述遇到的 Bug（可选）</div>
+            <textarea value={bugDesc} onChange={e => setBugDesc(e.target.value)} rows={2} placeholder="比如：从A箱庭走到B，新人物没刷新…" style={inputStyle} />
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <div style={labelStyle}>想加的功能（可选）</div>
+            <textarea value={featureWish} onChange={e => setFeatureWish(e.target.value)} rows={2} placeholder="希望游戏加点什么…" style={inputStyle} />
+          </div>
+          <div style={{ marginBottom: 14 }}>
+            <div style={labelStyle}>任何意见建议（可选）</div>
+            <textarea value={misc} onChange={e => setMisc(e.target.value)} rows={2} placeholder="吐槽、夸奖、随便说…" style={inputStyle} />
+          </div>
+
+          {/* 选择附带的聊天记录（按回合勾选，可展开看内容）——仅游戏内有 turns */}
+          {turns.length > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={labelStyle}>附带聊天记录（选要发的回合）</span>
+                <span onClick={toggleAll} style={{ cursor: "pointer", fontSize: "var(--fs-xs)", color: C.accent }}>
+                  {allSelected ? "全不选" : "全选"}（已选 {selectedTurns.size}/{turns.length}）
+                </span>
+              </div>
+              <div style={{ maxHeight: 180, overflowY: "auto", border: `1px solid ${C.border}`, borderRadius: 0, padding: 4 }}>
+                {turns.map((t, i) => (
+                  <div key={i} style={{ borderBottom: i < turns.length - 1 ? `1px solid color-mix(in srgb, ${C.border} 33%, transparent)` : "none", padding: "3px 2px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <input type="checkbox" checked={selectedTurns.has(i)} onChange={() => toggleTurn(i)} style={{ flexShrink: 0 }} />
+                      <span onClick={() => toggleTurn(i)} style={{ flex: 1, cursor: "pointer", fontSize: "var(--fs-sm)", color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.label}</span>
+                      <span onClick={() => setExpandedTurn(expandedTurn === i ? null : i)} style={{ cursor: "pointer", fontSize: "var(--fs-xs)", color: C.dim, flexShrink: 0 }}>
+                        {expandedTurn === i ? "收起" : "查看"}
+                      </span>
+                    </div>
+                    {expandedTurn === i && (
+                      <div style={{ marginLeft: 22, marginTop: 4, marginBottom: 4, padding: "6px 8px", background: C.inputBg, borderRadius: 0, fontSize: "var(--fs-xs)", color: C.dim, lineHeight: 1.7, whiteSpace: "pre-wrap", maxHeight: 160, overflowY: "auto" }}>
+                        {t.preview || "（无文本内容）"}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div style={{ marginBottom: 14, padding: "8px 10px", border: `1px solid ${C.border}` }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: "var(--fs-sm)", color: C.text }}>
+              <input type="checkbox" checked={includeDebugBundle} onChange={e => setIncludeDebugBundle(e.target.checked)} />
+              <span>附带调试包（存档、游戏日志、错误；对话和行动记录按勾选附带）</span>
+            </label>
+            {actionTrees.length > 0 && (
+              <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, fontSize: "var(--fs-sm)", color: C.dim }}>
+                <input type="checkbox" disabled={!includeDebugBundle} checked={includeActionTrees} onChange={e => setIncludeActionTrees(e.target.checked)} />
+                <span>附带全流程行动记录（{actionTrees.length} 条，含 AI 输入和回复）</span>
+              </label>
+            )}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginTop: 7, fontSize: "var(--fs-xs)", color: C.dim }}>
+              <span>调试包大小：{formattedBundleSize}</span>
+              <button type="button" onClick={() => downloadDebugBundle(debugBundle)} className="bug-report-modal-2" style={{ color: C.text, background: C.inputBg, border: `1px solid ${C.border}` }}>
+                仅下载调试包
+              </button>
+            </div>
+          </div>
+
+          {/* 知情声明 + 勾选 */}
+          <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer", padding: "10px 12px", background: dark ? "rgba(212,168,83,0.08)" : "rgba(138,90,18,0.06)", borderRadius: 0, marginBottom: 14 }}>
+            <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} style={{ marginTop: 2, flexShrink: 0 }} />
+            <span style={{ fontSize: "var(--fs-sm)", color: C.dim, lineHeight: 1.7 }}>
+              我同意在提交时，将<b style={{ color: C.text }}>本局的聊天/游戏记录</b>一并发送给开发者用于排查问题。
+              这些记录<b style={{ color: C.text }}>仅用于 debug</b>，不收集你的任何其他数据（不涉及账号、位置、设备指纹等）。
+            </span>
+          </label>
+
+          {result && !result.ok && (
+            <div style={{ fontSize: "var(--fs-sm)", color: "var(--bug-error)", marginBottom: 10, lineHeight: 1.6 }}>
+              提交失败：{result.error}
+              {failedReport && (
+                <button type="button" onClick={() => {
+                  const config = typeof debugSources?.apiConfig === "function" ? debugSources.apiConfig() : debugSources?.apiConfig;
+                  downloadFailedReport(failedReport, config);
+                }} className="bug-report-modal-3" style={{ color: C.text, background: C.inputBg, border: `1px solid ${C.border}` }}>
+                  下载未提交报告
+                </button>
+              )}
+            </div>
+          )}
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, alignItems: "center" }}>
+            <span onClick={onClose} style={{ cursor: "pointer", fontSize: "var(--fs-sm)", color: C.dim, padding: "6px 14px" }}>取消</span>
+            <span
+              onClick={submit} className="bug-report-modal-4" data-on={Boolean(agreed && !sending)} style={{ background: agreed && !sending ? C.accent : (dark ? "var(--border)" : "var(--bug-button-off-light)"), color: agreed && !sending ? (dark ? "var(--bug-button-text-dark)" : "var(--white)") : C.dim }}
+            >{sending ? "上传中…" : "提交"}</span>
+          </div>
+          {!agreed && <div style={{ fontSize: "var(--fs-xs)", color: C.dim, textAlign: "right", marginTop: 6 }}>需先勾选同意才能提交</div>}
+        </>
+      )}
+    </ModalShell>
   );
 }

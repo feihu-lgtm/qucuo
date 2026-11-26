@@ -4,8 +4,8 @@ import {
   exportConfigProfiles, importConfigProfiles, migrateProvider,
 } from "../../../infra/apiConfig.js";
 import { getApiModel } from "../../../infra/apiModel.js";
-import { inputStyle, sectionStyle, btnStyle } from "./styles.js";
 import { downloadText, pickTextFile, ts } from "./fileIo.js";
+import { Button, Panel } from "../../primitives/index.js";
 
 // API 配置 ·「配置管理」组：多套配置的保存 / 切换 / 删除 / 导出导入。
 export default function ApiProfilesFields({
@@ -43,13 +43,12 @@ export default function ApiProfilesFields({
       <div style={{ border: "1px solid var(--border)", borderRadius: 0, padding: "8px 10px", marginBottom: 12, background: "var(--bg-panel)" }}>
         <div style={{ fontSize: "var(--fs-xs)", color: "var(--info)", marginBottom: 6 }}>配置管理（多套 API 配置 · 落盘导出/导入）</div>
         <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
-          <input
-            style={{ ...inputStyle, flex: 1, marginBottom: 0 }}
+          <input className="ui-input" style={{ flex: 1, marginBottom: 0 }}
             value={cfgProfileName}
             onChange={e => setCfgProfileName(e.target.value)}
             placeholder="给当前配置起个名（如 DS主号 / 备用）"
           />
-          <span onClick={handleSaveCfgProfile} style={{ ...btnStyle, whiteSpace: "nowrap" }}>保存这套</span>
+          <Button variant="settings" onClick={handleSaveCfgProfile} style={{ whiteSpace: "nowrap" }}>保存这套</Button>
         </div>
         {cfgProfiles.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 6 }}>
@@ -65,13 +64,13 @@ export default function ApiProfilesFields({
           </div>
         )}
         <div style={{ display: "flex", gap: 6 }}>
-          <span onClick={handleExportCfg} style={{ ...btnStyle, flex: 1, textAlign: "center" }}>导出配置到文件</span>
-          <span onClick={handleImportCfg} style={{ ...btnStyle, flex: 1, textAlign: "center" }}>从文件导入配置</span>
+          <Button variant="settings" onClick={handleExportCfg} style={{ flex: 1, textAlign: "center" }}>导出配置到文件</Button>
+          <Button variant="settings" onClick={handleImportCfg} style={{ flex: 1, textAlign: "center" }}>从文件导入配置</Button>
         </div>
       </div>
-      <div style={{ ...sectionStyle, background: "var(--bg-panel)", border: "1px solid var(--border)", padding: 10, fontSize: "var(--fs-xs)", color: "var(--text-dim)" }}>
+      <Panel variant="section" style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", padding: 10, fontSize: "var(--fs-xs)", color: "var(--text-dim)" }}>
         凭证保存在当前浏览器中，请勿在公共设备上导入。Vertex AI 直接连接 Google，不使用代理。
-      </div>
+      </Panel>
     </>
   );
 }

@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { setPortrait, removePortrait, fileToDataUrl, resolvePortrait, hasBuiltinPortrait } from "../../domain/rules/companion/portraits.js";
 import { loadComfyConfig, saveComfyConfig, generateComfyUIPortrait } from "../../infra/comfyui.js";
-import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
+import ModalShell from "../primitives/ModalShell.jsx";
 
 const btnStyle = {
   cursor: "pointer", color: "var(--accent)", padding: "4px 10px", background: "var(--bg-panel)",
@@ -13,7 +13,6 @@ const inputStyle = {
 };
 
 export default function PortraitManager({ portraits, onChange, knownNames, onClose }) {
-  const closeGuard = useOverlayCloseGuard(onClose);
   const [customName, setCustomName] = useState("");
   const [uploadTarget, setUploadTarget] = useState(null);
   const fileInputRef = useRef(null);
@@ -82,123 +81,120 @@ export default function PortraitManager({ portraits, onChange, knownNames, onClo
     triggerUpload(name);
   };
 
+  // 标题栏沿用自己的（下边距 10，与外壳默认 12 不同）；手机上原本不全屏，保持 mobile="none"。
   return (
-    <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
-      <div
-        style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: 20, width: 520, maxWidth: "92vw", maxHeight: "85vh", overflowY: "auto", fontSize: "var(--fs-md)", color: "var(--text)" }}
-        onClick={e => e.stopPropagation()}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-          <span style={{ color: "var(--accent)", fontSize: "var(--fs-base)" }}>立绘管理</span>
-          <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
-        </div>
-        <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 14 }}>
-          为旁白、主角本人、或任意已登场角色导入立绘图片，建议比例 9:16（竖版）。
-          图片保存在浏览器本地存储中，不会上传到任何服务器。
-        </div>
+    <ModalShell onClose={onClose} layer="screen-high" mobile="none" showClose={false} ariaLabel="立绘管理"
+      panelClassName="portrait-manager-panel" panelStyle={{ width: 520, maxWidth: "92vw" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+        <span style={{ color: "var(--accent)", fontSize: "var(--fs-base)" }}>立绘管理</span>
+        <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
+      </div>
+      <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 14 }}>
+        为旁白、主角本人、或任意已登场角色导入立绘图片，建议比例 9:16（竖版）。
+        图片保存在浏览器本地存储中，不会上传到任何服务器。
+      </div>
 
-        <div style={{ border: "1px solid var(--border)", borderRadius: 0, padding: 10, marginBottom: 14 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: comfyCfg.enabled ? 8 : 0 }}>
-            <span style={{ color: "var(--accent)", fontSize: "var(--fs-sm)" }}>⚡ ComfyUI 云端自动生成</span>
-            <label style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-              <input type="checkbox" checked={comfyCfg.enabled} onChange={e => updateComfyCfg({ enabled: e.target.checked })} />
-              启用
-            </label>
-          </div>
-          {comfyCfg.enabled && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ border: "1px solid var(--border)", borderRadius: 0, padding: 10, marginBottom: 14 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: comfyCfg.enabled ? 8 : 0 }}>
+          <span style={{ color: "var(--accent)", fontSize: "var(--fs-sm)" }}>⚡ ComfyUI 云端自动生成</span>
+          <label style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+            <input type="checkbox" checked={comfyCfg.enabled} onChange={e => updateComfyCfg({ enabled: e.target.checked })} />
+            启用
+          </label>
+        </div>
+        {comfyCfg.enabled && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <input
+              value={comfyCfg.baseUrl} onChange={e => updateComfyCfg({ baseUrl: e.target.value })}
+              placeholder="ComfyUI 云端地址，例如 https://xxxx.example.com:8188"
+              style={inputStyle}
+            />
+            <textarea
+              value={comfyCfg.workflowJson} onChange={e => updateComfyCfg({ workflowJson: e.target.value })}
+              placeholder="粘贴 ComfyUI 工作流 JSON（页面菜单「Save (API Format)」导出）"
+              style={{ ...inputStyle, height: 64, fontFamily: "monospace", fontSize: "var(--fs-xs)", resize: "vertical" }}
+            />
+            <div style={{ display: "flex", gap: 6 }}>
+              <input type="number" title="宽度" value={comfyCfg.width} onChange={e => updateComfyCfg({ width: +e.target.value || 768 })} style={{ ...inputStyle, width: 64 }} />
+              <input type="number" title="高度" value={comfyCfg.height} onChange={e => updateComfyCfg({ height: +e.target.value || 1152 })} style={{ ...inputStyle, width: 64 }} />
+              <input type="number" title="采样步数" value={comfyCfg.steps} onChange={e => updateComfyCfg({ steps: +e.target.value || 20 })} style={{ ...inputStyle, width: 56 }} />
+              <input type="number" title="CFG Scale" step="0.5" value={comfyCfg.cfg} onChange={e => updateComfyCfg({ cfg: +e.target.value || 7 })} style={{ ...inputStyle, width: 56 }} />
               <input
-                value={comfyCfg.baseUrl} onChange={e => updateComfyCfg({ baseUrl: e.target.value })}
-                placeholder="ComfyUI 云端地址，例如 https://xxxx.example.com:8188"
-                style={inputStyle}
+                value={comfyCfg.negativePrompt} onChange={e => updateComfyCfg({ negativePrompt: e.target.value })}
+                placeholder="负向提示词" style={{ ...inputStyle, flex: 1 }}
               />
-              <textarea
-                value={comfyCfg.workflowJson} onChange={e => updateComfyCfg({ workflowJson: e.target.value })}
-                placeholder="粘贴 ComfyUI 工作流 JSON（页面菜单「Save (API Format)」导出）"
-                style={{ ...inputStyle, height: 64, fontFamily: "monospace", fontSize: "var(--fs-xs)", resize: "vertical" }}
-              />
-              <div style={{ display: "flex", gap: 6 }}>
-                <input type="number" title="宽度" value={comfyCfg.width} onChange={e => updateComfyCfg({ width: +e.target.value || 768 })} style={{ ...inputStyle, width: 64 }} />
-                <input type="number" title="高度" value={comfyCfg.height} onChange={e => updateComfyCfg({ height: +e.target.value || 1152 })} style={{ ...inputStyle, width: 64 }} />
-                <input type="number" title="采样步数" value={comfyCfg.steps} onChange={e => updateComfyCfg({ steps: +e.target.value || 20 })} style={{ ...inputStyle, width: 56 }} />
-                <input type="number" title="CFG Scale" step="0.5" value={comfyCfg.cfg} onChange={e => updateComfyCfg({ cfg: +e.target.value || 7 })} style={{ ...inputStyle, width: 56 }} />
-                <input
-                  value={comfyCfg.negativePrompt} onChange={e => updateComfyCfg({ negativePrompt: e.target.value })}
-                  placeholder="负向提示词" style={{ ...inputStyle, flex: 1 }}
-                />
-              </div>
-              <div style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)" }}>
-                地址和工作流保存在本地，生成请求经本地开发服务器转发（绕开跨域限制），不经过任何第三方。
-                启用后，下方每个已登场角色的卡片会多出一个提示词输入框和「⚡生成」。
-              </div>
             </div>
-          )}
-        </div>
+            <div style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)" }}>
+              地址和工作流保存在本地，生成请求经本地开发服务器转发（绕开跨域限制），不经过任何第三方。
+              启用后，下方每个已登场角色的卡片会多出一个提示词输入框和「⚡生成」。
+            </div>
+          </div>
+        )}
+      </div>
 
-        <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-          <input
-            value={customName} onChange={e => setCustomName(e.target.value)}
-            placeholder="输入一个新的角色名（比如剧情里刚出场但还没被列出的人）"
-            style={{ flex: 1, background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, color: "var(--text)", padding: "6px 8px", fontSize: "var(--fs-sm)" }}
-          />
-          <span style={btnStyle} onClick={handleAddCustom}>+ 添加并上传</span>
-        </div>
+      <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+        <input
+          value={customName} onChange={e => setCustomName(e.target.value)}
+          placeholder="输入一个新的角色名（比如剧情里刚出场但还没被列出的人）"
+          style={{ flex: 1, background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, color: "var(--text)", padding: "6px 8px", fontSize: "var(--fs-sm)" }}
+        />
+        <span style={btnStyle} onClick={handleAddCustom}>+ 添加并上传</span>
+      </div>
 
-        <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileChange} />
+      <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileChange} />
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 10 }}>
-          {names.map(name => {
-            const generating = generatingNames.has(name);
-            return (
-              <div key={name} style={{ border: "1px solid var(--border)", borderRadius: 0, padding: 8, textAlign: "center" }}>
-                <div style={{
-                  width: "100%", aspectRatio: "9/16", background: "var(--bg-panel)", borderRadius: 0, marginBottom: 6,
-                  display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", cursor: "pointer",
-                }} onClick={() => triggerUpload(name)}>
-                  {generating ? (
-                    <span style={{ color: "var(--accent)", fontSize: "var(--fs-2xs)" }}>⏳ 生成中…</span>
-                  ) : resolvePortrait(portraits, name) ? (
-                    <img src={resolvePortrait(portraits, name)} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  ) : (
-                    <span style={{ color: "var(--ink-dim-deep)", fontSize: "var(--fs-2xs)" }}>点击上传</span>
-                  )}
-                </div>
-                <div style={{ fontSize: "var(--fs-xs)", color: "var(--text)", marginBottom: 4 }}>
-                  {name}
-                  {/* 标出这张是项目内置的还是玩家自己传的。内置图删不掉（删除按钮只在
-                      portraits[name] 有值、即确实上传过时才出现），标一下免得玩家
-                      对着一张删不掉的图找删除键。传了自己的图之后这个标记就让位。 */}
-                  {!portraits[name] && hasBuiltinPortrait(name) && (
-                    <span style={{ color: "var(--inject-ok)", fontSize: "var(--fs-2xs)", marginLeft: 4 }}>内置</span>
-                  )}
-                  {portraits[name] && (
-                    <span style={{ color: "var(--accent)", fontSize: "var(--fs-2xs)", marginLeft: 4 }}>自定义</span>
-                  )}
-                </div>
-                {comfyCfg.enabled && (
-                  <div style={{ display: "flex", gap: 3, marginBottom: 4 }}>
-                    <input
-                      value={promptDrafts[name] || ""} onChange={e => setPromptDrafts(p => ({ ...p, [name]: e.target.value }))}
-                      placeholder="外貌提示词" disabled={generating}
-                      style={{ ...inputStyle, flex: 1, fontSize: "var(--fs-2xs)", padding: "3px 5px" }}
-                    />
-                    <span
-                      onClick={() => !generating && handleGenerate(name)}
-                      style={{ ...btnStyle, fontSize: "var(--fs-2xs)", padding: "3px 6px", opacity: generating ? 0.5 : 1, cursor: generating ? "default" : "pointer" }}
-                    >⚡</span>
-                  </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 10 }}>
+        {names.map(name => {
+          const generating = generatingNames.has(name);
+          return (
+            <div key={name} style={{ border: "1px solid var(--border)", borderRadius: 0, padding: 8, textAlign: "center" }}>
+              <div style={{
+                width: "100%", aspectRatio: "9/16", background: "var(--bg-panel)", borderRadius: 0, marginBottom: 6,
+                display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", cursor: "pointer",
+              }} onClick={() => triggerUpload(name)}>
+                {generating ? (
+                  <span style={{ color: "var(--accent)", fontSize: "var(--fs-2xs)" }}>⏳ 生成中…</span>
+                ) : resolvePortrait(portraits, name) ? (
+                  <img src={resolvePortrait(portraits, name)} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <span style={{ color: "var(--ink-dim-deep)", fontSize: "var(--fs-2xs)" }}>点击上传</span>
                 )}
-                {genError?.name === name && (
-                  <div style={{ color: "var(--red-soft)", fontSize: "var(--fs-2xs)", marginBottom: 4 }}>{genError.message}</div>
+              </div>
+              <div style={{ fontSize: "var(--fs-xs)", color: "var(--text)", marginBottom: 4 }}>
+                {name}
+                {/* 标出这张是项目内置的还是玩家自己传的。内置图删不掉（删除按钮只在
+                    portraits[name] 有值、即确实上传过时才出现），标一下免得玩家
+                    对着一张删不掉的图找删除键。传了自己的图之后这个标记就让位。 */}
+                {!portraits[name] && hasBuiltinPortrait(name) && (
+                  <span style={{ color: "var(--inject-ok)", fontSize: "var(--fs-2xs)", marginLeft: 4 }}>内置</span>
                 )}
                 {portraits[name] && (
-                  <span onClick={() => handleRemove(name)} style={{ color: "var(--red-soft)", fontSize: "var(--fs-2xs)", cursor: "pointer" }}>删除</span>
+                  <span style={{ color: "var(--accent)", fontSize: "var(--fs-2xs)", marginLeft: 4 }}>自定义</span>
                 )}
               </div>
-            );
-          })}
-        </div>
+              {comfyCfg.enabled && (
+                <div style={{ display: "flex", gap: 3, marginBottom: 4 }}>
+                  <input
+                    value={promptDrafts[name] || ""} onChange={e => setPromptDrafts(p => ({ ...p, [name]: e.target.value }))}
+                    placeholder="外貌提示词" disabled={generating}
+                    style={{ ...inputStyle, flex: 1, fontSize: "var(--fs-2xs)", padding: "3px 5px" }}
+                  />
+                  <span
+                    onClick={() => !generating && handleGenerate(name)}
+                    style={{ ...btnStyle, fontSize: "var(--fs-2xs)", padding: "3px 6px", opacity: generating ? 0.5 : 1, cursor: generating ? "default" : "pointer" }}
+                  >⚡</span>
+                </div>
+              )}
+              {genError?.name === name && (
+                <div style={{ color: "var(--red-soft)", fontSize: "var(--fs-2xs)", marginBottom: 4 }}>{genError.message}</div>
+              )}
+              {portraits[name] && (
+                <span onClick={() => handleRemove(name)} style={{ color: "var(--red-soft)", fontSize: "var(--fs-2xs)", cursor: "pointer" }}>删除</span>
+              )}
+            </div>
+          );
+        })}
       </div>
-    </div>
+    </ModalShell>
   );
 }

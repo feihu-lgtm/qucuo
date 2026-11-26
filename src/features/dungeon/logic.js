@@ -5,8 +5,8 @@
 import { computeSettledLoot } from "../../domain/rules/dungeon/engine.js";
 import { makeItem, ITEM_CATEGORY } from "../../domain/rules/economy/equipment.js";
 import { makeItemSmart } from "../../domain/data/items/catalog.js";
-import { LOG_T } from "../../domain/rules/log/logTypes.js";
 import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
+import { LOG_T } from "../../domain/data/log/logTypes.js";
 
 const lootItemName = (entry) => (typeof entry === "string" ? entry : entry?.name);
 

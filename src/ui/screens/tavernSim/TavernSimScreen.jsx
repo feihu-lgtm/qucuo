@@ -6,7 +6,7 @@
 
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { getZoneTheme } from "../../../utils/theme.js";
+import { THEME_VARS } from "../../../utils/theme.js";
 import {
   TICK_LABELS,
 } from "../../../domain/data/tavernSim/simData.js";
@@ -14,8 +14,7 @@ import {
   initSim, advanceTick, resolveEvent, getDailyCandidates, appendLog, setNightReport,
 } from "../../../domain/rules/tavernSim/simEngine.js";
 import { Btn, S, CSS_KEYFRAMES, SAVE_KEY } from "./tavernWidgets.jsx";
-import { createNarrator } from "../../../engine/ports/simNarrator.js";
-import { hasApiKey } from "../../../engine/ports/storyteller.js";
+import { createNarrator, hasApiKey } from "../../../app/calls/screenCalls.js";
 import { Scene } from "./Scene.jsx";
 import { ManageTab, HireTab, MenuTab, LedgerTab } from "./Tabs.jsx";
 import { LogPanel, EventModal } from "./Overlays.jsx";
@@ -31,7 +30,6 @@ function loadSave() {
 }
 
 export default function TavernSimScreen({ onExit }) {
-  const zoneTheme = useMemo(() => getZoneTheme("鱼定村", false), []);
   const [sim, setSim] = useState(() => loadSave() || initSim());
   const [playing, setPlaying] = useState(true);
   const [speed, setSpeed] = useState(1); // 1x=3s/tick, 3x=1s/tick
@@ -86,54 +84,55 @@ export default function TavernSimScreen({ onExit }) {
   const candidates = useMemo(() => getDailyCandidates(sim), [sim.day, sim.seed, sim.heroDay]);
   const night = sim.tick >= 6;
 
+  // 酒馆经营固定暗夜：根节点写 data-theme="night"，tokens.css 在这棵子树里重新声明暗夜色值。
   return (
-    <div style={S.page(zoneTheme)}>
+    <div data-theme="night" style={S.page(THEME_VARS)}>
       <style>{CSS_KEYFRAMES}</style>
 
       {/* ── 顶栏 ── */}
-      <div style={S.topbar(zoneTheme)}>
-        <span style={{ color: zoneTheme.accent, fontSize: "var(--fs-lg)" }}>🍶 醉三江</span>
-        <span style={S.chip(zoneTheme)}>{LEVEL_NAMES[sim.level]}</span>
-        <span style={S.chip(zoneTheme)}>第 {sim.day} 日 · {TICK_LABELS[sim.tick]}</span>
-        <span style={S.chip(zoneTheme)}>💰 {sim.funds} 两</span>
-        <span style={S.chip(zoneTheme)}>⭐ 声望 {sim.reputation}</span>
+      <div style={S.topbar(THEME_VARS)}>
+        <span style={{ color: "var(--accent)", fontSize: "var(--fs-lg)" }}>🍶 醉三江</span>
+        <span style={S.chip(THEME_VARS)}>{LEVEL_NAMES[sim.level]}</span>
+        <span style={S.chip(THEME_VARS)}>第 {sim.day} 日 · {TICK_LABELS[sim.tick]}</span>
+        <span style={S.chip(THEME_VARS)}>💰 {sim.funds} 两</span>
+        <span style={S.chip(THEME_VARS)}>⭐ 声望 {sim.reputation}</span>
         <span style={{ flex: 1 }} />
-        <Btn label={playing ? "⏸ 暂停" : "▶ 开店"} zoneTheme={zoneTheme} onClick={() => setPlaying(p => !p)} />
-        <Btn label={speed >= 3 ? "⏩ 3x" : "▶ 1x"} zoneTheme={zoneTheme} secondary
+        <Btn label={playing ? "⏸ 暂停" : "▶ 开店"} onClick={() => setPlaying(p => !p)} />
+        <Btn label={speed >= 3 ? "⏩ 3x" : "▶ 1x"} secondary
           onClick={() => setSpeed(v => v >= 3 ? 1 : 3)} />
-        {hasApiKey() && <span style={S.chip(zoneTheme)} title="AI 夜报余量">🪙 {narrator.balance()}</span>}
-        <Btn label="退出" zoneTheme={zoneTheme} secondary onClick={onExit} />
+        {hasApiKey() && <span style={S.chip(THEME_VARS)} title="AI 夜报余量">🪙 {narrator.balance()}</span>}
+        <Btn label="退出" secondary onClick={onExit} />
       </div>
 
       <div className="ts-main-row" style={S.mainRow}>
         {/* ── 像素大堂 ── */}
-        <div className="ts-scene-wrap" style={S.sceneWrap(zoneTheme)}>
-          <Scene sim={sim} night={night} zoneTheme={zoneTheme} />
+        <div className="ts-scene-wrap" style={S.sceneWrap(THEME_VARS)}>
+          <Scene sim={sim} night={night} />
         </div>
 
         {/* ── 经营面板 ── */}
-        <div className="ts-side" style={S.side(zoneTheme)}>
-          <div style={S.tabRow(zoneTheme)}>
+        <div className="ts-side" style={S.side(THEME_VARS)}>
+          <div style={S.tabRow(THEME_VARS)}>
             {[["manage", "经营"], ["hire", "招工"], ["menu", "菜单"], ["ledger", "账本"]].map(([k, label]) => (
               <span key={k} onClick={() => setTab(k)}
-                style={S.tab(zoneTheme, tab === k)}>{label}</span>
+                style={S.tab(THEME_VARS, tab === k)}>{label}</span>
             ))}
           </div>
           <div style={{ padding: 12, overflowY: "auto", flex: 1, minHeight: 0 }}>
-            {tab === "manage" && <ManageTab sim={sim} doAct={doAct} zoneTheme={zoneTheme} setSim={setSim} />}
-            {tab === "hire" && <HireTab sim={sim} candidates={candidates} doAct={doAct} zoneTheme={zoneTheme} />}
-            {tab === "menu" && <MenuTab sim={sim} doAct={doAct} zoneTheme={zoneTheme} />}
-            {tab === "ledger" && <LedgerTab sim={sim} zoneTheme={zoneTheme} />}
+            {tab === "manage" && <ManageTab sim={sim} doAct={doAct} setSim={setSim} />}
+            {tab === "hire" && <HireTab sim={sim} candidates={candidates} doAct={doAct} />}
+            {tab === "menu" && <MenuTab sim={sim} doAct={doAct} />}
+            {tab === "ledger" && <LedgerTab sim={sim} />}
           </div>
         </div>
       </div>
 
       {/* ── 日志 ── */}
-      <LogPanel log={sim.log} zoneTheme={zoneTheme} />
+      <LogPanel log={sim.log} />
 
       {/* ── 事件弹窗 ── */}
       {sim.pendingEvent && (
-        <EventModal sim={sim} zoneTheme={zoneTheme}
+        <EventModal sim={sim}
           onResolve={(optId) => { doAct(s => resolveEvent(s, optId)); setPlaying(true); }} />
       )}
     </div>

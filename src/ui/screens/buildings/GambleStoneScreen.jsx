@@ -12,8 +12,9 @@ import {
 import {
   StoneVisual, BidderFan, BidderCarousel, SkinModal, SelCardModal, PanelBtn,
 } from "./GambleStoneParts.jsx";
+import { useViewport } from "../../hooks/useViewport.js";
 
-export default function GambleStoneScreen({ building, char, time, zoneTheme, onClose, roomNpcs = [], onTalk, onSettle, onInspect, onMinimizeChange, negotiation = {} }) {
+export default function GambleStoneScreen({ building, char, time, onClose, roomNpcs = [], onTalk, onSettle, onInspect, onMinimizeChange, negotiation = {} }) {
   const luck = (char.special?.气运) ?? 5;
   const money = char.money || 0;
   const hourNow = ((time % 24) + 24) % 24;
@@ -50,14 +51,7 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
 
   // 赌石是横向沉浸舞台(1672:941的横图大厅)，竖屏手机塞不下会又扁又小。
   // 检测到窄屏且竖持时盖一层温和的"建议横屏"提示，转横屏自动消失。
-  const [portraitPhone, setPortraitPhone] = useState(() =>
-    typeof window !== "undefined" && window.innerWidth < 768 && window.innerHeight > window.innerWidth);
-  useEffect(() => {
-    const onResize = () => setPortraitPhone(window.innerWidth < 768 && window.innerHeight > window.innerWidth);
-    window.addEventListener("resize", onResize);
-    window.addEventListener("orientationchange", onResize);
-    return () => { window.removeEventListener("resize", onResize); window.removeEventListener("orientationchange", onResize); };
-  }, []);
+  const { isPortraitPhone: portraitPhone } = useViewport();
   const [skinOpen, setSkinOpen] = useState(false);
   const [skinLoading, setSkinLoading] = useState(false);
   const [bought, setBought] = useState(false);  // 是否已花钱买下当前这块料（第一刀=买下）
@@ -159,11 +153,9 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
 
   // ── 最小化：缩成角标，主叙事照常用 ──
   if (minimized) {
+    // 角标定位与层级在 tokens.css 的 .gamble-minimized-chip（screen 档，原 z 200）。
     return (
-      <div className="mobile-gamble-minimized" onClick={restoreTable}
-        style={{ position: "fixed", bottom: 16, right: 16, zIndex: 200, cursor: "pointer",
-          background: "var(--gamble-toast-bg)", border: "1px solid var(--ink-brass)", borderRadius: 0, padding: "8px 14px",
-          color: "var(--gold-light)", fontSize: "var(--fs-md)", boxShadow: "0 4px 16px rgba(0,0,0,.5)" }}>
+      <div className="mobile-gamble-minimized gamble-minimized-chip gamble-minimized-label" onClick={restoreTable}>
         ⬒ 赌桌（{SKINS[stone.skin].label}）· 点击展开
       </div>
     );
@@ -173,8 +165,10 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
   const changKouLabel = stone ? CHANG_KOU[stone.changKou].label : "";
   const cardFont = "calc(min(100vw, 100vh*1672/941) * 0.011)"; // 背面文字随舞台缩放
 
+  // 赌桌是整屏舞台而不是弹窗（没有遮罩、不响应点空白关闭），定位与层级在 tokens.css 的
+    // .gamble-stage（screen 档，原 z 200）。舞台本身是层叠上下文，里面的弹窗层级只在舞台内比较。
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "var(--gamble-bg)", overflow: "hidden" }}>
+    <div className="gamble-stage" style={{ background: "var(--gamble-bg)", overflow: "hidden" }}>
       <style>{GS_CSS}</style>
 
       {/* 顶栏 */}

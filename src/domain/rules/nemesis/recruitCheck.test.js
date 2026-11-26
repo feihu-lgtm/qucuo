@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { nemesisRecruitEligibility, appendHuntedOrder } from "./recruitCheck.js";
-import { flattenNemeses, nemesisStatusLine } from "./nemesisLines.js";
+import { flattenNemeses } from "./nemesisLines.js";
 
 function entry(overrides = {}) {
   return {
@@ -51,11 +51,10 @@ describe("WO-23C4 nemesisRecruitEligibility（恩>怨按条数计数）", () => 
     expect(nemesisRecruitEligibility(varTreeWith(entry({ status: "fakeDead" }), heartLedger([["恩", "x"]])), entry({ status: "fakeDead" })).ok).toBe(false);
     expect(() => nemesisRecruitEligibility(null, undefined)).not.toThrow();
   });
-  it("recruited 状态展示：面板「已收服」、flatten 保留原状", () => {
+  it("recruited 状态：flatten 保留原状（面板文案「已收服」的断言在 ui/format/nemesisLines.test.js）", () => {
     const e = entry({ status: "recruited" });
     const flat = flattenNemeses(varTreeWith(e, null));
     expect(flat[0].status).toBe("recruited");
-    expect(nemesisStatusLine(flat[0])).toBe("（已收服）");
   });
   it("appendHuntedOrder：dedupe by entryId、cap20、坏形状不炸", () => {
     const once = appendHuntedOrder([], { faction: "黑风寨", entryId: "heifeng_麻三", name: "麻三", turn: 1, note: "x" });

@@ -8,6 +8,7 @@ import { attachImportedRegistry } from "../../domain/data/character/characterMil
 import * as importedRegistry from "../../domain/rules/cards/importedRegistry.js";
 import { getDistrictAnchor, hasInnerMap, isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { detectNewFaces, markAsSeen, updateLastSeen } from "../../domain/rules/npc/npcAwareness.js";
+import { isMobileViewport } from "../../utils/viewport.js";
 
 export function useGameStartup({ initialLoadSlotId, initialOpenSettings }) {
   const restored = useInitialRestore({ initialLoadSlotId });
@@ -58,7 +59,7 @@ export function useGameStartupBindings({
   useEffect(() => { timeRef.current = time; }, [time]);
   useEffect(() => {
     const onResize = () => {
-      const m = window.innerWidth < 768;
+      const m = isMobileViewport();
       setIsMobile(m);
       if (!m) setMobileTopMenu(false);
     };

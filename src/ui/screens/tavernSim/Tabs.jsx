@@ -8,28 +8,29 @@ import {
 import { Btn, SectionTitle, S, SAVE_KEY } from "./tavernWidgets.jsx";
 
 import React from "react";
+import { THEME_VARS } from "../../../utils/theme.js";
 
 // ── 经营 tab ─────────────────────────────────────────────────────────
-export function ManageTab({ sim, doAct, zoneTheme, setSim }) {
+export function ManageTab({ sim, doAct, setSim }) {
   const up = LEVEL_UP[sim.level];
   return (
     <div>
-      <SectionTitle zoneTheme={zoneTheme}>库存（卖菜扣份，打烊不保鲜）</SectionTitle>
+      <SectionTitle>库存（卖菜扣份，打烊不保鲜）</SectionTitle>
       {Object.entries(STOCK_INFO).map(([k, info]) => (
         <div key={k} style={S.row}>
           <span style={{ color: "var(--ink-text)", fontSize: "var(--fs-sm)" }}>{info.icon} {info.label} × {sim.pantry[k]}</span>
-          <Btn label={`进 ${STOCK_BATCH} 份（${info.unitPrice * STOCK_BATCH}两）`} zoneTheme={zoneTheme}
+          <Btn label={`进 ${STOCK_BATCH} 份（${info.unitPrice * STOCK_BATCH}两）`}
             disabled={sim.funds < info.unitPrice * STOCK_BATCH}
             onClick={() => doAct(s => buyStock(s, k))} />
         </div>
       ))}
 
-      <SectionTitle zoneTheme={zoneTheme}>店面</SectionTitle>
+      <SectionTitle>店面</SectionTitle>
       {up ? (
-        <div style={S.box(zoneTheme)}>
+        <div style={S.box(THEME_VARS)}>
           <div style={{ color: "var(--ink-text)", fontSize: "var(--fs-sm)", marginBottom: 4 }}>「{up.label}」 {up.desc}</div>
           <div style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)", marginBottom: 6 }}>需声望 {up.needRep} · 花 {up.cost} 两</div>
-          <Btn label="升级" zoneTheme={zoneTheme}
+          <Btn label="升级"
             disabled={sim.reputation < up.needRep || sim.funds < up.cost}
             onClick={() => doAct(upgradeLevel)} />
         </div>
@@ -37,8 +38,8 @@ export function ManageTab({ sim, doAct, zoneTheme, setSim }) {
         <div style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-sm)" }}>已是三江闻名的金字招牌。</div>
       )}
 
-      <SectionTitle zoneTheme={zoneTheme}>其他</SectionTitle>
-      <Btn label="重新开店（清空此档）" zoneTheme={zoneTheme} secondary
+      <SectionTitle>其他</SectionTitle>
+      <Btn label="重新开店（清空此档）" secondary
         onClick={() => {
           if (window.confirm("确定放弃这间店，重新开张？")) {
             const fresh = initSim();
@@ -51,10 +52,10 @@ export function ManageTab({ sim, doAct, zoneTheme, setSim }) {
 }
 
 // ── 招工 tab ─────────────────────────────────────────────────────────
-export function HireTab({ sim, candidates, doAct, zoneTheme }) {
+export function HireTab({ sim, candidates, doAct }) {
   return (
     <div>
-      <SectionTitle zoneTheme={zoneTheme}>店内员工</SectionTitle>
+      <SectionTitle>店内员工</SectionTitle>
       {Object.entries(STAFF_ROLES).map(([role, info]) => {
         const cur = sim.staff[role];
         return (
@@ -62,36 +63,36 @@ export function HireTab({ sim, candidates, doAct, zoneTheme }) {
             <span style={{ color: "var(--ink-text)", fontSize: "var(--fs-sm)" }} title={info.desc}>
               {info.icon} {info.label}：{cur ? `${cur.name}（技${cur.skill}·日薪${cur.wage}）` : "—空缺—"}
             </span>
-            {cur && <Btn label="辞退" zoneTheme={zoneTheme} secondary onClick={() => doAct(s => fireStaff(s, role))} />}
+            {cur && <Btn label="辞退" secondary onClick={() => doAct(s => fireStaff(s, role))} />}
           </div>
         );
       })}
       {sim.guards.map((g, i) => (
         <div key={g.name} style={S.row}>
           <span style={{ color: "var(--ink-text)", fontSize: "var(--fs-sm)" }}>🗡 护院：{g.name}（技{g.skill}·日薪{g.wage}）</span>
-          <Btn label="送行" zoneTheme={zoneTheme} secondary onClick={() => doAct(s => fireGuard(s, i))} />
+          <Btn label="送行" secondary onClick={() => doAct(s => fireGuard(s, i))} />
         </div>
       ))}
 
-      <SectionTitle zoneTheme={zoneTheme}>今日候选（每日刷新）</SectionTitle>
+      <SectionTitle>今日候选（每日刷新）</SectionTitle>
       {candidates.staff.length === 0 && candidates.guards.length === 0 && (
         <div style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-sm)" }}>今日无人上门，明早再看看。</div>
       )}
       {candidates.staff.map((c, i) => {
         const info = STAFF_ROLES[c.role];
         return (
-          <div key={`s${i}`} style={S.box(zoneTheme)}>
+          <div key={`s${i}`} style={S.box(THEME_VARS)}>
             <div style={{ color: "var(--ink-text)", fontSize: "var(--fs-sm)" }}>{info.icon} 应${info.label} · {c.name} · 技{c.skill} · 日薪{c.wage}两</div>
             <div style={{ color: "var(--ink-moss)", fontSize: "var(--fs-2xs)", margin: "3px 0 6px" }}>{info.desc}</div>
-            <Btn label={sim.staff[c.role] ? "换人" : "录用"} zoneTheme={zoneTheme} onClick={() => doAct(s => hireStaff(s, c))} />
+            <Btn label={sim.staff[c.role] ? "换人" : "录用"} onClick={() => doAct(s => hireStaff(s, c))} />
           </div>
         );
       })}
       {candidates.guards.map((g, i) => (
-        <div key={`g${i}`} style={S.box(zoneTheme)}>
+        <div key={`g${i}`} style={S.box(THEME_VARS)}>
           <div style={{ color: "var(--ink-text)", fontSize: "var(--fs-sm)" }}>🗡 {g.name} · 技{g.skill} · 佣金{g.fee}两 · 日薪{g.wage}两</div>
           <div style={{ color: "var(--ink-moss)", fontSize: "var(--fs-2xs)", margin: "3px 0 6px" }}>看场子：闹事可稳妥处理；技≥7 还有名人效应（声望日增）。</div>
-          <Btn label="聘请" zoneTheme={zoneTheme} disabled={sim.funds < g.fee} onClick={() => doAct(s => hireGuard(s, g))} />
+          <Btn label="聘请" disabled={sim.funds < g.fee} onClick={() => doAct(s => hireGuard(s, g))} />
         </div>
       ))}
     </div>
@@ -99,7 +100,7 @@ export function HireTab({ sim, candidates, doAct, zoneTheme }) {
 }
 
 // ── 菜单 tab ─────────────────────────────────────────────────────────
-export function MenuTab({ sim, doAct, zoneTheme }) {
+export function MenuTab({ sim, doAct }) {
   return (
     <div>
       <div style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)", marginBottom: 10 }}>
@@ -110,7 +111,7 @@ export function MenuTab({ sim, doAct, zoneTheme }) {
         const price = sim.prices[d.id];
         const stock = STOCK_INFO[d.stock];
         return (
-          <div key={d.id} style={{ ...S.box(zoneTheme), opacity: locked ? 0.45 : 1 }}>
+          <div key={d.id} style={{ ...S.box(THEME_VARS), opacity: locked ? 0.45 : 1 }}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <span style={{ color: "var(--ink-text)", fontSize: "var(--fs-sm)" }}>{d.name}</span>
               <span style={{ color: "var(--ink-fern)", fontSize: "var(--fs-sm)" }}>{price} 两</span>
@@ -120,12 +121,12 @@ export function MenuTab({ sim, doAct, zoneTheme }) {
             </div>
             {!locked && (
               <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <Btn label="−" zoneTheme={zoneTheme} secondary
+                <Btn label="−" secondary
                   onClick={() => doAct(s => setPrice(s, d.id, (price - 1) / d.basePrice))} />
                 <span style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)", minWidth: 52, textAlign: "center" }}>
                   {(price / d.basePrice).toFixed(2)}x
                 </span>
-                <Btn label="＋" zoneTheme={zoneTheme} secondary
+                <Btn label="＋" secondary
                   onClick={() => doAct(s => setPrice(s, d.id, (price + 1) / d.basePrice))} />
               </div>
             )}
@@ -137,7 +138,7 @@ export function MenuTab({ sim, doAct, zoneTheme }) {
 }
 
 // ── 账本 tab ─────────────────────────────────────────────────────────
-export function LedgerTab({ sim, zoneTheme }) {
+export function LedgerTab({ sim }) {
   const rows = [...sim.ledger].reverse();
   return (
     <div>
@@ -148,7 +149,7 @@ export function LedgerTab({ sim, zoneTheme }) {
       )}
       {rows.length === 0 && <div style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-sm)" }}>还没打过一次烊。</div>}
       {rows.map(r => (
-        <div key={r.day} style={S.box(zoneTheme)}>
+        <div key={r.day} style={S.box(THEME_VARS)}>
           <div style={{ color: "var(--ink-warn)", fontSize: "var(--fs-sm)", marginBottom: 3 }}>第 {r.day} 日</div>
           <div style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)" }}>
             客 {r.guests}（成 {r.served} / 失 {r.lost}）· 营收 {r.revenue} · 工钱 {r.wages}

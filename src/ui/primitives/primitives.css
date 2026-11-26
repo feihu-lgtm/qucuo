@@ -1,0 +1,197 @@
+/* 原语组件的样式（路线图 U2）。每个变体原样复刻项目里已有的手写样式，
+   迁移到原语不改变外观；primitives.test.js 逐条与原样式对象比对。 */
+
+/* ── Button ───────────────────────────────────────────────
+   用真正的 <button>，但把浏览器给按钮的默认样式逐项重置成原先 <span> 的行为：
+   字体、行高、字距跟随父元素，文字不强制居中，盒模型回到 content-box。 */
+.ui-btn {
+  appearance: none;
+  margin: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  word-spacing: inherit;
+  text-transform: inherit;
+  text-indent: inherit;
+  text-shadow: inherit;
+  text-align: inherit;
+  box-sizing: content-box;
+  cursor: pointer;
+}
+
+.ui-btn:disabled { cursor: not-allowed; }
+
+/* font="native"：退回浏览器给 <button> 的默认字体。迁移前本来就是 <button> 的按钮
+   一直显示系统字体（项目里没有让按钮继承页面字体的全局规则），加这个属性保持原样。
+   若决定所有按钮统一跟随页面字体，删掉这条规则即可。 */
+.ui-btn[data-font="native"] {
+  font-family: revert;
+  font-weight: revert;
+  font-style: revert;
+}
+
+/* settings：设置面板各页的按钮（原 settings/styles.js 的 btnStyle） */
+.ui-btn[data-variant="settings"] {
+  display: inline-block;
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--bg-panel);
+  color: var(--accent);
+  font-size: var(--fs-sm);
+}
+
+/* chrome：主界面统一按钮（原 theme.js 的 chromeBtn，取 THEME_VARS） */
+.ui-btn[data-variant="chrome"] {
+  display: inline-flex;
+  align-items: center;
+  height: var(--ctl-h);
+  padding: 0 var(--ctl-pad-x);
+  box-sizing: border-box;
+  line-height: 1;
+  white-space: nowrap;
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-none);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-none);
+  user-select: none;
+  background: transparent;
+  color: var(--text);
+}
+
+.ui-btn[data-variant="chrome"][aria-pressed="true"],
+.ui-btn[data-variant="chrome"][aria-selected="true"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+}
+
+/* primary / secondary：建筑面板按钮（原 screens/buildings/common.jsx 的 Btn） */
+.ui-btn[data-variant="primary"],
+.ui-btn[data-variant="secondary"] {
+  display: inline-block;
+  padding: 5px 14px;
+  border: 1px solid var(--accent);
+  border-radius: 0;
+  font-size: var(--fs-sm);
+  user-select: none;
+  transition: transform 0.1s, filter 0.15s, border-color 0.15s;
+}
+
+.ui-btn[data-variant="primary"] { background: var(--accent); color: var(--bg); }
+.ui-btn[data-variant="secondary"] { border-color: var(--border); background: transparent; color: var(--accent-dim); }
+.ui-btn[data-variant="primary"]:not(:disabled):hover,
+.ui-btn[data-variant="secondary"]:not(:disabled):hover { filter: brightness(1.15); }
+.ui-btn[data-variant="secondary"]:not(:disabled):hover { border-color: var(--accent); }
+.ui-btn[data-variant="primary"]:not(:disabled):active,
+.ui-btn[data-variant="secondary"]:not(:disabled):active { transform: scale(0.97); }
+.ui-btn[data-variant="primary"]:disabled,
+.ui-btn[data-variant="secondary"]:disabled {
+  border-color: var(--building-disabled-edge);
+  background: var(--building-disabled-bg);
+  color: var(--building-disabled-text);
+  opacity: 0.5;
+}
+
+/* ── Panel ─────────────────────────────────────────────── */
+/* section：设置面板里的分节（原 sectionStyle：上方一条墨线） */
+.ui-panel[data-variant="section"] {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ink-divider);
+}
+
+/* box：带描边的面板块 */
+.ui-panel[data-variant="box"] {
+  padding: var(--sp-3);
+  border: 1px solid var(--border);
+  background: var(--bg-panel);
+}
+
+/* ── Field ─────────────────────────────────────────────── */
+/* 标签（原 labelStyle）与输入框（原 inputStyle）。Field 组件把两者包在一起，
+   也可以单独给 <input>/<select>/<textarea> 挂 ui-input 类。 */
+.ui-field-label {
+  margin-top: 10px;
+  margin-bottom: 4px;
+  font-size: var(--fs-xs);
+  color: var(--good);
+}
+
+.ui-field-label--block { display: block; }
+
+.ui-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--bg-panel);
+  color: var(--text);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+}
+
+/* ── Tabs / List / Badge ──────────────────────────────── */
+.ui-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ui-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ui-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid currentColor;
+  border-radius: 0;
+  font-size: var(--fs-2xs);
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.ui-badge[data-tone="accent"] { color: var(--accent); }
+.ui-badge[data-tone="dim"] { color: var(--text-dim); }
+.ui-badge[data-tone="good"] { color: var(--good); }
+.ui-badge[data-tone="warn"] { color: var(--warn); }
+
+/* ── 建筑面板公共件（screens/buildings/common.jsx）──────────
+   标题栏吸顶：面板内容一长往下滚，关闭按钮仍钉在滚动区顶部；z-index 免得被滚上来的内容盖住。 */
+.building-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--building-panel-bg);
+}
+
+.building-header-title {
+  font-size: var(--fs-base);
+  color: var(--text);
+}
+
+.ui-btn.building-header-close {
+  padding: 2px 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  transition: color 0.15s, background 0.15s;
+}
+
+.ui-btn.building-header-close:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--accent);
+}

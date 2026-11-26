@@ -1,7 +1,7 @@
 import React from "react";
 import { DEFAULT_CALL_TOKEN_LIMITS, CALL_TOKEN_LIMIT_MAX } from "../../../infra/apiConfig.js";
 import { affectionLabel, AFFECTION_TIERS, affectionTier } from "../../../domain/rules/narrator/narrator.js";
-import { inputStyle, labelStyle, sectionStyle, btnStyle } from "./styles.js";
+import { Button, FieldLabel, Panel } from "../../primitives/index.js";
 
 // 旁白 tab（docs/旁白系统_黑客帝国支线设计.md §八.1）：
 // 把此前散落各处的旁白可调项收拢到一处：好感度与阶段原本只有调试面板里
@@ -15,7 +15,7 @@ export default function NarratorTab({ cfg, patch, narrator, setNarrator }) {
       </div>
 
       {/* ① 好感度 */}
-      <div style={labelStyle}>好感度 · 当前 {narrator?.affection ?? 0}/100（{affectionLabel(narrator?.affection ?? 0)}）</div>
+      <FieldLabel>好感度 · 当前 {narrator?.affection ?? 0}/100（{affectionLabel(narrator?.affection ?? 0)}）</FieldLabel>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <input
           type="range" min="0" max="100" step="1" value={narrator?.affection ?? 0}
@@ -28,8 +28,7 @@ export default function NarratorTab({ cfg, patch, narrator, setNarrator }) {
             let v = parseInt(e.target.value) || 0;
             v = Math.max(0, Math.min(100, v));
             setNarrator?.(n => ({ ...n, affection: v }));
-          }}
-          style={{ ...inputStyle, width: 70 }}
+          }} className="ui-input" style={{ width: 70 }}
         />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 4, marginTop: 6 }}>
@@ -37,13 +36,7 @@ export default function NarratorTab({ cfg, patch, narrator, setNarrator }) {
           const active = affectionTier(narrator?.affection ?? 0).key === key;
           return (
             <span key={key}
-              onClick={() => setNarrator?.(n => ({ ...n, affection: v }))}
-              style={{
-                cursor: "pointer", textAlign: "center", padding: "4px 2px", borderRadius: 0, fontSize: "var(--fs-2xs)",
-                color: active ? "var(--bg-panel)" : "var(--ink-sage)",
-                background: active ? "var(--accent)" : "var(--bg-panel)",
-                border: "1px solid var(--border)",
-              }}>
+              onClick={() => setNarrator?.(n => ({ ...n, affection: v }))} className="narrator-tab-1" data-on={Boolean(active)}>
               {label}
             </span>
           );
@@ -56,8 +49,8 @@ export default function NarratorTab({ cfg, patch, narrator, setNarrator }) {
       </div>
 
       {/* ② 阶段 / 告白 */}
-      <div style={sectionStyle}>
-        <div style={labelStyle}>剧情阶段</div>
+      <Panel variant="section">
+        <FieldLabel>剧情阶段</FieldLabel>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {[
             ["flirting", "第一幕 · 暧昧", "好感度渐变，正常私聊"],
@@ -67,18 +60,15 @@ export default function NarratorTab({ cfg, patch, narrator, setNarrator }) {
             const cur = narrator?.stage;
             const on = cur === stage || (stage === "flirting" && cur === "normal");
             return (
-              <span key={stage} title={hint}
+              <Button variant="settings" key={stage} title={hint}
                 onClick={() => setNarrator?.(n => ({
                   ...n, stage,
                   confessed: stage === "cheat" ? true : stage === "flirting" ? false : n.confessed,
-                }))}
-                style={{
-                  ...btnStyle, fontSize: "var(--fs-xs)",
+                }))} style={{ fontSize: "var(--fs-xs)",
                   color: on ? "var(--bg-panel)" : "var(--accent)",
-                  background: on ? "var(--accent)" : "var(--bg-panel)",
-                }}>
+                  background: on ? "var(--accent)" : "var(--bg-panel)" }}>
                 {label}
-              </span>
+              </Button>
             );
           })}
         </div>
@@ -95,16 +85,15 @@ export default function NarratorTab({ cfg, patch, narrator, setNarrator }) {
                 let v = parseInt(e.target.value) || 0;
                 v = Math.max(0, Math.min(8, v));
                 setNarrator?.(n => ({ ...n, memoryFragments: v }));
-              }}
-              style={{ ...inputStyle, width: 70 }}
+              }} className="ui-input" style={{ width: 70 }}
             />
           </div>
         )}
-      </div>
+      </Panel>
 
       {/* ③ 私聊篇幅与 token */}
-      <div style={sectionStyle}>
-        <div style={labelStyle}>私聊篇幅 · 按好感度五档解锁</div>
+      <Panel variant="section">
+        <FieldLabel>私聊篇幅 · 按好感度五档解锁</FieldLabel>
         <div style={{ display: "grid", gap: 4 }}>
           {AFFECTION_TIERS.map(t => {
             const cur = affectionTier(narrator?.affection ?? 0).key === t.key;
@@ -128,8 +117,7 @@ export default function NarratorTab({ cfg, patch, narrator, setNarrator }) {
                   onChange={e => {
                     const v = Math.max(20, parseInt(e.target.value) || t.words);
                     patch({ narratorWhisperWords: { ...(cfg.narratorWhisperWords || {}), [t.key]: v } });
-                  }}
-                  style={{ ...inputStyle, width: 70 }}
+                  }} className="ui-input" style={{ width: 70 }}
                 />
                 <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)" }}>字</span>
               </div>
@@ -142,7 +130,7 @@ export default function NarratorTab({ cfg, patch, narrator, setNarrator }) {
           空壳应答不受此值影响，仍是一句话。
         </div>
 
-        <div style={{ ...labelStyle, marginTop: 10 }}>私聊 token 输出上限</div>
+        <FieldLabel style={{ marginTop: 10 }}>私聊 token 输出上限</FieldLabel>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <input
             type="number" min="1" max={CALL_TOKEN_LIMIT_MAX} step="100"
@@ -151,8 +139,7 @@ export default function NarratorTab({ cfg, patch, narrator, setNarrator }) {
               let v = parseInt(e.target.value) || DEFAULT_CALL_TOKEN_LIMITS.narratorWhisper;
               v = Math.max(1, Math.min(CALL_TOKEN_LIMIT_MAX, v));
               patch({ callTokenLimits: { ...(cfg.callTokenLimits || DEFAULT_CALL_TOKEN_LIMITS), narratorWhisper: v } });
-            }}
-            style={{ ...inputStyle, width: 100 }}
+            }} className="ui-input" style={{ width: 100 }}
           />
           <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)" }}>tok（与 API 配置里那一项是同一个值）</span>
         </div>
@@ -160,22 +147,21 @@ export default function NarratorTab({ cfg, patch, narrator, setNarrator }) {
           这是 token 不是字数。带思考的模型思考 token 与正文共用这个额度，
           给小了会出现"话说一半停在逗号上"。
         </div>
-      </div>
+      </Panel>
 
       {/* ④ 旁白专属世界书 */}
-      <div style={sectionStyle}>
-        <div style={labelStyle}>旁白专属世界书（只进私聊，不进主叙事）</div>
+      <Panel variant="section">
+        <FieldLabel>旁白专属世界书（只进私聊，不进主叙事）</FieldLabel>
         <textarea
           value={cfg.narratorLorebook ?? ""}
           onChange={e => patch({ narratorLorebook: e.target.value })}
-          placeholder={"写在这里的内容只会注入私聊通道，主叙事看不到。\n适合放：她的来历、她对玩家的私下看法、想让她一直记住的梗、\n以及任何你希望她在私聊里知道、但不该影响正常剧情叙事的设定。\n留空则完全不注入这一段。"}
-          style={{ ...inputStyle, minHeight: 110, resize: "vertical", lineHeight: 1.6 }}
+          placeholder={"写在这里的内容只会注入私聊通道，主叙事看不到。\n适合放：她的来历、她对玩家的私下看法、想让她一直记住的梗、\n以及任何你希望她在私聊里知道、但不该影响正常剧情叙事的设定。\n留空则完全不注入这一段。"} className="ui-input" style={{ minHeight: 110, resize: "vertical", lineHeight: 1.6 }}
         />
         <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginTop: 4 }}>
           当前 {(cfg.narratorLorebook || "").length} 字。这段拼在私聊 system prompt 里，
           会占用上下文，别写太长。
         </div>
-      </div>
+      </Panel>
     </div>
   );
 }

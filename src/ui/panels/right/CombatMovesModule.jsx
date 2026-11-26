@@ -1,12 +1,12 @@
-import { QUALITY_COLOR } from "../../../domain/rules/economy/equipment.js";
+import { QUALITY_COLOR } from "../../../domain/data/items/qualityColor.js";
 
-export default function CombatMovesModule({ zoneTheme, char, inspectItem, inspecting }) {
+export default function CombatMovesModule({ char, inspectItem, inspecting }) {
   const extras = (char.moveset || []).filter(m => !m.sourceSkill);
   if (!extras.length) return null;
   const TYPE_SHORT = { 攻击: "攻", 防御: "防", 状态: "状" };
   return (
-    <div style={{ borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 8, marginBottom: 10 }}>
-      <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accentDim, marginBottom: 4 }}>临阵招式 <span style={{ color: zoneTheme.textDim, fontSize: "var(--fs-2xs)" }}>切磋自带补位 · 运功对应类型的武学即替换（回气永在，能量枯竭保命）</span></div>
+    <div style={{ borderTop: `1px solid var(--border)`, paddingTop: 8, marginBottom: 10 }}>
+      <div style={{ fontSize: "var(--fs-xs)", color: "var(--accent-dim)", marginBottom: 4 }}>临阵招式 <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)" }}>切磋自带补位 · 运功对应类型的武学即替换（回气永在，能量枯竭保命）</span></div>
       {extras.map((m, i) => {
         const q = m.quality || "白";
         const qc = QUALITY_COLOR[q] || "var(--text)";
@@ -16,10 +16,10 @@ export default function CombatMovesModule({ zoneTheme, char, inspectItem, inspec
             <span style={{ fontSize: "var(--fs-2xs)", color: "var(--bg-deep)", background: qc, borderRadius: 0, padding: "0 3px", fontWeight: 700 }}>{TYPE_SHORT[m.type] || "?"}</span>
             <span
               onClick={() => inspectItem("skill", m.name, `${q}品·临阵招式（${origin}）`, null, { worldLook: true })}
-              style={{ cursor: inspecting === m.name ? "wait" : "pointer", color: qc, textDecoration: "underline", textDecorationStyle: "dotted", textDecorationColor: zoneTheme.textDim, opacity: inspecting === m.name ? 0.6 : 1 }}
+              style={{ cursor: inspecting === m.name ? "wait" : "pointer", color: qc, textDecoration: "underline", textDecorationStyle: "dotted", textDecorationColor: "var(--text-dim)", opacity: inspecting === m.name ? 0.6 : 1 }}
             >{m.name}{inspecting === m.name ? "…" : ""}</span>
             <span style={{ fontSize: "var(--fs-2xs)", color: qc, opacity: 0.9 }}>（{q}品）</span>
-            <span style={{ fontSize: "var(--fs-2xs)", color: zoneTheme.textDim }}>{origin}</span>
+            <span style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)" }}>{origin}</span>
           </div>
         );
       })}

@@ -1,6 +1,10 @@
 import { loadDefaultContent } from "./domain/rules/content/loadDefaultContent.js";
 import "./ui/tokens.css";
+import "./ui/primitives/primitives.css";
 import "./ui/mobile.css";
+import "./ui/panels/panels.css";
+import "./ui/screens/screens.css";
+import "./ui/components/components.css";
 import React, { lazy, Suspense, useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import StartScreen from "./ui/screens/StartScreen.jsx";
@@ -11,7 +15,6 @@ import { bootstrapArgonConfig } from "./infra/argonBootstrap.js";
 import { installErrorBuffer } from "./infra/errorBuffer.js";
 import { recordError } from "./infra/errorBuffer.js";
 import * as importedRegistry from "./domain/rules/cards/importedRegistry.js";
-import { getZoneTheme } from "./utils/theme.js";
 
 loadDefaultContent();
 
@@ -131,7 +134,7 @@ function App() {
         apiCfg={loadConfig()}
         playerName="少侠"
         playerMode={cardImportPlayerMode}
-        zoneTheme={getZoneTheme("鱼定村", false)}
+        accent="var(--ink-accent)" /* 开始页固定暗夜 */
         onClose={() => {
           setInCardImport(false);
           // 「导入卡当自己」确实导入了主角卡 → 直接进新开局，CharacterCreate 会读到

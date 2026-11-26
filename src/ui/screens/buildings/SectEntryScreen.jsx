@@ -8,11 +8,10 @@ import { factionRepOf } from "../../../domain/rules/economy/factionRep.js";
 // 拜师堂——雪山派入门。挂在内堂（何雨谢坐镇处）。
 // 结算全在系统这边做完（扣束脩、发令牌、写身份 flag），AI 只负责把这件既成事实
 // 写成一段像样的叙事，与送礼/拜师学艺同一套"结算+act陈述"范式。
-export default function SectEntryScreen({ building, char, narratorAffection, flags, varTree, questProgress, zoneTheme, onClose, inline, onJoinSect, onLeaveSect }) {
+export default function SectEntryScreen({ building, char, narratorAffection, flags, varTree, questProgress, onClose, inline, onJoinSect, onLeaveSect }) {
   const entry = FACTION_ENTRIES[building?.sect];
   if (entry) {
-    return <FactionEntryScreen entry={entry} building={building} char={char} flags={flags} varTree={varTree} questProgress={questProgress} inline
-      zoneTheme={zoneTheme} onClose={onClose} onJoinSect={onJoinSect} onLeaveSect={onLeaveSect} />;
+    return <FactionEntryScreen entry={entry} building={building} char={char} flags={flags} varTree={varTree} questProgress={questProgress} inline onClose={onClose} onJoinSect={onJoinSect} onLeaveSect={onLeaveSect} />;
   }
   const status = checkSectEntry({
     affection: narratorAffection,
@@ -25,36 +24,36 @@ export default function SectEntryScreen({ building, char, narratorAffection, fla
   });
 
   return (
-    <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name={building?.name || "拜师堂"} zoneTheme={zoneTheme} onClose={onClose} />
-      <div style={{ padding: "14px 16px", fontSize: "var(--fs-md)", lineHeight: 1.9, color: zoneTheme.text }}>
+    <Overlay onClose={onClose} inline={inline}>
+      <Header name={building?.name || "拜师堂"} onClose={onClose} />
+      <div style={{ padding: "14px 16px", fontSize: "var(--fs-md)", lineHeight: 1.9, color: "var(--text)" }}>
 
         {status.already ? (
           <>
             <div style={{ color: "var(--clay)", marginBottom: 10 }}>
               你已是{SECT_ENTRY.sect}门下弟子。
             </div>
-            <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-sm)" }}>
+            <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-sm)" }}>
               内堂之后的弟子别院已对你开放。令牌随身收好，那也是别院的钥匙。
             </div>
-            <LeaveSectButton sect={SECT_ENTRY.sect} onLeaveSect={onLeaveSect} zoneTheme={zoneTheme} />
+            <LeaveSectButton sect={SECT_ENTRY.sect} onLeaveSect={onLeaveSect} />
           </>
         ) : (
           <>
-            <div style={{ color: zoneTheme.textDim, marginBottom: 12 }}>
+            <div style={{ color: "var(--text-dim)", marginBottom: 12 }}>
               {SECT_ENTRY.master}坐在堂上，手里捧着一盏早凉了的茶。掌门不在山上，
               这些年门里大小事都是她在撑。她抬眼看你——收不收徒，她说了算。
             </div>
 
             <div style={{
-              border: `1px solid ${zoneTheme.border}`, borderRadius: 0,
+              border: `1px solid var(--border)`, borderRadius: 0,
               padding: "10px 12px", marginBottom: 12, background: "rgba(255,255,255,.02)",
             }}>
-              <div style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-xs)", marginBottom: 6 }}>入门之限</div>
+              <div style={{ color: "var(--accent-dim)", fontSize: "var(--fs-xs)", marginBottom: 6 }}>入门之限</div>
               {status.reqs.map(r => (
                 <div key={r.key} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "var(--fs-sm)" }}>
                   <span style={{ color: r.ok ? "var(--clay)" : "var(--ink-danger-soft)", width: 12 }}>{r.ok ? "✓" : "✗"}</span>
-                  <span style={{ flex: 1, color: r.ok ? zoneTheme.text : zoneTheme.textDim }}>{r.label}</span>
+                  <span style={{ flex: 1, color: r.ok ? "var(--text)" : "var(--text-dim)" }}>{r.label}</span>
                   <span style={{ color: r.ok ? "var(--clay)" : "var(--ink-danger-soft)", fontSize: "var(--fs-xs)" }}>{r.have}</span>
                 </div>
               ))}
@@ -62,11 +61,11 @@ export default function SectEntryScreen({ building, char, narratorAffection, fla
 
             {status.eligible ? (
               <Btn label={`奉上束脩，拜入${SECT_ENTRY.sect}（-${SECT_ENTRY.tuition}两）`}
-                onClick={onJoinSect} zoneTheme={zoneTheme} />
+                onClick={onJoinSect} />
             ) : (
               <>
-                <Btn label="尚不够格" disabled zoneTheme={zoneTheme} />
-                <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-xs)", marginTop: 8 }}>
+                <Btn label="尚不够格" disabled />
+                <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", marginTop: 8 }}>
                   {status.missing.includes("affection") && <div>· 她还不够信你。多来往走动，让她看见你是什么样的人。</div>}
                   {status.missing.includes("neigong") && <div>· 底子还太薄。打坐运功，把内功练上去再来。</div>}
                   {status.missing.includes("tuition") && <div>· 束脩还差着。银两凑够了再来不迟。</div>}

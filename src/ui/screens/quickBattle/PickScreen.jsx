@@ -71,13 +71,7 @@ export default function PickScreen({ mode, candidates, allyIds, foeIds, setAllyI
 function TeamBar({ label, ids, candidates, active, onClick, onRemove, accent }) {
   return (
     <div
-      onClick={onClick}
-      style={{
-        flex: 1, minHeight: 92, padding: "10px 14px", cursor: "pointer",
-        background: "rgba(20,16,10,.55)",
-        border: `2px solid ${active ? accent : "rgba(255,255,255,.12)"}`,
-        borderRadius: 0, transition: "border-color .2s",
-      }}
+      onClick={onClick} className="pick-screen-1" style={{ border: `2px solid ${active ? accent : "rgba(255,255,255,.12)"}` }}
     >
       <div style={{ fontSize: "var(--fs-md)", letterSpacing: 2, color: accent, marginBottom: 8 }}>
         {label}（{ids.length}）{active && <span style={{ color: "var(--parchment)", fontSize: "var(--fs-xs)" }}> · 挑选中</span>}
@@ -89,10 +83,7 @@ function TeamBar({ label, ids, candidates, active, onClick, onRemove, accent }) 
           if (!c) return null;
           return (
             <div key={id} onClick={(e) => { e.stopPropagation(); onRemove(id); }}
-              title="点击移出"
-              style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px",
-                background: "rgba(0,0,0,.35)", border: `1px solid ${tierColor(c.levelCap)}`,
-                borderRadius: 0, fontSize: "var(--fs-sm)", color: "var(--qb-text)", cursor: "pointer" }}>
+              title="点击移出" className="pick-screen-2" style={{ border: `1px solid ${tierColor(c.levelCap)}` }}>
               {c.name} <span style={{ color: "var(--qb-border)" }}>✕</span>
             </div>
           );

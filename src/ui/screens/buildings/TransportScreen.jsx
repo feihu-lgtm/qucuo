@@ -9,7 +9,7 @@ import { canTravelByCarriage, getPriceForDest } from "../../../features/building
 const PIGEON_PRICE = 12; // 一只信鸽的价钱
 
 export default function TransportScreen({
-  building, char, mapData, currentRoom, flags, questProgress, zoneTheme, onClose, inline, onTravel,
+  building, char, mapData, currentRoom, flags, questProgress, onClose, inline, onTravel,
   inv = [], metNpcs = [], onBuyPigeon, onSendLetter,
 }) {
   const money = char.money || 0;
@@ -38,17 +38,12 @@ export default function TransportScreen({
   };
 
   const tabBtn = (id, label) => (
-    <span onClick={() => setTab(id)} style={{
-      cursor: "pointer", padding: "4px 12px", fontSize: "var(--fs-sm)", borderRadius: 0,
-      color: tab === id ? zoneTheme.bg : zoneTheme.accent,
-      background: tab === id ? zoneTheme.accent : zoneTheme.bgPanel,
-      border: `1px solid ${zoneTheme.border}`,
-    }}>{label}</span>
+    <span onClick={() => setTab(id)} className="transport-mode-tab" data-on={Boolean(tab === id)}>{label}</span>
   );
 
   return (
-    <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
+    <Overlay onClose={onClose} inline={inline}>
+      <Header name={building.name} onClose={onClose} />
       <div style={{ padding: 16 }}>
         <div style={{ color: "var(--ink-text-dim)", marginBottom: 10, fontSize: "var(--fs-xs)" }}>
           银两 {money} 两 · 信鸽 {pigeons} 只 · 当前位置：{currentRoom}
@@ -65,11 +60,11 @@ export default function TransportScreen({
             {destinations.map(dest => {
               const price = getPriceForDest(dest);
               return (
-                <div key={dest} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, padding: "8px 10px", background: "var(--bg-ink)", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
+                <div key={dest} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, padding: "8px 10px", background: "var(--bg-ink)", borderRadius: 0, border: `1px solid var(--border)` }}>
                   <span style={{ color: "var(--ink-text)", fontSize: "var(--fs-sm)" }}>{dest}</span>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ color: "var(--gold-bright)", fontSize: "var(--fs-xs)" }}>{price} 两</span>
-                    <Btn label="前往" disabled={money < price} zoneTheme={zoneTheme} onClick={() => onTravel(dest, price)} />
+                    <Btn label="前往" disabled={money < price} onClick={() => onTravel(dest, price)} />
                   </div>
                 </div>
               );
@@ -80,15 +75,15 @@ export default function TransportScreen({
         {tab === "post" && (
           <>
             {/* 买鸽子 */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, padding: "8px 10px", background: "var(--bg-ink)", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, padding: "8px 10px", background: "var(--bg-ink)", borderRadius: 0, border: `1px solid var(--border)` }}>
               <div>
                 <div style={{ color: "var(--gold)", fontSize: "var(--fs-sm)" }}>🕊 信鸽 <span style={{ color: "var(--ink-text-dim)" }}>（现有 {pigeons} 只）</span></div>
                 <div style={{ color: "var(--ink-moss)", fontSize: "var(--fs-2xs)" }}>买了才能在野外随处飞鸽传书（快·只送信）；每寄一封耗一只</div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ color: "var(--gold-bright)", fontSize: "var(--fs-xs)" }}>{PIGEON_PRICE} 两/只</span>
-                <Btn label="买1只" disabled={money < PIGEON_PRICE} zoneTheme={zoneTheme} onClick={() => onBuyPigeon && onBuyPigeon(1, PIGEON_PRICE)} />
-                <Btn label="买5只" disabled={money < PIGEON_PRICE * 5} zoneTheme={zoneTheme} onClick={() => onBuyPigeon && onBuyPigeon(5, PIGEON_PRICE)} />
+                <Btn label="买1只" disabled={money < PIGEON_PRICE} onClick={() => onBuyPigeon && onBuyPigeon(1, PIGEON_PRICE)} />
+                <Btn label="买5只" disabled={money < PIGEON_PRICE * 5} onClick={() => onBuyPigeon && onBuyPigeon(5, PIGEON_PRICE)} />
               </div>
             </div>
 
@@ -103,14 +98,14 @@ export default function TransportScreen({
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                   <span style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)", width: 40 }}>收信人</span>
                   <select value={recipient} onChange={e => setRecipient(e.target.value)}
-                    style={{ flex: 1, background: "var(--bg-ink)", color: "var(--ink-text)", border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: "4px 6px", fontSize: "var(--fs-sm)", fontFamily: "inherit" }}>
+                    style={{ flex: 1, background: "var(--bg-ink)", color: "var(--ink-text)", border: `1px solid var(--border)`, borderRadius: 0, padding: "4px 6px", fontSize: "var(--fs-sm)", fontFamily: "inherit" }}>
                     {metNpcs.map(n => <option key={n} value={n}>{n}</option>)}
                   </select>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                   <span style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)", width: 40 }}>附礼</span>
                   <select value={gift} onChange={e => setGift(e.target.value)}
-                    style={{ flex: 1, background: "var(--bg-ink)", color: gift ? "var(--gold)" : "var(--ink-moss)", border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: "4px 6px", fontSize: "var(--fs-sm)", fontFamily: "inherit" }}>
+                    style={{ flex: 1, background: "var(--bg-ink)", color: gift ? "var(--gold)" : "var(--ink-moss)", border: `1px solid var(--border)`, borderRadius: 0, padding: "4px 6px", fontSize: "var(--fs-sm)", fontFamily: "inherit" }}>
                     <option value="">（不附礼 · 只寄信）</option>
                     {invNames.map((n, i) => <option key={n + i} value={n}>{n}</option>)}
                   </select>
@@ -118,9 +113,9 @@ export default function TransportScreen({
                 <textarea value={letter} onChange={e => setLetter(e.target.value)}
                   placeholder={`写给${recipient || "…"}的话…`}
                   rows={4}
-                  style={{ width: "100%", boxSizing: "border-box", background: "var(--bg-ink)", color: "var(--ink-text)", border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: 8, fontSize: "var(--fs-sm)", fontFamily: "inherit", resize: "vertical", marginBottom: 8 }} />
+                  style={{ width: "100%", boxSizing: "border-box", background: "var(--bg-ink)", color: "var(--ink-text)", border: `1px solid var(--border)`, borderRadius: 0, padding: 8, fontSize: "var(--fs-sm)", fontFamily: "inherit", resize: "vertical", marginBottom: 8 }} />
                 <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                  <Btn label={gift ? "送礼 + 寄信" : "寄信"} disabled={!recipient || !letter.trim()} zoneTheme={zoneTheme} onClick={doSend} />
+                  <Btn label={gift ? "送礼 + 寄信" : "寄信"} disabled={!recipient || !letter.trim()} onClick={doSend} />
                 </div>
               </>
             )}

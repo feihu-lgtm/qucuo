@@ -9,7 +9,7 @@ import React from "react";
 // ── 像素大堂 ─────────────────────────────────────────────────────────
 // 借 Star-Office-UI 的"状态→区域"渲染：实体位置只由 phase/岗位决定，
 // 走动 = left/top 的 CSS transition，零 canvas 零逐帧 JS。
-export function Scene({ sim, night, zoneTheme }) {
+export function Scene({ sim, night }) {
   const staff = sim.staff;
   return (
     <div style={S.scene(night)}>

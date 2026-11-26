@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { QUALITY_COLOR, CATEGORY_LABEL } from "../../domain/rules/economy/equipment.js";
+import { CATEGORY_LABEL } from "../../domain/rules/economy/equipment.js";
 import { effectBrief, passiveBonusBrief } from "../../domain/rules/economy/itemEffectText.js";
+import { QUALITY_COLOR } from "../../domain/data/items/qualityColor.js";
 
 // WO-14 水墨竹简「天机落账卡」：日志项携带 receipts 时，在正文下方渲染的紧凑
 // 落账条。对照 WO-11 materializeFacts 的真实 receipt 形状：
@@ -149,18 +150,7 @@ export default function EffectReceiptCard({ receipt, onAction }) {
                 key={b.op}
                 type="button"
                 disabled={used}
-                onClick={() => fire(b.op)}
-                style={{
-                  fontSize: "var(--fs-xs)",
-                  padding: "2px 12px",
-                  cursor: used ? "default" : "pointer",
-                  color: used ? "var(--text)" : qc,
-                  background: "rgba(0,0,0,0.3)",
-                  border: `1px solid ${qc}`,
-                  borderRadius: 2,
-                  opacity: used ? 0.45 : 1,
-                  letterSpacing: "0.1em",
-                }}
+                onClick={() => fire(b.op)} className="receipt-action-btn" data-on={Boolean(used)} style={{ color: used ? "var(--text)" : qc, border: `1px solid ${qc}` }}
               >
                 {used ? `${b.label}✓` : b.label}
               </button>

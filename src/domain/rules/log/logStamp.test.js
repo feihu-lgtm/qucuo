@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { stampLogEntries, LOG_T } from "./logTypes.js";
+import { stampLogEntries } from "./logTypes.js";
 import { tagBackfill, insertBackfill } from "./backfill.js";
 import { getGameDay, formatRealDateTime } from "../../../utils/mudHelpers.js";
+import { LOG_T } from "../../data/log/logTypes.js";
 
 describe("日志游戏回合/游戏日打标与时间工具", () => {
   it("getGameDay 按 24 回合换日", () => {

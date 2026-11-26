@@ -1,21 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { getAllMemories } from "../../infra/memoryStore.js";
-import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
+import ModalShell from "../primitives/ModalShell.jsx";
+import { THEME_VARS } from "../../utils/theme.js";
 
 // 见闻录：把两套记忆系统可视化——玩家可打开查看。
 // ① 事实账本（knowledge.js，varTree.世界.知识域）：什么时候·什么事·谁知道·怎么知道的·能记多少·传闻怎么演变
 // ② 记忆碎片（小纸条，IndexedDB 向量库）：AI 记下的≤50字往事，公共/私有
 //
-// props: varTree（读账本）、time（当前回合，算淡忘倒计时）、turnToStr（回合→"第X日·时辰"）、zoneTheme、onClose
+// props: varTree（读账本）、time（当前回合，算淡忘倒计时）、turnToStr（回合→"第X日·时辰"）、onClose；颜色取 CSS 变量
 
 const 途径色 = { 亲历: "var(--clay)", 目击: "var(--ink-accent)", 告知: "var(--lore-gold)", 传闻: "var(--lore-amber)", 剧本: "var(--lore-script)" };
 const 途径说明 = { 亲历: "亲身经历", 目击: "当场看见", 告知: "有人明说", 传闻: "道听途说", 剧本: "夙来知晓" };
 
-export default function LoreScreen({ varTree, time = 0, turnToStr, zoneTheme, onClose }) {
-  const closeGuard = useOverlayCloseGuard(onClose);
+export default function LoreScreen({ varTree, time = 0, turnToStr, onClose }) {
   const [tab, setTab] = useState("account"); // account=事实账本 | notes=记忆碎片
   const [notes, setNotes] = useState(null);
-  const T = zoneTheme || {};
+  const T = THEME_VARS;
   const accent = T.accent || "var(--lore-gold)";
   const border = T.border || "var(--ink-edge-quest)";
   const bgPanel = T.bgPanel || "var(--lore-panel)";
@@ -32,50 +32,49 @@ export default function LoreScreen({ varTree, time = 0, turnToStr, zoneTheme, on
   const 领域 = varTree?.世界?.知识领域 || {};
   const facts = Object.values(领域.事实 || {}).sort((a, b) => (b.诞生回合 || 0) - (a.诞生回合 || 0));
 
-  const wrap = { position: "fixed", inset: 0, background: "rgba(4,4,8,0.9)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 };
   const card = { width: "100%", maxWidth: 720, maxHeight: "86vh", background: "var(--bg-panel)", border: `1px solid ${border}`, borderRadius: 0, display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Songti SC','STSong','SimSun',serif", boxShadow: "0 20px 60px rgba(0,0,0,0.6)" };
 
+  // 遮罩原 rgba(4,4,8,0.9)，并入 --ink-overlay；面板自带版式，去壳后沿用原 card 样式。
   return (
-    <div style={wrap} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
-      <div style={card} onClick={e => e.stopPropagation()}>
-        {/* 顶栏 */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 20px", borderBottom: `1px solid ${border}`, background: `linear-gradient(180deg, ${bgPanel}, transparent)` }}>
-          <span style={{ fontSize: "var(--fs-lg)", color: accent, fontWeight: "bold", letterSpacing: 2 }}>📖 见闻录</span>
-          <span style={{ fontSize: "var(--fs-xs)", color: textDim }}>江湖之事，谁人知晓，几时淡忘</span>
-          <span style={{ flex: 1 }} />
-          <span onClick={onClose} style={{ cursor: "pointer", color: textDim, fontSize: "var(--fs-md)", padding: "2px 8px" }}>✕ 收起</span>
-        </div>
-
-        {/* Tab 切换 */}
-        <div style={{ display: "flex", gap: 4, padding: "10px 20px 0" }}>
-          {[["account", "事实账本", facts.length], ["notes", "记忆碎片", notes?.length]].map(([k, label, n]) => (
-            <span key={k} onClick={() => setTab(k)}
-              style={{ cursor: "pointer", padding: "6px 16px", borderRadius: 0, fontSize: "var(--fs-md)",
-                color: tab === k ? "var(--bg-panel)" : accent, background: tab === k ? accent : "transparent",
-                border: `1px solid ${tab === k ? accent : border}`, borderBottom: "none", fontWeight: tab === k ? "bold" : "normal" }}>
-              {label}{n != null ? ` · ${n}` : ""}
-            </span>
-          ))}
-        </div>
-
-        {/* 内容区 */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px", borderTop: `1px solid ${border}`, marginTop: -1 }}>
-          {tab === "account" && (
-            facts.length === 0
-              ? <Empty text="江湖尚且平静，还没有值得记下的事。" textDim={textDim} />
-              : facts.map(f => <FactCard key={f.id} fact={f} time={time} fmtTurn={fmtTurn} accent={accent} border={border} bgPanel={bgPanel} textDim={textDim} />)
-          )}
-          {tab === "notes" && (
-            notes === null
-              ? <Empty text="正在翻检记忆……" textDim={textDim} />
-              : notes.length === 0
-                ? <Empty text="还没有记下的往事碎片。（需在设置里开启向量记忆才会积累）" textDim={textDim} />
-                : [...notes].sort((a, b) => (b.turn || 0) - (a.turn || 0)).map(n =>
-                    <NoteCard key={n.id} note={n} fmtTurn={fmtTurn} accent={accent} border={border} bgPanel={bgPanel} textDim={textDim} />)
-          )}
-        </div>
+    <ModalShell onClose={onClose} layer="screen-high" mobile="none" chrome={false} showClose={false} ariaLabel="见闻录"
+      rootStyle={{ padding: 20 }} panelStyle={card}>
+      {/* 顶栏 */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 20px", borderBottom: `1px solid ${border}`, background: `linear-gradient(180deg, ${bgPanel}, transparent)` }}>
+        <span style={{ fontSize: "var(--fs-lg)", color: accent, fontWeight: "bold", letterSpacing: 2 }}>📖 见闻录</span>
+        <span style={{ fontSize: "var(--fs-xs)", color: textDim }}>江湖之事，谁人知晓，几时淡忘</span>
+        <span style={{ flex: 1 }} />
+        <span onClick={onClose} style={{ cursor: "pointer", color: textDim, fontSize: "var(--fs-md)", padding: "2px 8px" }}>✕ 收起</span>
       </div>
-    </div>
+
+      {/* Tab 切换 */}
+      <div style={{ display: "flex", gap: 4, padding: "10px 20px 0" }}>
+        {[["account", "事实账本", facts.length], ["notes", "记忆碎片", notes?.length]].map(([k, label, n]) => (
+          <span key={k} onClick={() => setTab(k)}
+            style={{ cursor: "pointer", padding: "6px 16px", borderRadius: 0, fontSize: "var(--fs-md)",
+              color: tab === k ? "var(--bg-panel)" : accent, background: tab === k ? accent : "transparent",
+              border: `1px solid ${tab === k ? accent : border}`, borderBottom: "none", fontWeight: tab === k ? "bold" : "normal" }}>
+            {label}{n != null ? ` · ${n}` : ""}
+          </span>
+        ))}
+      </div>
+
+      {/* 内容区 */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px", borderTop: `1px solid ${border}`, marginTop: -1 }}>
+        {tab === "account" && (
+          facts.length === 0
+            ? <Empty text="江湖尚且平静，还没有值得记下的事。" textDim={textDim} />
+            : facts.map(f => <FactCard key={f.id} fact={f} time={time} fmtTurn={fmtTurn} accent={accent} border={border} bgPanel={bgPanel} textDim={textDim} />)
+        )}
+        {tab === "notes" && (
+          notes === null
+            ? <Empty text="正在翻检记忆……" textDim={textDim} />
+            : notes.length === 0
+              ? <Empty text="还没有记下的往事碎片。（需在设置里开启向量记忆才会积累）" textDim={textDim} />
+              : [...notes].sort((a, b) => (b.turn || 0) - (a.turn || 0)).map(n =>
+                  <NoteCard key={n.id} note={n} fmtTurn={fmtTurn} accent={accent} border={border} bgPanel={bgPanel} textDim={textDim} />)
+        )}
+      </div>
+    </ModalShell>
   );
 }
 

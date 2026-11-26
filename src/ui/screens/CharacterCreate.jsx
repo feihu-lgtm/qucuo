@@ -2,7 +2,7 @@
 // 藏式 UI，复用开始界面的雪山背景与暖金配色。名讳写入 char.name（替换原「陈狐飞」），
 // 性别写入 char.gender（后续注入每轮 user prompt）。
 import React, { useState } from "react";
-import { ZONE_THEMES } from "../../utils/theme.js";
+import { NIGHT_VARS } from "../../utils/theme.js";
 import { getPendingPlayerCard, clearPendingPlayerCard, clearPendingStarterCompanion } from "../../domain/rules/cards/importedRegistry.js";
 import { adjustSpecial, baseSpecial, drawStarterSkills, remainingSpecialPoints, randomizeSpecial } from "../../domain/rules/character/starterBuild.js";
 import StatAllocator from "./StatAllocator.jsx";
@@ -16,7 +16,7 @@ import {
   portraitPresetUrl,
 } from "../../domain/rules/character/bodyPresets.js";
 
-const theme = ZONE_THEMES.village;
+const theme = NIGHT_VARS; // 固定暗夜，见 theme.js 的 NIGHT_VARS
 const BASE = (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.BASE_URL) || "/";
 
 const GENDERS = [
@@ -243,8 +243,9 @@ export default function CharacterCreate({ onConfirm }) {
 }
 
 const styles = {
+  // 整屏定位在 tokens.css 的 .character-create-root。
   container: {
-    position: "fixed", inset: 0, overflow: "hidden",
+    overflow: "hidden",
     backgroundImage: `url('${BASE}start-bg.webp')`,
     backgroundSize: "cover", backgroundPosition: "center",
     display: "flex", alignItems: "center", justifyContent: "center",
@@ -280,7 +281,7 @@ const styles = {
   cardBox: {
     marginBottom: 20, padding: "12px 14px", borderRadius: 0,
     background: "rgba(212,168,83,.08)",
-    border: `1px solid ${theme.accent}55`,
+    border: `1px solid color-mix(in srgb, ${theme.accent} 33.3%, transparent)`,
   },
   field: { display: "block", marginBottom: 20 },
   fieldLabel: {

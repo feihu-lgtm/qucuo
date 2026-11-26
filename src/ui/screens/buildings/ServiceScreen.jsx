@@ -3,7 +3,7 @@ import { SERVICE_MENUS } from "../../../domain/data/buildings/menuData.js";
 import { Overlay, Header, Btn } from "./common.jsx";
 
 // 饭馆/酒楼/戏楼：点菜/点单，生成 buff flag，消耗银两
-export default function ServiceScreen({ building, char, time, flags, zoneTheme, onClose, inline, onOrder, onEnterBasement }) {
+export default function ServiceScreen({ building, char, time, flags, onClose, inline, onOrder, onEnterBasement }) {
   const menuKey = building.menuKey || "饭馆";
   const isRestaurant = building.type === "restaurant";
   const money = char.money || 0;
@@ -13,8 +13,8 @@ export default function ServiceScreen({ building, char, time, flags, zoneTheme, 
   const visibleMenu = menu.filter(item => !item.isHidden);
 
   return (
-    <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
+    <Overlay onClose={onClose} inline={inline}>
+      <Header name={building.name} onClose={onClose} />
       <div style={{ padding: 16 }}>
         <div style={{ color: "var(--ink-text-dim)", marginBottom: 12, fontSize: "var(--fs-xs)" }}>
           银两 {money} 两
@@ -24,7 +24,7 @@ export default function ServiceScreen({ building, char, time, flags, zoneTheme, 
         </div>
 
         {visibleMenu.map(item => (
-          <div key={item.name} style={{ marginBottom: 10, padding: "10px 12px", background: "var(--bg-ink)", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
+          <div key={item.name} style={{ marginBottom: 10, padding: "10px 12px", background: "var(--bg-ink)", borderRadius: 0, border: `1px solid var(--border)` }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
               <span style={{ color: "var(--ink-text)", fontSize: "var(--fs-md)" }}>{item.name}</span>
               <span style={{ color: "var(--gold-bright)", fontSize: "var(--fs-sm)" }}>{item.price} 两</span>
@@ -36,14 +36,13 @@ export default function ServiceScreen({ building, char, time, flags, zoneTheme, 
             <Btn
               label={`点${item.name}`}
               disabled={money < item.price}
-              zoneTheme={zoneTheme}
               onClick={() => onOrder(item)}
             />
           </div>
         ))}
 
         {building.hasBasement && (
-          <div style={{ marginTop: 16, borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 12 }}>
+          <div style={{ marginTop: 16, borderTop: `1px solid var(--border)`, paddingTop: 12 }}>
             <div
               onClick={onEnterBasement}
               style={{ color: "var(--service-dismiss)", fontSize: "var(--fs-xs)", cursor: "pointer", opacity: 0.6 }}
@@ -58,13 +57,13 @@ export default function ServiceScreen({ building, char, time, flags, zoneTheme, 
 }
 
 // 素斋地下室（荤食）
-export function BasementScreen({ char, time, zoneTheme, onClose, inline, onOrder }) {
+export function BasementScreen({ char, time, onClose, inline, onOrder }) {
   const money = char.money || 0;
   const menu = SERVICE_MENUS["荤食地下室"] || [];
 
   return (
-    <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name="素斋地下室" zoneTheme={zoneTheme} onClose={onClose} />
+    <Overlay onClose={onClose} inline={inline}>
+      <Header name="素斋地下室" onClose={onClose} />
       <div style={{ padding: 16 }}>
         <div style={{ color: "var(--service-note)", fontSize: "var(--fs-sm)", marginBottom: 12 }}>
           嗯…这里和楼上大不一样。香气扑鼻，烛光昏黄，不问来路，不问因由。
@@ -82,7 +81,6 @@ export function BasementScreen({ char, time, zoneTheme, onClose, inline, onOrder
             <Btn
               label="点这个"
               disabled={money < item.price}
-              zoneTheme={zoneTheme}
               onClick={() => onOrder(item, -2)}
             />
           </div>

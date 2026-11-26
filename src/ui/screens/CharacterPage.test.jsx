@@ -17,6 +17,9 @@ vi.mock("react", async (importOriginal) => {
     },
     useRef: (initial) => ({ current: initial }),
     useCallback: (fn) => fn,
+    // 这里把组件当普通函数展开、不经过 React 渲染，副作用不在检查范围内；
+    // ModalShell 挂载时登记弹窗栈和键盘监听，用空函数替身。
+    useEffect: () => {},
   };
   return { ...mocked, default: mocked };
 });

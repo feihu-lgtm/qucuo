@@ -10,7 +10,7 @@ import { JADE_WARES } from "../../../domain/data/items/catalog.js";
 const QUAL_COLOR = { 白: "var(--ink-text)", 绿: "var(--ink-leaf)", 蓝: "var(--ink-sky)", 紫: "var(--violet)", 橙: "var(--ink-amber)", 红: "var(--ink-rose)" };
 const CAT_CN = { weapon: "玉兵", armor: "玉甲", accessory: "玉饰" };
 
-export default function JadeShopScreen({ building, char, inv = [], time, zoneTheme, onClose, inline, onDesign, onCraft }) {
+export default function JadeShopScreen({ building, char, inv = [], time, onClose, inline, onDesign, onCraft }) {
   const [tab, setTab] = useState("buy");          // buy=选购成品 / custom=定制
   const [jadeId, setJadeId] = useState(null);      // 选中的玉料 id
   const [material, setMaterial] = useState("");
@@ -27,8 +27,8 @@ export default function JadeShopScreen({ building, char, inv = [], time, zoneThe
   const jades = inv.filter(i => (typeof i === "object") && i.jadeSpec);
   const chosenJade = jades.find(j => j.id === jadeId) || null;
 
-  const inputStyle = { width: "100%", marginTop: 4, marginBottom: 10, background: "var(--bg-ink)", border: `1px solid ${zoneTheme.border}`, borderRadius: 0, color: "var(--ink-text)", fontSize: "var(--fs-sm)", padding: "5px 8px", boxSizing: "border-box" };
-  const tabStyle = (on) => ({ flex: 1, textAlign: "center", padding: "6px 0", cursor: "pointer", fontSize: "var(--fs-sm)", color: on ? "var(--ink-cream-dim)" : "var(--ink-text-dim)", borderBottom: on ? `2px solid ${zoneTheme.accent}` : "1px solid var(--ink-edge-quest)" });
+  const inputStyle = { width: "100%", marginTop: 4, marginBottom: 10, background: "var(--bg-ink)", border: `1px solid var(--border)`, borderRadius: 0, color: "var(--ink-text)", fontSize: "var(--fs-sm)", padding: "5px 8px", boxSizing: "border-box" };
+  const tabStyle = (on) => ({ flex: 1, textAlign: "center", padding: "6px 0", cursor: "pointer", fontSize: "var(--fs-sm)", color: on ? "var(--ink-cream-dim)" : "var(--ink-text-dim)", borderBottom: on ? `2px solid var(--accent)` : "1px solid var(--ink-edge-quest)" });
 
   async function doDesign() {
     if (designing || !chosenJade) return;
@@ -56,7 +56,7 @@ export default function JadeShopScreen({ building, char, inv = [], time, zoneThe
         const cap = j.jadeSpec?.qualityCap || j.quality || "白";
         const on = j.id === jadeId;
         return (
-          <div key={j.id} onClick={() => setJadeId(j.id)} style={{ cursor: "pointer", padding: "6px 10px", marginBottom: 4, borderRadius: 0, border: `1px solid ${on ? zoneTheme.accent : zoneTheme.border}`, background: on ? "rgba(255,255,255,0.05)" : "transparent", display: "flex", justifyContent: "space-between" }}>
+          <div key={j.id} onClick={() => setJadeId(j.id)} className="jade-item-card" data-on={Boolean(on)}>
             <span style={{ color: "var(--ink-text)", fontSize: "var(--fs-sm)" }}>{j.jadeSpec?.tierLabel || j.name}</span>
             <span style={{ color: QUAL_COLOR[cap], fontSize: "var(--fs-xs)" }}>天花板 {cap}</span>
           </div>
@@ -66,8 +66,8 @@ export default function JadeShopScreen({ building, char, inv = [], time, zoneThe
   );
 
   return (
-    <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name={building.name || "金玉行"} zoneTheme={zoneTheme} onClose={onClose} />
+    <Overlay onClose={onClose} inline={inline}>
+      <Header name={building.name || "金玉行"} onClose={onClose} />
       <div style={{ padding: 16 }}>
         <div style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)", marginBottom: 10 }}>{building.desc}</div>
         <div style={{ color: "var(--ink-text-dim)", marginBottom: 12, fontSize: "var(--fs-xs)" }}>气运 {luck}/10 · 玉器品质＝料的天花板与手气取其低</div>
@@ -102,14 +102,14 @@ export default function JadeShopScreen({ building, char, inv = [], time, zoneThe
                   {JADE_WARES.map((w, i) => {
                     const eff = effectBrief(w.effect, w.sixDim);
                     return (
-                      <div key={i} style={{ marginBottom: 8, padding: "8px 10px", background: "var(--ink-coffee)", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
+                      <div key={i} style={{ marginBottom: 8, padding: "8px 10px", background: "var(--ink-coffee)", borderRadius: 0, border: `1px solid var(--border)` }}>
                         <div style={{ display: "flex", justifyContent: "space-between" }}>
                           <span style={{ color: "var(--ink-cream-dim)", fontSize: "var(--fs-md)" }}>{w.name}</span>
                           <span style={{ color: QUAL_COLOR[w.quality], fontSize: "var(--fs-2xs)" }}>{CAT_CN[w.category]}·本档{w.quality}</span>
                         </div>
                         {eff && <div style={{ color: "var(--ink-sky-soft)", fontSize: "var(--fs-2xs)", margin: "3px 0" }}>词条：{eff}</div>}
                         <div style={{ color: "var(--ink-stone-dim)", fontSize: "var(--fs-xs)", marginBottom: 6, lineHeight: 1.5 }}>{w.desc}</div>
-                        <Btn label={chosenJade ? "用这块料雕它" : "先选玉料"} disabled={!chosenJade} zoneTheme={zoneTheme} onClick={() => craft(w)} />
+                        <Btn label={chosenJade ? "用这块料雕它" : "先选玉料"} disabled={!chosenJade} onClick={() => craft(w)} />
                       </div>
                     );
                   })}
@@ -125,7 +125,7 @@ export default function JadeShopScreen({ building, char, inv = [], time, zoneThe
                 <input value={category} onChange={e => setCategory(e.target.value)} placeholder="饰品·玉佩 / 护甲·玉牌…" style={inputStyle} />
                 <label style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)" }}>要求（想要的脾性，如 幸运、护身、静心…）</label>
                 <input value={requirement} onChange={e => setRequirement(e.target.value)} placeholder="幸运、养气…" style={inputStyle} />
-                <Btn label={designing ? "玉匠正琢磨样式……" : (chosenJade ? "请玉匠出方案" : "先选玉料")} disabled={designing || !chosenJade} zoneTheme={zoneTheme} onClick={doDesign} />
+                <Btn label={designing ? "玉匠正琢磨样式……" : (chosenJade ? "请玉匠出方案" : "先选玉料")} disabled={designing || !chosenJade} onClick={doDesign} />
                 {designErr && <div style={{ color: "var(--ink-rose)", fontSize: "var(--fs-xs)", marginTop: 8 }}>{designErr}</div>}
               </>
             )}
@@ -136,18 +136,18 @@ export default function JadeShopScreen({ building, char, inv = [], time, zoneThe
                 {candidates.map((c, i) => {
                   const eff = effectBrief(c.effect, c.sixDim);
                   return (
-                    <div key={i} style={{ marginBottom: 10, padding: "10px 12px", background: "var(--ink-coffee)", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
+                    <div key={i} style={{ marginBottom: 10, padding: "10px 12px", background: "var(--ink-coffee)", borderRadius: 0, border: `1px solid var(--border)` }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                         <span style={{ color: "var(--ink-cream-dim)", fontSize: "var(--fs-md)", fontWeight: "bold" }}>{c.name}</span>
                         <span style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-2xs)" }}>{CAT_CN[c.category] || "玉器"}</span>
                       </div>
                       {eff && <div style={{ color: "var(--ink-sky-soft)", fontSize: "var(--fs-xs)", marginBottom: 4 }}>词条：{eff}</div>}
                       {c.desc && <div style={{ color: "var(--ink-stone-dim)", fontSize: "var(--fs-xs)", marginBottom: 8, lineHeight: 1.5 }}>{c.desc}</div>}
-                      <Btn label="选这件雕" zoneTheme={zoneTheme} onClick={() => craft(c)} />
+                      <Btn label="选这件雕" onClick={() => craft(c)} />
                     </div>
                   );
                 })}
-                <Btn label="都不满意，重说要求" zoneTheme={zoneTheme} onClick={() => setCandidates(null)} />
+                <Btn label="都不满意，重说要求" onClick={() => setCandidates(null)} />
               </>
             )}
           </>

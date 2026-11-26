@@ -1,10 +1,10 @@
-import { chromeBtn } from "../../../utils/theme.js";
+import { Button } from "../../primitives/index.js";
 
 export default function FaceEditor({ faces, theme }) {
   const { preferences, face, availableModules, minFaces, maxFaces } = faces;
   const labels = Object.fromEntries(availableModules.map(module => [module.id, module.label]));
   const button = (label, action, disabled = false) => (
-    <button type="button" style={chromeBtn(theme)} disabled={disabled} onClick={action}>{label}</button>
+    <Button variant="chrome" type="button" disabled={disabled} onClick={action}>{label}</Button>
   );
   return (
     <section className="face-editor" aria-label="编排当前面" style={{ borderColor: theme.border }}>
@@ -27,10 +27,10 @@ export default function FaceEditor({ faces, theme }) {
               <label><input type="checkbox" checked={position >= 0}
                 onChange={() => faces.toggleModule(id)} />{labels[id]}</label>
               {position >= 0 && <>
-                <button type="button" style={chromeBtn(theme)} aria-label={`上移${labels[id]}`}
-                  disabled={position === 0} onClick={() => faces.moveModule(id, -1)}>↑</button>
-                <button type="button" style={chromeBtn(theme)} aria-label={`下移${labels[id]}`}
-                  disabled={position === face.modules.length - 1} onClick={() => faces.moveModule(id, 1)}>↓</button>
+                <Button variant="chrome" type="button" aria-label={`上移${labels[id]}`}
+                  disabled={position === 0} onClick={() => faces.moveModule(id, -1)}>↑</Button>
+                <Button variant="chrome" type="button" aria-label={`下移${labels[id]}`}
+                  disabled={position === face.modules.length - 1} onClick={() => faces.moveModule(id, 1)}>↓</Button>
               </>}
             </div>
           );

@@ -4,6 +4,19 @@
   font-display: swap;
 }
 
+/* ── 断点表（唯一来源，路线图 U5）────────────────────────────────
+   CSS 的 @media 不能读变量，下面的 --bp-* 只作登记；mobile.css 里每个 @media 用到的
+   宽高都必须出现在这张表里，JS 的设备判断（utils/viewport.js）取 --bp-phone-max。
+   viewport.test.js 核对这三件事。
+
+   --bp-phone-max    767px  手机：@media (max-width: 767px)；JS 的 isMobile 同此
+   --bp-tablet-min   768px  非手机：@media (min-width: 768px)
+   --bp-compact-max  768px  紧凑布局：@media (max-width: 768px)，常与 (max-height: 700px) 连用
+   --bp-short-max    700px  矮屏：@media (max-height: 700px)
+   --bp-landscape-max 500px 横屏手机：@media (orientation: landscape) and (max-height: 500px)
+
+   已知不一致（保持现状）：--bp-compact-max 是 768px，宽度恰好 768px 时紧凑布局的规则生效，
+   而 isMobile 为否。改动会改变该宽度下的显示，记作遗留项。 */
 :root {
   color-scheme: dark;
   /* GameLayout 按字号设置内联覆盖，CSS 里用来抵消 zoom。 */
@@ -47,6 +60,20 @@
   --ctl-h: 22px;
   --ctl-pad-x: 9px;
   --radius-none: 0;
+  /* 浮层层级表（唯一来源）：ModalShell 的 layer 只能取这几档。档位按现存浮层的
+     z-index 分簇定值，保住原有先后：回合状态条与提示 < 界面内覆盖层 < 大地图 < 建筑面板
+     < 设置/交易/赌石 < 人物页/见闻录/图鉴等全屏界面 < 二级弹窗与菜单 < 教程/版本历史
+     < 错误兜底。 */
+  --z-hud: 50;
+  --z-float: 60;
+  --z-float-high: 70;
+  --z-map: 100;
+  --z-building: 120;
+  --z-screen: 200;
+  --z-screen-high: 300;
+  --z-dialog: 400;
+  --z-top: 500;
+  --z-fatal: 9999;
   --sp-1: 4px;
   --sp-2: 8px;
   --sp-3: 12px;
@@ -253,6 +280,9 @@
 
   /* 设置面板定色（原字面量，不随日间模式变） */
   --ink-overlay: rgba(4,4,10,0.92);
+  --ink-overlay-soft: rgba(4,4,10,0.75);
+  --gamble-veil: rgba(5,4,2,.55);
+  --gamble-veil-deep: rgba(5,4,2,.72);
   --ink-divider: #1a1d2e;
   --ink-divider-blue: #1a2d3a;
   --ink-error-bg: #1a0e0e;
@@ -454,6 +484,14 @@
   --log-choice: #6aaa8a;
   --log-affection: #f0a0c0;
   --log-dialogue: #e8a0d8;
+  /* NPC 名与好感/私聊的语义色（原 theme.js 的 ink("green") / ink("pink")），随日夜切换。 */
+  --npc-name: #c07050;
+  --npc-affection: #d68a8a;
+  --bp-phone-max: 767px;
+  --bp-tablet-min: 768px;
+  --bp-compact-max: 768px;
+  --bp-short-max: 700px;
+  --bp-landscape-max: 500px;
 }
 
 :root[data-font="pixel"] {
@@ -486,7 +524,41 @@
   --log-confess: #8a5a0a;
   --log-quest: #8a5a0a;
   --log-dialogue: #8a1e6a;
+  --npc-name: #8a4a2a;
+  --npc-affection: #a8524a;
 }
+/* 固定暗夜的子树（开始页、开场、创角、酒馆经营、开始页的卡牌导入）：根节点写
+   data-theme="night"，这里把日间块覆盖过的变量按 :root 的暗夜值重新声明一遍，
+   全局切到日间时子树仍是暗夜。变量清单与取值由 themeTokens.test.js 锁住。 */
+[data-theme="night"] {
+  color-scheme: dark;
+  --bg: #0a0a09;
+  --bg-panel: #111110;
+  --border: #4a453c;
+  --text: #e8e4d6;
+  --text-dim: #8f8a7c;
+  --accent: #c8323a;
+  --accent-dim: #8a4a48;
+  --good: #5a8a5a;
+  --warn: #d4a853;
+  --info: #8ac8b8;
+  --muted: #8a8270;
+  --plate: #111110;
+  --qc-hi: #e8e4d6;
+  --log-desc: initial; /* 暗夜下本无此变量（只给日间日志配色用），子树里同样置空 */
+  --log-room: initial; /* 暗夜下本无此变量（只给日间日志配色用），子树里同样置空 */
+  --log-item: initial; /* 暗夜下本无此变量（只给日间日志配色用），子树里同样置空 */
+  --log-skill: initial; /* 暗夜下本无此变量（只给日间日志配色用），子树里同样置空 */
+  --log-choice: #6aaa8a;
+  --log-narrator: initial; /* 暗夜下本无此变量（只给日间日志配色用），子树里同样置空 */
+  --log-affection: #f0a0c0;
+  --log-confess: initial; /* 暗夜下本无此变量（只给日间日志配色用），子树里同样置空 */
+  --log-quest: initial; /* 暗夜下本无此变量（只给日间日志配色用），子树里同样置空 */
+  --log-dialogue: #e8a0d8;
+  --npc-name: #c07050;
+  --npc-affection: #d68a8a;
+}
+
 
 html,
 body {
@@ -500,7 +572,13 @@ body {
   font-family: var(--font-body);
 }
 
-div[style*="position: fixed"][style*="z-index"] {
+div[style*="position: fixed"][style*="z-index"],
+.ui-modal-root,
+.turn-status-float,
+.debug-panel-dock,
+.gamble-stage,
+.gamble-minimized-chip,
+.tutorial-overlay {
   animation: ink-overlay-in var(--dur) ease-out both;
   transform-origin: center;
 }
@@ -546,7 +624,7 @@ div[style*="position: fixed"][style*="z-index"] {
 .ink-spinner-screen {
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: var(--z-fatal);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -632,4 +710,167 @@ div[style*="position: fixed"][style*="z-index"] {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ── ModalShell 外壳（src/ui/primitives/ModalShell.jsx）──────────────────
+   桌面端居中浮出；手机端由 mobile.css 的 .mobile-overlay-* 规则接管成全屏。 */
+.ui-modal-root {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  background: var(--ink-overlay);
+}
+
+.ui-modal-root[data-layer="hud"] { z-index: var(--z-hud); }
+.ui-modal-root[data-layer="float"] { z-index: var(--z-float); }
+.ui-modal-root[data-layer="float-high"] { z-index: var(--z-float-high); }
+.ui-modal-root[data-layer="map"] { z-index: var(--z-map); }
+.ui-modal-root[data-layer="building"] { z-index: var(--z-building); }
+.ui-modal-root[data-layer="screen"] { z-index: var(--z-screen); }
+.ui-modal-root[data-layer="screen-high"] { z-index: var(--z-screen-high); }
+.ui-modal-root[data-layer="dialog"] { z-index: var(--z-dialog); }
+.ui-modal-root[data-layer="top"] { z-index: var(--z-top); }
+
+.ui-modal-root[data-backdrop="soft"] { background: var(--ink-overlay-soft); }
+
+.ui-modal-panel {
+  position: relative;
+  max-width: 90vw;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-none);
+  background: var(--bg-panel);
+  color: var(--text);
+  font-family: inherit;
+  outline: none;
+}
+
+.ui-modal-panel[data-chrome="none"] {
+  max-width: none;
+  max-height: none;
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.ui-modal-panel.version-history-panel {
+  font-size: var(--fs-sm);
+}
+
+.ui-modal-panel.settings-panel,
+.ui-modal-panel.music-panel,
+.ui-modal-panel.portrait-manager-panel,
+.ui-modal-panel.mobile-character-panel,
+.ui-modal-panel.character-detail-panel,
+.ui-modal-panel.body-profile-panel {
+  font-size: var(--fs-md);
+}
+
+/* 建筑面板（screens/buildings/common.jsx 的 Overlay）：标题栏自带内边距，面板不再加。 */
+.ui-modal-panel.building-panel {
+  padding: 0;
+  background: var(--building-panel-bg);
+}
+
+/* 家园面板用墨拓定色，不随日夜切换。 */
+.ui-modal-panel.homestead-panel {
+  border-color: var(--ink-border);
+  background: var(--ink-bg-panel);
+  color: var(--ink-text);
+  font-size: var(--fs-md);
+}
+
+/* 赌石舞台里的两层弹窗：暖色遮罩，放大卡片那层再加模糊。 */
+.ui-modal-root.gamble-veil { background: var(--gamble-veil); }
+.ui-modal-root.gamble-veil-deep {
+  background: var(--gamble-veil-deep);
+  backdrop-filter: blur(3px);
+}
+
+.ui-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+  background: var(--bg-panel);
+}
+
+.ui-modal-title {
+  min-width: 0;
+  color: var(--accent);
+  font-size: var(--fs-base);
+}
+
+.ui-modal-close {
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: var(--fs-xs);
+  cursor: pointer;
+}
+
+.ui-modal-close:hover,
+.ui-modal-close:focus-visible {
+  color: var(--accent);
+}
+
+/* ── 非模态浮层：定位与层级写在类里，组件只留随内容变化的位置值 ──────── */
+.blocked-direction-toast {
+  position: fixed;
+  left: 50%;
+  z-index: var(--z-hud);
+}
+
+.turn-status-float {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: var(--z-hud);
+}
+
+.debug-panel-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-screen-high);
+}
+
+.gamble-stage {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-screen);
+}
+
+.gamble-minimized-chip {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: var(--z-screen);
+}
+
+/* 开场与创角是整屏页面，不是弹窗：原先就没有 z-index，这里也不给。 */
+.opening-sequence-root,
+.character-create-root {
+  position: fixed;
+  inset: 0;
+}
+
+/* 新手教程：点任意处收起的整屏导览，不是带面板的弹窗。 */
+.tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-top);
 }

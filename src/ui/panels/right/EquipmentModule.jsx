@@ -1,19 +1,21 @@
-import { QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL, toggleEquip } from "../../../domain/rules/economy/equipment.js";
-import { statLabel, effectBrief } from "../../../domain/rules/economy/itemEffectText.js";
+import { ITEM_CATEGORY, CATEGORY_LABEL, toggleEquip } from "../../../domain/rules/economy/equipment.js";
+import { effectBrief } from "../../../domain/rules/economy/itemEffectText.js";
+import { QUALITY_COLOR } from "../../../domain/data/items/qualityColor.js";
+import { statLabel } from "../../format/itemStats.js";
 
-export default function EquipmentModule({ zoneTheme, inv, setInv }) {
+export default function EquipmentModule({ inv, setInv }) {
   return (
-    <div style={{ borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 8, marginBottom: 10 }}>
-      <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accentDim, marginBottom: 4 }}>装备 <span style={{ color: zoneTheme.textDim, fontSize: "var(--fs-2xs)" }}>点物品切换装备/卸下</span></div>
+    <div style={{ borderTop: `1px solid var(--border)`, paddingTop: 8, marginBottom: 10 }}>
+      <div style={{ fontSize: "var(--fs-xs)", color: "var(--accent-dim)", marginBottom: 4 }}>装备 <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)" }}>点物品切换装备/卸下</span></div>
       {[ITEM_CATEGORY.WEAPON, ITEM_CATEGORY.ARMOR, ITEM_CATEGORY.ACCESSORY].map(cat => {
         const itemsInCat = inv.filter(i => typeof i === "object" && i.category === cat);
         const equippedCount = itemsInCat.filter(i => i.equipped).length;
         return (
           <div key={cat} style={{ marginBottom: 8 }}>
             <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 3 }}>
-              {CATEGORY_LABEL[cat]} <span style={{ color: zoneTheme.textDim }}>（{itemsInCat.length}件，{equippedCount}件已装备）</span>
+              {CATEGORY_LABEL[cat]} <span style={{ color: "var(--text-dim)" }}>（{itemsInCat.length}件，{equippedCount}件已装备）</span>
             </div>
-            {itemsInCat.length === 0 && <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.textDim, paddingLeft: 8 }}>无</div>}
+            {itemsInCat.length === 0 && <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", paddingLeft: 8 }}>无</div>}
             {itemsInCat.map(item => {
               // 特效与七维加成也要显示。此前这一行只有 (紫·攻35)，玩家拿到红档神兵
               // 看不出它跟普通武器差在哪，只好得出"只加了攻防"的结论（群友实测反馈）。

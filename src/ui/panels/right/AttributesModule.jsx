@@ -1,35 +1,27 @@
 import { bar } from "../../../utils/mudHelpers.js";
 
-export default function AttributesModule({ zoneTheme, char, trainNeigong, trainWaigong, trainCost, pot, effectiveSpecialNow, activeBuffs }) {
+export default function AttributesModule({ char, trainNeigong, trainWaigong, trainCost, pot, effectiveSpecialNow, activeBuffs }) {
   return (
-    <div style={{ borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 8, marginBottom: 10, display: "flex", gap: 12 }}>
+    <div style={{ borderTop: `1px solid var(--border)`, paddingTop: 8, marginBottom: 10, display: "flex", gap: 12 }}>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accentDim, marginBottom: 4 }}>内功外功</div>
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--accent-dim)", marginBottom: 4 }}>内功外功</div>
         <div style={{ fontSize: "var(--fs-sm)", display: "flex", alignItems: "center", gap: 6 }}>
           <span>内功 <span style={{ color: "var(--violet)" }}>{bar(char.neigong ?? 0, 100, 6)}</span> <span style={{ color: "var(--attr-value)" }}>{char.neigong ?? 0}</span></span>
           <span
             onClick={trainNeigong}
-            title={`运气打坐：消耗${trainCost(char.neigong ?? 0)}点潜能，内功+1（现有潜能${pot}）`}
-            style={{
-              cursor: "pointer", fontSize: "var(--fs-2xs)", padding: "1px 5px", borderRadius: 0,
-              color: "var(--attr-neigong-tag)", background: zoneTheme.bgPanel, border: "1px solid var(--attr-neigong-edge)", whiteSpace: "nowrap",
-            }}
+            title={`运气打坐：消耗${trainCost(char.neigong ?? 0)}点潜能，内功+1（现有潜能${pot}）`} className="attr-train-neigong"
           >+1（{trainCost(char.neigong ?? 0)}潜能）</span>
         </div>
         <div style={{ fontSize: "var(--fs-sm)", display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
           <span>外功 <span style={{ color: "var(--attr-waigong-bar)" }}>{bar(char.waigong ?? 0, 100, 6)}</span> <span style={{ color: "var(--attr-value)" }}>{char.waigong ?? 0}</span></span>
           <span
             onClick={trainWaigong}
-            title={`拆招练武：消耗${trainCost(char.waigong ?? 0)}点潜能，外功+1（现有潜能${pot}）`}
-            style={{
-              cursor: "pointer", fontSize: "var(--fs-2xs)", padding: "1px 5px", borderRadius: 0,
-              color: "var(--attr-waigong-tag)", background: zoneTheme.bgPanel, border: "1px solid var(--attr-waigong-edge)", whiteSpace: "nowrap",
-            }}
+            title={`拆招练武：消耗${trainCost(char.waigong ?? 0)}点潜能，外功+1（现有潜能${pot}）`} className="attr-train-waigong"
           >+1（{trainCost(char.waigong ?? 0)}潜能）</span>
         </div>
       </div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accentDim, marginBottom: 4 }}>七维</div>
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--accent-dim)", marginBottom: 4 }}>七维</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 8px", fontSize: "var(--fs-xs)" }}>
           {Object.entries(char.special || {}).map(([k, v]) => {
             const eff = effectiveSpecialNow?.[k];

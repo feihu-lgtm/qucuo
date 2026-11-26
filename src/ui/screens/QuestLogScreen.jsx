@@ -7,7 +7,7 @@ import { getCurrentStage } from "../../domain/rules/quests/questEngine.js";
 // 任务面板——参照 Bethesda 系 RPG 的任务日志：玩家能看到自己接了什么、
 // 现在卡在哪个阶段、上一步做了什么选择，而不是只能靠聊天记录里翻旧的
 // system 提示自己拼状态。分三组：进行中 / 已完成 / 被锁定（互斥线用）。
-export function QuestList({ questProgress, flags = [], zoneTheme }) {
+export function QuestList({ questProgress, flags = [] }) {
   const stageQuests = QUCUO_QUESTS.filter(q => q.stages?.length);
   const active = stageQuests.filter(q => questProgress[q.id]?.status === "active");
   const completed = stageQuests.filter(q => questProgress[q.id]?.status === "completed");
@@ -21,13 +21,13 @@ export function QuestList({ questProgress, flags = [], zoneTheme }) {
 
       {active.length > 0 && (
         <div style={{ marginBottom: 16 }}>
-          <div style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-xs)", marginBottom: 8 }}>进行中（{active.length}）</div>
+          <div style={{ color: "var(--accent-dim)", fontSize: "var(--fs-xs)", marginBottom: 8 }}>进行中（{active.length}）</div>
           {active.map(q => {
             const prog = questProgress[q.id];
             const stage = getCurrentStage(q, prog);
             const idx = (prog.currentStageIndex ?? 0) + 1;
             return (
-              <div key={q.id} style={{ marginBottom: 10, padding: "10px 12px", background: "var(--bg-panel)", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
+              <div key={q.id} style={{ marginBottom: 10, padding: "10px 12px", background: "var(--bg-panel)", borderRadius: 0, border: `1px solid var(--border)` }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                   <span style={{ color: "var(--text)", fontSize: "var(--fs-md)" }}>{q.title}</span>
                   <span style={{ color: "var(--quest-stage-count)", fontSize: "var(--fs-xs)" }}>{idx}/{q.stages.length}</span>
@@ -43,7 +43,7 @@ export function QuestList({ questProgress, flags = [], zoneTheme }) {
 
       {completed.length > 0 && (
         <div style={{ marginBottom: 16 }}>
-          <div style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-xs)", marginBottom: 8 }}>已完成（{completed.length}）</div>
+          <div style={{ color: "var(--accent-dim)", fontSize: "var(--fs-xs)", marginBottom: 8 }}>已完成（{completed.length}）</div>
           {completed.map(q => {
             const negative = questProgress[q.id]?.outcome === "negative";
             return (
@@ -58,7 +58,7 @@ export function QuestList({ questProgress, flags = [], zoneTheme }) {
 
       {locked.length > 0 && (
         <div>
-          <div style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-xs)", marginBottom: 8 }}>已错过（{locked.length}）</div>
+          <div style={{ color: "var(--accent-dim)", fontSize: "var(--fs-xs)", marginBottom: 8 }}>已错过（{locked.length}）</div>
           {locked.map(q => (
             <div key={q.id} style={{ marginBottom: 8, padding: "8px 10px", background: "var(--quest-negative-bg)", borderRadius: 0, border: "1px solid var(--quest-negative-edge)" }}>
               <div style={{ color: "var(--quest-negative-text)", fontSize: "var(--fs-sm)" }}>{q.title}</div>
@@ -71,14 +71,14 @@ export function QuestList({ questProgress, flags = [], zoneTheme }) {
   );
 }
 
-export default function QuestLogScreen({ questProgress, flags = [], zoneTheme, onClose, inline }) {
+export default function QuestLogScreen({ questProgress, flags = [], onClose, inline }) {
   return (
-    <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name="任务" zoneTheme={zoneTheme} onClose={onClose} />
+    <Overlay onClose={onClose} inline={inline}>
+      <Header name="任务" onClose={onClose} />
       <div className="mobile-overlay-content" style={{ padding: 16 }}>
-        <QuestList questProgress={questProgress} flags={flags} zoneTheme={zoneTheme} />
+        <QuestList questProgress={questProgress} flags={flags} />
         <div style={{ marginTop: 14, textAlign: "right" }}>
-          <Btn label="关闭" zoneTheme={zoneTheme} onClick={onClose} secondary />
+          <Btn label="关闭" onClick={onClose} secondary />
         </div>
       </div>
     </Overlay>

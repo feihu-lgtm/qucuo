@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
+import ModalShell from "../primitives/ModalShell.jsx";
 import { TALLY_KINDS, DAY_TURNS, tallyToday, describeLifetime, tallyTotals } from "../../domain/rules/memory/tally.js";
 import { NNPC_STAGE } from "../../domain/rules/narrator/narrator.js";
+import { THEME_VARS } from "../../utils/theme.js";
 
 // 起居注：逐日记录起居言动。
 // ============================================================================
@@ -18,10 +19,9 @@ import { NNPC_STAGE } from "../../domain/rules/narrator/narrator.js";
 // 【标题会变】走完旁白线（stage=RESOLVED）之后，这本册子的口吻跟着第六档一起变成
 // 她的手笔——面板本身也成了那段关系的证据，与 TONE_BY_TIER.unmasked 同一个道理。
 
-export default function QijuzhuScreen({ varTree, time = 0, narratorStage, zoneTheme, onClose }) {
-  const closeGuard = useOverlayCloseGuard(onClose);
+export default function QijuzhuScreen({ varTree, time = 0, narratorStage, onClose }) {
   const [tab, setTab] = useState("today");
-  const T = zoneTheme || {};
+  const T = THEME_VARS;
   const accent = T.accent || "var(--qijuzhu-accent)";
   const border = T.border || "var(--ink-edge-quest)";
   const bgPanel = T.bgPanel || "var(--qijuzhu-panel)";
@@ -45,70 +45,69 @@ export default function QijuzhuScreen({ varTree, time = 0, narratorStage, zoneTh
   const rows = tab === "today" ? todayRows : lifetime;
   const maxCount = rows.length ? Math.max(...rows.map(r => r.count)) : 1;
 
-  const wrap = { position: "fixed", inset: 0, background: "rgba(4,4,8,0.9)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 };
   const card = { width: "100%", maxWidth: 560, maxHeight: "86vh", background: "var(--bg-panel)", border: `1px solid ${border}`, borderRadius: 0, display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Songti SC','STSong','SimSun',serif", boxShadow: "0 20px 60px rgba(0,0,0,0.6)" };
 
+  // 遮罩原 rgba(4,4,8,0.9)，并入 --ink-overlay；面板自带版式，去壳后沿用原 card 样式。
   return (
-    <div style={wrap} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
-      <div style={card} onClick={e => e.stopPropagation()}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 20px", borderBottom: `1px solid ${border}`, background: `linear-gradient(180deg, ${bgPanel}, transparent)` }}>
-          <span style={{ fontSize: "var(--fs-lg)", color: accent, fontWeight: "bold", letterSpacing: 2 }}>🗒 起居注</span>
-          <span style={{ fontSize: "var(--fs-xs)", color: textDim }}>
-            {herBook ? "本女侠替这笨蛋记的账" : "逐日记录起居言动"}
-          </span>
-          <span style={{ flex: 1 }} />
-          <span onClick={onClose} style={{ cursor: "pointer", color: textDim, fontSize: "var(--fs-md)", padding: "2px 8px" }}>✕ 收起</span>
-        </div>
-
-        <div style={{ display: "flex", gap: 4, padding: "10px 20px 0" }}>
-          {[["today", `第${day}日`, totals.today], ["lifetime", "累计", totals.lifetime]].map(([k, label, n]) => (
-            <span key={k} onClick={() => setTab(k)}
-              style={{ cursor: "pointer", padding: "6px 16px", borderRadius: 0, fontSize: "var(--fs-md)",
-                color: tab === k ? "var(--bg-panel)" : accent, background: tab === k ? accent : "transparent",
-                border: `1px solid ${tab === k ? accent : border}`, borderBottom: "none", fontWeight: tab === k ? "bold" : "normal" }}>
-              {label} · {n}
-            </span>
-          ))}
-        </div>
-
-        <div style={{ flex: 1, overflowY: "auto", padding: "14px 20px 18px", borderTop: `1px solid ${border}` }}>
-          {rows.length === 0 ? (
-            <div style={{ color: textDim, fontSize: "var(--fs-sm)", lineHeight: 2, padding: "20px 0", textAlign: "center" }}>
-              {tab === "today"
-                ? (herBook ? "今日这笨蛋还什么都没干。" : "今日尚无记录。")
-                : "还没有可记之事。"}
-            </div>
-          ) : (
-            <>
-              {rows.map(r => (
-                <div key={r.key} style={{ marginBottom: 9 }}>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 6, fontSize: "var(--fs-sm)" }}>
-                    <span style={{ color: text, flex: 1 }}>{r.label}</span>
-                    {/* aiBacked 标一下：那几类另有一条 AI 写的往事落在见闻录里，
-                        这儿只是个量。不标的话玩家会以为起居注就是全部记忆。 */}
-                    {r.aiBacked && (
-                      <span style={{ fontSize: "var(--fs-2xs)", color: textDim }} title="这一类另有详细往事，见「见闻录」">另有记述</span>
-                    )}
-                    <span style={{ color: accent, fontSize: "var(--fs-md)", minWidth: 34, textAlign: "right" }}>{r.count}</span>
-                  </div>
-                  {/* 条形只作相对比例的直观提示，不标刻度——这不是数据面板 */}
-                  <div style={{ height: 3, background: border, borderRadius: 0, marginTop: 3, overflow: "hidden" }}>
-                    <div style={{ width: `${Math.max(4, (r.count / maxCount) * 100)}%`, height: "100%", background: r.aiBacked ? accent : "var(--qijuzhu-routine)" }} />
-                  </div>
-                </div>
-              ))}
-              <div style={{ marginTop: 14, paddingTop: 10, borderTop: `1px solid ${border}`, fontSize: "var(--fs-xs)", color: textDim, lineHeight: 1.9 }}>
-                {tab === "today"
-                  ? `今日共动作 ${totals.today} 次。子夜换日，此页清空，累计不清。`
-                  : `开局以来共动作 ${totals.lifetime} 次。`}
-                <br />
-                <span style={{ color: "var(--qijuzhu-routine)" }}>绿</span>=只记数的日常举动，
-                <span style={{ color: accent }}>金</span>=另在见闻录里留有往事的那些。
-              </div>
-            </>
-          )}
-        </div>
+    <ModalShell onClose={onClose} layer="screen-high" mobile="none" chrome={false} showClose={false} ariaLabel="起居注"
+      rootStyle={{ padding: 20 }} panelStyle={card}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 20px", borderBottom: `1px solid ${border}`, background: `linear-gradient(180deg, ${bgPanel}, transparent)` }}>
+        <span style={{ fontSize: "var(--fs-lg)", color: accent, fontWeight: "bold", letterSpacing: 2 }}>🗒 起居注</span>
+        <span style={{ fontSize: "var(--fs-xs)", color: textDim }}>
+          {herBook ? "本女侠替这笨蛋记的账" : "逐日记录起居言动"}
+        </span>
+        <span style={{ flex: 1 }} />
+        <span onClick={onClose} style={{ cursor: "pointer", color: textDim, fontSize: "var(--fs-md)", padding: "2px 8px" }}>✕ 收起</span>
       </div>
-    </div>
+
+      <div style={{ display: "flex", gap: 4, padding: "10px 20px 0" }}>
+        {[["today", `第${day}日`, totals.today], ["lifetime", "累计", totals.lifetime]].map(([k, label, n]) => (
+          <span key={k} onClick={() => setTab(k)}
+            style={{ cursor: "pointer", padding: "6px 16px", borderRadius: 0, fontSize: "var(--fs-md)",
+              color: tab === k ? "var(--bg-panel)" : accent, background: tab === k ? accent : "transparent",
+              border: `1px solid ${tab === k ? accent : border}`, borderBottom: "none", fontWeight: tab === k ? "bold" : "normal" }}>
+            {label} · {n}
+          </span>
+        ))}
+      </div>
+
+      <div style={{ flex: 1, overflowY: "auto", padding: "14px 20px 18px", borderTop: `1px solid ${border}` }}>
+        {rows.length === 0 ? (
+          <div style={{ color: textDim, fontSize: "var(--fs-sm)", lineHeight: 2, padding: "20px 0", textAlign: "center" }}>
+            {tab === "today"
+              ? (herBook ? "今日这笨蛋还什么都没干。" : "今日尚无记录。")
+              : "还没有可记之事。"}
+          </div>
+        ) : (
+          <>
+            {rows.map(r => (
+              <div key={r.key} style={{ marginBottom: 9 }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 6, fontSize: "var(--fs-sm)" }}>
+                  <span style={{ color: text, flex: 1 }}>{r.label}</span>
+                  {/* aiBacked 标一下：那几类另有一条 AI 写的往事落在见闻录里，
+                      这儿只是个量。不标的话玩家会以为起居注就是全部记忆。 */}
+                  {r.aiBacked && (
+                    <span style={{ fontSize: "var(--fs-2xs)", color: textDim }} title="这一类另有详细往事，见「见闻录」">另有记述</span>
+                  )}
+                  <span style={{ color: accent, fontSize: "var(--fs-md)", minWidth: 34, textAlign: "right" }}>{r.count}</span>
+                </div>
+                {/* 条形只作相对比例的直观提示，不标刻度——这不是数据面板 */}
+                <div style={{ height: 3, background: border, borderRadius: 0, marginTop: 3, overflow: "hidden" }}>
+                  <div style={{ width: `${Math.max(4, (r.count / maxCount) * 100)}%`, height: "100%", background: r.aiBacked ? accent : "var(--qijuzhu-routine)" }} />
+                </div>
+              </div>
+            ))}
+            <div style={{ marginTop: 14, paddingTop: 10, borderTop: `1px solid ${border}`, fontSize: "var(--fs-xs)", color: textDim, lineHeight: 1.9 }}>
+              {tab === "today"
+                ? `今日共动作 ${totals.today} 次。子夜换日，此页清空，累计不清。`
+                : `开局以来共动作 ${totals.lifetime} 次。`}
+              <br />
+              <span style={{ color: "var(--qijuzhu-routine)" }}>绿</span>=只记数的日常举动，
+              <span style={{ color: accent }}>金</span>=另在见闻录里留有往事的那些。
+            </div>
+          </>
+        )}
+      </div>
+    </ModalShell>
   );
 }

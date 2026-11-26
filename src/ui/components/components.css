@@ -1,0 +1,50 @@
+/* components 目录里可点击元素的样式（路线图 U2）。原先写在内联 style 里，原样搬到这里；
+   选中/可用等状态由 data-on="true|false" 切换。main.jsx 里排在 mobile.css 之后，
+   保住原内联样式压过 mobile.css 非 !important 规则的先后。快照见 src/ui/extractedCss.snapshots.json。 */
+/* ui/components/EffectReceiptCard.jsx */
+.receipt-action-btn {
+  font-size: var(--fs-xs);
+  padding: 2px 12px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 2px;
+  letter-spacing: 0.1em;
+  cursor: default;
+  opacity: 0.45;
+}
+.receipt-action-btn[data-on="false"] {
+  cursor: pointer;
+  opacity: 1;
+}
+
+/* ui/components/ItemActionMenu.jsx */
+.item-target-row {
+  cursor: pointer;
+  padding: 9px 10px;
+  border-radius: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+/* ui/components/NpcActionMenu.jsx */
+.npc-action-card {
+  cursor: pointer;
+  padding: 12px 10px;
+  border-radius: 0;
+  text-align: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  opacity: 1;
+}
+.npc-action-card[data-on="false"] {
+  opacity: 0.4;
+}
+
+/* ui/components/NpcActionMenu.jsx */
+.npc-gift-item {
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 0;
+  color: var(--text);
+  font-size: var(--fs-sm);
+  background: var(--bg);
+}

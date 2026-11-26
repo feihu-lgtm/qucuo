@@ -1,6 +1,6 @@
 // 切磋战斗界面
 // 布局参照传统回合制对战游戏的信息组织方式（双方血条对峙+中央VS+底部技能栏），
-// 视觉语言用曲措乡自己的水墨主题（zoneTheme），不是抄二次元卡通美术，
+// 视觉语言用曲措乡自己的水墨主题（tokens.css 的 CSS 变量），不是抄二次元卡通美术，
 // 只是复用"血条在哪、技能在哪、回合提示在哪"这套久经考验的信息层级。
 //
 // 结构：useDuelBattle 持有全部回合状态与结算处理，本组件只做调度+拼装；
@@ -21,24 +21,24 @@ export { HpBar, EnergyDots } from "./duel/DuelBars.jsx";
 export { MoveButton } from "./duel/MoveButton.jsx";
 export { MoveInspect } from "./duel/MoveInspect.jsx";
 
-export default function DuelScreen({ npc, playerChar, pendingCombatBuff, playerInv, playerMoveset, playerSkills = [], zoneTheme, onFinish }) {
+export default function DuelScreen({ npc, playerChar, pendingCombatBuff, playerInv, playerMoveset, playerSkills = [], onFinish }) {
   const b = useDuelBattle({ npc, playerChar, pendingCombatBuff, playerInv, playerMoveset, playerSkills, onFinish });
   const selecting = b.phase === "select";
 
   return (
     <div className="mobile-duel-root duel-solo-root" style={styles.overlay}>
-      <div className="mobile-duel-panel duel-solo-panel" style={{ ...styles.container, background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}` }}>
+      <div className="mobile-duel-panel duel-solo-panel" style={{ ...styles.container, background: "var(--bg-panel)", border: `1px solid var(--border)` }}>
 
         {/* ── 血/气条（保留）：双方对峙状态 ── */}
         <DuelTopBar
-          npc={npc} round={b.round} zoneTheme={zoneTheme}
+          npc={npc} round={b.round}
           playerHp={b.playerHp} playerEnergy={b.playerEnergy}
           npcHp={b.npcHp} npcEnergy={b.npcEnergy}
         />
 
         {/* ── 上半：操作区 ── */}
         <DuelOpPanel
-          npc={npc} zoneTheme={zoneTheme}
+          npc={npc}
           selecting={selecting} phase={b.phase} outcome={b.outcome} error={b.error}
           round={b.round} combatBuff={b.combatBuff}
           moveset={b.moveset} playerEnergy={b.playerEnergy} playerDefenseBroken={b.playerDefenseBroken}
@@ -50,11 +50,11 @@ export default function DuelScreen({ npc, playerChar, pendingCombatBuff, playerI
         />
 
         {/* ── 下半：MUD形式的结算展示 ── */}
-        <DuelLog battleLog={b.battleLog} npc={npc} zoneTheme={zoneTheme} />
+        <DuelLog battleLog={b.battleLog} npc={npc} />
       </div>
 
       {b.inspectMove && (
-        <MoveInspect move={b.inspectMove} zoneTheme={zoneTheme} onClose={() => b.setInspectMove(null)} />
+        <MoveInspect move={b.inspectMove} onClose={() => b.setInspectMove(null)} />
       )}
     </div>
   );

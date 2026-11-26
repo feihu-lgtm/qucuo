@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ZONE_THEMES } from "../../../utils/theme.js";
+import { THEME_VARS } from "../../../utils/theme.js";
 import { unlockImportedCompanion, stationCompanion } from "../../../domain/rules/companion/companion.js";
 import { buildEnemyUnit } from "../../../domain/rules/combat/teamUnits.js";
 import { partitionPeople } from "./peopleRoster.js";
@@ -39,7 +39,7 @@ function render(peoplePanel) {
   mocked.game = { companionState: companions(), varTree, varTreeCache: null };
   mocked.ui = { pigeonTarget: null, peoplePanel };
   return renderToStaticMarkup(createElement(NpcsModule, {
-    room, innerRoomName: null, varTree, zoneTheme: ZONE_THEMES.village, char: {},
+    room, innerRoomName: null, varTree, char: {},
     addLog: () => {}, inputRef: { current: null }, uiGreen: "var(--green-soft)", uiPink: "var(--pink)",
   }));
 }

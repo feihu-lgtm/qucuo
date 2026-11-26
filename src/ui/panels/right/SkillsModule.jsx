@@ -1,28 +1,28 @@
 import { useState } from "react";
-import { QUALITY_COLOR } from "../../../domain/rules/economy/equipment.js";
 import { STAGES, STAGE_UP_COST } from "../../../utils/mudHelpers.js";
 import { deriveMoveFromSkill } from "../../../domain/rules/npc/npcGeneration.js";
-import { moveStatLabel, moveEffectBrief } from "../../../domain/rules/economy/itemEffectText.js";
+import { moveEffectBrief } from "../../../domain/rules/economy/itemEffectText.js";
 import { skillDetail } from "../../../domain/rules/kungfu/skillDetail.js";
+import { QUALITY_COLOR } from "../../../domain/data/items/qualityColor.js";
+import { moveStatLabel } from "../../format/itemStats.js";
 
-export default function SkillsModule({ zoneTheme, skills, setSkills, inspectItem, inspecting, pot, breakthroughSkill }) {
+export default function SkillsModule({ skills, setSkills, inspectItem, inspecting, pot, breakthroughSkill }) {
   const [showIdleSkills, setShowIdleSkills] = useState(false);
   const [openSkill, setOpenSkill] = useState(null);
   return (
-    <div style={{ borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 8, marginBottom: 10 }}>
+    <div style={{ borderTop: `1px solid var(--border)`, paddingTop: 8, marginBottom: 10 }}>
       {/* 武学：未上阵的默认收起。玩家学的招会越攒越多（拜师/偷师/自练），
           全铺开之后上阵那几门反而被埋在中间——而真正每回合要看的只有上阵的。
           收起来的仍可一键展开，不是隐藏功能。 */}
-      <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accentDim, marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
+      <div style={{ fontSize: "var(--fs-xs)", color: "var(--accent-dim)", marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
         <span>武学</span>
-        <span style={{ color: zoneTheme.textDim, fontSize: "var(--fs-2xs)", flex: 1 }}>点名字看介绍 · 点圈运功上阵（每类只运一门，▶已上阵）</span>
+        <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)", flex: 1 }}>点名字看介绍 · 点圈运功上阵（每类只运一门，▶已上阵）</span>
         {(() => {
           const idle = skills.filter(s => !s.active).length;
           if (!idle) return null;
           return (
             <span
-              onClick={() => setShowIdleSkills(v => !v)}
-              style={{ cursor: "pointer", fontSize: "var(--fs-2xs)", color: zoneTheme.accent, border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: "0 4px", flexShrink: 0 }}
+              onClick={() => setShowIdleSkills(v => !v)} className="skills-idle-toggle"
             >{showIdleSkills ? `收起未上阵 ${idle}` : `未上阵 ${idle} ▾`}</span>
           );
         })()}
@@ -65,14 +65,14 @@ export default function SkillsModule({ zoneTheme, skills, setSkills, inspectItem
                   setOpenSkill(opening ? detailKey : null);
                   if (opening) inspectItem("skill", s.name, s.fixed ? `${q}品·完整招式` : `${q}品·${s.stage}`, null, { worldLook: true });
                 }}
-                style={{ cursor: inspecting === s.name ? "wait" : "pointer", color: qc, fontWeight: s.active ? "bold" : "normal", textDecoration: "underline", textDecorationStyle: "dotted", textDecorationColor: zoneTheme.textDim, opacity: inspecting === s.name ? 0.6 : 1 }}
+                style={{ cursor: inspecting === s.name ? "wait" : "pointer", color: qc, fontWeight: s.active ? "bold" : "normal", textDecoration: "underline", textDecorationStyle: "dotted", textDecorationColor: "var(--text-dim)", opacity: inspecting === s.name ? 0.6 : 1 }}
               >{s.name}{s.fixed ? "" : `·${s.stage}`}{inspecting === s.name ? "…" : ""}</span>
               <span style={{ fontSize: "var(--fs-2xs)", color: qc, opacity: 0.9 }}>（{q}品）</span>
               {/* 伤害倍率与耗气。显示倍率而非绝对伤害：绝对值要乘外功/装备/
                   对手根骨才算得出，面板上给个"×1.3"比给一个随时会变的数字诚实。 */}
               {(() => {
                 const lbl = moveStatLabel(mv);
-                return lbl ? <span style={{ fontSize: "var(--fs-2xs)", color: zoneTheme.textDim, flexShrink: 0 }}>{lbl}</span> : null;
+                return lbl ? <span style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", flexShrink: 0 }}>{lbl}</span> : null;
               })()}
             </div>
             {(() => {
@@ -82,8 +82,8 @@ export default function SkillsModule({ zoneTheme, skills, setSkills, inspectItem
             {openSkill === detailKey && (() => {
               const d = skillDetail(s, mv);
               return (
-                <div style={{ margin: "3px 0 4px 18px", padding: "5px 7px", border: `1px solid ${zoneTheme.border}`, background: zoneTheme.bgPanel, fontSize: "var(--fs-2xs)", lineHeight: 1.7 }}>
-                  {d.desc && <div style={{ color: zoneTheme.textDim, marginBottom: 4 }}>{d.desc}</div>}
+                <div style={{ margin: "3px 0 4px 18px", padding: "5px 7px", border: `1px solid var(--border)`, background: "var(--bg-panel)", fontSize: "var(--fs-2xs)", lineHeight: 1.7 }}>
+                  {d.desc && <div style={{ color: "var(--text-dim)", marginBottom: 4 }}>{d.desc}</div>}
                   {d.rows.map((r) => (
                     <div key={r.label}><span style={{ color: qc }}>{r.label}</span>　{r.value}</div>
                   ))}
@@ -95,7 +95,7 @@ export default function SkillsModule({ zoneTheme, skills, setSkills, inspectItem
             })()}
             {s.fixed
               ? (openSkill !== detailKey && s.move?.desc ? <div style={{ paddingLeft: 18 }}>
-                  <div style={{ fontSize: "var(--fs-2xs)", color: zoneTheme.textDim, marginTop: 2, lineHeight: 1.65 }}>{s.move.desc}</div>
+                  <div style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", marginTop: 2, lineHeight: 1.65 }}>{s.move.desc}</div>
                 </div> : null)
               : (() => {
                   const curIdx = STAGES.indexOf(s.stage);
@@ -112,13 +112,7 @@ export default function SkillsModule({ zoneTheme, skills, setSkills, inspectItem
                         ? <span style={{ fontSize: "var(--fs-2xs)", color: qc }}>✦ 登峰造极</span>
                         : <span
                             onClick={() => afford && breakthroughSkill(s.id ?? s.name)}
-                            title={afford ? `潜心修炼：花${cost}潜能，${s.stage}→${nextStage}（现有潜能${pot}）` : `潜能不足，突破${nextStage}需${cost}点（现有${pot}）`}
-                            style={{
-                              cursor: afford ? "pointer" : "not-allowed", fontSize: "var(--fs-2xs)", padding: "1px 7px", borderRadius: 0,
-                              color: afford ? "var(--violet)" : "var(--ink-text-dim)",
-                              background: afford ? zoneTheme.bgPanel : "transparent",
-                              border: `1px solid ${afford ? "var(--building-desc)" : zoneTheme.border}`, userSelect: "none",
-                            }}
+                            title={afford ? `潜心修炼：花${cost}潜能，${s.stage}→${nextStage}（现有潜能${pot}）` : `潜能不足，突破${nextStage}需${cost}点（现有${pot}）`} className="skills-train-btn" data-on={Boolean(afford)}
                           >↑修炼·{nextStage}（{cost}潜能）</span>}
                     </div>
                   );

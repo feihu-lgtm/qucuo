@@ -4,7 +4,7 @@
 // 而是一张氛围背景图 + 克制的排版留白，让文字和印章式按钮自己撑起质感
 
 import React, { lazy, Suspense, useState, useEffect } from "react";
-import { ZONE_THEMES } from "../../utils/theme.js";
+import { NIGHT_VARS } from "../../utils/theme.js";
 import { listSlots, loadAutoSave } from "../../infra/saves.js";
 import { registerVisit } from "../../infra/visitorCount.js";
 import { CURRENT_VERSION } from "../../utils/version.js";
@@ -14,7 +14,7 @@ import { styles } from "./startScreenStyles.js";
 const BugReportModal = lazy(() => import("./BugReportModal.jsx"));
 const VersionHistoryPanel = lazy(() => import("./VersionHistoryPanel.jsx"));
 
-const theme = ZONE_THEMES.village; // 开场定调：鱼定村的暖黄烟火气
+const theme = NIGHT_VARS; // 固定暗夜，见 theme.js 的 NIGHT_VARS // 开场定调：鱼定村的暖黄烟火气
 
 export default function StartScreen({ onStart, onStartImportSelf, onLoadSlot, onOpenSettings, onOpenCardImport, onQuickBattle, onTavernSim, onExit }) {
   const [hasAutoSave, setHasAutoSave] = useState(false);

@@ -1,19 +1,19 @@
 import React from "react";
 import { SKILL_CATALOG, hasSkill } from "../../../domain/data/kungfu/qucuoKungfu.js";
-import { QUALITY_COLOR } from "../../../domain/rules/economy/equipment.js";
 import { skillPrice, skillUnlockStatus } from "../../../domain/rules/economy/skillUnlock.js";
 import { Overlay, Header, Btn } from "./common.jsx";
+import { QUALITY_COLOR } from "../../../domain/data/items/qualityColor.js";
 
 const SKILL_TYPE_LABEL = { 招式: "招", 内功: "内", 轻功: "轻" };
 
-export default function WuguanScreen({ building, char, skills, flags, questProgress, varTree, zoneTheme, onClose, inline, onBuySkill }) {
+export default function WuguanScreen({ building, char, skills, flags, questProgress, varTree, onClose, inline, onBuySkill }) {
   const skillSet = building.skillSet || "";
   const catalog = SKILL_CATALOG[skillSet] || [];
   const money = char.money || 0;
 
   return (
-    <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
+    <Overlay onClose={onClose} inline={inline}>
+      <Header name={building.name} onClose={onClose} />
 
       <div style={{ padding: 16 }}>
         <div style={{ color: "var(--ink-text-dim)", marginBottom: 12, fontSize: "var(--fs-xs)" }}>银两 {money} 两</div>
@@ -24,7 +24,7 @@ export default function WuguanScreen({ building, char, skills, flags, questProgr
               const owned = hasSkill(skills, item.id);
               const unlock = skillUnlockStatus({ flags, questProgress, varTree }, item);
               return (
-                <div key={item.id} style={{ marginBottom: 12, padding: "10px 12px", background: "var(--bg-ink)", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
+                <div key={item.id} style={{ marginBottom: 12, padding: "10px 12px", background: "var(--bg-ink)", borderRadius: 0, border: `1px solid var(--border)` }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                     <span style={{ color: QUALITY_COLOR[item.quality] || "var(--ink-text)", fontSize: "var(--fs-md)" }}>
                       {item.name}
@@ -49,7 +49,7 @@ export default function WuguanScreen({ building, char, skills, flags, questProgr
                         const cur = char?.[item.insight.stat] ?? 0;
                         const ok = cur >= item.insight.threshold;
                         return ok
-                          ? <Btn label="参悟" zoneTheme={zoneTheme} onClick={() => onBuySkill(item)} />
+                          ? <Btn label="参悟" onClick={() => onBuySkill(item)} />
                           : <span style={{ color: "var(--wuguan-locked)", fontSize: "var(--fs-xs)" }}>
                               壁上剑痕看得见，看不懂——{item.insight.label} {cur}/{item.insight.threshold}
                             </span>;
@@ -57,7 +57,6 @@ export default function WuguanScreen({ building, char, skills, flags, questProgr
                       : <Btn
                         label="购买"
                         disabled={money < skillPrice({ flags }, item)}
-                        zoneTheme={zoneTheme}
                         onClick={() => onBuySkill(item)}
                       />
                   }

@@ -2,7 +2,7 @@
 import IntentConfirmBar from "../components/IntentConfirmBar.jsx";
 import { factionShopCoef } from "../../domain/rules/economy/factionRep.js";
 import { DevControls, TurnControls } from "./TopBar.jsx";
-import { chromeBtn } from "../../utils/theme.js";
+import { THEME_VARS, chromeBtn } from "../../utils/theme.js";
 import { useState, useEffect, lazy, Suspense } from "react";
 import { OVERLAY, closeOverlay, openOverlay, useOverlay } from "../../store/uiStore.js";
 import { gameActions, useGameStore } from "../../store/gameStore.js";
@@ -26,13 +26,12 @@ const BuildingScreens = lazy(async () => {
   return { default: ({ type, ctx }) => renderBuildingScreen(type, ctx) };
 });
 
-function ScreenFallback({ zoneTheme }) {
-  return <div style={{ padding: "12px 16px", fontSize: "var(--fs-sm)", color: zoneTheme.textDim }}>载入中…</div>;
+function ScreenFallback() {
+  return <div style={{ padding: "12px 16px", fontSize: "var(--fs-sm)", color: "var(--text-dim)" }}>载入中…</div>;
 }
 
 export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNote, setVarTree }) {
-  const {
-    zoneTheme, S,
+  const {  S,
     isDayMode, clr,
     logEnd,
   } = ui;
@@ -82,13 +81,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
   useEffect(() => { setGambleStoneMinimized(false); }, [activeBuilding?.id]);
   const isJade = activeBuilding?.craft === "jade";
   const tab = (key, label) => (
-    <span key={key} className="mobile-touch-target" onClick={() => setCraftTab(key)}
-      style={{
-        cursor: "pointer", padding: "2px 12px", fontSize: "var(--fs-sm)", borderRadius: 0,
-        color: craftTab === key ? zoneTheme.bg : zoneTheme.accent,
-        background: craftTab === key ? zoneTheme.accent : "transparent",
-        border: `1px solid ${craftTab === key ? zoneTheme.accent : zoneTheme.border}`,
-      }}>{label}</span>
+    <span key={key} className="mobile-touch-target craft-tab" data-on={craftTab === key} onClick={() => setCraftTab(key)}>{label}</span>
   );
   const tabs = (className) => (
     <div className={className} style={{ display: "flex", gap: 6, padding: "2px 16px 8px" }}>
@@ -105,15 +98,15 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
       <div className="mobile-hide" style={{ ...S.label, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span>江湖</span>
         <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <TurnControls theme={zoneTheme} loading={loading} stopRunning={turn.stopRunning} rollbackBlocked={turn.rollbackBlocked} rollbackOneStep={turn.rollbackOneStep} />
-          <DevControls theme={zoneTheme} addLog={addLog} />
+          <TurnControls theme={THEME_VARS} loading={loading} stopRunning={turn.stopRunning} rollbackBlocked={turn.rollbackBlocked} rollbackOneStep={turn.rollbackOneStep} />
+          <DevControls theme={THEME_VARS} addLog={addLog} />
         </span>
       </div>
 
       {showDebug && (
-        <Suspense fallback={<ScreenFallback zoneTheme={zoneTheme} />}>
+        <Suspense fallback={<ScreenFallback />}>
           <DebugPanel
-            isMobile={isMobile} zoneTheme={zoneTheme}
+            isMobile={isMobile}
             char={char} setChar={setChar} pot={pot} setPot={setPot} exp={exp} setExp={setExp}
             dao={dao} setDao={setDao} varTree={varTree} setVarTree={setVarTree}
             narrator={narrator} setNarrator={setNarrator}
@@ -128,27 +121,27 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
       {derived.seaTraumaActive && (
         <Suspense fallback={null}>
           <SeaOfMindScreen
-            narratorVars={derived.narratorVarsNow} invNames={derived.invNames} zoneTheme={zoneTheme}
+            narratorVars={derived.narratorVarsNow} invNames={derived.invNames}
             onComfort={playerActionHandlers.handleComfort} onResolve={playerActionHandlers.handleResolveTrauma}
           />
         </Suspense>
       )}
 
-      <IntentConfirmBar zoneTheme={zoneTheme} />
+      <IntentConfirmBar />
       {duelPending && (
-        <div style={{ flexShrink: 0, padding: "10px 16px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(196,80,68,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ flexShrink: 0, padding: "10px 16px", borderBottom: `1px solid var(--border)`, background: "rgba(196,80,68,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ color: "var(--text)", fontSize: "var(--fs-sm)", flex: 1 }}>{duelPending.lethal
             ? `是否与「${duelPending.name}」生死相搏？既分高下，也决生死——这一战没有点到为止。`
             : `是否与「${duelPending.name}」正式切磋？一旦开打，就要见真章了。`}</span>
-          <span onClick={duelHandlers.confirmDuel} style={{ cursor: "pointer", fontSize: "var(--fs-sm)", padding: "4px 12px", borderRadius: 0, color: "var(--ink-bg-panel)", background: "var(--red-soft)", border: "1px solid var(--red-soft)" }}>{duelPending.lethal ? "决生死" : "确认切磋"}</span>
-          <span onClick={duelHandlers.cancelDuel} style={{ cursor: "pointer", fontSize: "var(--fs-sm)", padding: "4px 12px", borderRadius: 0, color: "var(--text-dim)", border: "1px solid var(--ink-edge-quest)" }}>算了</span>
+          <span className="duel-confirm-btn" onClick={duelHandlers.confirmDuel}>{duelPending.lethal ? "决生死" : "确认切磋"}</span>
+          <span className="duel-cancel-btn" onClick={duelHandlers.cancelDuel}>算了</span>
         </div>
       )}
 
       {(activeBuilding || tradingShop) && buildingPanelMinimized && (
         <div
           onClick={() => setBuildingPanelMinimized(false)}
-          style={{ flexShrink: 0, padding: "6px 16px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(255,255,255,0.03)", cursor: "pointer", fontSize: "var(--fs-sm)", color: "var(--info)", display: "flex", alignItems: "center", gap: 6 }}
+          style={{ flexShrink: 0, padding: "6px 16px", borderBottom: `1px solid var(--border)`, background: "rgba(255,255,255,0.03)", cursor: "pointer", fontSize: "var(--fs-sm)", color: "var(--info)", display: "flex", alignItems: "center", gap: 6 }}
         >
           <span>▸ {activeBuilding?.name || tradingShop?.shopName}（已最小化，点击展开）</span>
         </div>
@@ -160,7 +153,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
           className={`mobile-building-root${gambleStoneMinimized ? " mobile-building-minimized-root" : ""}${buildingPanelMinimized ? " mobile-building-hidden" : ""}`}
           style={{
             flex: 1, minHeight: 0, height: "100%", overflowY: "auto",
-            borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(255,255,255,0.02)",
+            borderBottom: `1px solid var(--border)`, background: "rgba(255,255,255,0.02)",
             display: buildingPanelMinimized ? "none" : "flex", flexDirection: "column",
             visibility: buildingPanelMinimized ? "hidden" : undefined,
             pointerEvents: buildingPanelMinimized ? "none" : undefined,
@@ -175,7 +168,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
           </div>
           {queueCount > 0 && !gambleStoneMinimized && !activeBuilding?.shopKey && !tradingShop && (
             <div role="status" aria-live="polite"
-              style={{ ...chromeBtn(zoneTheme), alignSelf: "flex-start", flexShrink: 0, margin: "4px 12px", cursor: "default" }}>
+              style={{ ...chromeBtn(THEME_VARS), alignSelf: "flex-start", flexShrink: 0, margin: "4px 12px", cursor: "default" }}>
               ⏳ 排队中 {queueCount} · 等待落盘后执行
             </div>
           )}
@@ -184,7 +177,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
             if (!activeBuilding) return null;
             if (showBasement && (activeBuilding.type === BUILDING_TYPE.RESTAURANT || activeBuilding.type === BUILDING_TYPE.THEATER)) return null;
             const ctx = {
-              building: activeBuilding, char, time, zoneTheme, inv, skills, flags, questProgress,
+              building: activeBuilding, char, time, inv, skills, flags, questProgress,
               dao, mapData, room, innerRoomName, varTree, queueCount, effectiveSpecialNow: turn.effectiveSpecialNow,
               craftTab, tabs, isJade, runCommand, act: turn.act, captureUndo: turn.captureUndo, setDao, setChar, setInv, addLog, jotNote,
               inspectItem: aiInspect.inspectItem, setGambleStoneMinimized, gambleNegotiation,
@@ -199,21 +192,21 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
               handlePostSend: pigeonHandlers.handlePostSend,
             };
             return (
-              <Suspense fallback={<ScreenFallback zoneTheme={zoneTheme} />}>
+              <Suspense fallback={<ScreenFallback />}>
                 <BuildingScreens type={activeBuilding.type} ctx={ctx} />
               </Suspense>
             );
           })()}
           {showBasement && (
-            <Suspense fallback={<ScreenFallback zoneTheme={zoneTheme} />}>
-              <BasementScreen char={char} time={time} zoneTheme={zoneTheme} inline
+            <Suspense fallback={<ScreenFallback />}>
+              <BasementScreen char={char} time={time} inline
                 onClose={() => closeOverlay(OVERLAY.BASEMENT)} onOrder={buildingHandlers.handleServiceOrder} />
             </Suspense>
           )}
           {tradingShop && (
-            <Suspense fallback={<ScreenFallback zoneTheme={zoneTheme} />}>
+            <Suspense fallback={<ScreenFallback />}>
               <TradingScreen inline queueCount={queueCount} shopName={tradingShop.shopName} shopItems={tradingShop.items}
-                playerInv={inv} playerMoney={char.money || 0} playerWit={turn.effectiveSpecialNow?.智谋 ?? 5} repCoef={factionShopCoef(varTree, tradingShop.district ?? room?.name)} zoneTheme={zoneTheme} onInspect={aiInspect.inspectItem}
+                playerInv={inv} playerMoney={char.money || 0} playerWit={turn.effectiveSpecialNow?.智谋 ?? 5} repCoef={factionShopCoef(varTree, tradingShop.district ?? room?.name)} onInspect={aiInspect.inspectItem}
                 onClose={() => setTradingShop(null)}
                 onBuy={(item) => runCommand("shopBuy", () => { if (item.displayOnly || item.notForSale) return; const aff = varTree?.角色?.[tradingShop.npcName]?.好感度 ?? 0; const npc = (room?.npcs || []).find(n => (tradingShop.npcId && n.id === tradingShop.npcId) || n.name === tradingShop.npcName); const res = npc ? buyFromNpcCarry(npc, item, { affection: aff, money: char.money || 0 }) : { ok: false, logs: [{ t: "sys", text: "  对方已经不在此地了。" }] }; if (!res.ok) { if (res.logs) addLog(res.logs); return; } turn.captureUndo(); setChar(c => ({ ...c, money: c.money - res.price })); setInv(prev => [...prev, { ...item, id: resolveBuyInId(item, prev), equipped: false }]); if (npc && res.nextCarriedItems) { const key = npc.id ?? npc.name; setRoom(r => ({ ...r, npcs: r.npcs.map(n => n === npc || n.id === npc.id ? { ...n, carriedItems: res.nextCarriedItems } : n) })); setNpcState(s => applyTradeToNpcState(s, npc, res.tradeDelta)); } addLog(res.logs || [{ t: "item", text: `  你花费${res.price}两，购得「${item.name}」。` }]); jotNote({ text: `购得「${item.name}」，花${res.price}两。`, source: NOTE_SOURCE.DUMB }); })}
                 onSell={(item) => runCommand("shopSell", () => { if (item.equipped) return; const aff = varTree?.角色?.[tradingShop.npcName]?.好感度 ?? 0; const npc = (room?.npcs || []).find(n => (tradingShop.npcId && n.id === tradingShop.npcId) || n.name === tradingShop.npcName); const res = npc ? sellToNpcCarry(npc, item, { affection: aff }) : { ok: false, logs: [{ t: "sys", text: "  对方已经不在此地了。" }] }; if (!res.ok) { if (res.logs) addLog(res.logs); return; } turn.captureUndo(); setInv(prev => prev.filter(i => (typeof i === "object" ? i.id : i) !== item.id)); setChar(c => ({ ...c, money: (c.money || 0) + res.price })); if (npc && res.nextCarriedItems) { const key = npc.id ?? npc.name; setRoom(r => ({ ...r, npcs: r.npcs.map(n => n === npc || n.id === npc.id ? { ...n, carriedItems: res.nextCarriedItems } : n) })); setNpcState(s => applyTradeToNpcState(s, npc, res.tradeDelta)); } addLog(res.logs || [{ t: "item", text: `  你卖出「${item.name}」，得银两${res.price}两。` }]); jotNote({ text: `卖出「${item.name}」，得银${res.price}两。`, source: NOTE_SOURCE.DUMB }); })}
@@ -227,8 +220,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
       )}
 
       <NarrativeLogFeed
-        hidden={hideNarrative}
-        zoneTheme={zoneTheme} clr={clr} isDayMode={isDayMode} act={turn.act}
+        hidden={hideNarrative} clr={clr} isDayMode={isDayMode} act={turn.act}
         collapsedGroups={collapsedGroups} setCollapsedGroups={setCollapsedGroups}
         loading={loading} queueCount={queueCount} pendingTalks={pendingTalks}
         inspecting={aiInspect.inspecting} logEnd={logEnd}

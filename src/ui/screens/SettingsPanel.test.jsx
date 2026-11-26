@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it } from "vitest";
 import SettingsPanel from "./SettingsPanel.jsx";
-import { ZONE_THEMES } from "../../utils/theme.js";
+import { THEME_VARS } from "../../utils/theme.js";
 import { resetPromptOverrides, setPromptOverride } from "../../domain/rules/prompt/registry.js";
 
 afterEach(() => {
@@ -10,7 +10,7 @@ afterEach(() => {
 });
 
 const render = (cfg, initialTab, props = {}) => renderToStaticMarkup(createElement(SettingsPanel, {
-  cfg, initialTab, font: "pixel", setFont: () => {}, zoneTheme: ZONE_THEMES.village, ...props,
+  cfg, initialTab, font: "pixel", setFont: () => {}, ...props,
 }));
 
 describe("SettingsPanel portrait management entry", () => {

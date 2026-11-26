@@ -2,12 +2,12 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import MobileTabBar from "./MobileTabBar.jsx";
-import { ZONE_THEMES } from "../../utils/theme.js";
+import { THEME_VARS } from "../../utils/theme.js";
 
 describe("mobile column tabs", () => {
   it("labels both face controllers with one-based indices and accessible names", () => {
     const html = renderToStaticMarkup(createElement(MobileTabBar, {
-      theme: ZONE_THEMES.village, column: "right", onSelect: () => {},
+      theme: THEME_VARS, column: "right", onSelect: () => {},
       leftFaces: { index: 1, count: 2, face: { name: "周遭" } },
       rightFaces: { index: 2, count: 5, face: { name: "行囊" } },
     }));

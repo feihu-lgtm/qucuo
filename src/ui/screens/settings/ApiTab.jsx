@@ -11,12 +11,12 @@ import ModelPicker from "./ModelPicker.jsx";
 import ApiLengthFields from "./ApiLengthFields.jsx";
 import ApiGenerationFields from "./ApiGenerationFields.jsx";
 import ApiProfilesFields from "./ApiProfilesFields.jsx";
-import { inputStyle, labelStyle, sectionStyle, btnStyle } from "./styles.js";
+import { Button, FieldLabel, Panel } from "../../primitives/index.js";
 
 // API 配置 tab。状态由 SettingsPanel 壳持有（切 tab 卸载后回来不丢），
 // 本组件只做渲染与事件处理。
 export default function ApiTab({
-  cfg, setCfg, patch, zoneTheme, st,
+  cfg, setCfg, patch, st,
 }) {
   const {
     testStatus, setTestStatus, testMsg, setTestMsg,
@@ -72,18 +72,17 @@ export default function ApiTab({
 
       <ApiProviderSettings cfg={cfg} patch={patch} providers={PROVIDERS}
         isDefaultEndpoint={isDefaultEndpoint} migrateProvider={migrateProvider} providerApiType={providerApiType}
-        importCredential={importVertexCredential} hasCredential={isVertex && hasApiCredentials(cfg)}
-        labelStyle={labelStyle} inputStyle={inputStyle} zoneTheme={zoneTheme} />
+        importCredential={importVertexCredential} hasCredential={isVertex && hasApiCredentials(cfg)} />
 
-      {!isVertex && <><label htmlFor="api-model" style={{ ...labelStyle, display: "block" }}>模型名称</label>
+      {!isVertex && <><FieldLabel as="label" htmlFor="api-model" style={{ display: "block" }}>模型名称</FieldLabel>
       <div style={{ display: "flex", gap: 6 }}>
-        <input id="api-model" list="provider-model-suggestions" style={{ ...inputStyle, flex: 1 }} value={cfg.model} onChange={e => patch({ model: e.target.value })} placeholder="输入服务商要求的模型名称" />
+        <input id="api-model" list="provider-model-suggestions" className="ui-input" style={{ flex: 1 }} value={cfg.model} onChange={e => patch({ model: e.target.value })} placeholder="输入服务商要求的模型名称" />
         <datalist id="provider-model-suggestions">
           {(PROVIDERS[providerId]?.models || []).map(model => <option key={model} value={model} />)}
         </datalist>
-        <span style={{ ...btnStyle, whiteSpace: "nowrap", opacity: modelStatus === "loading" ? 0.5 : 1 }} onClick={modelStatus === "loading" ? undefined : () => handleDetectModels(null)}>
+        <Button variant="settings" style={{ whiteSpace: "nowrap", opacity: modelStatus === "loading" ? 0.5 : 1 }} onClick={modelStatus === "loading" ? undefined : () => handleDetectModels(null)}>
           {modelStatus === "loading" && modelPickerTarget === null ? "检测中…" : "自动检测"}
-        </span>
+        </Button>
       </div></>}
       {!isVertex && (
         <ModelPicker target={null} modelPickerTarget={modelPickerTarget} modelStatus={modelStatus} modelErr={modelErr}
@@ -94,12 +93,12 @@ export default function ApiTab({
         <div style={{ fontSize: "var(--fs-xs)", color: "var(--gold)", marginTop: 3 }}>接口未返回任何模型，请手动填写模型名称</div>
       )}
 
-      <ApiSettingsGroup title="篇幅与超时" expanded={apiGroups.length} zoneTheme={zoneTheme}
+      <ApiSettingsGroup title="篇幅与超时" expanded={apiGroups.length}
         onToggle={() => setApiGroups(groups => ({ ...groups, length: !groups.length }))}>
         <ApiLengthFields cfg={cfg} patch={patch} />
       </ApiSettingsGroup>
 
-      <ApiSettingsGroup title="生成参数" expanded={apiGroups.generation} zoneTheme={zoneTheme}
+      <ApiSettingsGroup title="生成参数" expanded={apiGroups.generation}
         onToggle={() => setApiGroups(groups => ({ ...groups, generation: !groups.generation }))}>
         <ApiGenerationFields cfg={cfg} patch={patch} isVertex={isVertex}
           onDetectModels={handleDetectModels} onClearMemory={handleClearMemory}
@@ -107,16 +106,16 @@ export default function ApiTab({
           modelList={modelList} setModelList={setModelList} memCount={memCount} />
       </ApiSettingsGroup>
 
-      <ApiSettingsGroup title="配置管理" expanded={apiGroups.profiles} zoneTheme={zoneTheme}
+      <ApiSettingsGroup title="配置管理" expanded={apiGroups.profiles}
         onToggle={() => setApiGroups(groups => ({ ...groups, profiles: !groups.profiles }))}>
         <ApiProfilesFields cfg={cfg} setCfg={setCfg} cfgProfiles={cfgProfiles} setCfgProfiles={setCfgProfiles}
           cfgProfileName={cfgProfileName} setCfgProfileName={setCfgProfileName} />
       </ApiSettingsGroup>
 
-      <div style={{ ...sectionStyle, display: "flex", alignItems: "center", gap: 10 }}>
-        <span style={btnStyle} onClick={handleTest}>连接测试</span>
+      <Panel variant="section" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <Button variant="settings" onClick={handleTest}>连接测试</Button>
         {testStatus === "testing" && <span style={{ color: "var(--text-dim)" }}>测试中...</span>}
-      </div>
+      </Panel>
       {testStatus && testStatus !== "testing" && (
         <div data-testid="api-test-result" role="status" style={{ marginTop: 6, fontSize: "var(--fs-xs)", color: testStatus === "ok" ? "var(--good)" : "var(--accent)" }}>
           {testMsg}

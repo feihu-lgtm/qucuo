@@ -22,8 +22,9 @@ import { gateScenario } from "../../domain/rules/prompt/worldbook.js";
 import { describeTallyForWhisper } from "../../domain/rules/memory/tally.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
-import { LOG_T, stampLogEntries } from "../../domain/rules/log/logTypes.js";
+import { stampLogEntries } from "../../domain/rules/log/logTypes.js";
 import { gameActions, gameStore, getGameEpoch } from "../../store/gameStore.js";
+import { LOG_T } from "../../domain/data/log/logTypes.js";
 
 export function usePrivateTalk({
   apiCfg, nsfwOn, jotNote, noteAction, changePendingTalks,

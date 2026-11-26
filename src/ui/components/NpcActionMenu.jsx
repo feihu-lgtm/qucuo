@@ -12,10 +12,9 @@
 
 import React, { useState } from "react";
 import { QUCUO_SHOPS, hasOcShop } from "../../domain/data/shops/qucuoShops.js";
-import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
+import ModalShell from "../primitives/ModalShell.jsx";
 
-export default function NpcActionMenu({ npc, zoneTheme, inv, onClose, onTalk, onGift, onDuel, onSteal, onLook, onLearnSkill, onTrade, onInviteCompanion, companionUnlocked, flags = [], ocRoutes = [], onOcRecruit, onRecallCompanion, onGoldenEgg, nemesisActive = false, lethalBlockReason = null }) {
-  const closeGuard = useOverlayCloseGuard(onClose);
+export default function NpcActionMenu({ npc, inv, onClose, onTalk, onGift, onDuel, onSteal, onLook, onLearnSkill, onTrade, onInviteCompanion, companionUnlocked, flags = [], ocRoutes = [], onOcRecruit, onRecallCompanion, onGoldenEgg, nemesisActive = false, lethalBlockReason = null }) {
   const [showGiftPicker, setShowGiftPicker] = useState(false);
   const isMerchant = !!QUCUO_SHOPS[npc.name] || hasOcShop(npc.name);
   // 伙伴候选（目前只有雪豹）：官方六件套之外单独一个"邀请入队"按钮，只在
@@ -56,7 +55,6 @@ export default function NpcActionMenu({ npc, zoneTheme, inv, onClose, onTalk, on
     return (
       <GiftPicker
         npc={npc}
-        zoneTheme={zoneTheme}
         inv={inv}
         onBack={() => setShowGiftPicker(false)}
         onConfirm={(item) => { onGift(npc, item); onClose(); }}
@@ -65,66 +63,50 @@ export default function NpcActionMenu({ npc, zoneTheme, inv, onClose, onTalk, on
   }
 
   return (
-      <div className="mobile-overlay-root" style={{ position: "fixed", inset: 0, background: "rgba(4,4,10,0.75)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
-      <div
-        className="mobile-action-panel"
-        style={{ background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: 20, width: 320, maxWidth: "90vw" }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div style={{ color: zoneTheme.accent, fontSize: "var(--fs-base)", marginBottom: 4 }}>{npc.name}{npc.intimate ? " ♥" : ""}</div>
-        <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-xs)", marginBottom: 16 }}>{npc.brief}</div>
+    <ModalShell onClose={onClose} layer="dialog" backdrop="soft" mobile="sheet" showClose={false} ariaLabel={`与${npc.name}互动`} panelStyle={{ width: 320 }}>
+      <div style={{ color: "var(--accent)", fontSize: "var(--fs-base)", marginBottom: 4 }}>{npc.name}{npc.intimate ? " ♥" : ""}</div>
+      <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", marginBottom: 16 }}>{npc.brief}</div>
 
-        <div className="mobile-action-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-          {ACTIONS.map((a) => (
-            <div
-              key={a.key}
-              className="mobile-action-choice"
-              onClick={a.onClick}
-              style={{
-                cursor: "pointer", padding: "12px 10px", borderRadius: 0, textAlign: "center",
-                background: zoneTheme.bg, border: `1px solid ${zoneTheme.border}`,
-                opacity: a.available ? 1 : 0.4,
-              }}
-            >
-              <div style={{ color: zoneTheme.accent, fontSize: "var(--fs-md)", marginBottom: 3 }}>{a.label}</div>
-              <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-2xs)" }}>{a.desc}</div>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ textAlign: "center", marginTop: 14 }}>
-          <span className="mobile-touch-target" onClick={onClose} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "var(--fs-xs)" }}>取消</span>
-        </div>
+      <div className="mobile-action-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+        {ACTIONS.map((a) => (
+          <div
+            key={a.key}
+            className="mobile-action-choice npc-action-card"
+            onClick={a.onClick} data-on={Boolean(a.available)}
+          >
+            <div style={{ color: "var(--accent)", fontSize: "var(--fs-md)", marginBottom: 3 }}>{a.label}</div>
+            <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)" }}>{a.desc}</div>
+          </div>
+        ))}
       </div>
-    </div>
+
+      <div style={{ textAlign: "center", marginTop: 14 }}>
+        <span className="mobile-touch-target" onClick={onClose} style={{ cursor: "pointer", color: "var(--text-dim)", fontSize: "var(--fs-xs)" }}>取消</span>
+      </div>
+    </ModalShell>
   );
 }
 
 // 送礼的物品选择子面板：从背包里挑一件送出去
-function GiftPicker({ npc, zoneTheme, inv, onBack, onConfirm }) {
+function GiftPicker({ npc, inv, onBack, onConfirm }) {
+  // 点遮罩、按 Esc 都是"返回上一层"，与原先点遮罩回到主菜单一致。
   return (
-    <div className="mobile-overlay-root" style={{ position: "fixed", inset: 0, background: "rgba(4,4,10,0.75)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onBack}>
-      <div
-        className="mobile-action-panel"
-        style={{ background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: 20, width: 320, maxWidth: "90vw", maxHeight: "70vh", overflowY: "auto" }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div style={{ color: zoneTheme.accent, fontSize: "var(--fs-md)", marginBottom: 12 }}>送给「{npc.name}」什么？</div>
-        <GiftPickerList zoneTheme={zoneTheme} onPick={onConfirm} inv={inv} />
-        <div style={{ textAlign: "center", marginTop: 12 }}>
-          <span onClick={onBack} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "var(--fs-xs)" }}>← 返回</span>
-        </div>
+    <ModalShell onClose={onBack} layer="dialog" backdrop="soft" mobile="sheet" showClose={false} ariaLabel={`送给${npc.name}的物品`} panelStyle={{ width: 320, maxHeight: "70vh" }}>
+      <div style={{ color: "var(--accent)", fontSize: "var(--fs-md)", marginBottom: 12 }}>送给「{npc.name}」什么？</div>
+      <GiftPickerList onPick={onConfirm} inv={inv} />
+      <div style={{ textAlign: "center", marginTop: 12 }}>
+        <span onClick={onBack} style={{ cursor: "pointer", color: "var(--text-dim)", fontSize: "var(--fs-xs)" }}>← 返回</span>
       </div>
-    </div>
+    </ModalShell>
   );
 }
 
 // inv 由父组件通过 context 或 prop 传入；这里用一个占位列表渲染器，
 // 真正的背包数据在 MudRPG.jsx 里通过 props 往下传（见接入说明）
-function GiftPickerList({ zoneTheme, onPick, inv }) {
+function GiftPickerList({ onPick, inv }) {
   const list = inv || [];
   if (list.length === 0) {
-    return <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-sm)" }}>包袱空空，没什么拿得出手的东西</div>;
+    return <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-sm)" }}>包袱空空，没什么拿得出手的东西</div>;
   }
   return (
     <div className="mobile-action-grid mobile-action-list" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -134,9 +116,8 @@ function GiftPickerList({ zoneTheme, onPick, inv }) {
         return (
           <div
             key={isObj ? it.id : i}
-            className="mobile-action-choice"
+            className="mobile-action-choice npc-gift-item"
             onClick={() => onPick(it)}
-            style={{ cursor: "pointer", padding: "6px 8px", borderRadius: 0, color: zoneTheme.text, fontSize: "var(--fs-sm)", background: zoneTheme.bg }}
           >
             {name}{isObj ? ` (${it.quality})` : ""}
           </div>
