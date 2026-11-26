@@ -109,7 +109,7 @@ for (const file of scanFiles) {
     if (cap === undefined) {
       failures.push(
         `${rel}: 发现 ${hits.length} 段内联长文案（>${MIN_LEN} 字符），不在冻结债务清单——` +
-          `新提示词文案请建 src/copy/*.txt 并用 import text from "./xxx.txt?raw" 原样引入`
+          `新提示词文案请建 src/copy/*.txt 并用 loadCopy() 引入（见 src/copy/README.md）`
       );
     } else if (hits.length > cap) {
       failures.push(`${rel}: 内联长文案 ${hits.length} 段，超过冻结上限 ${cap}（只减不增）`);

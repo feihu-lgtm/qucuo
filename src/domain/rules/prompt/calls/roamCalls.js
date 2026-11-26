@@ -2,7 +2,8 @@
 // 提示词全文按外部审查增量图纸逐字入库——不写预制固定台词，由模型按现场切片
 // 当场擦出江湖化学反应。零状态写入：只回一段 60-110 字白描，替换公屏占位行下的 desc。
 import { definePrompt } from "../registry.js";
-import ROAM_REACTION_SYS from "../../../../copy/roamReaction.sys.txt?raw";
+import { loadCopy } from "../../../../copy/loadCopy.js";
+const ROAM_REACTION_SYS = loadCopy("roamReaction.sys.txt");
 
 
 export function buildRoamReactionUserContent({
