@@ -50,8 +50,18 @@ export function resolveIntimateTarget({ targetName = "", cmd = "", npcs = [], co
   // 别屋 NPC 时绝不能把唯一在场者顶包进门禁（好感扣错人）。点名不在场维持原样
   // 不回落：gate 找不到人自然不触发，与 V5 前口径一致。
   const roster = allNpcs || npcs || [];
-  const explicitHit = roster.find((n) => n?.name && String(cmd).includes(n.name));
-  if (targetName || explicitHit) return { targetName, explicitHit: explicitHit || null };
+  // 夜班三单串人修：显名命中按 cmd 里出现位置取最前者（原 roster.find 按花名册序，
+  // 多人同句点甲提乙会绑错）；且 cmd 显名是玩家原话铁证，优先级高于 intake 填的
+  // targetName——「抱住雪豹亲一下她的额头」 intake 把「她」错猜别人也不能盖掉雪豹。
+  const cmdText = String(cmd);
+  const explicitHit = roster
+    .filter((n) => n?.name && cmdText.includes(n.name))
+    .sort((a, b) => cmdText.indexOf(a.name) - cmdText.indexOf(b.name))[0] || null;
+  // 显名压 targetName 只在被点者确实在场（visible npcs）时——点名别屋者维持旧口径
+  // targetName 不动、不顶包（gate 找不到人自然不触发），explicitHit 仅供排查参考。
+  const hitVisible = explicitHit && (npcs || []).some((n) => n?.name === explicitHit.name);
+  if (hitVisible) return { targetName: explicitHit.name, explicitHit };
+  if (targetName || explicitHit) return { targetName, explicitHit };
   const visible = (npcs || []).filter((n) => n?.name && n.companion !== true);
   if (visible.length === 1) return { targetName: visible[0].name, explicitHit: null };
   if (visible.length > 1 && /她|他|凑上去|对方/.test(String(cmd))) {
