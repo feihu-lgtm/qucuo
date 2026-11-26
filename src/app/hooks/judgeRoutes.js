@@ -62,6 +62,16 @@ export function matchPlaceName(target, candidates, { exactOnly = false } = {}) {
   return hits.length === 1 ? hits[0] : "";
 }
 
+// 原话点名判定：子串命中且后一个字不是建物后缀——「大草甸营地」里的「大草甸」
+// 不算点名（整词是另一地名），incidental 提及不误当目的地。
+const PLACE_SUFFIX_RE = /[营寨馆楼村庄镇城山谷甸滩口坪院宅府棚帐行店铺栈]/;
+export function mentionsPlaceName(text, name) {
+  const idx = String(text || "").indexOf(name);
+  if (idx < 0) return false;
+  const nextCh = String(text)[idx + name.length] || "";
+  return !(nextCh && PLACE_SUFFIX_RE.test(nextCh));
+}
+
 export function resolveMoveTarget(state, action) {
   const text = String(action?.text || "");
   const targetRaw = String(action?.target || "").trim();
@@ -76,7 +86,12 @@ export function resolveMoveTarget(state, action) {
   // 即使 intake 把 target 填成同方向内层房（「离开鱼定村去大草甸」target 被写成
   // 鱼定商号）也直接出村。内层小房间名不会撞外层据点名（两套命名空间），不误伤。
   if (innerNow) {
-    const outerNamed = Object.keys(QUCUO_MAP).find((nm) => nm !== roomName && text.includes(nm));
+    // Review修：最长优先+后缀字护栏——「大草甸营地」里的「大草甸」不是点名据点
+    // （后紧跟营/寨/馆等建物后缀字的整词是另一地名）， incidental 提及不算数。
+    const outerNamed = Object.keys(QUCUO_MAP)
+      .filter((nm) => nm !== roomName)
+      .sort((a, b) => b.length - a.length)
+      .find((nm) => mentionsPlaceName(text, nm));
     if (outerNamed) {
       const exits0 = QUCUO_MAP[roomName]?.exits || {};
       const hitDir0 = Object.entries(exits0).find(([, d]) => d === outerNamed)?.[0] || "";
@@ -149,8 +164,8 @@ export function resolveMoveTarget(state, action) {
   // 4. direction=none 且 target 空：从原文提取据点名；「回村」在鱼定周边映射鱼定村
   let destName = target;
   if (!destName) {
-    for (const name of Object.keys(QUCUO_MAP)) {
-      if (name !== roomName && text.includes(name)) { destName = name; break; }
+    for (const name of Object.keys(QUCUO_MAP).sort((a, b) => b.length - a.length)) {
+      if (name !== roomName && mentionsPlaceName(text, name)) { destName = name; break; }
     }
   }
   if (!destName && /回村/.test(text) && roomName !== "鱼定村") destName = "鱼定村";

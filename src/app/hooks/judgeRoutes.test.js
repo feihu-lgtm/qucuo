@@ -637,6 +637,13 @@ describe("V2 出村路由防劫持与安全屋出门", () => {
     expect(r.type).toBe("outer");
     expect(r.dest).toBe("大草甸");
   });
+  it("Review修：「大草甸营地」子串提及不劫持——查无此地而非误送大草甸", () => {
+    const state = mkState();
+    state.room = { ...(state.room || {}), name: "鱼定村" };
+    state.innerRoomName = "村口";
+    const r = resolveMoveTarget(state, mkAction({ target: "无", direction: "none", text: "我想去大草甸营地看看" }));
+    expect(r.type).not.toBe("outer");
+  });
   it("溪边小屋「出门」正确切出（内层出口兜底不再卡原地）", () => {
     const state = mkState();
     state.room = { ...(state.room || {}), name: "鱼定村" };
