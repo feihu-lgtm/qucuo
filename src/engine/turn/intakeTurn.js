@@ -21,10 +21,15 @@ import { consumableOfItem } from "../../domain/data/items/catalogOps.js";
 export function buildIntakeUserContent({
   playerInput, recentTurns = [], npcs = [], entries = [], questCandidates = [], containers = [],
   room = null, innerRoomName = null, questProgress = {}, flags = [], inv = [], char = {}, varTree = {},
-  prepBlock = "",
+  prepBlock = "", lastResponder = "",
 } = {}) {
   const lines = [];
   lines.push(`玩家这句话：「${playerInput || ""}」`);
+  // W-INPUT 指代候选：上轮刚回话的角色。玩家没点名但用「他/她/你」承接上轮的，
+  // 多半指此人——只提示不强制，点名了按点名的算。
+  if (lastResponder) {
+    lines.push(`[指代候选] 上一轮回应玩家的角色是「${lastResponder}」——本句若未点名对象但用了他/她/你等指代，target 多半指此人。`);
+  }
   // 拆句 hints：借 compositeInput 现有切段口径，只做提示不物理分流
   const segments = splitCompositeInput(playerInput);
   lines.push(`[拆句提示] ${segments.length > 1 ? segments.map((seg) => `「${seg}」`).join("、") : "无"}`);

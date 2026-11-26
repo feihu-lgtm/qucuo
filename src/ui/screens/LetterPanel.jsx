@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Overlay, Header, Btn } from "./buildings/common.jsx";
 import { useGameStore } from "../../store/gameStore.js";
 import { closeOverlay, OVERLAY } from "../../store/uiStore.js";
-import { setInteractMode, setPigeonTarget } from "../../store/sessionUiStore.js";
+import { setInputCapsule } from "../../store/sessionUiStore.js";
 
 // 「信」面板——翻历史来信：列表 → 正文；回信沿用飞鸽路径（输入条进寄信模式）。
 const EMPTY_LETTERS = [];
@@ -16,8 +16,7 @@ export default function LetterPanel({ zoneTheme, onClose, inline }) {
 
   const reply = (npcName) => {
     if (pigeons <= 0) return;
-    setPigeonTarget(npcName);
-    setInteractMode("pigeon");
+    setInputCapsule({ kind: "pigeon", name: npcName });
     closeOverlay(OVERLAY.LETTERS);
     onClose?.();
   };

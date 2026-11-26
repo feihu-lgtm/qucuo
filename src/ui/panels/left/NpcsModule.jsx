@@ -3,7 +3,7 @@ import { isNpcKnown } from "../../../domain/rules/npc/npcAwareness.js";
 import { npcAffectionLabel } from "../../../domain/rules/prompt/mvu.js";
 import { OVERLAY, openOverlay, useOverlay } from "../../../store/uiStore.js";
 import {
-  useSessionUi, setPigeonTarget, setInteractMode,
+  useSessionUi, setInputCapsule,
   setActiveNpcMenu, setCharacterPageTarget, setPeoplePanel,
 } from "../../../store/sessionUiStore.js";
 import { ADVENTURER_BY_NAME, isAdventurerName } from "../../../domain/data/dungeon/adventurers.js";
@@ -150,7 +150,7 @@ export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, ch
                   </span>
                   <span onClick={() => {
                       if ((char.pigeons || 0) <= 0) { addLog([{ t: "sys", text: `  没有信鸽——去驿站买鸽子，或到驿站直接寄信/送礼给${name}。` }]); return; }
-                      setPigeonTarget(name); setInteractMode("pigeon"); setTimeout(() => inputRef.current?.focus(), 0);
+                      setInputCapsule({ kind: "pigeon", name }); setTimeout(() => inputRef.current?.focus(), 0);
                     }}
                     title={(char.pigeons || 0) > 0 ? `飞鸽传书（现有信鸽 ${char.pigeons} 只，寄一封耗一只·只送信）` : "需先去驿站买信鸽"}
                     style={{ fontSize: "var(--fs-2xs)", color: (char.pigeons || 0) <= 0 ? zoneTheme.textDim : (pigeonTarget === name ? zoneTheme.accent : zoneTheme.accentDim), cursor: "pointer", flexShrink: 0 }}>飞鸽</span>

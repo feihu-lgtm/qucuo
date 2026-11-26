@@ -245,10 +245,41 @@ export function usePresetImport({ loadPreset, setPresets, setLog }) {
 export function createInputKeyHandler({
   composingRef, interactMode, sendPigeonLetter, pigeonTarget, input, act,
   cmdHistory, histIdx, setHistIdx, setInput,
+  inputCapsule = null, clearCapsule = () => {}, narratorName = "旁白",
+  clearTargets = () => {},
 }) {
   // 回车和输入栏的「发送」按钮走同一个提交入口：按钮调用 handler.submit()。
+  // W-INPUT 提交分流铁律（发完即焚——所有胶囊单条发送后立即清空）：
+  //   飞鸽胶囊 → 直调 sendPigeonLetter；私语胶囊或 //、((、（（、@旁白、@narrator 前缀
+  //   → 剥前缀直调 whisper 旁路（不进 runTurn 不扣回合）；@人名胶囊 → 仅限本条 targetHint。
   const submit = () => {
     if (composingRef.current) return;
+    const capsule = inputCapsule;
+    if (capsule?.kind === "pigeon") {
+      clearCapsule();
+      sendPigeonLetter(capsule.name, input, { channel: "pigeon" });
+      return;
+    }
+    const prefixes = ["//", "((", "（（", `@旁白 `, `@${narratorName} `].filter((p) => p.trim().length > 1);
+    let whisperText = null;
+    if (capsule?.kind === "whisper") whisperText = input;
+    else {
+      for (const p of prefixes) {
+        if (input.startsWith(p)) { whisperText = input.slice(p.length); break; }
+      }
+    }
+    if (whisperText != null) {
+      clearCapsule();
+      act(whisperText, [], { whisper: true });
+      return;
+    }
+    if (capsule?.kind === "target") {
+      const name = capsule.name;
+      clearCapsule();
+      clearTargets();
+      act(input, [], { targetHint: name });
+      return;
+    }
     if (interactMode === "pigeon") { sendPigeonLetter(pigeonTarget, input, { channel: "pigeon" }); return; }
     act(input);
   };

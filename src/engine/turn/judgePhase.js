@@ -171,6 +171,8 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
           char: liveNow.char || deps.char || {},
           varTree: vtNow,
           prepBlock: prepMaterialBlock,
+          // W-INPUT 指代候选：convo 末条回话角色（appendConvo 落条）喂前哨
+          lastResponder: [...(convo || [])].reverse().find((m) => m?.role === "assistant" && Array.isArray(m.respondedNpcs) && m.respondedNpcs.length)?.respondedNpcs?.[0] || "",
         });
         // WO-16G-G2：前哨走提取链模型口径（玩家给双调用/提取链选的 extractionModel 优先），
         // 不再是主模型直传——#451 审查指出的前哨模型口径在此钉住。buildExtractionCfg 自带关思考。

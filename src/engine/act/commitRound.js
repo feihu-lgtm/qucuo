@@ -191,7 +191,7 @@ export function commitRound(d) {
     activeTarget: d.activeTarget, talkTarget: d.talkTarget, settleNpc: d.settleNpc,
     presentNames: systemAcceptedNames, time: d.time,
   }));
-  applyPostResult(d, appendConvo({ newConvo: d.newConvo, rawFull: d.rawFull, p: d.p, time: d.time })); // convo 条目追加 memory/turn
+  applyPostResult(d, appendConvo({ newConvo: d.newConvo, rawFull: d.rawFull, p: d.p, time: d.time, derivedRespondedNpcs: d.derivedRespondedNpcs })); // convo 条目追加 memory/turn/respondedNpcs
 
   // 回合完成登记：驱动"每 N 回合自动存档"。出错回滚的轮次不计数——
   // 状态没变，存了也是重复盘。计数收在 autosaveScheduler 模块状态（WO-06）。
