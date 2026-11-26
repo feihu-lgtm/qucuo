@@ -204,7 +204,20 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
   // proposals 含非 absurd 的 social_deal 且在场有非敌对、有好感轨道的目标 NPC 时，
   // 判官当场掷骰（0.45+personaMod+affectionMod+stanceMod）定应不应约。
   let pactVerdict = null; // true=应约 false=婉拒 null=本轮无立约提议
-  const socialDeals = proposalsPre.filter((pp) => pp?.kind === "social_deal" && pp.fit !== "absurd");
+  const socialDealsAll = proposalsPre.filter((pp) => pp?.kind === "social_deal" && pp.fit !== "absurd");
+  // V5（7.5）买卖防契约串场：本轮有 trade 动作，或 social_deal 提案缺乏未来履约
+  // 条件（无期限/日后/事成类承诺词，仅是当场称斤付钱买干粮）→ 不参与立约掷骰，
+  // 强制 allowSpontaneousPact=false，买三斤炒面不判成口头立约。
+  const hasTrade = actions.some((a) => a?.kind === "trade");
+  // 当场即时交易词（买/卖/称斤/付钱/现银等）且无未来履约承诺 → 排除出立约；
+  // 其余 claim 保留原 W-FIX2 口径（承诺类表述本身即带未来性，靠关键词枚举会漏）。
+  const FUTURE_PACT_RE = /日后|明天|明日|三天|三日|两天|两日|一天|一日|天内|日内|回头|再来|事成|为期|期限|定去|定替|替你|帮你|之约|立下/;
+  const INSTANT_DEAL_RE = /买|卖|称斤|付钱|现银|当场结|赊账|成交|多少钱/;
+  const socialDeals = hasTrade ? [] : socialDealsAll.filter((pp) => {
+    const c = String(pp?.claim || "");
+    return !(INSTANT_DEAL_RE.test(c) && !FUTURE_PACT_RE.test(c));
+  });
+  const pactSuppressed = socialDealsAll.length > 0 && socialDeals.length === 0;
   if (socialDeals.length) {
     // Review 修两条：
     // ②目标 NPC 取条件过滤后动作里「最后一个」有效在场目标——先寒暄张三再跟
@@ -238,7 +251,8 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
     warrants,
     lastActionOutcome: J.lastActionOutcome,
     conditionResults,
-    allowSpontaneousPact: pactVerdict !== null ? pactVerdict : (J.accept.value || budget.tier !== "T0"),
+    // V5：买卖/无未来履约条件的 social_deal 本轮强制 false——哪怕 accept/tier 放行。
+    allowSpontaneousPact: pactSuppressed ? false : (pactVerdict !== null ? pactVerdict : (J.accept.value || budget.tier !== "T0")),
     reactionGuides,
     notes,
     budget: {

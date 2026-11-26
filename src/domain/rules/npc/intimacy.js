@@ -43,6 +43,29 @@ export function intimacyGate(npc = {}, affection = 0) {
   };
 }
 
+// V5（10.4-1）代词回落纯函数：targetName 空且 cmd 无显式人名时——可见非随行 NPC
+// 仅 1 人回落唯一在场者；多人且含代词回落 convo 里最后一个仍在场的说话者。
+export function resolveIntimateTarget({ targetName = "", cmd = "", npcs = [], convo = [], allNpcs = null } = {}) {
+  // Review修：显名检测按全据点花名册（allNpcs，缺省回落在场名单）——玩家点名
+  // 别屋 NPC 时绝不能把唯一在场者顶包进门禁（好感扣错人）。点名不在场维持原样
+  // 不回落：gate 找不到人自然不触发，与 V5 前口径一致。
+  const roster = allNpcs || npcs || [];
+  const explicitHit = roster.find((n) => n?.name && String(cmd).includes(n.name));
+  if (targetName || explicitHit) return { targetName, explicitHit: explicitHit || null };
+  const visible = (npcs || []).filter((n) => n?.name && n.companion !== true);
+  if (visible.length === 1) return { targetName: visible[0].name, explicitHit: null };
+  if (visible.length > 1 && /她|他|凑上去|对方/.test(String(cmd))) {
+    // Review修：convo 说话者真实存法是 respondedNpcs 数组（appendConvo 落条），
+    // 兼容旧 npc 单名字段——找不到时不能说找不到人就不检门禁。
+    const speakerOf = (c) => [c?.npc, ...(Array.isArray(c?.respondedNpcs) ? c.respondedNpcs : [])].filter(Boolean);
+    const lastSpoke = [...(convo || [])].reverse()
+      .flatMap((c) => speakerOf(c))
+      .find((nm) => visible.some((n) => n.name === nm));
+    if (lastSpoke) return { targetName: lastSpoke, explicitHit: null };
+  }
+  return { targetName: "", explicitHit: null };
+}
+
 import { random } from "../../../utils/rng.js";
 
 // 未过线的拒词事件：性格化拒词一句 + 好感微降（按 archetype 定区间）。
