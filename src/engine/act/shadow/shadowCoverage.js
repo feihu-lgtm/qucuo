@@ -111,11 +111,36 @@ export function evaluateShadowThresholds(summary, thresholds = DEFAULT_RELEASE_T
 }
 
 // 文本报告行数组——npm script 与复制文本共用。
-export function formatCoverageReport(summary, evaluation) {
+// A3：stageCounts/pendingAtExport 来自聚合 JSON 内嵌字段（A3 后导出才有）；
+// 老导出没有时显式打「无 A3 计数」一行，不得报错。
+export function formatCoverageReport(summary, evaluation, { stageCounts = null, pendingAtExport = 0 } = {}) {
   if (!summary) return ["无影子对账数据（dev 单调用模式游玩后重试）"];
-  const lines = [
+  const lines = [];
+  // A3 阶段计数表头：开始/完成/丢弃/出错/导出时在途——恒等式：
+  // 开始数 = 完成数 + 丢弃数 + 出错数 + 导出时在途数。
+  // （intakeFailed 为阶段级非终态失败、errorByStage 为阶段级观测，均不进恒等式。）
+  if (stageCounts && stageCounts.shadowStarted) {
+    const done = stageCounts.compareDone || 0;
+    const dropped = (stageCounts.droppedStale || 0) + (stageCounts.droppedEpoch || 0);
+    const errored = stageCounts.errorTurns || 0;
+    const sum = done + dropped + errored + pendingAtExport;
+    lines.push(
+      `A3 阶段计数：开始 ${stageCounts.shadowStarted} · 完成 ${done} · 丢弃 ${dropped}（stale ${stageCounts.droppedStale || 0}/epoch ${stageCounts.droppedEpoch || 0}）· 出错 ${errored} · 导出时在途 ${pendingAtExport}`,
+      `数量恒等：${done}+${dropped}+${errored}+${pendingAtExport}=${sum} vs 开始 ${stageCounts.shadowStarted} —— ${sum === stageCounts.shadowStarted ? "对账平" : "不平，计量有洞"}`,
+      `intake 进入 ${stageCounts.intakeStarted || 0} · 完成 ${stageCounts.intakeDone || 0} · 失败但回合继续 ${stageCounts.intakeFailed || 0} · 判官产出 ${stageCounts.judgeDone || 0}`,
+    );
+    const errs = stageCounts.errorByStage || {};
+    const stages = Object.keys(errs);
+    if (stages.length) {
+      lines.push("错误分类：" + stages.map((s) =>
+        `${s}: ${Object.entries(errs[s]).map(([t, n]) => `${t}×${n}`).join(" ")}`).join("；"));
+    }
+  } else {
+    lines.push("A3 阶段计数：无（旧版导出未内嵌 stageCounts——dev 重跑后重新复制聚合JSON）");
+  }
+  lines.push(
     `回合 ${summary.turns} · 全一致率 ${summary.matchRate === null ? "-" : `${(summary.matchRate * 100).toFixed(1)}%`} · 缺口回合率 ${summary.gapTurnRate === null ? "-" : `${(summary.gapTurnRate * 100).toFixed(1)}%`}`,
-  ];
+  );
   for (const [cat, c] of Object.entries(summary.categories)) {
     if (!c.comparable && !c.excluded) continue;
     const cov = c.referenceOnly ? "参考" : c.comparable === 0 ? "不可测(全盲区)" : c.coverageRate === null ? "无样本" : `${(c.coverageRate * 100).toFixed(1)}%`;
