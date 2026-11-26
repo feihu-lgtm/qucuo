@@ -11,7 +11,6 @@ import ModelPicker from "./ModelPicker.jsx";
 import ApiLengthFields from "./ApiLengthFields.jsx";
 import ApiGenerationFields from "./ApiGenerationFields.jsx";
 import ApiProfilesFields from "./ApiProfilesFields.jsx";
-import { inputStyle, labelStyle } from "./styles.js";
 import { Button, FieldLabel, Panel } from "../../primitives/index.js";
 
 // API 配置 tab。状态由 SettingsPanel 壳持有（切 tab 卸载后回来不丢），
@@ -73,8 +72,7 @@ export default function ApiTab({
 
       <ApiProviderSettings cfg={cfg} patch={patch} providers={PROVIDERS}
         isDefaultEndpoint={isDefaultEndpoint} migrateProvider={migrateProvider} providerApiType={providerApiType}
-        importCredential={importVertexCredential} hasCredential={isVertex && hasApiCredentials(cfg)}
-        labelStyle={labelStyle} inputStyle={inputStyle} />
+        importCredential={importVertexCredential} hasCredential={isVertex && hasApiCredentials(cfg)} />
 
       {!isVertex && <><FieldLabel as="label" htmlFor="api-model" style={{ display: "block" }}>模型名称</FieldLabel>
       <div style={{ display: "flex", gap: 6 }}>

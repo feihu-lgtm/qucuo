@@ -2,7 +2,7 @@
 import React from "react";
 import { DUNGEON_NODE_TYPE } from "../../../domain/data/dungeon/catalog.js";
 import { calcDungeonCheckRate, computeSettledLoot } from "../../../domain/rules/dungeon/engine.js";
-import { THEME_VARS, chromeBtn } from "../../../utils/theme.js";
+import { Button } from "../../primitives/index.js";
 
 const NODE_BADGE = {
   [DUNGEON_NODE_TYPE.TRAP]: "机关",
@@ -63,9 +63,9 @@ export default function DungeonNodeView({
             <div style={{ color: "var(--text-dim)" }}>消耗品：{run.usedItems.join("、")}</div>
           )}
         </div>
-        <button type="button" onClick={onSettleClose} style={chromeBtn(THEME_VARS, { active: true })}>
+        <Button variant="chrome" active={true} type="button" onClick={onSettleClose}>
           收起战利品离开
-        </button>
+        </Button>
       </div>
     );
   }
@@ -93,11 +93,10 @@ export default function DungeonNodeView({
             const statVal = choice.stat ? (effectiveSpecialNow?.[choice.stat] ?? 5) : null;
             const rate = choice.stat ? calcDungeonCheckRate(statVal, choice.dc ?? 5) : null;
             return (
-              <button
+              <Button variant="chrome"
                 key={choice.id}
                 type="button"
-                onClick={() => onChoose(choice.id)}
-                style={{ ...chromeBtn(THEME_VARS), textAlign: "left", padding: "7px 10px" }}
+                onClick={() => onChoose(choice.id)} style={{ textAlign: "left", padding: "7px 10px" }}
               >
                 <div>{choice.label}</div>
                 {choice.stat && (
@@ -105,7 +104,7 @@ export default function DungeonNodeView({
                     检定：{choice.stat}（当前 {statVal} / 难度 {choice.dc ?? 5} · 胜算 {rate}%）
                   </div>
                 )}
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -140,21 +139,20 @@ export default function DungeonNodeView({
           <div style={{ fontSize: "var(--fs-sm)", color: "var(--text-dim)", lineHeight: 1.55, marginBottom: 8 }}>
             {node.desc}
           </div>
-          <button
+          <Button variant="chrome"
             type="button"
             onClick={() => onSelectNode(node.nodeId)}
-            style={chromeBtn(THEME_VARS)}
           >
             {node.type === DUNGEON_NODE_TYPE.COMBAT || node.type === DUNGEON_NODE_TYPE.BOSS
               ? "迎战"
               : "上前查看"}
-          </button>
+          </Button>
         </div>
       ))}
       <div style={{ marginTop: 8 }}>
-        <button type="button" onClick={onRetreat} style={chromeBtn(THEME_VARS)}>
+        <Button variant="chrome" type="button" onClick={onRetreat}>
           见好就收 · 撤出地宫
-        </button>
+        </Button>
       </div>
     </div>
   );

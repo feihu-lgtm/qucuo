@@ -3,7 +3,6 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { Badge, Button, Field, FieldLabel, List, Panel, Tabs } from "./index.js";
-import { btnStyle, inputStyle, labelStyle, sectionStyle } from "../screens/settings/styles.js";
 import { THEME_VARS, chromeBtn } from "../../utils/theme.js";
 
 // 原语的每个变体都要原样复刻已有的手写样式：把 primitives.css 的规则与原样式对象逐个属性比对。
@@ -32,6 +31,18 @@ function expectSameStyle(selectors, legacy) {
   }
 }
 
+// 设置面板迁移前的共享样式件快照（原 screens/settings/styles.js，设置面板全部迁入原语后删除）。
+const inputStyle = {
+  width: "100%", background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0,
+  color: "var(--text)", padding: "6px 8px", fontFamily: "inherit", fontSize: "var(--fs-sm)", boxSizing: "border-box",
+};
+const labelStyle = { fontSize: "var(--fs-xs)", color: "var(--good)", marginBottom: 4, marginTop: 10 };
+const sectionStyle = { borderTop: "1px solid var(--ink-divider)", paddingTop: 12, marginTop: 12 };
+const btnStyle = {
+  cursor: "pointer", color: "var(--accent)", padding: "5px 12px", background: "var(--bg-panel)",
+  border: "1px solid var(--border)", borderRadius: 0, fontSize: "var(--fs-sm)", display: "inline-block",
+};
+
 // 建筑面板 Btn 迁移前的样式快照（screens/buildings/common.jsx，可用态）。
 const FORMER_BUILDING_BTN = {
   primary: { fontSize: "var(--fs-sm)", padding: "5px 14px", borderRadius: 0, cursor: "pointer", color: "var(--bg)", background: "var(--accent)", border: "1px solid var(--accent)", userSelect: "none", display: "inline-block" },
@@ -39,7 +50,7 @@ const FORMER_BUILDING_BTN = {
 };
 
 describe("原语样式与原手写样式逐属性相等", () => {
-  it("settings 按钮 = settings/styles.js 的 btnStyle", () => {
+  it("settings 按钮 = 设置面板原 btnStyle", () => {
     expectSameStyle([".ui-btn", '.ui-btn[data-variant="settings"]'], btnStyle);
   });
 
@@ -62,6 +73,10 @@ describe("原语样式与原手写样式逐属性相等", () => {
     expectSameStyle([".ui-field-label"], labelStyle);
     expectSameStyle([".ui-input"], inputStyle);
     expectSameStyle(['.ui-panel[data-variant="section"]'], sectionStyle);
+  });
+
+  it("块级字段标签 = ApiProviderSettings 原先的 fieldLabel（labelStyle + display: block）", () => {
+    expectSameStyle([".ui-field-label", ".ui-field-label--block"], { ...labelStyle, display: "block" });
   });
 
   it("按钮把浏览器默认样式重置回 <span> 的行为", () => {

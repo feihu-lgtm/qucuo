@@ -1,7 +1,7 @@
 import React from "react";
-import { THEME_VARS, chromeBtn } from "../../../utils/theme.js";
 import MusicSettings from "./MusicSettings.jsx";
 import { useSessionUi, setNsfwOn } from "../../../store/sessionUiStore.js";
+import { Button } from "../../primitives/index.js";
 
 // 其他 tab：字号 / 字体 / 音乐 / NSFW 低频开关（W-INPUT：底栏按钮撤销，默认恒 true 收此处兜底）。
 export default function OtherTab({ uiScale, setUiScale, font, setFont }) {
@@ -26,21 +26,20 @@ export default function OtherTab({ uiScale, setUiScale, font, setFont }) {
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, padding: "8px 10px", background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0 }}>
         <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", flexShrink: 0 }}>字体</span>
-        <button type="button" aria-pressed={font === "pixel"} onClick={() => setFont("pixel")} style={chromeBtn(THEME_VARS, { active: font === "pixel" })}>缝合像素</button>
-        <button type="button" aria-pressed={font === "song"} onClick={() => setFont("song")} style={chromeBtn(THEME_VARS, { active: font === "song" })}>宋体</button>
+        <Button variant="chrome" active={font === "pixel"} type="button" aria-pressed={font === "pixel"} onClick={() => setFont("pixel")}>缝合像素</Button>
+        <Button variant="chrome" active={font === "song"} type="button" aria-pressed={font === "song"} onClick={() => setFont("song")}>宋体</Button>
       </div>
 
       <MusicSettings />
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12, padding: "8px 10px", background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0 }}>
         <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", flexShrink: 0 }}>NSFW</span>
-        <button
+        <Button variant="chrome" active={nsfwOn}
           type="button"
           aria-pressed={nsfwOn}
           data-settings-nsfw="true"
           onClick={() => setNsfwOn(v => !v)}
-          style={chromeBtn(THEME_VARS, { active: nsfwOn })}
-        >{nsfwOn ? "已开启" : "已关闭"}</button>
+        >{nsfwOn ? "已开启" : "已关闭"}</Button>
         <span style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)" }}>默认常开；关闭后不再注入成人写作规则</span>
       </div>
     </div>

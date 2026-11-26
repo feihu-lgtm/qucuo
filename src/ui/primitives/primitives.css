@@ -108,6 +108,8 @@
   color: var(--good);
 }
 
+.ui-field-label--block { display: block; }
+
 .ui-input {
   width: 100%;
   box-sizing: border-box;
