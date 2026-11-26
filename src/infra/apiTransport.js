@@ -173,14 +173,9 @@ export async function fetchOpenAI(cfg, systemPrompt, messages, opts, stream = fa
     if (vertex && !res.ok) throw await vertex.vertexResponseError(res, auth.Authorization);
     if (stream) return res;
     if (!vertex) {
-      const json = await readJsonOrThrow(res, "OpenAI 兼容调用", url);
-      // A1：dev 下短调用（reasoning_effort=minimal）思考 token 超 200 记警告——
-      // 中转吞参数的探测器；只记模型与调用 id，不记正文/密钥。
-      const rt = json?.usage?.completion_tokens_details?.reasoning_tokens;
-      if (import.meta.env?.DEV && body.reasoning_effort === "minimal" && Number(rt) > 200) {
-        console.warn(`[A1思考档] 短调用 reasoning_tokens=${rt} 超 200——中转可能吞了 reasoning_effort（model=${body.model} · callId=${json?.id || "n/a"}）`);
-      }
-      return json;
+      // A1 短调用思考档探测在 observeAi 按 usage 进 turnMonitor 全流程日志，
+      // 传输层保持纯净只回原始 json（raw.id 供调用 id 留痕）。
+      return await readJsonOrThrow(res, "OpenAI 兼容调用", url);
     }
     return await res.json().catch(() => { throw new Error("Vertex AI 返回的内容无法解析"); });
   } catch (error) {
