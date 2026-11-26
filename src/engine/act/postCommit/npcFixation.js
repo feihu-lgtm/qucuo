@@ -64,7 +64,7 @@ export function fixateNpcs({ p, room, innerRoomName, narrativeText, varTree, tim
   // "新人物出现"检测：只对系统真正采纳、且从未见过的面孔插入这条日志。
   const newFaces = detectNewFaces(varTree, acceptedNpcs);
   if (newFaces.length) {
-    out.logs = newFaces.map(n => ({ t: "sys", text: `  ※ 新人物出现：${n.name}（点击可细看其人）` }));
+    out.logs = newFaces.map(n => ({ t: "sys", text: `  ※ 新人物出现 ${n.name}（点击可细看其人）` }));
     out.changes.varTree = (prev) => updateLastSeen(markAsSeen(prev, newFaces.map(n => n.name)), acceptedNpcs.map(n => n.name), time);
   }
   // 久别重逢·记忆断层：同样只记系统采纳的在场人物。

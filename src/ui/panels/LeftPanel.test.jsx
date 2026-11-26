@@ -4,12 +4,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import NpcAngerLine from "./NpcAngerLine.jsx";
 import LeftPanel from "./LeftPanel.jsx";
 import { THEME_VARS } from "../../utils/theme.js";
-import { LEFT_FACE_DEFAULTS, LEFT_FACE_PREF_KEY, LEFT_MODULES } from "./left/leftFaces.js";
+import { LEFT_FACE_DEFAULTS, LEFT_FACE_PREF_KEY, LEFT_MODULES, migrateLeftFaces } from "./left/leftFaces.js";
 import useFaces, { readFacePreferences } from "../components/faces/useFaces.js";
 
 function Demo(props) {
   const faces = useFaces(LEFT_FACE_PREF_KEY, LEFT_FACE_DEFAULTS, {
-    availableModules: LEFT_MODULES, editable: false, enableKeyboard: false,
+    availableModules: LEFT_MODULES, editable: false, enableKeyboard: false, migrate: migrateLeftFaces,
   });
   return createElement(LeftPanel, { ...props, faces });
 }
@@ -24,18 +24,21 @@ const props = {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("left faces", () => {
-  it("renders the location face and fixed date header without an editor", () => {
+  it("renders the location face with both outer and inner maps open", () => {
     const html = renderToStaticMarkup(createElement(Demo, props));
     expect(html).toContain("三水交汇");
     expect(html).toContain("出口");
+    expect(html).toContain("舆图·外");
+    expect(html).toContain("村图·内");
     expect(html).toContain("点击查看版本历史目录");
     expect(html).not.toContain("角色面板");
+    expect(html).not.toContain("此地建筑");
     expect(html).not.toContain("家园设施");
     expect(html).not.toContain("编排");
     expect(html).toContain('aria-label="天地面切换"');
   });
 
-  it("reads the left preference key and renders NPCs and map on the second face", () => {
+  it("reads the left preference key and renders buildings and NPCs on the second face", () => {
     const getItem = vi.fn(() => JSON.stringify({ ...LEFT_FACE_DEFAULTS, currentIndex: 1 }));
     vi.stubGlobal("window", { localStorage: { getItem } });
     const html = renderToStaticMarkup(createElement(Demo, props));
@@ -43,8 +46,19 @@ describe("left faces", () => {
     expect(LEFT_FACE_PREF_KEY).toBe("qucuo_left_faces");
     expect(html).toContain("此地建筑");
     expect(html).toContain("角色面板");
-    expect(html).toContain("舆图·外");
+    expect(html).not.toContain("舆图·外");
     expect(html).not.toContain("三水交汇");
+  });
+
+  it("migrates legacy stored left preferences to move map into the here face", () => {
+    const legacy = {
+      faces: [
+        { id: "here", name: "此地", modules: ["location", "exits", "homestead"] },
+        { id: "surroundings", name: "周遭", modules: ["buildings", "npcs", "map"] },
+      ],
+      currentIndex: 0,
+    };
+    expect(migrateLeftFaces(legacy)).toEqual(LEFT_FACE_DEFAULTS);
   });
 
   it("falls back to the default face when stored preferences are corrupt or unavailable", () => {

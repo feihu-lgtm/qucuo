@@ -154,7 +154,7 @@ export const NPC_POOL = [
   // 李若由/才旦另有 residentNpcs 驻场实体（玉泉寨/鱼定村）——分身与驻场不同据点不撞名，
   // 好感度按名字在 varTree.角色 合一，正好是同一个人两地行走。
   {
-    id: "pool_bidder_liruoyou", name: "李若由", brief: "玉泉小栈的经营者，来料场淘石的商人之女",
+    id: "pool_bidder_liruoyou", name: "李若由", brief: "玉泉小栈女掌柜，来料场淘石",
     personality: "初见只谈价格，语气精明现实；出价贴市价、利润算死，见裂立刻压价或退出。相处久了才露出重情重义的一面。",
     fullBio: `玉泉寨玉泉小栈的经营者，商人之女，二十四五，一身利落的靛青窄袖，算盘打得比说话快。
 父亲走马帮攒下小栈，她接手后把生意越盘越活，隔三差五赶到天都镇进货，顺道进料场淘石——
@@ -166,7 +166,7 @@ export const NPC_POOL = [
     carry: [{ name: "紫檀小算盘", category: "misc", quality: "蓝" }],
   },
   {
-    id: "pool_bidder_caidan", name: "才旦", brief: "鱼定村长之女，替村里置办石料的账房好手",
+    id: "pool_bidder_caidan", name: "才旦", brief: "鱼定村年轻账房，替村里采买石料",
     personality: "工于心计说话不留破绽，账算得滴水不漏。嘴上永远贬低窗口，但她肯出价=石里有货（反向信号最可信）。",
     fullBio: `鱼定村村长之女，替村里管账，账算得滴水不漏，说话不留破绽。村里翻修经堂、置办器物
 要用石料玉料，都是她赶到天都镇料场来办——既是采买，也是替村里的钱袋子把关。
@@ -215,7 +215,7 @@ export const NPC_POOL = [
     carry: [{ name: "黑风令", category: "accessory", quality: "白" }],
   },
   {
-    id: "pool_bidder_suwan", name: "苏宛", brief: "苏记茶货铺的姑娘，料场里最会看人的一双眼",
+    id: "pool_bidder_suwan", name: "苏宛", brief: "苏记茶货铺姑娘，料场里的熟客",
     personality: "嘴甜眼毒心算快，端着茶壶不推销，等你主动开口局才开始。抬价爽快得有点蹊跷——像替干姑母温掌柜的场子暖局。",
     fullBio: `天都镇苏记茶货铺老板的女儿，二十岁，汉人。铺子开在玉器轩斜对面，卖普洱和滇红，
 她从小在柜台后泡茶，练出一双识人的眼睛——哪个客人有钱、哪个好面子、哪个赌输了心情不好

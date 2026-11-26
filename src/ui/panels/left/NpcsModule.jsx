@@ -108,7 +108,7 @@ export default function NpcsModule({ room, innerRoomName, varTree, char, addLog,
             );
           })}</div>)}
       {peoplePanel.present && crowd.length > 0 && (
-        <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", marginBottom: 8, paddingLeft: 16 }}>路人：{crowd.join("、")}</div>
+        <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", marginBottom: 8, paddingLeft: 16 }}>路人 {crowd.join("、")}</div>
       )}
       {nearby.length > 0 && (
         <div style={{ paddingTop: 6, borderTop: `1px solid var(--border)` }}>

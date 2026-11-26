@@ -62,7 +62,7 @@ describe("pigeon send logic", () => {
       知晓者: { 商人: { 途径: "亲历", 得知回合: 4 } },
     });
     expect(result.logs.map((entry) => entry.text)).toEqual([
-      "> 飞鸽传书致「商人」：请回信",
+      "> 飞鸽传书 致「商人」 请回信",
       "  🕊 信鸽已放飞，往「鱼定村」，约 1 个时辰后当有回音。",
     ]);
     expect(result.note).toMatchObject({
@@ -90,7 +90,7 @@ describe("pigeon send logic", () => {
 
     expect(result.changes.inv(state.inv)).toEqual([]);
     expect(result.changes).not.toHaveProperty("char");
-    expect(result.logs[0].text).toBe("> 驿站送礼致「商人」：请收下（附礼：礼物）");
+    expect(result.logs[0].text).toBe("> 驿站送礼 致「商人」 请收下（附礼 礼物）");
   });
 
   it("calculates the arrival delay and processes the letter only when its time is reached", () => {

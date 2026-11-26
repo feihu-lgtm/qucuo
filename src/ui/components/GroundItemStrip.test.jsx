@@ -15,7 +15,7 @@ describe("GroundItemStrip", () => {
 
   it("renders string and object items as pickup buttons", () => {
     const html = render(["草药", { id: "sword", name: "铁剑" }]);
-    expect(html).toContain("地上：");
+    expect(html).toContain(">地上<");
     expect(html).toContain("草药</button>");
     expect(html).toContain("铁剑</button>");
     expect(html).not.toContain("展开地上物品");

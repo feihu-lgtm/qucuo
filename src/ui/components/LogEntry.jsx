@@ -80,8 +80,9 @@ function stripLeadingSpace(text) {
 
 const DUEL_BANNER_RE = /^[\s\u3000]*──\s*(.+?)\s*──[\s\u3000]*$/;
 const SETTLE_BANNER_RE = /^[\s\u3000]*◈\s*.+?·\s*战斗结算[\s\u3000]*$/;
+const LETTER_LINE_RE = /^[\s\u3000]*「([^」]+)来信」([\s\S]*)$/;
 
-export default function LogEntry({ entry, color, onAction, isDayMode = false }) {
+export default function LogEntry({ entry, color, onAction, isDayMode = false, onOpenLetters }) {
   // 得物卡（切磋掉落/偷窃成功/偷师得手）：整条换成像素卡渲染，不走纯文本。
   // 偷招传的是 entry.skill（无 item），偷物传 entry.item——两者都要放行，
   // 否则偷师得手会漏卡、退化成一行纯文本（此前正是这个 bug）。
@@ -97,11 +98,19 @@ export default function LogEntry({ entry, color, onAction, isDayMode = false }) 
   const isDesc = entry.t === LOG_T.DESC;
   const isRoom = entry.t === LOG_T.ROOM;
   const isCmd = entry.t === LOG_T.CMD;
-  const cls = entry.streaming
+  const kindCls = isRoom
+    ? "log-entry--room"
+    : isCmd
+      ? "log-entry--cmd"
+      : isDesc
+        ? "log-entry--prose"
+        : "log-entry--fact";
+  const baseCls = entry.streaming
     ? "log-entry log-streaming"
     : entry.streamed
       ? "log-entry log-entry-streamed"
       : "log-entry";
+  const cls = `${baseCls} ${kindCls}`;
 
   // 流式占位（▌ / 「旁白」▌）：原地在同一节点里渲染成水墨骨架屏，
   // 首字抵达时无需卸载/重建节点，彻底避免行错位跳动。
@@ -109,6 +118,27 @@ export default function LogEntry({ entry, color, onAction, isDayMode = false }) 
     return (
       <div className={cls} style={{ color }}>
         <NarrativeSkeleton narratorPrefix={rawText.trim().startsWith("「旁白」")} />
+      </div>
+    );
+  }
+
+  // 主栏信件卡片：NPC 来信与回信统一折成素笺信卡，不再混作旁白亮粉字飘在日志里。
+  const letterMatch = entry.t === LOG_T.NARRATOR ? rawText.match(LETTER_LINE_RE) : null;
+  if (entry.letterFrom || letterMatch) {
+    const sender = entry.letterFrom || letterMatch[1];
+    const body = (entry.letterBody ?? letterMatch?.[2] ?? rawText).trim();
+    return (
+      <div className={`${baseCls} log-letter-card`}>
+        <div className="log-letter-card-head">
+          <span className="log-letter-card-sender">✉ {sender} 来信</span>
+          {onOpenLetters && (
+            <button type="button" className="log-letter-card-link" onClick={onOpenLetters}>
+              信箱
+            </button>
+          )}
+        </div>
+        <div className="log-letter-card-body">{renderMixed(body, "var(--center-letter-body)", isDayMode)}</div>
+        <ReceiptStrip receipts={entry.receipts} onAction={onAction} />
       </div>
     );
   }
@@ -141,6 +171,7 @@ export default function LogEntry({ entry, color, onAction, isDayMode = false }) 
   const displayText = entry.streaming
     ? trimmedForDisplay.replace(/\s*▌\s*$/, "")
     : trimmedForDisplay;
+  const shouldIndent = isDesc && (displayText.includes("\n") || displayText.trim().length >= 42);
   const renderedContent = isDesc
     ? renderMixed(displayText, color, isDayMode)
     : isRoom && displayText.trim()
@@ -155,11 +186,10 @@ export default function LogEntry({ entry, color, onAction, isDayMode = false }) 
         overflowWrap: "anywhere",
         wordBreak: "normal",
         color,
-        lineHeight: "var(--lh-narrative)",
-        marginBottom: isRoom ? 4 : 4,
+        marginBottom: 4,
         fontWeight: isRoom ? "bold" : "normal",
-        textIndent: isDesc ? "2em" : "0",
-        ...(isRoom ? { textAlign: "center", fontSize: "0.9em", letterSpacing: "0.2em", opacity: 0.9 } : {}),
+        textIndent: shouldIndent ? "var(--center-prose-indent)" : "0",
+        ...(isRoom ? { textAlign: "center", letterSpacing: "0.2em", opacity: 0.9 } : {}),
       }}
     >
       <span style={{ cursor: entry.action ? "pointer" : undefined }} onClick={entry.action ? () => onAction(entry.action) : undefined}>

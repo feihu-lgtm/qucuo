@@ -29,6 +29,25 @@ function getEntryRenderKey(entry, fallbackPrefix = "row") {
   return `${fallbackPrefix}:${getStableUid(entry)}`;
 }
 
+const LETTER_ENTRY_RE = /^[\s\u3000]*「([^」]+)来信」/;
+const isLetterEntry = (entry) => Boolean(entry?.letterFrom)
+  || (entry?.t === LOG_T.NARRATOR && LETTER_ENTRY_RE.test(entry.text || ""));
+const isDuelBannerEntry = (entry) => entry?.t === LOG_T.SYS && /──\s*与.+切磋\s*──/.test(entry.text || "");
+const isSettleBannerEntry = (entry) => entry?.t === LOG_T.AFF && /◈\s*.+?·\s*战斗结算/.test(entry.text || "");
+
+function shouldDivideGroupHeader(group, isActiveGroup, showSkeleton) {
+  if (isActiveGroup && showSkeleton) return true;
+  const replies = group?.replies || [];
+  if (replies.length >= 2) return true;
+  if (replies.length === 0) return false;
+  const only = replies[0];
+  if (only.t === LOG_T.LOOT || only.receipts?.length || isLetterEntry(only) || isDuelBannerEntry(only) || isSettleBannerEntry(only)) {
+    return true;
+  }
+  const txt = (only.text || "").trim();
+  return txt.includes("\n") || txt.length > 36;
+}
+
 function formatEntryTurnLabel(entry) {
   if (typeof entry?.turn !== "number" || !Number.isFinite(entry.turn)) return "";
   const day = typeof entry.day === "number" ? entry.day : getGameDay(entry.turn);
@@ -134,25 +153,44 @@ export default function NarrativeLogFeed({
   };
 
   return (
-    <div ref={feedRef} onScroll={handleScroll} data-testid="narrative-log" style={{ display: hidden ? "none" : "block", flex: 1, padding: "20px 32px", overflowY: "auto", overflowX: "hidden", fontSize: "var(--fs-lg)", lineHeight: "var(--lh-narrative)", letterSpacing: "0.3px" }}>
+    <div ref={feedRef} onScroll={handleScroll} data-testid="narrative-log" style={{ display: hidden ? "none" : "block", flex: 1, padding: "20px 32px", overflowY: "auto", overflowX: "hidden", fontFamily: "var(--font-center)", fontSize: "var(--fs-center-body)", lineHeight: "var(--lh-narrative)", letterSpacing: "0.3px" }}>
       {groups.map((g, gi) => {
         if (g.standalone) {
-          const isRoom = g.standalone.t === LOG_T.ROOM;
-          const hasText = Boolean(g.standalone.text?.trim());
+          const entry = g.standalone;
+          const isRoom = entry.t === LOG_T.ROOM;
+          const isLetter = isLetterEntry(entry);
+          const hasText = Boolean(entry.text?.trim());
+          const quietOutside = entry.t === LOG_T.SYS || entry.t === LOG_T.ITEM;
+          const entryColor = isRoom
+            ? "var(--center-outside-room)"
+            : quietOutside
+              ? "var(--center-outside-text)"
+              : (clr[entry.t] || clr.desc);
+          const standaloneCls = isRoom
+            ? "narrative-standalone narrative-standalone--room"
+            : isLetter
+              ? "narrative-standalone narrative-standalone--letter"
+              : "narrative-standalone";
           return (
             <div
-              key={getEntryRenderKey(g.standalone, `standalone-${gi}`)}
-              className={isRoom ? "narrative-standalone narrative-standalone--room" : "narrative-standalone"}
+              key={getEntryRenderKey(entry, `standalone-${gi}`)}
+              className={standaloneCls}
             >
               <div className="narrative-standalone-main">
-                <LogEntry entry={g.standalone} color={clr[g.standalone.t] || clr.desc} onAction={handleEntryAction} isDayMode={isDayMode} />
+                <LogEntry
+                  entry={entry}
+                  color={entryColor}
+                  onAction={handleEntryAction}
+                  isDayMode={isDayMode}
+                  onOpenLetters={() => openOverlay(OVERLAY.LETTERS)}
+                />
               </div>
               {isRoom && hasText && (
                 <div className="narrative-room-time">
-                  <TimeBadge entry={g.standalone} />
+                  <TimeBadge entry={entry} />
                 </div>
               )}
-              {!isRoom && hasText && <TimeBadge entry={g.standalone} />}
+              {!isRoom && !isLetter && hasText && <TimeBadge entry={entry} />}
             </div>
           );
         }
@@ -165,6 +203,7 @@ export default function NarrativeLogFeed({
         const groupKey = g.cmd ? getEntryRenderKey(g.cmd, `cmd-${gi}`)
           : (g.replies[0] ? `orphan-${getStableUid(g.replies[0])}` : `group-${gi}`);
         const isActiveGroup = Boolean(g.cmd && g.cmd === lastCommand);
+        const headerDivided = !collapsed && shouldDivideGroupHeader(g, isActiveGroup, showSkeleton);
         const toggleCollapse = canCollapse ? () => setCollapsedGroups(prev => {
           const next = new Set(prev);
           if (next.has(cmdIdx)) next.delete(cmdIdx); else next.add(cmdIdx);
@@ -177,7 +216,11 @@ export default function NarrativeLogFeed({
           <div key={groupKey} className="narrative-group">
             {g.cmd && (
               <div
-                className={collapsed ? "narrative-group-header" : "narrative-group-header narrative-group-header--open"}
+                className={collapsed
+                  ? "narrative-group-header"
+                  : headerDivided
+                    ? "narrative-group-header narrative-group-header--open narrative-group-header--divided"
+                    : "narrative-group-header narrative-group-header--open"}
                 style={{ cursor: canCollapse ? "pointer" : "default" }}
                 onClick={toggleCollapse}
               >
@@ -194,7 +237,7 @@ export default function NarrativeLogFeed({
               </div>
             )}
             {!g.cmd && turnEntry && g.replies.length > 0 && (
-              <div className="narrative-orphan-time">
+              <div className={shouldDivideGroupHeader(g, isActiveGroup, showSkeleton) ? "narrative-orphan-time narrative-orphan-time--divided" : "narrative-orphan-time"}>
                 <TimeBadge entry={turnEntry} />
               </div>
             )}
@@ -203,8 +246,9 @@ export default function NarrativeLogFeed({
                 {g.replies.map((entry, ri) => {
                   const entryTurn = typeof entry?.turn === "number" ? entry.turn : null;
                   const turnChanged = entryTurn !== null && trackedTurn !== null && entryTurn !== trackedTurn;
-                  const isDuelBoundary = entry?.t === LOG_T.SYS && /──\s*与.+切磋\s*──/.test(entry.text || "");
-                  const showDivider = (turnChanged || (isDuelBoundary && ri > 0)) && (entryTurn !== null || entry?.realTs != null);
+                  const isLetterRow = isLetterEntry(entry);
+                  const showDivider = (turnChanged || (isLetterRow && ri > 0))
+                    && (entryTurn !== null || entry?.realTs != null);
                   if (entryTurn !== null) trackedTurn = entryTurn;
                   return (
                     <div key={getEntryRenderKey(entry, `reply-${groupKey}`)} className="narrative-reply-slot">
@@ -214,7 +258,13 @@ export default function NarrativeLogFeed({
                           <TimeBadge entry={entry} />
                         </div>
                       )}
-                      <LogEntry entry={entry} color={clr[entry.t] || clr.desc} onAction={handleEntryAction} isDayMode={isDayMode} />
+                      <LogEntry
+                        entry={entry}
+                        color={clr[entry.t] || clr.desc}
+                        onAction={handleEntryAction}
+                        isDayMode={isDayMode}
+                        onOpenLetters={() => openOverlay(OVERLAY.LETTERS)}
+                      />
                     </div>
                   );
                 })}

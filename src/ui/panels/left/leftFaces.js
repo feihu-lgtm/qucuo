@@ -9,8 +9,30 @@ export const LEFT_MODULES = [
 ];
 export const LEFT_FACE_DEFAULTS = {
   faces: [
-    { id: "here", name: "此地", modules: ["location", "exits", "homestead"] },
-    { id: "surroundings", name: "周遭", modules: ["buildings", "npcs", "map"] },
+    { id: "here", name: "此地", modules: ["location", "exits", "map", "homestead"] },
+    { id: "surroundings", name: "周遭", modules: ["buildings", "npcs"] },
   ],
   currentIndex: 0,
 };
+
+export function migrateLeftFaces(prefs) {
+  if (!prefs?.faces?.length) return prefs;
+  const here = prefs.faces.find(f => f.id === "here");
+  const surr = prefs.faces.find(f => f.id === "surroundings");
+  if (!here || !surr || here.modules.includes("map")) return prefs;
+  return {
+    ...prefs,
+    faces: prefs.faces.map(f => {
+      if (f.id === "here") {
+        const next = f.modules.filter(id => id !== "map");
+        const exitsAt = next.indexOf("exits");
+        next.splice(exitsAt >= 0 ? exitsAt + 1 : next.length, 0, "map");
+        return { ...f, modules: next };
+      }
+      if (f.id === "surroundings") {
+        return { ...f, modules: f.modules.filter(id => id !== "map") };
+      }
+      return f;
+    }),
+  };
+}

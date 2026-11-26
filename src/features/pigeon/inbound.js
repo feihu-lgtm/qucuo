@@ -178,8 +178,8 @@ export function applyInboundLetter(state, letter, content, opts = {}) {
       },
     },
     logs: [
-      { t: "item", text: `  🕊 一只信鸽落下——${npcName}捎来一封信。` },
-      { t: "narrator", text: `  「${npcName}来信」${text}` },
+      { t: "item", text: `  🕊 一只信鸽落下，${npcName}捎来一封信。`, standalone: true },
+      { t: "narrator", text: `  「${npcName}来信」${text}`, standalone: true, letterFrom: npcName, letterBody: text },
     ],
     note: opts.note === false ? undefined : {
       text: `${npcName}来信：${text.slice(0, 24)}${text.length > 24 ? "…" : ""}`,

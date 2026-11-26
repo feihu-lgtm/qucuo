@@ -2,7 +2,7 @@ export default { residentGroup: {
 天龙营: [
     {
       name: "厉苍龙", id: "resident_licanglong", levelCap: 5,
-      brief: "天龙教现任教主，八部之「龙王」，厉苍天的胞弟，五十岁，玄甲从不离身",
+      brief: "天龙教现任「龙王」教主，玄甲不离身",
       personality: "枭雄做派，惜力如金；收人只看两样——拳头够不够硬，办差够不够稳",
       carry: [
         { name: "玄铁重刀", category: "weapon", quality: "橙" },
@@ -16,7 +16,7 @@ export default { residentGroup: {
     },
     {
       name: "厉苍天", id: "resident_licangtian", levelCap: 5,
-      brief: "前任教主，八部之「天王」，厉苍龙的兄长；被废后软禁断崖石室抄经，白衣旧部之主",
+      brief: "天龙教前代「天王」，被废囚居石室抄经",
       personality: "说话极慢，像每个字都要先在心里放一放；止戈经倒背如流，唯独不提当年让位那一夜",
       carry: [
         { name: "止戈玉令", category: "accessory", quality: "橙" },
@@ -31,7 +31,7 @@ export default { residentGroup: {
     {
       name: "贺兰昭", id: "resident_helanzhao", levelCap: 3,
       goneFlags: ["quest_tian3_b"],
-      brief: "天龙教女医官，西谷药庐主事，天王旧部里人缘最好的一个",
+      brief: "天龙教西谷药庐女医官，心软护旧部",
       personality: "手上是药，眼里是人；谁身上有伤她都管，管完才问你站哪一边",
       carry: [
         { name: "西域雪莲清毒丸", category: "misc", quality: "紫" },
@@ -45,7 +45,7 @@ export default { residentGroup: {
     },
     {
       name: "姬无双", id: "resident_jiwushuang", levelCap: 5,
-      brief: "天龙八部「夜叉」护法，夜叉部之主，三十余岁，黑纱遮面，营里人背地叫她夜叉姬",
+      brief: "天龙八部「夜叉」护法，常年黑纱遮面",
       personality: "笑得越温柔下手越狠；只认两样东西——用得上的人和还没拆穿的秘密",
       carry: [
         { name: "夜叉双钩", category: "weapon", quality: "橙" },
@@ -74,7 +74,7 @@ export default { residentGroup: {
     },
     {
       name: "樊未离", id: "resident_fanweili", levelCap: 5,
-      brief: "天龙八部「阿修罗」护法，修罗宫宫主，红衣，从不在营里过夜",
+      brief: "天龙八部「阿修罗」护法，一袭红衣独来独往",
       personality: "骄傲到懒得说谎；看不起龙王的手段，更看不起天王的软；只认一个字——战",
       carry: [
         { name: "修罗赤练刀", category: "weapon", quality: "橙" },
@@ -103,7 +103,7 @@ export default { residentGroup: {
     },
     {
       name: "任天翔", id: "resident_rentianxiang", levelCap: 4, innerRoom: "迦楼罗鹰台",
-      brief: "天龙八部「迦楼罗」护法，执掌哨骑与鹰信，鹰台上一站就是一天",
+      brief: "天龙八部「迦楼罗」护法，执掌哨骑与鹰信",
       personality: "眼尖嘴毒，信鹰比信人；龙王的令他照办，办完了在鹰台上骂两句",
       carry: [
         { name: "金翅铁翎枪", category: "weapon", quality: "紫" },
@@ -117,7 +117,7 @@ export default { residentGroup: {
     },
     {
       name: "凌香儿", id: "resident_lingxianger", levelCap: 3, innerRoom: "乾达婆乐帐",
-      brief: "天龙八部「乾达婆」护法，乐帐之主，管营中香火、祭乐与宴饮",
+      brief: "天龙八部「乾达婆」护法，掌营中祭乐宴饮",
       personality: "见谁都笑，琵琶一响就能让一帐子醉汉安静；酒席上听来的话，转头就记进心里",
       carry: [
         { name: "乾达婆琵琶", category: "weapon", quality: "紫" },
@@ -131,7 +131,7 @@ export default { residentGroup: {
     },
     {
       name: "罗那", id: "resident_luona", levelCap: 3, innerRoom: "风沙客帐",
-      brief: "天龙八部「紧那罗」护法，化名纳兰露儿，在风沙客帐唱曲",
+      brief: "天龙八部「紧那罗」护法，在客帐唱曲掩身份",
       personality: "对外只认「纳兰露儿」这个名字；曲子唱得极好，问起来历就换一支曲子",
       carry: [
         { name: "紧那罗银弦", category: "weapon", quality: "蓝" },
@@ -145,7 +145,7 @@ export default { residentGroup: {
     },
     {
       name: "罗蛇君", id: "resident_luoshejun", levelCap: 4, innerRoom: "摩呼罗迦蛇窟",
-      brief: "天龙八部「摩呼罗迦」护法，蛇窟之主，养蛇炼毒",
+      brief: "天龙八部「摩呼罗迦」护法，蛇窟养蛇炼毒",
       personality: "说话慢，像蛇吐信；不站龙王也不站天王，只问谁给他的蛇喂得饱",
       carry: [
         { name: "摩呼罗迦蛇杖", category: "weapon", quality: "紫" },

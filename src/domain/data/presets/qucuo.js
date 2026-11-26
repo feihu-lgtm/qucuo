@@ -121,7 +121,7 @@ export const QUCUO_PRESET = {
     // 掉落/偷窃只出这里的东西。老猎户的短刀和兽皮绳直接对应他人设里的外貌锚点。
     npcs: [
       { name: "老猎户", id: "hunter", brief: "熟悉熊山地形", carry: [{ name: "磨亮的短刀", category: "weapon", quality: "绿" }, { name: "兽皮绳", category: "misc", quality: "白" }] },
-      { name: "杂货商人", id: "merchant", brief: "支着摊子卖些杂货，本名冯四，常年从雅江赊货进村", carry: [{ name: "杂货担子", category: "misc", quality: "白" }, { name: "粗布钱袋", category: "misc", quality: "白" }] },
+      { name: "杂货商人", id: "merchant", brief: "村头摆摊货郎冯四，从雅江赊货进村", carry: [{ name: "杂货担子", category: "misc", quality: "白" }, { name: "粗布钱袋", category: "misc", quality: "白" }] },
     ],
     items: [
       { name: "界石", id: "boundary_stone" },
@@ -169,6 +169,6 @@ export const QUCUO_PRESET = {
     { t: "desc", text: "  你没有姓氏可报，没有师门可攀，也没有哪位故人在前面等着。走到这儿，凭的只是自己两条腿和一张来路不明的帖子。" },
     { t: "desc", text: "  眼前村口热闹，藏汉两地口音混杂，三条溪流在此交汇，水声不断。往西是鱼定土司的宅院，往北顺着熊曲可以上山到喇嘛庙，往南则是一片开阔的大草甸，再往深处走，鹰曲通天都镇、狼曲通玉泉寨。" },
     { t: "desc", text: "" }, { t: "item", text: "  村口立着一块界石，刻着'曲措乡'三字，风吹日晒已经褪色。" },
-    { t: "sys", text: "  这里的出口：西 北 南" },
+    { t: "sys", text: "  这里的出口 西 北 南" },
   ],
 };

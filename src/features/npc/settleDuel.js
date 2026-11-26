@@ -143,7 +143,7 @@ export function settleNpcDuel(state, npc, {
       return set("inv", next);
     }));
     const tally = usedItems.reduce((counts, name) => (counts[name] = (counts[name] || 0) + 1, counts), {});
-    logs.push({ t: "item", text: `  ⊙ 切磋中服用：${Object.entries(tally).map(([name, count]) => `${name}×${count}`).join("、")}` });
+    logs.push({ t: "item", text: `  ⊙ 切磋中服用 ${Object.entries(tally).map(([name, count]) => `${name}×${count}`).join("、")}` });
   }
 
   for (const stolen of dodgeStolenItems || []) {
@@ -396,10 +396,10 @@ export function settleNpcDuel(state, npc, {
         [quest.id]: { count: (prev[quest.id]?.count || 0) + 1 },
       }));
       if (done && current < quest.requiredCount) {
-        logs.push({ t: "affection", text: `  ✓ 任务「${quest.title}」达成：${quest.rewardText}` });
+        logs.push({ t: "affection", text: `  ✓ 任务「${quest.title}」达成 ${quest.rewardText}` });
         addChange(changes, working, "flags", updateField("flags", (prev) => set("flags", prev.includes(`quest_done_${quest.id}`) ? prev : [...prev, `quest_done_${quest.id}`])));
       } else {
-        logs.push({ t: "sys", text: `  任务「${quest.title}」进度：${nextCount}/${quest.requiredCount}` });
+        logs.push({ t: "sys", text: `  任务「${quest.title}」进度 ${nextCount}/${quest.requiredCount}` });
       }
     }
   }
@@ -416,7 +416,7 @@ export function settleNpcDuel(state, npc, {
         ...prev,
         [bounty.id]: { ...prev[bounty.id], count: nextCount },
       }));
-      logs.push({ t: "sys", text: `  悬赏「${bounty.title}」进度：${nextCount}/${need}${nextCount >= need ? "，可回镖局领赏" : ""}` });
+      logs.push({ t: "sys", text: `  悬赏「${bounty.title}」进度 ${nextCount}/${need}${nextCount >= need ? "，可回镖局领赏" : ""}` });
     }
   }
 
@@ -424,7 +424,7 @@ export function settleNpcDuel(state, npc, {
     const droppedItem = loot.droppedItem;
     const item = { ...droppedItem, equipped: false };
     addChange(changes, working, "inv", updateField("inv", (prev) => set("inv", [...prev, item])));
-    logs.push({ t: "loot", text: `⚔ 战利品：获得「${droppedItem.name}」`, item: droppedItem, source: "duel", fromNpc: npc.name });
+    logs.push({ t: "loot", text: `⚔ 战利品 获得「${droppedItem.name}」`, item: droppedItem, source: "duel", fromNpc: npc.name });
     addChange(changes, working, "room", (prev) => ({
       ...prev,
       npcs: markCarriedLost(prev.npcs, npc.name, droppedItem, "stolen"),
@@ -432,12 +432,12 @@ export function settleNpcDuel(state, npc, {
   }
   if (loot?.droppedMoney > 0) {
     addChange(changes, working, "char", updateField("char", add("char.money", loot.droppedMoney)));
-    logs.push({ t: "item", text: `  💰 战利品：获得银两 ${loot.droppedMoney} 两` });
+    logs.push({ t: "item", text: `  💰 战利品 获得银两 ${loot.droppedMoney} 两` });
   }
   if (loot?.guaranteedLoot?.length) {
     addChange(changes, working, "inv", updateField("inv", (prev) => set("inv", [...prev, ...loot.guaranteedLoot])));
     for (const item of loot.guaranteedLoot) {
-      logs.push({ t: "item", text: `  ⚔ 战利品：取得「${item.name}」（${item.quality}）` });
+      logs.push({ t: "item", text: `  ⚔ 战利品 取得「${item.name}」（${item.quality}）` });
     }
   }
 

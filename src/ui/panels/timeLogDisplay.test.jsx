@@ -77,4 +77,36 @@ describe("局内时间合并与叙事日志回合显示", () => {
     expect(html).toContain("log-duel-banner");
     expect(html).toContain("narrative-skeleton");
   });
+
+  it("紧凑单行盒省去多余横线分割、长叙事缩进 2em、来信走素笺卡片且箱外弱化", () => {
+    mockState.log = [
+      { t: "sys", text: "正在读档，请稍候。", standalone: true, turn: 1, day: 1 },
+      { t: "cmd", text: "> 环顾四周", turn: 1, day: 1 },
+      { t: "desc", text: "  界石边有一条清亮水痕。", turn: 1, day: 1 },
+      { t: "cmd", text: "> 细看雪山", turn: 2, day: 1 },
+      { t: "desc", text: "风从垭口灌下来，卷着碎雪扑在肩头，远处白塔在云雾里露出一角檐牙，山道上行人寥寥，只有牧马的低鸣断断续续传进耳中。", turn: 2, day: 1 },
+      { t: "narrator", text: "  「元朵朵来信」见字如面，近来可好。", standalone: true, letterFrom: "元朵朵", letterBody: "见字如面，近来可好。" },
+    ];
+    const html = renderToStaticMarkup(createElement(NarrativeLogFeed, {
+      hidden: false,
+      clr: { sys: "var(--log-sys)", cmd: "var(--log-cmd)", desc: "var(--log-desc)", room: "var(--log-room)", narrator: "var(--log-narrator)" },
+      isDayMode: false,
+      act: () => {},
+      collapsedGroups: new Set(),
+      setCollapsedGroups: () => {},
+      loading: false,
+      queueCount: 0,
+      pendingTalks: 0,
+      inspecting: null,
+      logEnd: { current: null },
+    }));
+    expect(html).toContain("color:var(--center-outside-text)");
+    // 第一组紧凑单行不带 header--divided，第二组长段才带 header--divided
+    expect(html).toMatch(/narrative-group-header--open"[^>]*>.*?环顾四周/);
+    expect(html).toMatch(/narrative-group-header--divided"[^>]*>.*?细看雪山/);
+    expect(html).toContain("text-indent:0");
+    expect(html).toContain("text-indent:var(--center-prose-indent)");
+    expect(html).toContain("log-letter-card");
+    expect(html).toContain("✉ 元朵朵 来信");
+  });
 });

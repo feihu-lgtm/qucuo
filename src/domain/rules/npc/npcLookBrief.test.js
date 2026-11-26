@@ -15,7 +15,7 @@ const npc = {
 describe("npcLookCard", () => {
   it("只列来历和没被偷走、没在切磋中掉落的装束，不列杂物", () => {
     expect(npcGear(npc)).toEqual(["鱼定猎刀"]);
-    expect(npcLookCard(npc).map(r => r.text)).toEqual(["  才旦：村长之女", "  装束：鱼定猎刀"]);
+    expect(npcLookCard(npc).map(r => r.text)).toEqual(["  才旦 村长之女", "  装束 鱼定猎刀"]);
   });
   it("没装束时只出名字行", () => {
     expect(npcLookCard({ name: "路人" }).map(r => r.text)).toEqual(["  路人"]);
