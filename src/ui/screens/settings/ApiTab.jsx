@@ -16,7 +16,7 @@ import { inputStyle, labelStyle, sectionStyle, btnStyle } from "./styles.js";
 // API 配置 tab。状态由 SettingsPanel 壳持有（切 tab 卸载后回来不丢），
 // 本组件只做渲染与事件处理。
 export default function ApiTab({
-  cfg, setCfg, patch, zoneTheme, st,
+  cfg, setCfg, patch, st,
 }) {
   const {
     testStatus, setTestStatus, testMsg, setTestMsg,

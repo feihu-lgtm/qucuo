@@ -16,7 +16,7 @@ const TAB_LABELS = { api: "API 配置", preset: "预设", narrator: "旁白", sa
 // 设置面板壳：遮罩 + 头部 + 首页卡片宫格 + tab 分派。
 // 各 tab 的实现在 ./settings/ 下；tab 内容的状态（测试/检测/展开/槽位等）由壳
 // 集中持有——切 tab 时子组件卸载，状态放壳里回来才不丢。
-export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, onOpenCardImport, currentSnapshot, onLoadSnapshot, varTree, setVarTree, initialTab, onSelectTab, uiScale, setUiScale, font, setFont, zoneTheme, narrator, setNarrator, getLiveBlockText }) {
+export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, onOpenCardImport, currentSnapshot, onLoadSnapshot, varTree, setVarTree, initialTab, onSelectTab, uiScale, setUiScale, font, setFont, narrator, setNarrator, getLiveBlockText }) {
   // 遮罩误触修复：原来外层遮罩单纯 onClick={onClose}，在弹窗内输入框/文本区域
   // 选字拖拽、鼠标移出弹窗范围松手时会被浏览器合成一次落在遮罩上的 click，
   // 导致"复制粘贴选着选着弹窗自己关了"。closeGuard 要求 mousedown 和 click
@@ -115,7 +115,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
         />
       )}
 
-      {tab === "api" && <ApiTab cfg={cfg} setCfg={setCfg} patch={patch} zoneTheme={zoneTheme} st={st} />}
+      {tab === "api" && <ApiTab cfg={cfg} setCfg={setCfg} patch={patch} st={st} />}
 
       {tab === "narrator" && <NarratorTab cfg={cfg} patch={patch} narrator={narrator} setNarrator={setNarrator} />}
 
