@@ -257,3 +257,33 @@ describe("S2 hasHostileHint 敌意提示", () => {
     expect(hasHostileHint("请问去雪山怎么走")).toBe(false);
   });
 });
+
+describe("F6-T17 复数称呼脱绑", () => {
+  const base = { read: "x", refIds: [], proposals: [] };
+  const act = (target, text) => ({
+    kind: "talk", target, item: "无", itemId: "", direction: "none", condition: "无",
+    condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text,
+  });
+  it("「众人/各位」原文未点名 → target 脱绑回无", () => {
+    const r = normalizeIntakeResult({ ...base, actions: [act("老孙", "冲在场的众人拱手笑道，各位今日气色不错")] });
+    expect(r.actions[0].target).toBe("无");
+  });
+  it("原文点名 + 复数词并存 → target 保留", () => {
+    const r = normalizeIntakeResult({ ...base, actions: [act("老孙", "冲老孙和大伙儿问好")] });
+    expect(r.actions[0].target).toBe("老孙");
+  });
+  it("无复数称呼 → 不受影响", () => {
+    const r = normalizeIntakeResult({ ...base, actions: [act("老孙", "老孙你近来可好")] });
+    expect(r.actions[0].target).toBe("老孙");
+  });
+  it("Review 二轮：appease 属社交称呼类——「向大伙儿赔不是」脱绑不落单人", () => {
+    const ap = { ...act("老孙", "向大伙儿赔不是"), kind: "appease" };
+    const r = normalizeIntakeResult({ ...base, actions: [ap] });
+    expect(r.actions[0].target).toBe("无");
+  });
+  it("Review：交易/赠物动作不脱绑——「给大伙儿买」的掌柜 target 保留", () => {
+    const trade = { ...act("老孙", "掌柜的，给大伙儿来几碗面"), kind: "trade" };
+    const r = normalizeIntakeResult({ ...base, actions: [trade] });
+    expect(r.actions[0].target).toBe("老孙");
+  });
+});

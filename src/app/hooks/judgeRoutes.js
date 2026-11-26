@@ -48,6 +48,20 @@ function completedQuestIdSet(questProgress) {
 //   unknown     名字不在 QUCUO_MAP 也不在本区 INNER_MAP（或根本说不出地名/方向）
 //   unreachable 名字在 QUCUO_MAP 但不在当前相邻 exits——隔站单步不直通
 //   locked      相邻但 !isNodeUnlocked——前路未开启
+// 地名匹配（Review 修）：先精确，再唯一子串——玩家/模型常写短名（「饭馆」→「老孙饭馆」、
+// 「草甸」→「大草甸」），精确不等就拒太硬；但子串命中多个候选（如「庙」）时宁可 unknown 不猜。
+export function matchPlaceName(target, candidates, { exactOnly = false } = {}) {
+  if (!target) return "";
+  const list = [...candidates].filter(Boolean);
+  if (list.includes(target)) return target;
+  if (exactOnly) return "";
+  if (target.length < 2) return "";
+  // Review 二轮修：只认「短名含于全名」（饭馆⊂老孙饭馆、草甸⊂大草甸），
+  // 不认反向——「大草甸营地」「山门施药棚」是更长的新名/虚构名，含了真名也不许别名过去。
+  const hits = list.filter((name) => name !== target && name.includes(target));
+  return hits.length === 1 ? hits[0] : "";
+}
+
 export function resolveMoveTarget(state, action) {
   const text = String(action?.text || "");
   const targetRaw = String(action?.target || "").trim();
@@ -64,20 +78,53 @@ export function resolveMoveTarget(state, action) {
       questProgress: state?.questProgress, flags: state?.flags || [],
       inv: state?.inv || [], char: state?.char || {}, varTree: state?.varTree || {},
     });
-    if (/回村|出去|去村口/.test(text) || target) {
+    // Review 修：target 填了地名时只做地名反查——「从村口出发去忘忧谷」这类
+    // 以村口为【出发点】的句子，不能让村口捷径抢在地名核验前面把人送进内层。
+    if (target) {
+      // Review 三轮修：内层房常被据点前缀限定——「喇嘛庙大殿」就是本区「大殿」，
+      // 剥掉当前据点名前缀再匹配，别让玩家在门口原地踏步。
+      const stripped = target.startsWith(roomName) && target.length > roomName.length
+        ? target.slice(roomName.length).replace(/^[·・\s\/—-]/, "")
+        : target;
+      // Review 四轮修：剥前缀后的限定名只认精确——「鱼定村·村口」就是村口，
+      // 不许子串猜进「村口·广场」；未限定原样名才走短名子串。
+      const hit = matchPlaceName(target, Object.values(visExits))
+        || (stripped !== target ? matchPlaceName(stripped, Object.values(visExits), { exactOnly: true }) : "");
+      if (hit) {
+        const d = Object.entries(visExits).find(([, destRoom]) => destRoom === hit)?.[0];
+        if (d) return { type: "inner", dir: d };
+      }
+    } else if (/回村|出去|去村口/.test(text)) {
       for (const [d, destRoom] of Object.entries(visExits)) {
-        if ((target && destRoom === target) || (/村口/.test(text) && /村口/.test(destRoom)) || (/出去|回村/.test(text) && !target && destRoom)) {
+        if ((/村口/.test(text) && /村口/.test(destRoom)) || (/出去|回村/.test(text) && destRoom)) {
           // 「出去/回村」无具体名时取第一个可见出口（多为出门方向）
-          if (target || /村口/.test(destRoom) || /出去|回村/.test(text)) return { type: "inner", dir: d };
+          if (/村口/.test(destRoom) || /出去|回村/.test(text)) return { type: "inner", dir: d };
         }
       }
     }
     // 方向型移动按内层【拓扑】判（resolveInnerExit 含锁房）——锁房不在可见出口里，
     // 但 innerMove 自己产锁因拦阻回执；拓扑没这个方向才落外层解析。
-    if (dirValid && resolveInnerExit(roomName, innerNow, dirValid)) return { type: "inner", dir: dirValid };
+    // F3-T13 修：target 填了地名时绝不走裸方向内层——否则「往南边忘忧谷」会被
+    // 方向词「南」接管走进鱼定商号，虚构地名就此漏网。
+    if (!target && dirValid && resolveInnerExit(roomName, innerNow, dirValid)) return { type: "inner", dir: dirValid };
   }
 
-  // 2. 外层：direction 优先
+  // 2. target 地名核验优先于方向词（F3-T13）：填了地名先按地名裁——
+  // 真实据点名走邻接/解锁裁决；查无此地一律 unknown 拦截，方向词救不回来。
+  if (target) {
+    // Review 修：短名/别写唯一子串匹配（「饭馆」「草甸」），多义或查无此地才 unknown。
+    const matched = matchPlaceName(target, Object.keys(QUCUO_MAP));
+    if (matched && matched !== roomName) {
+      const exits = QUCUO_MAP[roomName]?.exits || {};
+      const hitDir = Object.entries(exits).find(([, d]) => d === matched)?.[0] || "";
+      if (!hitDir) return { type: "unreachable", target };
+      if (!isNodeUnlocked(matched, unlockCtx)) return { type: "locked", dir: hitDir, dest: matched };
+      return { type: "outer", dir: hitDir, dest: matched };
+    }
+    return { type: "unknown", target };
+  }
+
+  // 3. 外层：direction 优先（target 为空时方向词才作数）
   if (dirValid) {
     const dest = resolveExit(roomName, dirValid);
     if (!dest) return { type: "noexit", dir: dirValid };
@@ -85,7 +132,7 @@ export function resolveMoveTarget(state, action) {
     return { type: "outer", dir: dirValid, dest };
   }
 
-  // 3. direction=none：target 或从原文提取据点名；「回村」在鱼定周边映射鱼定村
+  // 4. direction=none 且 target 空：从原文提取据点名；「回村」在鱼定周边映射鱼定村
   let destName = target;
   if (!destName) {
     for (const name of Object.keys(QUCUO_MAP)) {
@@ -127,11 +174,20 @@ function runMove(action) {
   }
 
   if (res.type === "outer") {
+    // F3-T11 修：roomCache 只是「到访过」的快照（MudRPG 按当前 room 写），首访必未命中——
+    // 之前按「格子未就绪」硬判负，相邻首访目的地永远到不了（真机 T11：大草甸相邻却原地不动）。
+    // 首访合成空条目 {npcs:[],items:[]} 复用 outerArrival 全账：desc/exits 取自固定地图节点、
+    // 格子预埋奖励照发、驻场 NPC 由 npc.residents 世界规则在 room 变更后确定性注入——
+    // 与 legacy writeRoom 首访（destNode 骨架+规则人口）同一血统，只是不再信 AI 报名单。
+    const firstVisit = !state.roomCache?.[res.dest];
+    const roomMap = firstVisit
+      ? { ...(state.roomCache || {}), [res.dest]: { npcs: [], items: [] } }
+      : state.roomCache || {};
     const arrival = outerArrival(state, {
       direction: res.dir, destName: res.dest,
       // 必传真实格子（Review 修）：否则格子预埋拾取/路遇永不发放，
       // squareOps 却照消耗——重访玩家永远错失当批奖励。
-      roomMap: state.roomCache || {}, squares: serializeSquares(),
+      roomMap, squares: serializeSquares(),
       command: action.text || res.dest,
     });
     if (arrival?.cached && arrival.changes) {
