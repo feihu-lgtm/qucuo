@@ -739,3 +739,25 @@ describe("V4 跨房密告硬隔离（验收）", () => {
     expect(social2[0]?.room).toBe("鱼定村");
   });
 });
+
+describe("Review：trade 实物买货对象落空不破费扣银", () => {
+  it("trade + 实物 item（碎茶）+ 卖家不在场——交易不成立一文不动", () => {
+    const act = { kind: "trade", target: "不存在的人", item: "碎茶", itemId: "", direction: "none", stance: "casual", outcome: "破费", risk: "无", text: "花三两银子买碎茶" };
+    const verdict = judgeTurn(baseEnvelope({
+      playerInput: "花三两银子买一两碎茶",
+      char: { money: 20, special: {} },
+    }), { read: "", refIds: [], actions: [act], proposals: [] }, { rng: seqRng([0.5]) });
+    const silver = verdict.facts.find((f) => f.op === "CHANGE_VITALS_SILVER" && Number.isFinite(f.moneyDelta));
+    expect(silver).toBeUndefined();
+    expect(verdict.notes.join()).toContain("交易不成立");
+  });
+  it("trade + item 银两（钱本身）仍按纯开销重定向——F8 语义不破", () => {
+    const act = { kind: "trade", target: "不存在的人", item: "银两", itemId: "", direction: "none", stance: "casual", outcome: "破费", risk: "无", text: "花三两银子买碎茶" };
+    const verdict = judgeTurn(baseEnvelope({
+      playerInput: "花三两银子买一两碎茶",
+      char: { money: 20, special: {} },
+    }), { read: "", refIds: [], actions: [act], proposals: [] }, { rng: seqRng([0.5]) });
+    const silver = verdict.facts.find((f) => f.op === "CHANGE_VITALS_SILVER" && Number.isFinite(f.moneyDelta));
+    expect(silver?.moneyDelta).toBe(-3);
+  });
+});

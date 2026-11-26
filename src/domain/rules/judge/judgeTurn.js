@@ -164,9 +164,14 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
       // 不在场）时，旧路静默丢弃——玩家声明的银两分文未扣，正文只能编「没递钱」
       // 自相矛盾。outcome=破费 的自由开支语义与对象无关，改投 freeAct 查价链：
       // 原话写数额按原话扣，余额够必须落账。
-      if ((action.kind === "give" || action.kind === "trade") && action.outcome === "破费") {
+      // Review 修：trade 带实物目标（买货）且卖家落空时不得按破费扣银——
+      // 买货不成立就一文不动；纯开销（无实物目标的请客/打赏/应酬）才落破费链。
+      const tradeWithGoods = action.kind === "trade" && action.item && action.item !== "无" && action.item !== "银两";
+      if ((action.kind === "give" || action.kind === "trade") && action.outcome === "破费" && !tradeWithGoods) {
         notes.push(`对象落空但声明破费——按 free_act 破费链结算（intake kind 误标 ${action.kind} 纠正）`);
         handleFreeAct(J, action);
+      } else if (tradeWithGoods && action.outcome === "破费") {
+        notes.push(`买货对象落空（${action.item}）——交易不成立，不破费扣银`);
       }
       continue;
     }

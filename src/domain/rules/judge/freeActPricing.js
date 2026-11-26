@@ -9,6 +9,7 @@
 // 不掷当日滚动 stock——查价只需「这家店这类货卖多少」的确定性锚。
 
 import { QUCUO_SHOPS, buildShopInventory } from "../../data/shops/qucuoShops.js";
+import { SERVICE_MENUS } from "../../data/buildings/menuData.js";
 import { CATALOG_INDEX, catalogBuyPrice } from "../../data/items/catalog.js";
 import { priceForQuality } from "../economy/equipment.js";
 
@@ -96,6 +97,16 @@ export function resolveFreeActExpense({ text = "", itemName = "", category = "",
   const txt = String(text || "");
   const wanted = String(itemName || "").trim();
 
+  // Review 修（夜班银两单）：饭馆/酒楼服务菜单进查价链——点菜破费得按菜单实价扣，
+  // 此前菜单不在链上，牦牛骨汤（8 两）落 quality 默认 18 两多扣一倍还多。
+  // 菜单具名冲突处理：同名不同价（跨菜单）按歧义不落价；同名同价照用。
+  const menuHits = [];
+  for (const dishes of Object.values(SERVICE_MENUS)) {
+    for (const dish of dishes) {
+      if (dish?.name && txt.includes(dish.name)) menuHits.push(dish);
+    }
+  }
+
   // ②识别目标物：item 明确优先；否则原文扫描货架+物件志具名，子串归并取最长，
   // 剩余互不为子串的具名多于一个 = 歧义（席面/薄饼同现），不猜。
   let goodName = "";
@@ -103,8 +114,9 @@ export function resolveFreeActExpense({ text = "", itemName = "", category = "",
     goodName = wanted;
   } else {
     const shelfHits = shelves.filter((it) => it.name && txt.includes(it.name)).map((it) => it.name);
+    const menuNames = menuHits.map((d) => d.name);
     const catHits = Object.keys(CATALOG_INDEX).filter((n) => n.length >= 2 && txt.includes(n));
-    const all = [...new Set([...shelfHits, ...catHits])];
+    const all = [...new Set([...shelfHits, ...menuNames, ...catHits])];
     const distinct = all.filter((n) => !all.some((o) => o !== n && o.includes(n)));
     if (distinct.length === 1) goodName = distinct[0];
     else if (distinct.length > 1) return null; // 歧义不落价
@@ -114,6 +126,13 @@ export function resolveFreeActExpense({ text = "", itemName = "", category = "",
   // ③查价链：货架同名 → 货架同类 → 物件志具名基价 → priceForQuality(category,"白")
   const shelfSame = shelves.find((it) => it.name === goodName);
   if (shelfSame?.buyPrice > 0) return { price: shelfSame.buyPrice, source: `货架同名（${goodName}）` };
+
+  // 菜单具名价：命中菜品的价目唯一（或同名同价）才落——点菜实价优先于物件志/品质估价。
+  const menuSame = menuHits.filter((d) => d.name === goodName);
+  if (menuSame.length) {
+    const prices = [...new Set(menuSame.map((d) => d.price))];
+    if (prices.length === 1 && prices[0] > 0) return { price: prices[0], source: `菜单具名（${goodName}）` };
+  }
 
   const entry = CATALOG_INDEX[goodName] || null;
   // category 确定源：货架同货物 > 物件志条目 > 调用方传入（inventory 实证），都没有则不定
