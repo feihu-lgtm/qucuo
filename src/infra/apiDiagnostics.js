@@ -38,7 +38,7 @@ export function callModelStream(cfg, systemPrompt, messages, onChunk, opts = {})
 }
 
 async function requestStream(cfg, systemPrompt, messages, onChunk, opts) {
-  if (cfg.timeoutMs) setRequestTimeout(cfg.timeoutMs);
+  setRequestTimeout(cfg.timeoutMs || 60000); // Review 修：无自定义超时的配置档必须把全局复位回默认，否则上一档的长超时泄漏
   const maxTokens = opts.maxTokens ?? cfg.maxTokens;
   const temperature = opts.temperature ?? cfg.temperature;
 
