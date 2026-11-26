@@ -90,6 +90,20 @@ export const THEME_VARS = Object.freeze({
   textDim: "var(--text-dim)",
 });
 
+// 固定暗夜的主题对象：字段同 THEME_VARS，取值指向 tokens.css 里不随日夜切换的墨拓定色
+// （--ink-*，值就是暗夜色）。给"暗夜色与日间色混用"的界面用——开始页、开场、创角、开始页的
+// 卡牌导入：只有原先读主题对象的地方固定为暗夜，其余 var(--text) 之类照旧跟随日夜。
+// 整棵子树都固定暗夜、且子树里没有跟随日夜的组件时，改用根节点 data-theme="night"（酒馆经营）。
+export const NIGHT_VARS = Object.freeze({
+  accent: "var(--ink-accent)",
+  accentDim: "var(--ink-accent-dim)",
+  bg: "var(--ink-bg)",
+  bgPanel: "var(--ink-bg-panel)",
+  border: "var(--ink-border)",
+  text: "var(--ink-text)",
+  textDim: "var(--ink-text-dim)",
+});
+
 // 根据房间名推断当前分区，返回对应主题；找不到时回退到 village。
 // isDayMode=true 时从 ZONE_THEMES_DAY 取（六套浅色版本），默认 false 走原暗夜版，
 // 两套主题字段一一对应，调用方不需要额外分支处理。

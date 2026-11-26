@@ -8,9 +8,9 @@
 // 的 WHISPER_TOPICS.origin）。手上那张帖子不是身世信物，只是温掌柜的赌石邀帖，
 // 纯粹作为"你为什么会来曲措乡"的触发器。改这里的文案时别把两件事又缠回一起。
 import React, { useState } from "react";
-import { ZONE_THEMES } from "../../utils/theme.js";
+import { NIGHT_VARS } from "../../utils/theme.js";
 
-const theme = ZONE_THEMES.village;
+const theme = NIGHT_VARS; // 固定暗夜，见 theme.js 的 NIGHT_VARS
 // 沿用 GambleStoneScreen 的资源路径写法（走 Vite BASE_URL，部署到子路径也不断）
 const BASE = (import.meta.env && import.meta.env.BASE_URL) || "/";
 const SCROLL_H = BASE + "stones/ui/scroll_h.webp";

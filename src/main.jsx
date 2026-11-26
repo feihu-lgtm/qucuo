@@ -11,7 +11,6 @@ import { bootstrapArgonConfig } from "./infra/argonBootstrap.js";
 import { installErrorBuffer } from "./infra/errorBuffer.js";
 import { recordError } from "./infra/errorBuffer.js";
 import * as importedRegistry from "./domain/rules/cards/importedRegistry.js";
-import { getZoneTheme } from "./utils/theme.js";
 
 loadDefaultContent();
 
@@ -131,7 +130,7 @@ function App() {
         apiCfg={loadConfig()}
         playerName="少侠"
         playerMode={cardImportPlayerMode}
-        zoneTheme={getZoneTheme("鱼定村", false)}
+        accent="var(--ink-accent)" /* 开始页固定暗夜 */
         onClose={() => {
           setInCardImport(false);
           // 「导入卡当自己」确实导入了主角卡 → 直接进新开局，CharacterCreate 会读到

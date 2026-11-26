@@ -108,7 +108,6 @@ export default function GlobalOverlays({
         onClose={() => closeOverlay(OVERLAY.CARD_IMPORT)}
         apiCfg={apiCfg}
         playerName={char.name}
-        zoneTheme={zoneTheme}
         onImportNpcs={onImportNpcs}
         onImportPlayer={onImportPlayer}
         onImportWorld={onImportWorld}

@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { THEME_VARS, ZONE_THEMES, ZONE_THEMES_DAY } from "./theme.js";
+import { NIGHT_VARS, THEME_VARS, ZONE_THEMES, ZONE_THEMES_DAY } from "./theme.js";
 
 // 路线图 U3 的前提：theme.js 的两套色值与 tokens.css 的变量逐字段相等，
 // 所以把 zoneTheme 的字段换成对应的 CSS 变量不会改变任何颜色。这条测试锁住这一点。
@@ -90,5 +90,25 @@ describe("固定暗夜子树的作用域", () => {
     const users = jsxFiles("src").filter((file) => /\bcreatePortal\b/.test(readFileSync(file, "utf-8")));
     expect(users.map((file) => file.split(/[\\/]/).join("/"))).toEqual(["src/ui/components/NoticeToast.jsx"]);
     expect(readFileSync("src/ui/primitives/ModalShell.jsx", "utf-8")).not.toMatch(/createPortal/);
+  });
+});
+
+describe("NIGHT_VARS：逐元素固定暗夜", () => {
+  const root = block(":root");
+  const day = block(':root[data-theme="day"]');
+  const night = block('[data-theme="night"]');
+
+  it("字段与 THEME_VARS 一致，每个定色变量的值都等于暗夜主题色", () => {
+    expect(Object.keys(NIGHT_VARS).sort()).toEqual(Object.keys(THEME_VARS).sort());
+    for (const [field, cssVar] of Object.entries(NIGHT_VARS)) {
+      expect(valueOf(root, varName(cssVar)), field).toBe(ZONE_THEMES.village[field].toLowerCase());
+    }
+  });
+
+  it("这些定色变量不随日夜切换：日间块和暗夜块都不覆盖它们", () => {
+    for (const cssVar of Object.values(NIGHT_VARS)) {
+      expect(valueOf(day, varName(cssVar)), cssVar).toBeUndefined();
+      expect(valueOf(night, varName(cssVar)), cssVar).toBeUndefined();
+    }
   });
 });

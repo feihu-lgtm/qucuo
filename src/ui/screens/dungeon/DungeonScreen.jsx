@@ -192,7 +192,6 @@ export default function DungeonScreen({
               <DungeonMapPanel
                 room={{ name: mapRun.current, ...mapRun.map.rooms[mapRun.current] }}
                 runState={mapRun}
-                zoneTheme={zoneTheme}
                 onMove={handleMapMove}
                 onAction={handleMapAction}
                 onText={handleMapText}

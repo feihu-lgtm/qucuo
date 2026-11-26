@@ -27,7 +27,7 @@ export default function StarterSkillCards({ skills, selectedId, rerolls, onSelec
             onClick={() => onSelect(skill.id)}
             style={{
               minWidth: 0, minHeight: 140, textAlign: "left", padding: 8, cursor: "pointer",
-              color: theme.text, background: selectedId === skill.id ? `${theme.accent}22` : theme.bgPanel,
+              color: theme.text, background: selectedId === skill.id ? `color-mix(in srgb, ${theme.accent} 13.3%, transparent)` : theme.bgPanel,
               border: `1px solid ${selectedId === skill.id ? theme.accent : theme.border}`,
             }}
           >

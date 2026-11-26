@@ -31,14 +31,15 @@ import ModalShell from "../primitives/ModalShell.jsx";
 // 名单上方的「当江湖众人／只当背景传闻」一行。
 // 注意：解构块里不要插多行注释——scripts/propsFlow.mjs 的守卫按纯参数列表解析，
 // 内嵌注释会让它漏认后面的 prop、误报「传了没解构」。
+// accent：游戏内不传，跟随日夜；开始页由 main.jsx 传固定暗夜的 var(--ink-accent)。
+const DEFAULT_ACCENT = "var(--accent)";
 export default function CardImportScreen({
   onClose, apiCfg, playerName = "少侠",
-  onImportNpcs, onImportPlayer, onImportWorld, zoneTheme,
+  onImportNpcs, onImportPlayer, onImportWorld, accent = DEFAULT_ACCENT,
   currentDistrict = "",
   playerMode = false,
   onImportStarterCompanion,
 }) {
-  const accent = zoneTheme?.accent || "var(--warn)";
 
   const [stage, setStage] = useState("empty");   // empty | parsed | scanning | review
   const [fileName, setFileName] = useState("");
