@@ -253,9 +253,12 @@ export function normalizeIntakeResult(data) {
   // 在场某个人（真机实证：众人=老孙+元朵朵，target 却写老孙，群聊坍缩成单人好感+1）。
   // 确定性口径：动作原文里没出现 target 这个名字、却带复数称呼词的，target 一律脱绑回「无」——
   // 真点名（原文有这个名字）不受影响；「冲老孙和大伙儿问好」target=老孙 原文有「老孙」保留。
+  // Review 修：只对搭话/自由行动脱绑——交易/赠物/求教的 target 是确定对手方，
+  // 「给大伙儿买东西」里大家是受益人不是称呼对象，误脱绑会把掌柜抹掉、交易开不了张。
   const PLURAL_RE = /众人|各位|大家|大伙儿|大家伙|诸位|列位|各位/;
   for (const a of clean.actions) {
     if (!a || typeof a !== "object") continue;
+    if (a.kind !== "talk" && a.kind !== "free_act") continue;
     const tgt = String(a.target || "");
     if (tgt && tgt !== "无" && PLURAL_RE.test(a.text || "") && !(a.text || "").includes(tgt)) {
       a.target = "无";
