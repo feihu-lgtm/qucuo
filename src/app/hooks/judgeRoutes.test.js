@@ -209,6 +209,17 @@ describe("WO-16F-F2a 判官路由集成", () => {
     gameActions.setInv([]);
   });
 
+  it("A0：自由打字用物不提前扣时辰/写 convo（commitRound 统一推进）", async () => {
+    gameActions.setInv([{ id: "it1", name: "青稞酒", category: "misc", consumable: { sixDimTemp: { 体魄: 1 } } }]);
+    const timeBefore = gameStore.getState().time;
+    const convoBefore = (gameStore.getState().convo || []).length;
+    const out = executeJudgeRoutes([{ kind: "use_item", item: "青稞酒", itemId: "it1", target: "无", text: "喝一口青稞酒" }]);
+    expect(out.receipts[0].ok).toBe(true);
+    expect(gameStore.getState().time).toBe(timeBefore); // 路由不提前 +1，否则双倍扣时辰
+    expect((gameStore.getState().convo || []).length).toBe(convoBefore);
+    gameActions.setInv([]);
+  });
+
   it("名/号矛盾不动错物（Review 修）", async () => {
     gameActions.setInv([
       { id: "it_sword", name: "铁剑", category: "weapon" },

@@ -8,8 +8,9 @@ function state(overrides = {}) {
     time: 30,
     char: { name: "小林" },
     room: { name: "天都镇", npcs: [
-      { name: "李掌柜", brief: "杂货铺老板" },
-      { name: "路人甲" },
+      // A0 口径：在场=内层房可见——fixture 显式落位一楼客厅（同 buildPresence）。
+      { name: "王掌柜", brief: "杂货铺老板", innerRoom: "一楼客厅" },
+      { name: "路人甲", innerRoom: "一楼客厅" },
     ] },
     innerRoomName: "一楼客厅",
     varTree: {
@@ -76,7 +77,7 @@ describe("WO-24B buildWorldPrepInput 输入裁剪", () => {
     expect(out.place).toBe("天都镇");
     expect(out.innerRoom).toBe("一楼客厅");
     expect(out.day).toBe(2);
-    expect(out.presentNpcsText).toContain("李掌柜");
+    expect(out.presentNpcsText).toContain("王掌柜");
     // 容器按内容表声明+collapsed+scripted：铁柜已坍缩不进；书桌虽有未翻
     // 但有预设物（scripted 首翻必中+即坍缩，备料永不兑现）——#524 起不作候选
     expect(out.unlootedContainersText).not.toContain("书桌");
@@ -91,9 +92,24 @@ describe("WO-24B buildWorldPrepInput 输入裁剪", () => {
     expect(out.playerName).toBe("小林");
     expect(out.maxQualityHint).toBe("紫");
   });
+  it("A0 串房修：玩家在商号时，村口/茶馆的人不进 world.prep 输入", () => {
+    const st = state({
+      room: { name: "鱼定村", npcs: [
+        { name: "商号伙计", innerRoom: "鱼定商号" },
+        { name: "村口闲人", innerRoom: "村口" },
+        { name: "茶馆食客", innerRoom: "老孙茶馆" },
+      ] },
+      innerRoomName: "鱼定商号",
+    });
+    const out = buildWorldPrepInput(st);
+    expect(out.presentNpcsText).toContain("商号伙计");
+    expect(out.presentNpcsText).not.toContain("村口闲人");
+    expect(out.presentNpcsText).not.toContain("茶馆食客");
+  });
+
   it("裁剪脱敏：不传好感/账簿，npc 名字+brief 截断，容器 cap4、NPC cap5", () => {
     const st = state();
-    st.room.npcs = Array.from({ length: 8 }, (_, i) => ({ name: `人${i}`, brief: "x".repeat(40) }));
+    st.room.npcs = Array.from({ length: 8 }, (_, i) => ({ name: `人${i}`, brief: "x".repeat(40), innerRoom: "一楼客厅" }));
     const out = buildWorldPrepInput(st);
     expect(out.presentNpcsText.split("、")).toHaveLength(5);
     expect(out.presentNpcsText).not.toContain("x".repeat(30)); // brief 截断 20 字

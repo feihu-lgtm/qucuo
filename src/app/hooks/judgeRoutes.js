@@ -13,6 +13,16 @@ import { innerMove } from "../../features/map/logic.js";
 const VALID_DIRS = new Set(["n", "s", "e", "w"]);
 const DIR_LABEL = { n: "北", s: "南", e: "东", w: "西" };
 
+// A0/评审 blocker：判官路由只是「本 AI 回合内的前置结算」——commitRound 回合末
+// 统一 setTime+1 并 append 主叙事 convo，因此一切 feature 自造的 time+1/convo
+// 都不能提前落账：innerMove 如此，consumeItem 亦如此（自由打字用物曾双倍扣时辰）。
+// 剥 time/convo 键（clone 不改原对象），其余确定性结果保留。
+function stripTurnSpan(res) {
+  if (!res?.changes) return res;
+  const { time: _t, convo: _c, ...restChanges } = res.changes;
+  return { ...res, changes: restChanges };
+}
+
 // 内层移动确定性路由：复用 features/map innerMove 同一套账（锁门/无出口/新人物/
 // lastSeen 全在里头），写账仍走 applyResult 单边界。
 // 外层大地图移动不支持——缺口与阻塞点见 PR 描述；回执明确「系统未结算」，
@@ -25,16 +35,6 @@ function runMove(action) {
   const state = gameStore.getState();
   // includeCommand:false——不造「e」式伪用户输入日志；文字用玩家原话。
   const result = innerMove(state, { direction: dir, command: action.text || dir, includeCommand: false });
-  // 评审 blocker 修：路由内层移动只是「本 AI 回合内的位置前置结算」——
-  // 本回合 commitRound 还会统一 setTime+1 并 append 主叙事 convo，
-  // innerMove 自造的 time+1/convo 不能提前落账（否则一次移动扣 2 回合、
-  // convo 多一条伪用户输入）。剥离 time/convo 键（clone 不改原对象），
-  // innerRoomName/varTree lastSeen/logs 等确定性结果保留。
-  const stripTurnSpan = (res) => {
-    if (!res?.changes) return res;
-    const { time: _t, convo: _c, ...restChanges } = res.changes;
-    return { ...res, changes: restChanges };
-  };
   if (result?.changes?.innerRoomName) {
     applyResult(featureCtx(), stripTurnSpan(result), { feature: "judgeRoute.move" });
     return { kind: "move", ok: true, text: `你已进入${result.changes.innerRoomName}——系统已结算，叙事须照此写。` };
@@ -89,7 +89,9 @@ function runOne(action) {
   // 生气 appease 岔路即使有 changes（记录尝试）也按未邀成处理。
   const ok = isInvite ? (inviteSettled && hasChanges) : hasChanges;
   if (settled && (settled.changes || settled.logs?.length)) {
-    applyResult(featureCtx(), settled, { feature: `judgeRoute.${action.kind}` });
+    // A0：use_item/consumeItem 同样自造 time+1——applyResult 前统一剥回合账，
+    // 否则自由打字用物一次扣 2 时辰（commitRound 还会再加）。
+    applyResult(featureCtx(), stripTurnSpan(settled), { feature: `judgeRoute.${action.kind}` });
   }
   if (ok) {
     if (action.kind === "equip") {

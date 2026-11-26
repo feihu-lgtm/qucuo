@@ -6,7 +6,7 @@ import { definePrompt } from "../registry.js";
 import { flattenNemeses } from "../../nemesis/nemesisLines.js";
 import { ITEM_CATEGORY } from "../../economy/equipment.js";
 import { prepEligibleContainerNames, resolveContainerContext } from "../../world/containers.js";
-import { getInnerRoom } from "../../map/innerMap.js";
+import { getInnerRoom, isNpcVisibleInInnerRoom } from "../../map/innerMap.js";
 
 const QUALITY_ENUM = ["白", "绿", "蓝", "紫"]; // 最高紫——不给神兵绝学
 const CATEGORY_ENUM = Object.values(ITEM_CATEGORY);
@@ -23,8 +23,12 @@ export function buildWorldPrepInput(state, { maxQualityHint = "紫" } = {}) {
   const time = Number(state?.time) || 0;
   const day = Math.floor(time / 24) + 1;
 
+  // A0：串房修——在场名单必须与 buildPresence/内层房同口径：玩家在内层房时，
+  // 村口/茶馆等其他房间的人不是「在场」，不能进备料输入（否则备料给不在场的人
+  // 编计划，ingest 白名单又会丢——提示与兑现口径不一致）。
   const presentNpcs = (room.npcs || [])
     .filter((n) => n?.name)
+    .filter((n) => isNpcVisibleInInnerRoom(room.name, state?.innerRoomName ?? null, n))
     .slice(0, 5)
     .map((n) => `${n.name}${n.brief ? `（${String(n.brief).slice(0, 20)}）` : ""}`);
 
