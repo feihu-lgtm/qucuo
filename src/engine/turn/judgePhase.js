@@ -255,7 +255,13 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
       // 位移由移动链本身结算——judge 再路由 move 会双到达冲突（outer writeRoom 写目的地、
       // innerMove 又进内层房）。此类回合 move 不路由，回执交给移动链自身。
       const systemMoveTurn = !!(deps.lockedDestName || ctx.lockedDestName || deps.movingDir || ctx.movingDir);
-      const judgeRoutes = (isTalk || systemMoveTurn) ? [] : routeCandidates.filter((a) => !(a?.condition && a.condition !== "无"));
+      // 系统移动回合只滤 move（防双到达）——其余 kind 与位移无冲突照路由（Review 修）；
+      // isTalk 维持原口径整批不路由。
+      const judgeRoutes = isTalk ? [] : routeCandidates.filter((a) => {
+        if (a?.condition && a.condition !== "无") return false;
+        if (systemMoveTurn && a?.kind === "move") return false;
+        return true;
+      });
       if (systemMoveTurn && routeCandidates.some((a) => a?.kind === "move")) {
         trace("判官管线", "skip", "系统移动回合，move 不重复路由（位移由移动链结算）");
       }
