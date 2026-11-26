@@ -5,7 +5,8 @@
 // judgeRuleBlock/routeReceipts/deferredIntents），与搬家前完全同口径。
 import { judgeTurn } from "../../domain/rules/judge/judgeTurn.js";
 import { buildCausalBudgetInput } from "../../domain/rules/judge/budgetInput.js";
-import { getInnerRoom } from "../../domain/rules/map/innerMap.js";
+import { getInnerRoom, isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
+import { evaluateActionCondition, conditionUnmetNote, conditionMetNote } from "../../domain/rules/judge/conditionEval.js";
 import { resolveContainerContext } from "../../domain/rules/world/containers.js";
 import { resolvePrepItemsForJudge, buildPrepMaterialBlock } from "../../domain/rules/prep/prepConsumption.js";
 import { buildIntakeUserContent, normalizeIntakeResult, synthesizeTalkIntake, shouldSkipIntakeForTalk, hasHostileHint, applyTalkTargetFallback } from "./intakeTurn.js";
@@ -65,7 +66,7 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
   const isLearnSettle = !!isSettle && opts.settleKind === "learn_skill" && !!opts.settleNpc && !!opts.learnRequest;
   if (deps.apiCfg?.judgePipelineEnabled && deps.apiCfg?.extractionEnabled && (!isSettle || isAppeaseSettle || isGiftSettle || isLearnSettle) && !isGroupTalk) {
     try {
-      const visibleNpcs = visibleNpcsPre;
+      let visibleNpcs = visibleNpcsPre;
       // B1 任务推进候选：只能由系统 helper 现场生成——小模型挑候选、
       // 判官白名单核验，全流程无模型自编 flag 的通道。
       const liveNow = ctx.getGameState?.() || {};
@@ -81,7 +82,7 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
       // WO-22A 容器视图：房间内容表声明 ∪ varTree 坍缩状态。
       // room.name 是据点名、innerRoomName 是内层房间（外层据点无容器清单）。
       const vtNow = deps.varTree || ctx.memory?.varTreeLatest || {};
-      const innerRoomNow = liveNow.innerRoomName ?? deps.innerRoomName ?? null;
+      let innerRoomNow = liveNow.innerRoomName ?? deps.innerRoomName ?? null;
       // WO-22B-P2：timeNow 提前到容器解析前——悬空秘宝过滤与 openContainers 的
       // hasFloating 口径同源（有未定秘宝时已坍缩容器仍列为落点）；影子同口径。
       const timeNow = getGameStateTime(ctx, deps);
@@ -90,7 +91,7 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
         day: Math.floor(timeNow / 24) + 1,
         relicState: vtNow?.世界?.悬空秘宝,
       });
-      const { containerPlace, containerView, openContainers } = resolveContainerContext({
+      let { containerPlace, containerView, openContainers } = resolveContainerContext({
         districtName: deps.room?.name, innerRoomName: innerRoomNow, varTree: vtNow, roomDefLookup: getInnerRoom,
         hasFloating: floatingItems.length > 0,
       });
@@ -181,13 +182,63 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
         const soleTalkTarget = deps.talkTarget || (visibleNpcs.length === 1 ? visibleNpcs[0]?.name || "" : "");
         applyTalkTargetFallback(intakeResult, deps.talkTarget, soleTalkTarget);
       }
+      // ── D3 前置路由（管线倒挂修）──
+      // 无条件的前置动作（move/equip/use_item/take/invite）必须在 judgeTurn 之前
+      // 执行——「去后厨，到了就翻灶台」若先跑判官，人还在前堂，既判不了「到达」，
+      // 容器表也是前堂的。执行后重取现场刷新 room/innerRoomName/visibleNpcs/
+      // containerView，再把刷新后的上下文送入条件裁决与 judgeTurn。
+      const ROUTEABLE = ["equip", "use_item", "take", "invite", "move"];
+      const routeCandidates = (intakeResult.actions || []).filter((a) => ROUTEABLE.includes(a?.kind));
+      const systemMoveTurn = !!(deps.lockedDestName || ctx.lockedDestName || deps.movingDir || ctx.movingDir);
+      const preRoutes = isTalk ? [] : routeCandidates.filter((a) => {
+        if (a?.condition && a.condition !== "无") return false; // 条件动作 judgeTurn 裁后另处
+        if (systemMoveTurn && a?.kind === "move") return false;
+        return true;
+      });
+      const preReceipts = [];
+      let preInviteRejected = false;
+      let preInviteRejectedTarget = "";
+      let preMoved = false;
+      if (preRoutes.length && typeof ctx.executeJudgeRoutes === "function") {
+        try {
+          const outcome = ctx.executeJudgeRoutes(preRoutes) || null;
+          for (const r of (outcome?.receipts || []).filter(Boolean)) {
+            preReceipts.push(r);
+            if (r.kind === "invite" && !r.ok) {
+              preInviteRejected = true;
+              const inv = preRoutes.find((a) => a.kind === "invite");
+              preInviteRejectedTarget = inv?.target && inv.target !== "无" ? inv.target : "";
+            }
+            if (r.kind === "move" && r.ok) preMoved = true;
+          }
+        } catch (routeError) {
+          trace("判官管线", "fail", `前置路由结算异常（不阻断回合）：${routeError?.message || routeError}`);
+        }
+      }
+      // 刷新现场：前置路由可能已位移/用物——judgeTurn 与条件裁决必须读新现场。
+      const liveAfterRoutes = ctx.getGameState?.() || liveNow;
+      if (preReceipts.some((r) => r.kind === "move")) {
+        const newInner = liveAfterRoutes.innerRoomName ?? innerRoomNow;
+        const newRoomName = liveAfterRoutes.room?.name || deps.room?.name || "";
+        visibleNpcs = (liveAfterRoutes.room?.npcs || visibleNpcs)
+          .filter((n) => isNpcVisibleInInnerRoom(newRoomName, newInner, n));
+        innerRoomNow = newInner;
+        const reCtx = resolveContainerContext({
+          districtName: newRoomName, innerRoomName: newInner, varTree: vtNow, roomDefLookup: getInnerRoom,
+          hasFloating: floatingItems.length > 0,
+        });
+        containerPlace = reCtx.containerPlace;
+        containerView = reCtx.containerView;
+        trace("判官管线", "pass", `前置路由后现场刷新：${newRoomName}/${newInner || "外层"}，在场 ${visibleNpcs.length} 人`);
+      }
+
       judgeVerdict = judgeTurn({
         turn: timeNow, day: Math.floor(timeNow / 24) + 1, place: deps.room?.name || "",
         // S7 送银桥：玩家原文是金额唯一可信来源（ground truth）——
         // action.text 是模型复述不可信（Review 实证可编数），判官绝不从模型输出取钱数。
         playerInput: cmd,
         npcs: visibleNpcs, varTree: vtNow,
-        inv: deps.inv || [], entries: [],
+        inv: liveAfterRoutes.inv || deps.inv || [], entries: [],
         // WO-16F-F3：appease settle 听证不算纯搭话——否则 talkOnly 白名单会把
         // appease 动作整条拦掉，判官路空转、旧仲裁又已被跳过（零裁决穿帮）。
         talkOnly: (isAppeaseSettle || isGiftSettle || isLearnSettle) ? false : isTalk,
@@ -204,6 +255,17 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
         // WO-16E：授信输入由 buildCausalBudgetInput 装配（runTurn/shadow 同一入口），
         // 不再硬编码 riskLevel:0——tension 读 encounter 势力字段、risk 按动作兜底、
         // 每日搜刮配额读 varTree 账本跨日归零。
+        // D3：条件裁决现场——前置路由后的位置/在场/移动事实 + 敌袭 + invite 拒收信号
+        encounter: ctx.encounter || deps.encounter || null,
+        conditionCtx: {
+          encounter: ctx.encounter || deps.encounter || null,
+          moved: preMoved || !!systemMoveTurn,
+          roomName: liveAfterRoutes.room?.name || deps.room?.name || "",
+          innerRoomName: innerRoomNow ?? null,
+          visibleNpcs,
+          inviteRejected: preInviteRejected,
+          inviteRejectedTarget: preInviteRejectedTarget,
+        },
         budget: buildCausalBudgetInput({
           varTree: deps.varTree || ctx.memory?.varTreeLatest || {},
           char: deps.char || liveNow.char || {},
@@ -224,6 +286,46 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
       deps.judgePipelineActive = true;
       deps.judgeVerdict = judgeVerdict;
       deps.causalBudget = judgeVerdict.budget;
+      // ── D3 条件路由裁决：判官跑完后，带前提的路由动作按 verdict.lastActionOutcome
+      // 与刷新现场评估——成立执行（复用同一 executor），未成立只留禁写成功批注。──
+      const condRoutes = isTalk ? [] : routeCandidates.filter((a) => {
+        if (!(a?.condition && a.condition !== "无")) return false;
+        if (systemMoveTurn && a?.kind === "move") return false;
+        return true;
+      });
+      const condReceipts = [];
+      // Review 修：裁决结果以 judgeTurn 的 conditionResults 为准——它在主循环内按
+      // 动作序评估（被拒信号只反映该动作位置之前的拒收），且 notes 已在循环内写过，
+      // 此处绝不重估（终态 lastActionOutcome 会被更晚的拒收污染）也不重写批注。
+      const condResultOf = (a) => (judgeVerdict?.conditionResults || []).find((r) => r.action === a);
+      for (const a of condRoutes) {
+        const verdict0 = condResultOf(a) || { met: false, reason: "前提未经判官裁决" };
+        if (!verdict0.met) {
+          trace("判官管线", "skip", `条件未成立不路由：${a.kind}（${a.condition}，${verdict0.reason}）`);
+          continue;
+        }
+        if (typeof ctx.executeJudgeRoutes === "function") {
+          try {
+            const outcome = ctx.executeJudgeRoutes([a]) || null;
+            condReceipts.push(...(outcome?.receipts || []).filter(Boolean));
+          } catch (routeError) {
+            trace("判官管线", "fail", `条件路由结算异常（不阻断回合）：${routeError?.message || routeError}`);
+          }
+        }
+      }
+      // D3：带前提的 duel/trade 同闸评估——批注必须在铁律块构建前进 notes。
+      const deferredCandidatesPre = (intakeResult.actions || []).filter((a) => DEFERRED_INTENT_KINDS.has(a?.kind));
+      const deferredConditioned = deferredCandidatesPre.filter((a) => a?.condition && a.condition !== "无");
+      const deferredCondPassed = [];
+      const condResultOfDef = (a) => (judgeVerdict?.conditionResults || []).find((r) => r.action === a);
+      for (const a of deferredConditioned) {
+        const verdict0 = condResultOfDef(a) || { met: false, reason: "前提未经判官裁决" };
+        if (!verdict0.met) {
+          trace("判官管线", "skip", `条件未成立不收集意向：${a.kind}（${a.condition}，${verdict0.reason}）`);
+          continue;
+        }
+        deferredCondPassed.push({ ...a, condition: "无", condition_text: "" });
+      }
       // WO-16H-H1：判官铁律块换 roadmap d.judgeRuleBlock 正文——锚点/分寸/条件券/
       // SEAL 五行 JSON 全键契约、天机券词条白名单逐券渲染、不知情者反应导引并块。
       deps.judgeRuleBlock = buildJudgeRuleBlock({
@@ -231,60 +333,19 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
         playerName: (liveNow.char || deps.char)?.name || "主角",
       });
 
-      // ── WO-16F-F2a 装备/用物/拾取最小确定性路由 ──
-      // intake 三类 kind（equip/use_item/take）在叙事生成前由 app 层注入的
-      // executeJudgeRoutes 确定性结算（复用 stepEffect/applyResult 同一套账，
-      // 引擎只调句柄不反引 features）。回执摘要追加进判官铁律块——主叙事必须
-      // 照写系统已发生事实，找不到物件/结算失败的绝不许写成成功。
-      // 群聊回合根本不激活判官（上方闸门），settle/GM/单调用不受影响；
-      // executor 缺失（测试/直调）时只 trace 不签成功。
-      // 路由只执行判官当前允许机械结算的【无前提】动作：
-      // ① condition≠「无」的动作一律暂不路由——「要是没人我就捡起钥匙」不能无视前提
-      //    立刻捡，前提裁决属 WO-16F 真条件规则，此处 trace/note 留痕不抢跑（G1 interim 口径）；
-      // ② isTalk（判官 talkOnly 口径）下三类硬路由一律不执行——纯搭话回合判官白名单
-      //    本就禁止硬事实，intake 误产/混产也不能落地。
-      // S7：move 入路由——intake.direction 有效时内层移动叙事前确定性结算，
-      // 外层/无效方向回执「未结算」，叙事不得编位移。
-      const ROUTEABLE = ["equip", "use_item", "take", "invite", "move"];
-      const routeCandidates = (intakeResult.actions || []).filter((a) => ROUTEABLE.includes(a?.kind));
-      const conditioned = routeCandidates.filter((a) => a?.condition && a.condition !== "无");
-      if (conditioned.length) {
-        trace("判官管线", "skip", `前提未裁，暂不路由 ${conditioned.length} 条：${conditioned.map((a) => `${a.kind}:${a.item}`).join("、")}（待 WO-16F 真条件裁决）`);
+      // 回执统一进铁律块（前置+条件合并）
+      const allReceipts = [...preReceipts, ...condReceipts];
+      if (allReceipts.length) {
+        deps.routeReceipts = allReceipts;
+        deps.judgeRuleBlock += "\n\n【系统已结算·路由回执】以下事实已由系统确定性结算，正文必须照写，不得编造相反结果：\n"
+          + allReceipts.map((r) => `· ${r.text}`).join("\n");
+        trace("判官管线", "pass", `路由结算 ${allReceipts.filter((r) => r.ok).length}/${allReceipts.length} 成功：${allReceipts.map((r) => `${r.kind}${r.ok ? "✓" : "✗"}`).join("、")}`);
       }
-      // Review 修：本回合若已是系统移动回合（resolveIntent 锁定外层目的地/方向），
-      // 位移由移动链本身结算——judge 再路由 move 会双到达冲突（outer writeRoom 写目的地、
-      // innerMove 又进内层房）。此类回合 move 不路由，回执交给移动链自身。
-      const systemMoveTurn = !!(deps.lockedDestName || ctx.lockedDestName || deps.movingDir || ctx.movingDir);
-      // 系统移动回合只滤 move（防双到达）——其余 kind 与位移无冲突照路由（Review 修）；
-      // isTalk 维持原口径整批不路由。
-      const judgeRoutes = isTalk ? [] : routeCandidates.filter((a) => {
-        if (a?.condition && a.condition !== "无") return false;
-        if (systemMoveTurn && a?.kind === "move") return false;
-        return true;
-      });
       if (systemMoveTurn && routeCandidates.some((a) => a?.kind === "move")) {
         trace("判官管线", "skip", "系统移动回合，move 不重复路由（位移由移动链结算）");
       }
       if (isTalk && routeCandidates.length) {
         trace("判官管线", "skip", `talkOnly 回合禁止硬事实，${routeCandidates.length} 条 equip/use_item/take 不路由`);
-      }
-      if (judgeRoutes.length) {
-        if (typeof ctx.executeJudgeRoutes === "function") {
-          try {
-            const outcome = ctx.executeJudgeRoutes(judgeRoutes) || null;
-            const receipts = (outcome?.receipts || []).filter(Boolean);
-            if (receipts.length) {
-              deps.routeReceipts = receipts;
-              deps.judgeRuleBlock += "\n\n【系统已结算·路由回执】以下事实已由系统确定性结算，正文必须照写，不得编造相反结果：\n"
-                + receipts.map((r) => `· ${r.text}`).join("\n");
-              trace("判官管线", "pass", `路由结算 ${receipts.filter((r) => r.ok).length}/${receipts.length} 成功：${receipts.map((r) => `${r.kind}${r.ok ? "✓" : "✗"}`).join("、")}`);
-            }
-          } catch (routeError) {
-            trace("判官管线", "fail", `路由结算异常（不阻断回合）：${routeError?.message || routeError}`);
-          }
-        } else {
-          trace("判官管线", "warn", `equip/use_item/take 路由 ${judgeRoutes.length} 条无 executor（直调/测试环境），未结算`);
-        }
       }
 
       // ── WO-16F-F2c duel/trade 交互意向收集（叙事前只收集不执行）──
@@ -293,15 +354,11 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
       // intentRouter runDeferred 接原入口。回执措辞必须是意向口径：
       // 邀战/问价，绝不写已开打/已成交。condition/talkOnly 同闸不收集。
       const deferredCandidates = (intakeResult.actions || []).filter((a) => DEFERRED_INTENT_KINDS.has(a?.kind));
-      const deferredConditioned = deferredCandidates.filter((a) => a?.condition && a.condition !== "无");
-      if (deferredConditioned.length) {
-        trace("判官管线", "skip", `前提未裁，暂不收集交互意向 ${deferredConditioned.length} 条：${deferredConditioned.map((a) => `${a.kind}:${a.target}`).join("、")}`);
-      }
       if (isTalk && deferredCandidates.length) {
         trace("判官管线", "skip", `talkOnly 回合禁止硬事实，${deferredCandidates.length} 条 duel/trade 意向不收集`);
       }
       const { intents: deferredIntents, failures: deferredFailures } = collectDeferredIntents(
-        intakeResult.actions || [], { npcs: visibleNpcs, isTalk },
+        [...(intakeResult.actions || []), ...deferredCondPassed], { npcs: visibleNpcs, isTalk },
       );
       if (deferredIntents.length || deferredFailures.length) {
         deps.deferredIntents = deferredIntents;

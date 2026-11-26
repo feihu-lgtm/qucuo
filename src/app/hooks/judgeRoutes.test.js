@@ -134,8 +134,8 @@ describe("WO-16F-F2a 判官路由集成", () => {
     expect(narrative).toContain("未能如愿");
     expect(narrative).toContain("不得写成成功");
   });
-  it("条件动作/纯搭话误产一律不路由（复审 blocker 修）", async () => {
-    const runWith = async (action, { isTalk = false } = {}) => {
+  it("D3 条件动作按前提裁决路由/纯搭话误产不路由", async () => {
+    const runWith = async (action, { isTalk = false, npcs = [] } = {}) => {
       const intakeJson = JSON.stringify({ read: "x", refIds: [], actions: [action], proposals: [] });
       const ai = {
         async chat(messages, chatOpts) {
@@ -149,7 +149,7 @@ describe("WO-16F-F2a 判官路由集成", () => {
         convo: [], addLog: vi.fn(), setConvo: vi.fn(),
         apiCfg: { extractionEnabled: true, judgePipelineEnabled: true, streamEnabled: false, maxTokens: 4000 },
         intent: { code: "UNKNOWN", label: "无法判定" },
-        room: { name: "鱼定村", npcs: [], items: [], exits: [] },
+        room: { name: "鱼定村", npcs, items: [], exits: [] },
         inv: [], char: { hp: [80, 100], special: { 气运: 5 } }, skills: [],
         varTree, memory: { varTreeLatest: varTree, recall: { lastAiText: "" } },
         gm: false, flags: [],
@@ -159,7 +159,7 @@ describe("WO-16F-F2a 判官路由集成", () => {
         dao: { karma: 0, jie: 0 }, questProgress: {}, companionState: {},
         time: 1, getTimeStr: () => "卯时",
         hasInnerMap: () => false, describeEquipment: () => "", describeTodayForAI: () => "",
-        visibleNpcsCount: 0, npcLoreBlockWithQuest: "",
+        visibleNpcsCount: npcs.length, npcLoreBlockWithQuest: "",
         isTalk, talkTarget: isTalk ? "才旦" : null,
         executeJudgeRoutes,
         ai,
@@ -176,9 +176,14 @@ describe("WO-16F-F2a 判官路由集成", () => {
     try {
       const seedGround = () => gameActions.setRoom({ ...(gameStore.getState().room || {}), name: "鱼定村", npcs: [], exits: [], items: [{ id: "it_g1", name: "遗落的皮靴" }] });
 
-      // ① 条件 take：「要是没人我就捡」——前提未裁，状态不变
+      // ①a D3：条件 take「要是没人」+ 场上真没人——前提成立，照常路由执行
       seedGround(); gameActions.setInv([]);
       await runWith(mk({ condition: "其他", condition_text: "要是没人" }));
+      expect((gameStore.getState().inv || []).some((it) => it?.id === "it_g1")).toBe(true);
+
+      // ①b D3：条件 take「要是没人」+ 场上有人——前提未成立，不执行且状态不变
+      seedGround(); gameActions.setInv([]);
+      await runWith(mk({ condition: "其他", condition_text: "要是没人" }), { npcs: [{ name: "才旦" }] });
       expect((gameStore.getState().inv || []).some((it) => it?.id === "it_g1")).toBe(false);
       expect((gameStore.getState().room?.items || []).some((it) => it?.id === "it_g1")).toBe(true);
 

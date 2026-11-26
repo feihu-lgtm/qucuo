@@ -6,6 +6,7 @@ export function handleAppease(J, action, npc, aff, stanceMod) {
   // WO-16F-F3：perfunctory 一票否决——敷衍赔罪不受理，零 facts 不掷骰。
   if (action.stance === "perfunctory") {
     notes.push(`${npc.name}面前几句敷衍，赔罪不受理（perfunctory 否决）`);
+    if (J.lastActionOutcome) { J.lastActionOutcome.rejected = true; J.lastActionOutcome.kind = "appease"; J.lastActionOutcome.target = npc.name; }
     return;
   }
   const score = 0.5 + personaMod(npc.personality) + affectionMod(aff) + stanceMod;
