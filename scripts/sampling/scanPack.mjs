@@ -41,7 +41,8 @@ export function scanDir(dir = ART) {
     const text = readFileSync(p, "utf8");
     for (const { name, re } of PATTERNS) {
       const m = text.match(re);
-      if (m) hits.push({ file: p, pattern: name, sample: m[0].slice(0, 12) + "…" });
+      // 命中不外泄任何字符——只记文件/形状/匹配长度，短 key 也不会被全文打出
+      if (m) hits.push({ file: p, pattern: name, matchLen: m[0].length });
     }
   }
   return hits;
@@ -51,7 +52,7 @@ if (process.argv[1] && process.argv[1].endsWith("scanPack.mjs")) {
   const hits = scanDir();
   if (hits.length) {
     console.error(`密钥扫描未过，拒绝打包（${hits.length} 处命中）：`);
-    for (const h of hits) console.error(`  ${h.file} :: ${h.pattern} :: ${h.sample}`);
+    for (const h of hits) console.error(`  ${h.file} :: ${h.pattern} :: len=${h.matchLen}`);
     process.exit(1);
   }
   // 必备原件检查：至少一份 ai_calls*.jsonl 在场

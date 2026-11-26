@@ -18,20 +18,26 @@ function writeFixtures() {
   const intakeResp = {
     id: "c1", trace: "fullhp-single-l0-t1", ms: 2000, status: 200,
     request: { messages: [{ role: "system", content: "你是《天都·曲措》的前哨听意员" }] },
-    response: { choices: [{ message: { content: JSON.stringify({ read: "x", actions: [{ kind: "talk", text: "跟老猎户搭话" }] }) } }] },
+    response: { choices: [{ message: { content: JSON.stringify({ read: "x", actions: [{ kind: "talk", text: "跟老猎户搭话", target: "老猎户" }] }) } }] },
     usage: { prompt_tokens: 100, completion_tokens: 50, completion_tokens_details: { reasoning_tokens: 0 } },
   };
   const narrativeResp = {
     id: "c2", trace: "fullhp-single-l0-t1", ms: 14000, status: 200, stream: true,
-    request: { messages: [{ role: "system", content: "叙事" }] },
+    request: { messages: [{ role: "system", content: "你是MUD引擎。【判官定案】系统已经裁定了本轮发生的事。" }] },
     sseRaw: 'data: {"choices":[{"delta":{"content":"正文一段\\n---SEAL---\\n{\\"ok\\":1}"}}]}\ndata: [DONE]\ndata: {"usage":{"prompt_tokens":900,"completion_tokens":300,"completion_tokens_details":{"reasoning_tokens":200}}}\n',
   };
   const groupResp = {
     id: "c3", trace: "fullhp-single-l0-t2", ms: 12000, status: 200, stream: true,
-    request: { messages: [{ role: "system", content: "群聊叙事多人" }] },
+    request: { messages: [{ role: "system", content: "你是MUD引擎。【群聊回响】这一轮是好几个人同在场的对话。" }] },
     sseRaw: 'data: {"choices":[{"delta":{"content":"众人七嘴八舌。"}}]}\ndata: [DONE]\n',
   };
-  writeFileSync(join(dir, "ai_calls.jsonl"), [intakeResp, narrativeResp, groupResp].map((c) => JSON.stringify(c)).join("\n") + "\n");
+  const extractionResp = {
+    id: "c4", trace: "fullhp-single-l0-t1", ms: 3000, status: 200,
+    request: { messages: [{ role: "system", content: "你是状态提取员，只输出 JSON。" + "长".repeat(300) }] },
+    response: { choices: [{ message: { content: JSON.stringify({ delta: {}, comment: "x".repeat(300) }) } }] },
+    usage: { prompt_tokens: 500, completion_tokens: 100 },
+  };
+  writeFileSync(join(dir, "ai_calls.jsonl"), [intakeResp, narrativeResp, groupResp, extractionResp].map((c) => JSON.stringify(c)).join("\n") + "\n");
 }
 writeFixtures();
 
@@ -41,12 +47,14 @@ describe("A4 后处理：头归属 + 尾章两线 + 配额核对", () => {
     const g = r.groups["fullhp_single"];
     expect(g.turns).toBe(2);
     expect(g.turnsWithCalls).toBe(2);
-    expect(g.attributedCalls).toBe(3);
+    expect(g.attributedCalls).toBe(4);
     expect(g.intake.calls).toBe(1);
     expect(g.intake.passRate).toBe(1);
     expect(g.seal.judge.total).toBe(1);
     expect(g.seal.judge.hasSeal).toBe(1);
     expect(g.seal.judge.parseRate).toBe(1);
+    expect(g.chainCounts.other).toBe(1);
+    expect(g.seal.judge.total + g.seal.group.total).toBe(2);
     expect(g.seal.group.total).toBe(1);
     expect(g.seal.group.hasSeal).toBe(0);
     expect(g.usage.reasoning).toBe(200);
