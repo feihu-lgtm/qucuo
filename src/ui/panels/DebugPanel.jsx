@@ -3,10 +3,10 @@ import { OVERLAY, closeOverlay } from "../../store/uiStore.js";
 import { QUCUO_MAP, getMapNode } from "../../domain/data/map/qucuoMap.js";
 import { getInnerRoomNames, isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { markNpcAsKnown } from "../../domain/rules/npc/npcAwareness.js";
-import { reputationLabel } from "../../domain/rules/prompt/mvu.js";
 import { SKILL_CATALOG, makeSkillEntry } from "../../domain/data/kungfu/qucuoKungfu.js";
 import { CATALOG, CATALOG_INDEX, makeCatalogItem } from "../../domain/data/items/catalog.js";
 import { CATEGORY_LABEL, makeItem } from "../../domain/rules/economy/equipment.js";
+import { reputationLabel } from "../format/reputation.js";
 
 export default function DebugPanel({
   isMobile,

@@ -1,6 +1,7 @@
 import { ITEM_CATEGORY, CATEGORY_LABEL, toggleEquip } from "../../../domain/rules/economy/equipment.js";
-import { statLabel, effectBrief } from "../../../domain/rules/economy/itemEffectText.js";
+import { effectBrief } from "../../../domain/rules/economy/itemEffectText.js";
 import { QUALITY_COLOR } from "../../../domain/data/items/qualityColor.js";
+import { statLabel } from "../../format/itemStats.js";
 
 export default function EquipmentModule({ inv, setInv }) {
   return (

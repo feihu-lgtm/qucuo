@@ -1,12 +1,5 @@
 import React, { useState } from "react";
-import {
-  BODY_LAYER,
-  INTIMATE_FIELDS,
-  PUBLIC_FIELDS,
-  bodyProfileFilled,
-  maskText,
-  previewText,
-} from "../../domain/rules/character/bodyProfile.js";
+import { BODY_LAYER, INTIMATE_FIELDS, PUBLIC_FIELDS, bodyProfileFilled } from "../../domain/rules/character/bodyProfile.js";
 import {
   ALL_BODY_PRESETS,
   BODY_PRESETS,
@@ -16,6 +9,7 @@ import {
   applyBodyPreset,
   portraitPresetUrl,
 } from "../../domain/rules/character/bodyPresets.js";
+import { maskText, previewText } from "../format/bodyProfile.js";
 
 const MODES = [
   { id: "matched", label: "立绘体貌" },

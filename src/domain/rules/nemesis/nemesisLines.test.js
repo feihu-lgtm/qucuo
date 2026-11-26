@@ -1,6 +1,6 @@
 // WO-23B 宿敌谱确定性文本行测试
 import { describe, it, expect } from "vitest";
-import { flattenNemeses, buildNemesisInjectBlock, nemesisGrudgeLine, nemesisStatusLine } from "./nemesisLines.js";
+import { flattenNemeses, buildNemesisInjectBlock, nemesisGrudgeLine } from "./nemesisLines.js";
 
 function mkEntry(over = {}) {
   return {
@@ -112,12 +112,6 @@ describe("buildNemesisInjectBlock", () => {
 });
 
 describe("状态/强度行", () => {
-  it("nemesisStatusLine active 空串，fakeDead/settled 标注", () => {
-    expect(nemesisStatusLine({ status: "active" })).toBe("");
-    expect(nemesisStatusLine({ status: "fakeDead" })).toBe("（已故）"); // 玩家面板绝不泄「假死」
-    expect(nemesisStatusLine({ status: "fakeDead" })).not.toContain("假死");
-    expect(nemesisStatusLine({ status: "settled" })).toBe("（已了结）");
-  });
   it("nemesisGrudgeLine 分档", () => {
     expect(nemesisGrudgeLine(0)).toBe("");
     expect(nemesisGrudgeLine(1)).toBe("小有嫌隙");

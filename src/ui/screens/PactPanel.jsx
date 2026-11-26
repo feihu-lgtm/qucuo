@@ -2,8 +2,9 @@ import React from "react";
 import { Overlay, Header } from "./buildings/common.jsx";
 import { useGameStore } from "../../store/gameStore.js";
 import { flattenPacts, pactDeadlineLine } from "../../domain/rules/judge/pactLines.js";
-import { flattenNemeses, nemesisGrudgeLine, nemesisStatusLine } from "../../domain/rules/nemesis/nemesisLines.js";
+import { flattenNemeses, nemesisGrudgeLine } from "../../domain/rules/nemesis/nemesisLines.js";
 import { nemesisRecruitEligibility } from "../../domain/rules/nemesis/recruitCheck.js";
+import { nemesisStatusLine } from "../format/nemesisLines.js";
 
 // 「契约与宿敌」面板（WO-22B-P4b/WO-23B）——纯读 varTree.世界.契约/宿敌谱，不写任何状态。
 // 列表按人分组：NPC、约定、期限（剩余/已逾时辰）、状态（未了/已了/违约）、酬谢提示。

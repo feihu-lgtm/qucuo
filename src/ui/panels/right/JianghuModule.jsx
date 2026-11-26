@@ -1,9 +1,9 @@
 import { OVERLAY, openOverlay } from "../../../store/uiStore.js";
 import { useGameStore } from "../../../store/gameStore.js";
-import { reputationLabel } from "../../../domain/rules/prompt/mvu.js";
 import { listFactionRep } from "../../../domain/rules/economy/factionRep.js";
 import JianghuDials from "./jianghuDials.jsx";
 import { Button } from "../../primitives/index.js";
+import { reputationLabel } from "../../format/reputation.js";
 
 export const JIANGHU_ENTRIES = [
   { label: "任务", overlay: OVERLAY.QUEST_LOG },

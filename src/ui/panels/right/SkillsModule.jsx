@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { STAGES, STAGE_UP_COST } from "../../../utils/mudHelpers.js";
 import { deriveMoveFromSkill } from "../../../domain/rules/npc/npcGeneration.js";
-import { moveStatLabel, moveEffectBrief } from "../../../domain/rules/economy/itemEffectText.js";
+import { moveEffectBrief } from "../../../domain/rules/economy/itemEffectText.js";
 import { skillDetail } from "../../../domain/rules/kungfu/skillDetail.js";
 import { QUALITY_COLOR } from "../../../domain/data/items/qualityColor.js";
+import { moveStatLabel } from "../../format/itemStats.js";
 
 export default function SkillsModule({ skills, setSkills, inspectItem, inspecting, pot, breakthroughSkill }) {
   const [showIdleSkills, setShowIdleSkills] = useState(false);

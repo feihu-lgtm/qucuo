@@ -5,15 +5,13 @@
 // 别人面前打开的，不该一开就把私密层摊在屏幕上。
 // ============================================================================
 import React, { useState } from "react";
-import {
-  PUBLIC_FIELDS, INTIMATE_FIELDS, BODY_LAYER,
-  emptyBodyProfile, bodyProfileFilled, previewText, maskText,
-} from "../../domain/rules/character/bodyProfile.js";
+import { PUBLIC_FIELDS, INTIMATE_FIELDS, BODY_LAYER, emptyBodyProfile, bodyProfileFilled } from "../../domain/rules/character/bodyProfile.js";
 import {
   ALL_BODY_PRESETS, BODY_TAG_POOL, applyBodyPreset, appendBodyTag,
 } from "../../domain/rules/character/bodyPresets.js";
 import ModalShell from "../primitives/ModalShell.jsx";
 import { THEME_VARS } from "../../utils/theme.js";
+import { maskText, previewText } from "../format/bodyProfile.js";
 
 export default function BodyProfilePanel({
   profile, onChange, onClose, nsfwOn, onRecommend, recommendState,
