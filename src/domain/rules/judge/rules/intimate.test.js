@@ -38,11 +38,18 @@ describe("V8 亲密回合社交结算", () => {
     expect(fe.affectionDelta).toBe(-2);
     expect(fe.reason).toBe("闺房勉强");
   });
-  it("兽类/intimacy.forbidden 不产事实（含凭卡撬开 forbidden）", () => {
-    const beast = { ...NPC, name: "雪豹", beast: true };
+  it("夜班虫①：雪豹（beast 人形化同伴）门禁放行照签恩账——判官与门禁同口径", () => {
+    const beast = { ...NPC, name: "雪豹", beast: true, companionCandidate: true };
     const v = judgeTurn({ ...base, npcs: [beast], intimateCtx: { npc: "雪豹", ticket: false, threshold: 45, affection: 90 } },
       intakeWith([{ ...intimateAction, target: "雪豹" }]), { rng: () => 0.5 });
-    expect(v.facts.filter((x) => x.op === "MUTATE_SOCIAL")).toHaveLength(0);
+    const facts = v.facts.filter((x) => x.op === "MUTATE_SOCIAL");
+    expect(facts).toHaveLength(1);
+    // 余量 90-45=45≥25 → 你情我愿 +3 恩账
+    expect(facts[0].affectionDelta).toBe(3);
+    expect(facts[0].ledgerKind).toBe("恩");
+    expect(facts[0].witnesses).toEqual(["主角", "雪豹"]);
+  });
+  it("intimacy.forbidden 仍零事实（含凭卡撬开 forbidden）", () => {
     const forb = { ...NPC, intimacy: { forbidden: true } };
     const v2 = judgeTurn({ ...base, npcs: [forb], intimateCtx: { npc: "元朵朵", ticket: true, threshold: 45, affection: 0 } },
       intakeWith([intimateAction]), { rng: () => 0.5 });
@@ -124,5 +131,14 @@ describe("V8 Review 二轮：执行信号贯通焚卡/多对象不错账", () =>
       intakeWith(two), { rng: () => 0.5 });
     expect(v.facts.filter((x) => x.op === "MUTATE_SOCIAL")).toHaveLength(1);
     expect(v.intimateCtxExecuted).toBe(true);
+  });
+});
+
+describe("夜班双修 Review 修：好感轨道三端一致", () => {
+  it("普通兽类（无 companionCandidate，如大公鸡）仍无轨道不产事实", () => {
+    const chicken = { ...NPC, name: "大公鸡", beast: true };
+    const v = judgeTurn({ ...base, npcs: [chicken], intimateCtx: { npc: "大公鸡", ticket: false, threshold: 45, affection: 90 } },
+      intakeWith([{ ...intimateAction, target: "大公鸡" }]), { rng: () => 0.5 });
+    expect(v.facts.filter((x) => x.op === "MUTATE_SOCIAL")).toHaveLength(0);
   });
 });
