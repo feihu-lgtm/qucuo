@@ -31,7 +31,7 @@ const INLINE_COPY_DEBT = {
   "src/domain/rules/prompt/inputIntent.js": 1,
   "src/domain/rules/prompt/modePrimer.js": 1,
   "src/domain/rules/prompt/mvu.js": 1,
-  "src/domain/rules/prompt/presetLegacy.js": 2,
+  "src/domain/rules/prompt/presetLegacy.js": 3, // 含历史指纹存档串（死文案冻结，不参与新文案规范）
   "src/domain/rules/prompt/presetSystem.js": 2,
   "src/domain/rules/prompt/promptCatalog.js": 1,
   "src/domain/rules/prompt/sysBase.js": 2,
