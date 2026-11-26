@@ -5,6 +5,7 @@
 import { resolveFreeActExpense, parseStatedExpense } from "../freeActPricing.js";
 import { classifyRoomNature } from "../../world/containers.js";
 import { getInnerRoom } from "../../map/innerMap.js";
+import { getHomestead } from "../../map/homestead.js";
 
 export function handleFreeAct(J, action) {
   const { envelope, roll, turn, budget, facts, notes, nextFactId, talkOnly, varTree, proposalsPre, signedRestKeys, signedFreeActGainKeys } = J;
@@ -58,7 +59,12 @@ export function handleFreeAct(J, action) {
     const nature = irn ? classifyRoomNature({ districtName: rn, innerRoomName: irn, innerDef }) : "";
     const placeText = `${envelope.place || ""}${rn}${irn}`;
     const COMMERCE_RE = /商号|茶馆|酒肆|客栈|饭馆|杂货|商铺|店|摊|市|当铺|钱庄|驿站|赌/;
-    const isCommerce = nature === "food" || nature === "shop" || COMMERCE_RE.test(placeText);
+    // Review修：私家厨房/居所不算消费场所——灶房虽 food 类（KITCHEN 建筑型）但是
+    // 玩家自家或私宅，无商户在内，targetless 破费照样拒决。
+    // 私宅口径与 containers 对齐：privateHome 旗标/玩家家园覆盖——不套名字正则，
+    // 否则歇马居（客栈）带「居」字被误归私宅。food/shop 类型私厨由这两条兜住。
+    const privateHome = irn && (innerDef?.privateHome === true || getHomestead(irn));
+    const isCommerce = !privateHome && (nature === "food" || nature === "shop" || COMMERCE_RE.test(placeText));
     if (!targetNpc && !isCommerce) {
       notes.push("破费无消费对象（收款人不在场、此处亦非商铺），拒决扣银");
       return;

@@ -23,6 +23,11 @@ describe("WO-16F-F1 free_act 按表签发", () => {
     const v3 = judgeTurn(weak, act(fa("伤损", "低")), { rng: () => 0 });
     expect(v3.facts[0].hpDelta).toBe(-5);
   });
+  it("Review修：自家灶房 targetless 破费拒决（私家厨房非消费场所）", () => {
+    const homeKitchen = base({ roomName: "鱼定村", innerRoomName: "灶房" });
+    const v = judgeTurn(homeKitchen, act(fa("破费", "无", "买两只鸡蛋")), { rng: () => 0.5 });
+    expect(v.facts.find((x) => x.op === "CHANGE_VITALS_SILVER")).toBeUndefined();
+  });
   it("Review修：歇马居（客栈类型，名无商号字样）内无 target 也照签", () => {
     const inInn = base({ roomName: "鱼定村", innerRoomName: "歇马居" });
     const v = judgeTurn(inInn, act(fa("破费", "无", "要间上房住店")), { rng: () => 0.5 });
