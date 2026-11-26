@@ -164,3 +164,16 @@ describe("F2 容器坍缩不被绕过", () => {
     expect(notes.some((n) => n.includes("没什么可翻"))).toBe(false);
   });
 });
+
+describe("F2 Review 修：target 在原话时信任解析", () => {
+  it("「翻翻货架旁边的柜台」target=柜台不被改嫁货架", () => {
+    const cs = {
+      柜台: { collapsed: true, presetItems: [], isTemplate: true, owner: "" },
+      货架: { collapsed: false, presetItems: [], isTemplate: true, owner: "" },
+    };
+    const { J, facts, notes } = mkJ({ containers: cs, npcs: [], roll: () => 0.1 });
+    processInspectContainers(J, [{ kind: "inspect_container", target: "柜台", text: "翻翻货架旁边的柜台" }]);
+    expect(facts.filter((f) => f.op === "GRANT_ITEM")).toHaveLength(0);
+    expect(notes.some((n) => n.includes("柜台已坍缩"))).toBe(true);
+  });
+});

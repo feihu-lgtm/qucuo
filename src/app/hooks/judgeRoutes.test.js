@@ -297,6 +297,21 @@ describe("WO-16F-F2a 判官路由集成", () => {
     expect(classifyUseItem(state, { name: "溪边小屋钥匙", category: "misc" })).toBe("present");
   });
 
+  it("Review 修：明示出示意图的食物不走吞服（出示干粮仍在背包）", async () => {
+    const { classifyUseItem } = await import("./judgeRoutes.js");
+    const state = { inv: [] };
+    const food = { name: "干粮", category: "food" };
+    expect(classifyUseItem(state, food, "拿出干粮出示给店家看")).toBe("present");
+    expect(classifyUseItem(state, food, "拿出一块干粮吃掉垫垫肚子")).toBe("consumable");
+    expect(classifyUseItem(state, food, "")).toBe("consumable");
+  });
+
+  it("Review 修：字符串名耗材按图鉴仍可服食（背包按钮老调用）", async () => {
+    const { consumableOfItem } = await import("../../domain/data/items/catalogOps.js");
+    expect(consumableOfItem("广汉干粮")).toBeTruthy();
+    expect(consumableOfItem("不存在的物件")).toBeNull();
+  });
+
   it("D1 classifyUseItem 纯函数三分流", async () => {
     const { classifyUseItem } = await import("./judgeRoutes.js");
     const state = { inv: [] };
