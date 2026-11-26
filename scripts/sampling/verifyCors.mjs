@@ -53,12 +53,14 @@ await new Promise((r) => originSrv.listen(5432, "127.0.0.1", r));
 const browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] });
 const page = await browser.newPage();
 await page.goto("http://127.0.0.1:5432/");
-const result = await page.evaluate(async () => {
+const token = readFileSync(`${process.env.HOME}/.sampling/proxy.token`, "utf8").trim();
+const result = await page.evaluate(async (token) => {
   try {
     const res = await fetch("http://127.0.0.1:5499/v1/chat/completions", {
       method: "POST",
       headers: {
         "content-type": "application/json",
+        authorization: `Bearer ${token}`,
         "x-qucuo-lane": "9",
         "x-qucuo-turn": "42",
         "x-qucuo-trace": "cors-selftest",
@@ -70,7 +72,7 @@ const result = await page.evaluate(async () => {
   } catch (e) {
     return { error: String(e?.message || e) };
   }
-});
+}, token);
 await browser.close();
 originSrv.close();
 proxy.kill();

@@ -23,6 +23,16 @@ const PORT = Number(process.env.SAMPLING_PROXY_PORT) || 5411;
 const LOG = process.env.SAMPLING_PROXY_LOG || `${process.env.HOME}/.sampling/artifacts/ai_calls.jsonl`;
 mkdirSync(dirname(LOG), { recursive: true });
 const stream = createWriteStream(LOG, { flags: "a" });
+// 入站令牌：首次启动生成随机令牌写 ~/.sampling/proxy.token（0600），
+// collect.mjs 读同一文件配进游戏 apiKey——本机其他进程无令牌不能蹭配额/污染留底。
+import { randomBytes } from "node:crypto";
+import { chmodSync, existsSync } from "node:fs";
+const TOKEN_PATH = `${process.env.HOME}/.sampling/proxy.token`;
+if (!existsSync(TOKEN_PATH)) {
+  writeFileSync(TOKEN_PATH, randomBytes(24).toString("hex"), { mode: 0o600 });
+  chmodSync(TOKEN_PATH, 0o600);
+}
+const INBOUND_TOKEN = readFileSync(TOKEN_PATH, "utf8").trim();
 let seq = 0;
 
 const server = http.createServer((req, res) => {
@@ -38,6 +48,11 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (req.method !== "POST") { res.writeHead(404); res.end(); return; }
+  if (req.headers.authorization !== `Bearer ${INBOUND_TOKEN}`) {
+    res.writeHead(403, { "access-control-allow-origin": "*", "content-type": "application/json" });
+    res.end(JSON.stringify({ error: "sampling_proxy_auth_required" }));
+    return;
+  }
   const chunks = [];
   req.on("data", (c) => chunks.push(c));
   req.on("end", async () => {
@@ -80,7 +95,7 @@ const server = http.createServer((req, res) => {
         res.end();
         rec.sseRaw = Buffer.concat(bufs).toString("utf8");
         // SSE 末包常带 usage（stream_options.include_usage）
-        for (const line of rec.sseRaw.splitlines()) {
+        for (const line of rec.sseRaw.split("\n")) {
           if (!line.startsWith("data:") || line.includes("[DONE]")) continue;
           try {
             const d = JSON.parse(line.slice(5).trim());
@@ -96,8 +111,11 @@ const server = http.createServer((req, res) => {
       }
     } catch (err) {
       rec.error = String(err?.message || err);
-      res.writeHead(502, { "access-control-allow-origin": "*" });
-      res.end(JSON.stringify({ error: "proxy_upstream_error" }));
+      // 响应可能已部分透传（SSE 中途上游断）——已发头/已结束的响应不能再写 502
+      if (!res.headersSent) {
+        res.writeHead(502, { "access-control-allow-origin": "*" });
+        res.end(JSON.stringify({ error: "proxy_upstream_error" }));
+      } else if (!res.writableEnded) res.end();
     }
     rec.ms = Date.now() - t0;
     rec.finishedAt = new Date().toISOString();
