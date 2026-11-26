@@ -194,3 +194,249 @@
   color: var(--accent);
   background: var(--bg-panel);
 }
+
+/* ui/screens/CharacterPage.jsx */
+.character-page-1 {
+  cursor: pointer;
+  color: var(--bg-panel);
+  background: var(--accent);
+  border-radius: 0;
+  padding: 8px 0;
+  text-align: center;
+  margin-bottom: 16px;
+  font-weight: bold;
+}
+
+/* ui/screens/CharacterPage.jsx */
+.character-page-2 {
+  cursor: pointer;
+  font-size: var(--fs-2xs);
+  padding: 2px 6px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+.character-page-2[data-on="false"] {
+  border: 1px solid var(--ink-divider);
+  color: var(--text-dim);
+}
+
+/* ui/screens/CharacterPage.jsx */
+.character-page-3 {
+  font-size: var(--fs-xs);
+  color: var(--ember);
+  cursor: pointer;
+  border: 1px solid var(--gold-deep);
+  border-radius: 0;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+/* ui/screens/TradingScreen.jsx */
+.trading-screen-1 {
+  font-size: var(--fs-xs);
+  padding: 2px 10px;
+  border-radius: 0;
+  cursor: not-allowed;
+  color: var(--text-dim);
+  border: 1px solid var(--building-disabled-edge);
+}
+.trading-screen-1[data-on="false"] {
+  cursor: pointer;
+  color: var(--warn);
+  border: 1px solid var(--gold-deep);
+}
+
+/* ui/screens/TradingScreen.jsx */
+.trading-screen-2 {
+  font-size: var(--fs-xs);
+  padding: 2px 10px;
+  border-radius: 0;
+  cursor: pointer;
+  color: var(--accent);
+  border: 1px solid var(--trading-buy-edge);
+}
+.trading-screen-2[data-on="false"] {
+  cursor: not-allowed;
+  color: var(--text-dim);
+  border: 1px solid var(--building-disabled-edge);
+}
+
+/* ui/screens/TradingScreen.jsx */
+.trading-screen-3 {
+  font-size: var(--fs-xs);
+  padding: 2px 10px;
+  border-radius: 0;
+  cursor: pointer;
+  color: var(--accent);
+  border: 1px solid var(--trading-buy-edge);
+}
+.trading-screen-3[data-on="false"] {
+  cursor: not-allowed;
+  color: var(--text-dim);
+  border: 1px solid var(--building-disabled-edge);
+}
+
+/* ui/screens/TradingScreen.jsx */
+.trading-screen-4 {
+  font-size: var(--fs-sm);
+  color: var(--trading-close);
+  cursor: pointer;
+  padding: 4px 16px;
+  border: 1px solid var(--border);
+  border-radius: 0;
+}
+
+/* ui/screens/BugReportModal.jsx */
+.bug-report-modal-1 {
+  cursor: pointer;
+  padding: 6px 20px;
+  border-radius: 0;
+}
+
+/* ui/screens/BugReportModal.jsx */
+.bug-report-modal-2 {
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+/* ui/screens/BugReportModal.jsx */
+.bug-report-modal-3 {
+  display: block;
+  cursor: pointer;
+  margin-top: 8px;
+  padding: 5px 9px;
+}
+
+/* ui/screens/BugReportModal.jsx */
+.bug-report-modal-4 {
+  padding: 6px 20px;
+  border-radius: 0;
+  font-size: var(--fs-md);
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+}
+.bug-report-modal-4[data-on="false"] {
+  cursor: not-allowed;
+}
+
+/* ui/screens/BodyProfilePanel.jsx */
+.body-profile-panel-1 {
+  background: var(--bg-panel);
+  border-radius: 0;
+  font-size: var(--fs-2xs);
+  padding: 2px 6px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* ui/screens/BodyProfilePanel.jsx */
+.body-profile-panel-2 {
+  background: var(--bg-panel);
+  border-radius: 0;
+  font-size: var(--fs-2xs);
+  padding: 3px 8px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* ui/screens/BodyProfilePanel.jsx */
+.body-profile-panel-3 {
+  background: var(--bg-panel);
+  border: 1px solid var(--body-nsfw);
+  border-radius: 0;
+  color: var(--body-nsfw);
+  font-size: var(--fs-2xs);
+  padding: 3px 8px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* ui/screens/BodyProfilePanel.jsx */
+.body-profile-panel-4 {
+  display: inline-block;
+  padding: 5px 14px;
+  border-radius: 0;
+  font-size: var(--fs-sm);
+  cursor: default;
+}
+.body-profile-panel-4[data-on="false"] {
+  cursor: pointer;
+}
+
+/* ui/screens/quickBattle/ModePick.jsx */
+.mode-pick-1 {
+  position: relative;
+  width: clamp(140px, 42vw, 220px);
+  height: 150px;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  transition: transform .2s ease;
+  transform: translateY(-4px);
+}
+.mode-pick-1[data-on="false"] {
+  transform: none;
+}
+
+/* ui/screens/quickBattle/PickScreen.jsx */
+.pick-screen-1 {
+  flex: 1;
+  min-height: 92px;
+  padding: 10px 14px;
+  cursor: pointer;
+  background: rgba(20,16,10,.55);
+  border-radius: 0;
+  transition: border-color .2s;
+}
+
+/* ui/screens/quickBattle/PickScreen.jsx */
+.pick-screen-2 {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: rgba(0,0,0,.35);
+  border-radius: 0;
+  font-size: var(--fs-sm);
+  color: var(--qb-text);
+  cursor: pointer;
+}
+
+/* ui/screens/quickBattle/BattleScreen.jsx */
+.battle-screen-1 {
+  cursor: pointer;
+  text-align: left;
+  padding: 8px 10px;
+  background: rgba(20,16,10,.85);
+  opacity: 1;
+}
+.battle-screen-1[data-on="false"] {
+  background: rgba(10,8,5,.7);
+  opacity: 0.6;
+}
+
+/* ui/screens/quickBattle/BattleScreen.jsx */
+.battle-screen-2 {
+  flex: 1;
+  padding: 5px 0;
+  font-size: var(--fs-xs);
+  font-weight: bold;
+  border-radius: 0;
+  border: none;
+  cursor: pointer;
+  color: var(--qb-move-button-text);
+}
+.battle-screen-2[data-on="false"] {
+  cursor: not-allowed;
+  color: var(--qb-move-disabled-text);
+}
+
+/* ui/screens/quickBattle/BattleScreen.jsx */
+.battle-screen-3 {
+  padding: 5px 10px;
+  font-size: var(--fs-xs);
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+}

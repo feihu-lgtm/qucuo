@@ -112,8 +112,7 @@ function CharacterDetail({ name, attrs, claimedMilestones, onClaimMilestone, onG
           )}
 
           <div
-            onClick={() => onGift(name)}
-            style={{ cursor: "pointer", color: "var(--bg-panel)", background: "var(--accent)", borderRadius: 0, padding: "8px 0", textAlign: "center", marginBottom: 16, fontWeight: "bold" }}
+            onClick={() => onGift(name)} className="character-page-1"
           >
             送礼
           </div>
@@ -127,14 +126,7 @@ function CharacterDetail({ name, attrs, claimedMilestones, onClaimMilestone, onG
                 return (
                   <span
                     key={tab}
-                    onClick={() => setLedgerTagFilter(tab)}
-                    style={{
-                      cursor: "pointer",
-                      fontSize: "var(--fs-2xs)",
-                      padding: "2px 6px",
-                      border: `1px solid ${active ? "var(--accent)" : "var(--ink-divider)"}`,
-                      color: active ? "var(--accent)" : "var(--text-dim)",
-                    }}
+                    onClick={() => setLedgerTagFilter(tab)} className="character-page-2" data-on={Boolean(active)}
                   >
                     {tab}{count > 0 ? ` ${count}` : ""}
                   </span>
@@ -198,8 +190,7 @@ function CharacterDetail({ name, attrs, claimedMilestones, onClaimMilestone, onG
                     >已领取 · 重看</span>
                   ) : unlocked ? (
                     <span
-                      onClick={() => handleClaim(m)}
-                      style={{ fontSize: "var(--fs-xs)", color: "var(--ember)", cursor: "pointer", border: "1px solid var(--gold-deep)", borderRadius: 0, padding: "3px 8px", whiteSpace: "nowrap" }}
+                      onClick={() => handleClaim(m)} className="character-page-3"
                     >领取</span>
                   ) : (
                     <span style={{ fontSize: "var(--fs-xs)", color: "var(--ink-dim-deep)", whiteSpace: "nowrap" }}>未解锁</span>

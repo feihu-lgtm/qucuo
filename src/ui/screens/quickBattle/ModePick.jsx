@@ -23,12 +23,7 @@ function WoodCard({ title, sub, onClick }) {
   return (
     <button
       onClick={onClick}
-      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
-      style={{
-        position: "relative", width: "clamp(140px, 42vw, 220px)", height: 150, border: "none", cursor: "pointer",
-        background: "transparent", transform: hover ? "translateY(-4px)" : "none",
-        transition: "transform .2s ease",
-      }}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} className="mode-pick-1" data-on={Boolean(hover)}
     >
       <img src={UI("panel_big.webp")} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />
       <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 8, padding: "0 8px" }}>

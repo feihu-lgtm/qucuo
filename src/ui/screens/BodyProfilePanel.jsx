@@ -76,17 +76,7 @@ export default function BodyProfilePanel({
                   <button
                     key={tag}
                     type="button"
-                    onClick={() => onChange({ ...p, [f.key]: appendBodyTag(val, tag) })}
-                    style={{
-                      background: "var(--bg-panel)",
-                      border: `1px solid color-mix(in srgb, ${border} 55%, transparent)`,
-                      borderRadius: 0,
-                      color: textDim,
-                      fontSize: "var(--fs-2xs)",
-                      padding: "2px 6px",
-                      cursor: "pointer",
-                      fontFamily: "inherit",
-                    }}
+                    onClick={() => onChange({ ...p, [f.key]: appendBodyTag(val, tag) })} className="body-profile-panel-1" style={{ border: `1px solid color-mix(in srgb, ${border} 55%, transparent)`, color: textDim }}
                   >
                     + {tag}
                   </button>
@@ -153,22 +143,14 @@ export default function BodyProfilePanel({
                 <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                   <button
                     type="button"
-                    onClick={() => onChange(applyBodyPreset(p, preset, { includeIntimate: false }))}
-                    style={{
-                      background: "var(--bg-panel)", border: `1px solid ${border}`, borderRadius: 0,
-                      color: accent, fontSize: "var(--fs-2xs)", padding: "3px 8px", cursor: "pointer", fontFamily: "inherit",
-                    }}
+                    onClick={() => onChange(applyBodyPreset(p, preset, { includeIntimate: false }))} className="body-profile-panel-2" style={{ border: `1px solid ${border}`, color: accent }}
                   >
                     套公开层
                   </button>
                   {nsfwOn && showIntimate && (
                     <button
                       type="button"
-                      onClick={() => onChange(applyBodyPreset(p, preset, { includeIntimate: true }))}
-                      style={{
-                        background: "var(--bg-panel)", border: "1px solid var(--body-nsfw)", borderRadius: 0,
-                        color: "var(--body-nsfw)", fontSize: "var(--fs-2xs)", padding: "3px 8px", cursor: "pointer", fontFamily: "inherit",
-                      }}
+                      onClick={() => onChange(applyBodyPreset(p, preset, { includeIntimate: true }))} className="body-profile-panel-3"
                     >
                       含私密层
                     </button>
@@ -216,14 +198,7 @@ export default function BodyProfilePanel({
           只告诉你是什么、什么来历、加多少——<span style={{ color: textDim }}>怎么弄到手得自己走一趟</span>。
         </div>
         <span
-          onClick={() => { if (!recommendState?.loading) onRecommend?.(); }}
-          style={{
-            cursor: recommendState?.loading ? "default" : "pointer",
-            display: "inline-block", padding: "5px 14px", borderRadius: 0, fontSize: "var(--fs-sm)",
-            color: recommendState?.loading ? textDim : "var(--bg-panel)",
-            background: recommendState?.loading ? "var(--bg-panel)" : accent,
-            border: `1px solid ${recommendState?.loading ? border : accent}`,
-          }}
+          onClick={() => { if (!recommendState?.loading) onRecommend?.(); }} className="body-profile-panel-4" data-on={Boolean(recommendState?.loading)} style={{ color: recommendState?.loading ? textDim : "var(--bg-panel)", background: recommendState?.loading ? "var(--bg-panel)" : accent, border: `1px solid ${recommendState?.loading ? border : accent}` }}
         >
           {recommendState?.loading ? "掌柜正在翻货架…" : "◇ 让掌柜挑三件"}
         </span>

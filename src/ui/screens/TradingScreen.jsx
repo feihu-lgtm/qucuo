@@ -84,12 +84,8 @@ export default function TradingScreen({ shopName, shopItems = [], playerInv, pla
                 {item.equipped && <span style={{ color: "var(--good)", marginLeft: 4 }}>[已装备]</span>}
                 <span style={{ color: "var(--text-dim)", marginLeft: 6 }}>售 {Math.max(1, Math.round(item.sellPrice * sellCoef))}{currencyUnit}</span>
               </div>
-              <span className="mobile-touch-target"
-                onClick={() => !item.equipped && onSell(item)}
-                style={{ fontSize: "var(--fs-xs)", padding: "2px 10px", borderRadius: 0,
-                cursor: item.equipped ? "not-allowed" : "pointer",
-                color: item.equipped ? "var(--text-dim)" : "var(--warn)",
-                border: `1px solid ${item.equipped ? "var(--building-disabled-edge)" : "var(--gold-deep)"}`, }}
+              <span className="mobile-touch-target trading-screen-1"
+                onClick={() => !item.equipped && onSell(item)} data-on={Boolean(item.equipped)}
                 title={item.equipped ? "已装备的物品需先卸下才能卖出" : "卖出"}
               >卖出</span>
             </div>
@@ -135,12 +131,8 @@ export default function TradingScreen({ shopName, shopItems = [], playerInv, pla
                           </div>
                           {notForSale
                             ? <span style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", padding: "2px 6px" }} title={entry.slot === "mount" ? "生死之交，不卖" : "钟爱之物，给多少钱都不卖"}>{entry.slot === "mount" ? "不卖" : "舍不得"}</span>
-                            : <span className="mobile-touch-target"
-                                onClick={() => affordable && onBuy(entry)}
-                                style={{ fontSize: "var(--fs-xs)", padding: "2px 10px", borderRadius: 0,
-                                cursor: affordable ? "pointer" : "not-allowed",
-                                color: affordable ? "var(--accent)" : "var(--text-dim)",
-                                border: `1px solid ${affordable ? "var(--trading-buy-edge)" : "var(--building-disabled-edge)"}`, }}
+                            : <span className="mobile-touch-target trading-screen-2"
+                                onClick={() => affordable && onBuy(entry)} data-on={Boolean(affordable)}
                                 title={affordable ? "买下" : `${currencyName}不足`}
                               >买下</span>}
                         </div>
@@ -182,12 +174,8 @@ export default function TradingScreen({ shopName, shopItems = [], playerInv, pla
                 </div>
                 {notForSale
                   ? <span style={{ fontSize: "var(--fs-xs)", padding: "2px 10px", color: "var(--text-dim)", border: "1px solid var(--building-disabled-edge)", borderRadius: 0, cursor: "default" }}>{item.displayOnly ? "陈列" : "不卖"}</span>
-                  : <span className="mobile-touch-target"
-                    onClick={() => canAfford && onBuy({ ...item, buyPrice: payPrice })}
-                    style={{ fontSize: "var(--fs-xs)", padding: "2px 10px", borderRadius: 0,
-                    cursor: canAfford ? "pointer" : "not-allowed",
-                    color: canAfford ? "var(--accent)" : "var(--text-dim)",
-                    border: `1px solid ${canAfford ? "var(--trading-buy-edge)" : "var(--building-disabled-edge)"}`, }}
+                  : <span className="mobile-touch-target trading-screen-3"
+                    onClick={() => canAfford && onBuy({ ...item, buyPrice: payPrice })} data-on={Boolean(canAfford)}
                     title={canAfford ? "购买" : `${currencyName}不足`}
                   >购买</span>}
               </div>
@@ -202,7 +190,7 @@ export default function TradingScreen({ shopName, shopItems = [], playerInv, pla
         </div>
       )}
       <div style={{ padding: "10px 16px", borderTop: `1px solid var(--border)`, textAlign: "center", flexShrink: 0 }}>
-        <span className="mobile-touch-target" onClick={onClose} style={{ fontSize: "var(--fs-sm)", color: "var(--trading-close)", cursor: "pointer", padding: "4px 16px", border: `1px solid var(--border)`, borderRadius: 0 }}>关闭</span>
+        <span className="mobile-touch-target trading-screen-4" onClick={onClose}>关闭</span>
       </div>
     </div>
   );

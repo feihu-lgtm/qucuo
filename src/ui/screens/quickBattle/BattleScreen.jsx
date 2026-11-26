@@ -317,14 +317,8 @@ function MoveButton({ move, usable, reason, onClick }) {
     <div className="qb-card" style={{ width: 128, height: 96 }}>
       <div className="qb-flip">
         {!flipped && <button
-          className="qb-face"
-          onClick={() => setFlipped(true)}
-          style={{
-            cursor: "pointer", textAlign: "left", padding: "8px 10px",
-            background: usable ? "rgba(20,16,10,.85)" : "rgba(10,8,5,.7)",
-            border: `2px solid ${usable ? qc : "rgba(255,255,255,.1)"}`,
-            opacity: usable ? 1 : 0.6,
-          }}
+          className="qb-face battle-screen-1"
+          onClick={() => setFlipped(true)} data-on={Boolean(usable)} style={{ border: `2px solid ${usable ? qc : "rgba(255,255,255,.1)"}` }}
         >
           <div style={{ fontSize: "var(--fs-base)", color: "var(--qb-text)", fontWeight: "bold" }}>{move.name}</div>
           <div style={{ fontSize: "var(--fs-2xs)", color: qc, marginTop: 2 }}>{move.type} · {move.quality}品 · 耗气{move.energyCost}</div>
@@ -348,15 +342,10 @@ function MoveButton({ move, usable, reason, onClick }) {
             </div>
           ))}
           <div style={{ display: "flex", gap: 6, marginTop: 6, position: "sticky", bottom: 0 }}>
-            <button onClick={() => usable && onClick()} disabled={!usable}
-              style={{ flex: 1, padding: "5px 0", fontSize: "var(--fs-xs)", fontWeight: "bold", borderRadius: 0,
-                border: "none", cursor: usable ? "pointer" : "not-allowed",
-                background: usable ? qc : "var(--qb-move-disabled-bg)", color: usable ? "var(--qb-move-button-text)" : "var(--qb-move-disabled-text)" }}>
+            <button onClick={() => usable && onClick()} disabled={!usable} className="battle-screen-2" data-on={Boolean(usable)} style={{ background: usable ? qc : "var(--qb-move-disabled-bg)" }}>
               {usable ? "⚔ 出招" : (reason || "不可用")}
             </button>
-            <button onClick={() => setFlipped(false)}
-              style={{ padding: "5px 10px", fontSize: "var(--fs-xs)", borderRadius: 0, border: `1px solid ${qc}`,
-                background: "transparent", color: qc, cursor: "pointer" }}>返回</button>
+            <button onClick={() => setFlipped(false)} className="battle-screen-3" style={{ border: `1px solid ${qc}`, color: qc }}>返回</button>
           </div>
         </div>}
       </div>

@@ -140,7 +140,7 @@ export default function BugReportModal({
           {result.pipelineWarning && (
             <div style={{ fontSize: "var(--fs-xs)", color: "var(--bug-warn)", marginBottom: 18 }}>{result.pipelineWarning}</div>
           )}
-          <span onClick={onClose} style={{ cursor: "pointer", padding: "6px 20px", border: `1px solid ${C.border}`, borderRadius: 0, color: C.text }}>关闭</span>
+          <span onClick={onClose} className="bug-report-modal-1" style={{ border: `1px solid ${C.border}`, color: C.text }}>关闭</span>
         </div>
       ) : (
         <>
@@ -200,7 +200,7 @@ export default function BugReportModal({
             )}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginTop: 7, fontSize: "var(--fs-xs)", color: C.dim }}>
               <span>调试包大小：{formattedBundleSize}</span>
-              <button type="button" onClick={() => downloadDebugBundle(debugBundle)} style={{ cursor: "pointer", padding: "4px 8px", color: C.text, background: C.inputBg, border: `1px solid ${C.border}` }}>
+              <button type="button" onClick={() => downloadDebugBundle(debugBundle)} className="bug-report-modal-2" style={{ color: C.text, background: C.inputBg, border: `1px solid ${C.border}` }}>
                 仅下载调试包
               </button>
             </div>
@@ -222,7 +222,7 @@ export default function BugReportModal({
                 <button type="button" onClick={() => {
                   const config = typeof debugSources?.apiConfig === "function" ? debugSources.apiConfig() : debugSources?.apiConfig;
                   downloadFailedReport(failedReport, config);
-                }} style={{ display: "block", cursor: "pointer", marginTop: 8, padding: "5px 9px", color: C.text, background: C.inputBg, border: `1px solid ${C.border}` }}>
+                }} className="bug-report-modal-3" style={{ color: C.text, background: C.inputBg, border: `1px solid ${C.border}` }}>
                   下载未提交报告
                 </button>
               )}
@@ -232,14 +232,7 @@ export default function BugReportModal({
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, alignItems: "center" }}>
             <span onClick={onClose} style={{ cursor: "pointer", fontSize: "var(--fs-sm)", color: C.dim, padding: "6px 14px" }}>取消</span>
             <span
-              onClick={submit}
-              style={{
-                cursor: agreed && !sending ? "pointer" : "not-allowed",
-                padding: "6px 20px", borderRadius: 0, fontSize: "var(--fs-md)", fontWeight: "bold",
-                background: agreed && !sending ? C.accent : (dark ? "var(--border)" : "var(--bug-button-off-light)"),
-                color: agreed && !sending ? (dark ? "var(--bug-button-text-dark)" : "var(--white)") : C.dim,
-                border: "none",
-              }}
+              onClick={submit} className="bug-report-modal-4" data-on={Boolean(agreed && !sending)} style={{ background: agreed && !sending ? C.accent : (dark ? "var(--border)" : "var(--bug-button-off-light)"), color: agreed && !sending ? (dark ? "var(--bug-button-text-dark)" : "var(--white)") : C.dim }}
             >{sending ? "上传中…" : "提交"}</span>
           </div>
           {!agreed && <div style={{ fontSize: "var(--fs-xs)", color: C.dim, textAlign: "right", marginTop: 6 }}>需先勾选同意才能提交</div>}
