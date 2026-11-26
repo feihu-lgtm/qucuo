@@ -212,4 +212,28 @@ describe("streamWithFirstTokenFallback（WO-08 三态）", () => {
     expect(res.degraded).toBe(true);
     expect(getLog().at(-1).text).toContain("算盘");
   });
+
+  it("placeholderImmediately 从 t=0 锁住流式坑位并全程继承 turn/day/realTs", async () => {
+    let log = [{ t: "cmd", text: "> 打招呼" }];
+    const setLog = (fn) => { log = fn(log); };
+    const res = await streamWithFirstTokenFallback({
+      invoke: async (onChunk) => {
+        // 并发系统日志在流式开始后才落进来，必须排在预先占好的坑位之后
+        log = [...log, { t: "sys", text: "  后台提醒" }];
+        expect(log[1].placeholder).toBe(true);
+        expect(log[1].turn).toBe(30);
+        expect(log[1].day).toBe(2);
+        onChunk("她笑", "她笑");
+        return { text: "她笑了一声。", finishReason: "stop" };
+      },
+      setLog,
+      key: "k7",
+      gameTime: 30,
+      placeholderImmediately: true,
+      firstTokenBudgetMs: 50,
+    });
+    expect(res.ok).toBe(true);
+    expect(log[1]).toMatchObject({ fillKey: "k7", text: "  她笑了一声。", turn: 30, day: 2, streamed: true });
+    expect(log[2].text.trim()).toBe("后台提醒");
+  });
 });

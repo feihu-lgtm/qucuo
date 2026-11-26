@@ -169,51 +169,63 @@ export default function StartScreen({ onStart, onStartImportSelf, onLoadSlot, on
               onMouseLeave={() => setHovered(null)}
               style={styles.menuItem(theme, hovered === item.key, disabled)}
             >
-              <span style={styles.menuLabel}>{item.label}</span>
-              <span style={styles.menuSub(theme)}>{item.sub}</span>
+              <span style={styles.menuLabel(disabled)}>{item.label}</span>
+              <span style={styles.menuSub(theme, disabled)}>{item.sub}</span>
             </button>
           );
         })}
       </nav>
 
-      <div className="start-screen-footer" style={styles.footer(theme)}>
-        <span>天都·曲措 · MUD引擎</span>
-        <span className="start-screen-footer-separator" style={styles.footerSep}>·</span>
-        <a href="https://github.com/feihu-lgtm/qucuo" target="_blank" rel="noopener noreferrer" style={styles.footerLink(theme)}>
-          开源代码 GitHub ↗
-        </a>
-        <span className="start-screen-footer-separator" style={styles.footerSep}>·</span>
-        <span onClick={() => setShowBugReport(true)} style={{ ...styles.footerLink(theme), cursor: "pointer" }}>
-          🐞 意见信箱 / 上报bug
-        </span>
-        <span className="start-screen-footer-separator" style={styles.footerSep}>·</span>
-        <span onClick={() => setShowVersionHistory(true)} title="点击查看版本历史目录" style={{ ...styles.footerLink(theme), cursor: "pointer" }}>
-          📅 {CURRENT_VERSION.version ? `${CURRENT_VERSION.version} · ` : ""}{CURRENT_VERSION.time}
-        </span>
-        {(visitStats.hits != null || visitStats.todayActive != null) && (
-          <>
-            <span className="start-screen-footer-separator" style={styles.footerSep}>·</span>
-            <span>
-              {visitStats.hits != null && `共有 ${visitStats.hits.toLocaleString()} 人次踏足曲措乡`}
-              {visitStats.hits != null && visitStats.todayActive != null && "，"}
-              {visitStats.todayActive != null && `今日 ${visitStats.todayActive.toLocaleString()} 位侠客登录`}
-            </span>
-          </>
-        )}
-      </div>
-
-      <div className="start-screen-corner-status" style={styles.cornerStatus(theme)}>
-        <div style={styles.cornerClock}>
-          现实时间 <LiveClockText withDate />
+      <div className="start-screen-bottom-bar" style={styles.bottomBar}>
+        <div className="start-screen-footer" style={styles.footer(theme)}>
+          <span>天都·曲措 · MUD引擎</span>
+          <span className="start-screen-footer-separator" style={styles.footerSep}>·</span>
+          <a
+            href="https://github.com/feihu-lgtm/qucuo"
+            target="_blank"
+            rel="noopener noreferrer"
+            onMouseEnter={() => setHovered("github")}
+            onMouseLeave={() => setHovered(null)}
+            style={styles.footerLink(theme, hovered === "github")}
+          >
+            开源代码 GitHub ↗
+          </a>
+          <span className="start-screen-footer-separator" style={styles.footerSep}>·</span>
+          <span
+            onClick={() => setShowBugReport(true)}
+            onMouseEnter={() => setHovered("bug")}
+            onMouseLeave={() => setHovered(null)}
+            style={styles.footerLink(theme, hovered === "bug")}
+          >
+            🐞 意见信箱 / 上报bug
+          </span>
+          {(visitStats.hits != null || visitStats.todayActive != null) && (
+            <>
+              <span className="start-screen-footer-separator" style={styles.footerSep}>·</span>
+              <span>
+                {visitStats.hits != null && `共有 ${visitStats.hits.toLocaleString()} 人次踏足曲措乡`}
+                {visitStats.hits != null && visitStats.todayActive != null && "，"}
+                {visitStats.todayActive != null && `今日 ${visitStats.todayActive.toLocaleString()} 位侠客登录`}
+              </span>
+            </>
+          )}
         </div>
-        <button
-          type="button"
-          onClick={() => setShowVersionHistory(true)}
-          title={`当前版本「${CURRENT_VERSION.codename}」，点击查看版本历史`}
-          style={styles.cornerVersionBtn(theme)}
-        >
-          版本 {CURRENT_VERSION.version || "v0.2.0"} · {CURRENT_VERSION.time}
-        </button>
+
+        <div className="start-screen-corner-status" style={styles.cornerStatus(theme)}>
+          <div style={styles.cornerClock}>
+            现实时间 <LiveClockText withDate />
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowVersionHistory(true)}
+            onMouseEnter={() => setHovered("version")}
+            onMouseLeave={() => setHovered(null)}
+            title={`当前版本「${CURRENT_VERSION.codename}」，点击查看版本历史`}
+            style={styles.cornerVersionBtn(theme, hovered === "version")}
+          >
+            版本 {CURRENT_VERSION.version || "v0.2.0"} · {CURRENT_VERSION.time}
+          </button>
+        </div>
       </div>
       </div>
 

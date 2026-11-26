@@ -3,6 +3,7 @@ import { planAutoTravel } from "../../features/map/logic.js";
 import { QUCUO_MAP } from "../../domain/data/map/qucuoMap.js";
 import { DIRS } from "../../utils/mudHelpers.js";
 import { gameActions, gameStore, useGameStore } from "../../store/gameStore.js";
+import { stampLogEntries } from "../../domain/rules/log/logTypes.js";
 
 const nextTick = () => new Promise(resolve => setTimeout(resolve, 0));
 
@@ -51,7 +52,7 @@ export function useAutoTravel({
   autoTravelRef, scheduler, act, teleportLookRef, setInteractMode, intentRouterRef,
 }) {
   const { setLog } = gameActions;
-  const addLog = useCallback((lines) => setLog((p) => [...p, ...lines]), [setLog]);
+  const addLog = useCallback((lines) => setLog((p) => [...p, ...stampLogEntries(lines, gameStore.getState().time)]), [setLog]);
   const actRef = useRef(act);
   actRef.current = act;
   // 房名/内层房名 hook 内直订 store（路线一）：roomNameRef 与 actRef 同一次 render 刷新，

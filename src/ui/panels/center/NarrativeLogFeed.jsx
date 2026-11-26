@@ -1,26 +1,59 @@
-import LogEntry from "../../components/LogEntry.jsx";
-import { getGameDay } from "../../../utils/mudHelpers.js";
+import { useEffect, useRef } from "react";
+import LogEntry, { NarrativeSkeleton, isNarrativePlaceholder } from "../../components/LogEntry.jsx";
+import { formatRealDateTime, getGameDay, getTimeStr } from "../../../utils/mudHelpers.js";
 import { useGameStore } from "../../../store/gameStore.js";
 import { openOverlay, OVERLAY } from "../../../store/uiStore.js";
 import { LOG_T } from "../../../domain/data/log/logTypes.js";
 
+// 对象级稳定 React Key：彻底避免在流式占位/插入地名/后台补写时因数组下标左移右移，
+// 导致 React 错认兄弟节点、重播入场动画或把行跳飞。
+const ENTRY_UIDS = new WeakMap();
+let nextEntryUid = 1;
+function getStableUid(obj) {
+  if (!obj || typeof obj !== "object") return String(obj ?? "");
+  let id = ENTRY_UIDS.get(obj);
+  if (!id) {
+    id = `e${nextEntryUid++}`;
+    ENTRY_UIDS.set(obj, id);
+  }
+  return id;
+}
+
+function getEntryRenderKey(entry, fallbackPrefix = "row") {
+  if (!entry) return fallbackPrefix;
+  // 流式占位 -> 超时过渡 -> 流式吐字 -> 完稿始终是同一个 fillKey（非 backfill prose/slot），
+  // 锁定同一个 React key 与 DOM 节点，全程零闪烁零跳行。
+  if (entry.fillKey && !entry.fillProse && entry.fillSlot == null) {
+    return `stream:${entry.fillKey}`;
+  }
+  return `${fallbackPrefix}:${getStableUid(entry)}`;
+}
+
 function formatEntryTurnLabel(entry) {
   if (typeof entry?.turn !== "number" || !Number.isFinite(entry.turn)) return "";
   const day = typeof entry.day === "number" ? entry.day : getGameDay(entry.turn);
-  return `第${day}日·第${entry.turn}回合`;
+  const clock = getTimeStr(entry.turn).replace(/^第\d+日·/, "").replace("·", " ");
+  return `第${day}日·第${entry.turn}回合 · ${clock}`;
 }
 
-function isNarrativePlaceholder(entry) {
-  if (!entry.streaming) return false;
-  const text = (entry.text || "").trim();
-  return text === "▌" || text === "「旁白」▌";
+function formatEntryClockLabel(entry) {
+  if (entry?.realTs == null) return "";
+  const clock = formatRealDateTime(entry.realTs, { withDate: false });
+  return clock ? clock.slice(0, 5) : "";
 }
 
-function NarrativeSkeleton() {
+function TimeBadge({ entry, className = "narrative-time-badge" }) {
+  const turnLabel = formatEntryTurnLabel(entry);
+  const clockLabel = formatEntryClockLabel(entry);
+  if (!turnLabel && !clockLabel) return null;
+  const fullTitle = entry?.realTs != null
+    ? `${turnLabel}${turnLabel ? " · " : ""}现实 ${formatRealDateTime(entry.realTs, { withDate: true })}`
+    : turnLabel;
   return (
-    <div className="narrative-skeleton" role="status" aria-label="叙事生成中">
-      <span /><span /><span />
-    </div>
+    <span className={className} title={fullTitle}>
+      {turnLabel && <span>{turnLabel}</span>}
+      {clockLabel && <span className="narrative-time-clock">{clockLabel}</span>}
+    </span>
   );
 }
 
@@ -30,6 +63,30 @@ export default function NarrativeLogFeed({
   loading, queueCount, pendingTalks, inspecting, logEnd,
 }) {
   const log = useGameStore(s => s.log);
+  const feedRef = useRef(null);
+  const nearBottomRef = useRef(true);
+  const prevLenRef = useRef(0);
+
+  const handleScroll = () => {
+    const el = feedRef.current;
+    if (!el) return;
+    nearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+  };
+
+  useEffect(() => {
+    const prevLen = prevLenRef.current;
+    const nextLen = log.length;
+    prevLenRef.current = nextLen;
+    if (hidden || nextLen === 0) return;
+    const lastEntry = log[nextLen - 1];
+    const isStreamingTail = Boolean(lastEntry?.streaming);
+    const addedNew = nextLen > prevLen;
+    if (!nearBottomRef.current && lastEntry?.t !== LOG_T.CMD) return;
+    logEnd.current?.scrollIntoView?.({
+      behavior: addedNew && !isStreamingTail ? "smooth" : "auto",
+      block: "end",
+    });
+  }, [log, hidden, logEnd]);
 
   const groups = [];
   let current = null;
@@ -57,17 +114,8 @@ export default function NarrativeLogFeed({
   const hasNarrative = currentReplies.some(entry =>
     (entry.t === LOG_T.DESC || entry.t === LOG_T.NARRATOR) &&
     (!entry.streaming || !isNarrativePlaceholder(entry)));
-  const showSkeleton = (loading || pendingTalks > 0 || inspecting) && !hasNarrative;
-  if (showSkeleton) {
-    const group = groups.find(item => item.cmd === lastCommand);
-    if (group) {
-      const placeholderIndex = group.replies.findIndex(isNarrativePlaceholder);
-      if (placeholderIndex >= 0) group.replies[placeholderIndex] = { skeleton: true };
-      else group.replies.push({ skeleton: true });
-    } else {
-      groups.push({ skeleton: true });
-    }
-  }
+  const hasPlaceholder = currentReplies.some(isNarrativePlaceholder);
+  const showSkeleton = (loading || pendingTalks > 0 || inspecting) && !hasNarrative && !hasPlaceholder;
 
   // 天机落账卡：EffectReceiptCard 派发结构化 action（id/factId/op/kind 齐全），
   // 原样透传给 act——useTurn 在 intent 识别前的系统边界按 id 寻址确定性执行，
@@ -86,116 +134,114 @@ export default function NarrativeLogFeed({
   };
 
   return (
-    <div data-testid="narrative-log" style={{ display: hidden ? "none" : "block", flex: 1, padding: "20px 32px", overflowY: "auto", overflowX: "hidden", fontSize: "var(--fs-lg)", lineHeight: "var(--lh-narrative)", letterSpacing: "0.3px" }}>
+    <div ref={feedRef} onScroll={handleScroll} data-testid="narrative-log" style={{ display: hidden ? "none" : "block", flex: 1, padding: "20px 32px", overflowY: "auto", overflowX: "hidden", fontSize: "var(--fs-lg)", lineHeight: "var(--lh-narrative)", letterSpacing: "0.3px" }}>
       {groups.map((g, gi) => {
-        if (g.skeleton) return <NarrativeSkeleton key={`skeleton-${gi}`} />;
         if (g.standalone) {
-          const standaloneLabel = formatEntryTurnLabel(g.standalone);
+          const isRoom = g.standalone.t === LOG_T.ROOM;
+          const hasText = Boolean(g.standalone.text?.trim());
           return (
-            <div key={gi}>
-              <LogEntry entry={g.standalone} color={clr[g.standalone.t] || clr.desc} onAction={handleEntryAction} isDayMode={isDayMode} />
-              {standaloneLabel && g.standalone.t === LOG_T.ROOM && (
-                <div style={{ textAlign: "center", color: "var(--text-dim)", fontSize: "var(--fs-2xs)", marginTop: -2, marginBottom: 4, fontVariantNumeric: "tabular-nums" }}>
-                  {standaloneLabel}
+            <div
+              key={getEntryRenderKey(g.standalone, `standalone-${gi}`)}
+              className={isRoom ? "narrative-standalone narrative-standalone--room" : "narrative-standalone"}
+            >
+              <div className="narrative-standalone-main">
+                <LogEntry entry={g.standalone} color={clr[g.standalone.t] || clr.desc} onAction={handleEntryAction} isDayMode={isDayMode} />
+              </div>
+              {isRoom && hasText && (
+                <div className="narrative-room-time">
+                  <TimeBadge entry={g.standalone} />
                 </div>
               )}
-              {standaloneLabel && g.standalone.t !== LOG_T.ROOM && g.standalone.text?.trim() && (
-                <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)", marginBottom: 4, fontVariantNumeric: "tabular-nums" }}>
-                  {standaloneLabel}
-                </div>
-              )}
+              {!isRoom && hasText && <TimeBadge entry={g.standalone} />}
             </div>
           );
         }
+
         const cmdIdx = g.cmd ? log.indexOf(g.cmd) : -1;
-        const replyCount = g.replies.filter(entry => !entry.skeleton).length;
+        const replyCount = g.replies.length;
         const canCollapse = g.cmd && replyCount > 0;
         const collapsed = canCollapse && collapsedGroups.has(cmdIdx);
-        const turnEntry = g.cmd || g.replies.find(entry => !entry.skeleton && typeof entry?.turn === "number");
-        const groupTurnLabel = formatEntryTurnLabel(turnEntry);
+        const turnEntry = g.cmd || g.replies.find(entry => typeof entry?.turn === "number" || entry?.realTs != null);
+        const groupKey = g.cmd ? getEntryRenderKey(g.cmd, `cmd-${gi}`)
+          : (g.replies[0] ? `orphan-${getStableUid(g.replies[0])}` : `group-${gi}`);
+        const isActiveGroup = Boolean(g.cmd && g.cmd === lastCommand);
         const toggleCollapse = canCollapse ? () => setCollapsedGroups(prev => {
           const next = new Set(prev);
           if (next.has(cmdIdx)) next.delete(cmdIdx); else next.add(cmdIdx);
           return next;
         }) : undefined;
 
+        let trackedTurn = typeof turnEntry?.turn === "number" ? turnEntry.turn : null;
+
         return (
-          <div
-            key={gi}
-            style={{
-              border: `1px solid var(--border)`,
-              borderRadius: 0,
-              marginBottom: 10,
-              background: "rgba(255,255,255,0.015)",
-              overflow: "hidden",
-            }}
-          >
+          <div key={groupKey} className="narrative-group">
             {g.cmd && (
               <div
-                style={{
-                  display: "flex", alignItems: "center", gap: 4,
-                  padding: "8px 12px",
-                  cursor: canCollapse ? "pointer" : "default",
-                  userSelect: "none",
-                }}
+                className={collapsed ? "narrative-group-header" : "narrative-group-header narrative-group-header--open"}
+                style={{ cursor: canCollapse ? "pointer" : "default" }}
                 onClick={toggleCollapse}
               >
-                <span style={{ color: "var(--accent-dim)", fontSize: "var(--fs-2xs)", flexShrink: 0, width: 10 }}>
+                <span className="narrative-group-arrow">
                   {canCollapse ? (collapsed ? "▶" : "▼") : ""}
                 </span>
-                <div style={{ flex: 1 }}>
+                <div className="narrative-group-cmd">
                   <LogEntry entry={g.cmd} color={clr[g.cmd.t] || clr.desc} onAction={handleEntryAction} isDayMode={isDayMode} />
                 </div>
-                {groupTurnLabel && (
-                  <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
-                    {groupTurnLabel}
-                  </span>
-                )}
+                <TimeBadge entry={turnEntry} />
                 {collapsed && (
-                  <span style={{ color: "var(--accent-dim)", fontSize: "var(--fs-2xs)", flexShrink: 0 }}>
-                    +{replyCount}条
-                  </span>
+                  <span className="narrative-group-count">+{replyCount}条</span>
                 )}
               </div>
             )}
-            {!g.cmd && groupTurnLabel && g.replies.length > 0 && (
-              <div style={{ display: "flex", justifyContent: "flex-end", padding: "6px 12px 0", color: "var(--text-dim)", fontSize: "var(--fs-2xs)", fontVariantNumeric: "tabular-nums" }}>
-                {groupTurnLabel}
+            {!g.cmd && turnEntry && g.replies.length > 0 && (
+              <div className="narrative-orphan-time">
+                <TimeBadge entry={turnEntry} />
               </div>
             )}
-            {!collapsed && g.replies.length > 0 && (
-              <div style={{ padding: g.cmd ? "0 12px 8px 26px" : "8px 12px" }}>
-                {g.replies.map((entry, ri) => (
-                  entry.skeleton
-                    ? <NarrativeSkeleton key="narrative-skeleton" />
-                    : <LogEntry key={ri} entry={entry} color={clr[entry.t] || clr.desc} onAction={handleEntryAction} isDayMode={isDayMode} />
-                ))}
+            {!collapsed && (g.replies.length > 0 || (isActiveGroup && showSkeleton)) && (
+              <div className={g.cmd ? "narrative-group-body narrative-group-body--indented" : "narrative-group-body"}>
+                {g.replies.map((entry, ri) => {
+                  const entryTurn = typeof entry?.turn === "number" ? entry.turn : null;
+                  const turnChanged = entryTurn !== null && trackedTurn !== null && entryTurn !== trackedTurn;
+                  const isDuelBoundary = entry?.t === LOG_T.SYS && /──\s*与.+切磋\s*──/.test(entry.text || "");
+                  const showDivider = (turnChanged || (isDuelBoundary && ri > 0)) && (entryTurn !== null || entry?.realTs != null);
+                  if (entryTurn !== null) trackedTurn = entryTurn;
+                  return (
+                    <div key={getEntryRenderKey(entry, `reply-${groupKey}`)} className="narrative-reply-slot">
+                      {showDivider && (
+                        <div className="narrative-time-divider">
+                          <span className="narrative-time-divider-line" />
+                          <TimeBadge entry={entry} />
+                        </div>
+                      )}
+                      <LogEntry entry={entry} color={clr[entry.t] || clr.desc} onAction={handleEntryAction} isDayMode={isDayMode} />
+                    </div>
+                  );
+                })}
+                {isActiveGroup && showSkeleton && <NarrativeSkeleton key={`skel-${groupKey}`} />}
               </div>
             )}
           </div>
         );
       })}
+      {!lastCommand && showSkeleton && <NarrativeSkeleton key="skel-root" />}
       {loading && (
-        <div style={{ color: "var(--accent-dim)", padding: "6px 0", display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ animation: "pulse 1.2s ease-in-out infinite" }}>▌</span>
+        <div className="narrative-live-status">
+          <span className="narrative-live-caret">▌</span>
           <span>引擎运转中</span>
-          <span style={{ display: "inline-flex", gap: 2 }}>
-            {[0, 1, 2].map(i => (
-              <span key={i} style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--accent)", animation: `pulse 0.8s ease-in-out ${i * 0.2}s infinite` }} />
-            ))}
+          <span className="narrative-live-dots">
+            <span /><span /><span />
           </span>
-          {queueCount > 0 && <span style={{ color: "var(--accent-dim)", fontSize: "var(--fs-xs)" }}>排队中 {queueCount}</span>}
+          {queueCount > 0 && <span className="narrative-live-queue">排队中 {queueCount}</span>}
         </div>
       )}
-      {pendingTalks > 0 && <div style={{ color: "var(--pink)", animation: "pulse 1.2s ease-in-out infinite" }}>  {pendingTalks} 条对话处理中...</div>}
+      {pendingTalks > 0 && <div className="narrative-live-talk">  {pendingTalks} 条对话处理中...</div>}
       {inspecting && (
-        <div style={{ color: "var(--accent-dim)", padding: "6px 0", display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ animation: "pulse 1.2s ease-in-out infinite" }}>▌</span>
+        <div className="narrative-live-status">
+          <span className="narrative-live-caret">▌</span>
           <span>端详「{inspecting}」中</span>
-          <span style={{ display: "inline-flex", gap: 2 }}>
-            {[0, 1, 2].map(i => (
-              <span key={i} style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--accent)", animation: `pulse 0.8s ease-in-out ${i * 0.2}s infinite` }} />
-            ))}
+          <span className="narrative-live-dots">
+            <span /><span /><span />
           </span>
         </div>
       )}

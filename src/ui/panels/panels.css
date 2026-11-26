@@ -316,3 +316,191 @@
   border: 1px solid var(--mind-gate-edge);
   background: transparent;
 }
+
+/* CenterPanel & NarrativeLogFeed：主栏对齐、时间戳、确认条与状态指示 */
+.center-confirm-bar {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: ink-bar-in 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.center-confirm-bar--duel {
+  background: rgba(196, 80, 68, 0.08);
+}
+.center-confirm-text {
+  color: var(--text);
+  font-size: var(--fs-sm);
+  flex: 1;
+  min-width: 0;
+}
+
+.narrative-group {
+  border: 1px solid var(--border);
+  border-radius: 0;
+  margin-bottom: 12px;
+  background: rgba(255, 255, 255, 0.015);
+  overflow: hidden;
+  transition: border-color 180ms ease, background-color 180ms ease;
+}
+.narrative-group:hover {
+  border-color: color-mix(in srgb, var(--accent-dim) 60%, var(--border));
+}
+.narrative-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  user-select: none;
+  transition: background-color 150ms ease;
+}
+.narrative-group-header--open {
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+}
+.narrative-group-header:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+.narrative-group-arrow {
+  color: var(--accent-dim);
+  font-size: var(--fs-2xs);
+  flex-shrink: 0;
+  width: 10px;
+  text-align: center;
+}
+.narrative-group-cmd {
+  flex: 1;
+  min-width: 0;
+}
+.narrative-group-cmd .log-entry {
+  margin-bottom: 0 !important;
+}
+.narrative-group-count {
+  color: var(--accent-dim);
+  font-size: var(--fs-2xs);
+  flex-shrink: 0;
+}
+.narrative-group-body {
+  padding: 8px 14px 10px;
+}
+.narrative-group-body--indented {
+  padding: 8px 14px 10px 32px;
+}
+.narrative-reply-slot {
+  min-width: 0;
+}
+
+.narrative-standalone {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+  padding: 2px 4px;
+}
+.narrative-standalone--room {
+  display: block;
+  margin: 10px 0 8px;
+  padding: 0;
+}
+.narrative-standalone-main {
+  flex: 1;
+  min-width: 0;
+}
+.narrative-room-time {
+  text-align: center;
+  margin-top: 2px;
+}
+.narrative-orphan-time {
+  display: flex;
+  justify-content: flex-end;
+  padding: 6px 14px 2px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 45%, transparent);
+}
+
+.narrative-time-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  color: var(--text-dim);
+  font-size: var(--fs-2xs);
+  line-height: 1.4;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.narrative-time-clock {
+  opacity: 0.72;
+}
+.narrative-time-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 6px;
+}
+.narrative-time-divider-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--border) 75%, transparent));
+}
+
+.log-duel-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 8px;
+  font-size: var(--fs-sm);
+  letter-spacing: 0.14em;
+}
+.log-duel-rule {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+.log-duel-label {
+  flex-shrink: 0;
+  font-weight: 600;
+}
+.log-settle-banner {
+  margin: 10px 0 6px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+  font-size: var(--fs-sm);
+  letter-spacing: 0.08em;
+}
+
+.narrative-live-status {
+  color: var(--accent-dim);
+  padding: 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-sm);
+}
+.narrative-live-caret {
+  animation: ink-caret-blink 0.9s steps(2, start) infinite;
+}
+.narrative-live-dots {
+  display: inline-flex;
+  gap: 3px;
+}
+.narrative-live-dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 0.8s ease-in-out infinite;
+}
+.narrative-live-dots span:nth-child(2) { animation-delay: 0.2s; }
+.narrative-live-dots span:nth-child(3) { animation-delay: 0.4s; }
+.narrative-live-queue {
+  color: var(--accent-dim);
+  font-size: var(--fs-xs);
+}
+.narrative-live-talk {
+  color: var(--pink);
+  animation: pulse 1.2s ease-in-out infinite;
+  font-size: var(--fs-sm);
+}

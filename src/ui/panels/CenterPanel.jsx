@@ -129,8 +129,8 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
 
       <IntentConfirmBar />
       {duelPending && (
-        <div style={{ flexShrink: 0, padding: "10px 16px", borderBottom: `1px solid var(--border)`, background: "rgba(196,80,68,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ color: "var(--text)", fontSize: "var(--fs-sm)", flex: 1 }}>{duelPending.lethal
+        <div className="center-confirm-bar center-confirm-bar--duel">
+          <span className="center-confirm-text">{duelPending.lethal
             ? `是否与「${duelPending.name}」生死相搏？既分高下，也决生死——这一战没有点到为止。`
             : `是否与「${duelPending.name}」正式切磋？一旦开打，就要见真章了。`}</span>
           <span className="duel-confirm-btn" onClick={duelHandlers.confirmDuel}>{duelPending.lethal ? "决生死" : "确认切磋"}</span>
