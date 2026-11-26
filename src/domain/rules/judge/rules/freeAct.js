@@ -6,6 +6,8 @@ import { resolveFreeActExpense, parseStatedExpense } from "../freeActPricing.js"
 import { classifyRoomNature } from "../../world/containers.js";
 import { getInnerRoom } from "../../map/innerMap.js";
 import { getHomestead } from "../../map/homestead.js";
+import { getBuildingIdForInnerRoom } from "../../map/innerMap.js";
+import { BUILDINGS_BY_LOCATION } from "../../../data/buildings/qucuoBuildings.js";
 
 export function handleFreeAct(J, action) {
   const { envelope, roll, turn, budget, facts, notes, nextFactId, talkOnly, varTree, proposalsPre, signedRestKeys, signedFreeActGainKeys } = J;
@@ -82,11 +84,17 @@ export function handleFreeAct(J, action) {
       // 服务/请客/打点不得默认套 misc 白档，应落 risk 默认（调度初审口径）。
       const invHit = action.item && action.item !== "无" ? (envelope.inv || []).find((e) => e && e.name === action.item) : null;
       const cat = invHit?.category || "";
+      // 场地菜单钥匙：内层房 buildingId → 建筑 menuKey——只认本店菜单，
+      // 在醉仙楼点老孙饭馆的菜不落价（Review 实证）。
+      const buildingId = irn ? getBuildingIdForInnerRoom(rn, irn) : null;
+      const allBuildings = Object.values(BUILDINGS_BY_LOCATION || {}).flat();
+      const menuKey = buildingId ? (allBuildings.find((b) => b?.id === buildingId)?.menuKey || "") : "";
       const hit = resolveFreeActExpense({
         text: String(action.text || ""),
         itemName: action.item && action.item !== "无" ? action.item : "",
         category: cat,
         presentNpcNames: (envelope.npcs || []).map((n) => n?.name).filter(Boolean),
+        menuKey,
       });
       if (hit) {
         amt = hit.price;
