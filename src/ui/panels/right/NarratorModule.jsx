@@ -1,10 +1,10 @@
 import { bar } from "../../../utils/mudHelpers.js";
 import { NNPC_STAGE, affectionLabel } from "../../../domain/rules/narrator/narrator.js";
 
-export default function NarratorModule({ zoneTheme, narrator, confessToNarrator }) {
+export default function NarratorModule({ narrator, confessToNarrator }) {
   return (
-    <div style={{ borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 8 }}>
-      <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accentDim, marginBottom: 4 }}>旁白</div>
+    <div style={{ borderTop: `1px solid var(--border)`, paddingTop: 8 }}>
+      <div style={{ fontSize: "var(--fs-xs)", color: "var(--accent-dim)", marginBottom: 4 }}>旁白</div>
       {narrator.stage === NNPC_STAGE.CRASHED ? (
         <div style={{ fontSize: "var(--fs-sm)", color: "var(--red-soft)" }}>信号已断开</div>
       ) : narrator.confessed ? (

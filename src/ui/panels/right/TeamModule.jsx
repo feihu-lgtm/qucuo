@@ -10,7 +10,7 @@ const STATION_SPOTS = Object.keys(INNER_MAP).flatMap((d) => [
   ...getPublicInnerRoomNames(d).map((r) => ({ district: d, roomId: r, roomName: r, label: `${d}·${r}` })),
 ]);
 
-export default function TeamModule({ zoneTheme, companionState, varTree, onSwitchCompanion, onStationCompanion }) {
+export default function TeamModule({ companionState, varTree, onSwitchCompanion, onStationCompanion }) {
   if (!unlockedCompanions(companionState).length) return null;
   // 队伍栏：已解锁的队友都列出来，点头像换出战（单槽互斥）。
   // 【为什么要能换】战斗引擎是 2v2，同时只带一个；明日香入队时会自动顶掉雪豹，
@@ -22,12 +22,12 @@ export default function TeamModule({ zoneTheme, companionState, varTree, onSwitc
     asuka: "红衣长枪的女侠，自称本女侠，跟你从心灵之海一路回来",
   };
   return (
-    <div style={{ borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 8, marginBottom: 10 }}>
-      <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accentDim, marginBottom: 4, display: "flex", alignItems: "center" }}>
+    <div style={{ borderTop: `1px solid var(--border)`, paddingTop: 8, marginBottom: 10 }}>
+      <div style={{ fontSize: "var(--fs-xs)", color: "var(--accent-dim)", marginBottom: 4, display: "flex", alignItems: "center" }}>
         <span>队伍</span>
         <span style={{ flex: 1 }} />
         {unlockedCompanions(companionState).length > 1 && (
-          <span style={{ fontSize: "var(--fs-2xs)", color: zoneTheme.textDim }}>只能带一个 · 点名字换</span>
+          <span style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)" }}>只能带一个 · 点名字换</span>
         )}
       </div>
       {unlockedCompanions(companionState).map(slot => {
@@ -43,21 +43,21 @@ export default function TeamModule({ zoneTheme, companionState, varTree, onSwitc
               style={{
                 flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, cursor: "pointer",
                 padding: "6px 8px", borderRadius: 0,
-                background: isOn ? zoneTheme.accent + "18" : zoneTheme.bgPanel,
-                border: `1px solid ${isOn ? zoneTheme.accent : zoneTheme.border}`,
+                background: isOn ? "var(--accent)" + "18" : "var(--bg-panel)",
+                border: `1px solid ${isOn ? "var(--accent)" : "var(--border)"}`,
               }}
             >
               <span style={{ fontSize: "var(--fs-base)", opacity: isOn ? 1 : 0.45 }}>{ICON[slot.key] || "◈"}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: "var(--fs-sm)", color: isOn ? zoneTheme.text : zoneTheme.textDim }}>
+                <div style={{ fontSize: "var(--fs-sm)", color: isOn ? "var(--text)" : "var(--text-dim)" }}>
                   {slot.label}
-                  {isOn && <span style={{ fontSize: "var(--fs-2xs)", color: zoneTheme.accent, marginLeft: 4 }}>出战</span>}
-                  {stationedAt && <span style={{ fontSize: "var(--fs-2xs)", color: zoneTheme.textDim, marginLeft: 4 }}>留守于{stationedAt.roomName || stationedAt.district}</span>}
+                  {isOn && <span style={{ fontSize: "var(--fs-2xs)", color: "var(--accent)", marginLeft: 4 }}>出战</span>}
+                  {stationedAt && <span style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", marginLeft: 4 }}>留守于{stationedAt.roomName || stationedAt.district}</span>}
                 </div>
                 {typeof aff === "number" ? (
                   <div style={{ fontSize: "var(--fs-2xs)", color: "var(--pink)" }}>{npcAffectionLabel(aff)} · {aff}/100</div>
                 ) : (
-                  <div style={{ fontSize: "var(--fs-2xs)", color: zoneTheme.textDim }}>{isOn ? "随行在侧" : "留守"}</div>
+                  <div style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)" }}>{isOn ? "随行在侧" : "留守"}</div>
                 )}
               </div>
             </div>
@@ -74,8 +74,8 @@ export default function TeamModule({ zoneTheme, companionState, varTree, onSwitc
                   if (spot) onStationCompanion(slot.key, spot);
                 }}
                 title="随行在侧，或留守在某处"
-                style={{ fontSize: "var(--fs-2xs)", color: zoneTheme.textDim, background: zoneTheme.bgPanel,
-                border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: "3px 2px", maxWidth: 84, }}
+                style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", background: "var(--bg-panel)",
+                border: `1px solid var(--border)`, borderRadius: 0, padding: "3px 2px", maxWidth: 84, }}
               >
                 <option value="">{stationedAt ? "唤回随行" : "随行"}</option>
                 {STATION_SPOTS.map((s) => (
@@ -92,8 +92,8 @@ export default function TeamModule({ zoneTheme, companionState, varTree, onSwitc
               onClick={() => setActiveNpcMenu(companionNpcEntry(companionState, slot.key, BRIEF[slot.key] ? { brief: BRIEF[slot.key] } : {}))}
               title="细看/切磋/送礼等"
               style={{
-                cursor: "pointer", fontSize: "var(--fs-2xs)", color: zoneTheme.accentDim,
-                padding: "5px 7px", borderRadius: 0, border: `1px solid ${zoneTheme.border}`,
+                cursor: "pointer", fontSize: "var(--fs-2xs)", color: "var(--accent-dim)",
+                padding: "5px 7px", borderRadius: 0, border: `1px solid var(--border)`,
               }}
             >◈</span>
           </div>
