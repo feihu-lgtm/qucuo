@@ -97,7 +97,7 @@ describe("pure prompt builders", () => {
     const companionState = { snowLeopard: { unlocked: true, active: true, data: { name: "雪豹" } } };
     const input = { ...state, innerRoomName, companionState };
     const before = structuredClone(input);
-    expect(buildPresence(input)).toEqual({ visibleNpcs: [], visibleNpcsForAI: [{ name: "雪豹" }] });
+    expect(buildPresence(input)).toEqual({ visibleNpcs: [], visibleNpcsForAI: [{ name: "雪豹", companion: true }] });
     expect(buildPresence({ ...input, lockedDestName: "远方" }).visibleNpcs).toEqual(state.room.npcs);
     expect(buildPresence({ ...input, isTalk: true, lockedDestName: "远方" }).visibleNpcs).toEqual([]);
     expect(input).toEqual(before);

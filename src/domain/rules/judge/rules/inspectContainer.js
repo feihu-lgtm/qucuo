@@ -55,7 +55,9 @@ export function processInspectContainers(J, actions) {
       const ownerNpc = owner ? present.find((n) => n?.name === owner) : null;
       if (ownerNpc) {
         const charSpecial = envelope?.char?.special || {};
-        const playerScore = (Number(charSpecial?.身法) || 5) + (Number(charSpecial?.智谋) || 5) + Math.floor(roll() * 6);
+        // Review 修：0 是合法低值（真笨拙角色），只有缺失/非数才回退 5——||5 会把 0 抬成 5 洗白失手
+        const statOr = (v) => (Number.isFinite(Number(v)) && v !== null && v !== undefined ? Number(v) : 5);
+        const playerScore = statOr(charSpecial?.身法) + statOr(charSpecial?.智谋) + Math.floor(roll() * 6);
         if (playerScore < computeNpcAlertness(ownerNpc)) {
           facts.push({
             id: nextFactId(), op: "MUTATE_SOCIAL", npc: owner,

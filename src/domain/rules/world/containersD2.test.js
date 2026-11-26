@@ -112,3 +112,28 @@ describe("D2 翻箱目击与模板兜底", () => {
     expect(w?.pointBudget).toBe(0);
   });
 });
+
+describe("D2 Review/派工返修", () => {
+  it("出战同伴（companion:true）不被记见——无其他旁观者则零目击", () => {
+    const containers = { 木箱: { collapsed: false, presetItems: [], isTemplate: true, owner: "才旦" } };
+    const { J, facts } = mkJ({ containers, npcs: [{ name: "明日香", companion: true }], roll: () => 0.1 });
+    processInspectContainers(J, [{ kind: "inspect_container", target: "木箱" }]);
+    expect(facts.filter((f) => f.op === "MUTATE_SOCIAL")).toHaveLength(0);
+  });
+  it("非商业房带 residentNpcName 归民居，owner 不归零", () => {
+    expect(classifyRoomNature({ districtName: "大草甸", innerRoomName: "丹增的帐篷", innerDef: { residentNpcName: "丹增" } })).toBe("home");
+    const owner = deriveContainerOwner({ districtName: "大草甸", innerRoomName: "丹增的帐篷", innerDef: { residentNpcName: "丹增" }, nature: "home" });
+    expect(owner).toBe("丹增");
+  });
+  it("山口类内层房名归野外", () => {
+    expect(classifyRoomNature({ districtName: "大草甸", innerRoomName: "熊山口", innerDef: null })).toBe("wild");
+  });
+  it("身法 0 不被抬成 5：0+0+roll 低位必撞破", () => {
+    const containers = { 木箱: { collapsed: false, presetItems: [], isTemplate: true, owner: "才旦" } };
+    const { J, facts } = mkJ({ containers, npcs: [{ name: "才旦", levelCap: 0 }], roll: () => 0 });
+    J.envelope.char.special = { 身法: 0, 智谋: 0 };
+    processInspectContainers(J, [{ kind: "inspect_container", target: "木箱" }]);
+    // 0+0+0=0 < alertness 6 → 撞破记怨
+    expect(facts.some((f) => f.op === "MUTATE_SOCIAL" && f.affectionDelta === -3)).toBe(true);
+  });
+});
