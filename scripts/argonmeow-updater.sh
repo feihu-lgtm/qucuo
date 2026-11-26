@@ -79,6 +79,9 @@ if [ -d "$TARGET" ]; then
   # 验证失败就回滚无门，比整目录替换时代更危险。cp 保留（旧页面全程在线），但失败即退。
   if ! sudo -n cp -a "$TARGET" "$backup"; then
     echo "[qucuo-updater] backup copy failed; aborting before touching TARGET" >&2
+    # Review 修：磁盘满中断会留半成品备份——timer 每分钟重试各造一份新目录、
+    # 而清理只在成功部署后跑，磁盘会被半成品越填越满。失败即清掉本次半成品。
+    sudo -n rm -rf "$backup" 2>/dev/null || true
     rm -rf "$stage"
     exit 1
   fi

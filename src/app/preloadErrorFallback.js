@@ -22,11 +22,17 @@ export function installPreloadErrorFallback({
   };
   const handler = (event) => {
     event.preventDefault();
-    if (!st) { manualNotice(); return; }
+    // Review 修：手动刷新路径也要先尽力存档——autosave 走 IDB/LS 不依赖 sessionStorage，
+    // 玩家手动刷新前不存会丢未存档进度（错误边界卸载后连关页兜底都没了）。
+    const saveThenNotice = () => {
+      try { saveSnapshot?.(); } catch { /* 尽力 */ }
+      manualNotice();
+    };
+    if (!st) { saveThenNotice(); return; }
     let last = 0;
-    try { last = Number(st.getItem(KEY) || 0); } catch { manualNotice(); return; } // getItem 抛=不可用
+    try { last = Number(st.getItem(KEY) || 0); } catch { saveThenNotice(); return; } // getItem 抛=不可用
     if (now() - last < 30_000) return; // 30 秒内只刷新一次——防刷新死循环
-    try { st.setItem(KEY, String(now())); } catch { manualNotice(); return; } // setItem 抛=不可用
+    try { st.setItem(KEY, String(now())); } catch { saveThenNotice(); return; } // setItem 抛=不可用
     try { saveSnapshot?.(); } catch { /* 存档失败不阻塞刷新 */ }
     doReload();
   };

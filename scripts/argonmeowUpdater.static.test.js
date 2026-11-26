@@ -9,7 +9,7 @@ describe("argonmeow-updater 关键路径静态断言", () => {
     const backupIdx = src.indexOf("backup copy failed; aborting");
     expect(backupIdx).toBeGreaterThan(-1);
     // 备份失败分支必须 exit 1
-    const branch = src.slice(backupIdx, backupIdx + 200);
+    const branch = src.slice(backupIdx, backupIdx + 400);
     expect(branch).toContain("exit 1");
     // 备份块必须出现在 assets 合并写入之前
     const mergeIdx = src.indexOf('cp -a "$stage/assets/." "$TARGET/assets/"');
