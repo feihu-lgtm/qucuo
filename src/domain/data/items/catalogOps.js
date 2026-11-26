@@ -179,4 +179,17 @@ export function useConsumable(consumable, char) {
   }
   return { ok: false, reason: "这东西一时看不出该怎么用。" };
 }
-
+// F1 真机验收修：consumable 判定单一来源——实例 consumable → 未盾图鉴药效 →
+// category "food" 默认可食（hpRestore 0.08 与广汉干粮/官造青稞干粮/烹饪同基准）。
+// 此前散落四处的二源判定漏了 food 类：catalog 里 food 物件多不写字段（青稞炒面），
+// 裸「干粮」连图鉴条目都没有——吃干粮走出示旁路零消耗，判官却照叙事签回血。
+// noCatalog 盾只挡图鉴名撞车，不挡 food 类固有声（食物可食是品类语义不是图鉴神力）。
+export function consumableOfItem(item) {
+  if (!item || typeof item !== "object") return null;
+  if (item.consumable) return item.consumable;
+  if (!item.noCatalog && item.name && CATALOG_INDEX[item.name]?.consumable) {
+    return CATALOG_INDEX[item.name].consumable;
+  }
+  if (item.category === "food") return { hpRestore: 0.08 };
+  return null;
+}

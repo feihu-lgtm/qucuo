@@ -276,6 +276,27 @@ describe("WO-16F-F2a 判官路由集成", () => {
     gameActions.setInv([]);
   });
 
+  it("F1：food 类干粮无 consumable 字段也走服用消耗账（背包-1）", async () => {
+    gameActions.setInv([{ id: "it_f1", name: "干粮", category: "food", quality: "白", equipped: false }]);
+    gameActions.setChar({ ...(gameStore.getState().char || {}), hp: [80, 100] });
+    const hpBefore = gameStore.getState().char?.hp?.[0];
+    const out = executeJudgeRoutes([{ kind: "use_item", item: "干粮", itemId: "it_f1", target: "无", text: "拿出一块干粮吃掉垫垫肚子" }]);
+    expect(out.receipts[0].ok).toBe(true);
+    expect(out.receipts[0].text).toContain("已服用生效");
+    expect(gameStore.getState().inv).toHaveLength(0);
+    const hpAfter = gameStore.getState().char?.hp?.[0];
+    expect(hpAfter).toBeGreaterThanOrEqual(hpBefore); // 回血生效且只经一路
+    gameActions.setInv([]);
+  });
+
+  it("F1 classifyUseItem：food 归 consumable、noCatalog 不挡食物本性、misc 钥匙仍出示", async () => {
+    const { classifyUseItem } = await import("./judgeRoutes.js");
+    const state = { inv: [] };
+    expect(classifyUseItem(state, { name: "干粮", category: "food" })).toBe("consumable");
+    expect(classifyUseItem(state, { name: "干粮", category: "food", noCatalog: true })).toBe("consumable");
+    expect(classifyUseItem(state, { name: "溪边小屋钥匙", category: "misc" })).toBe("present");
+  });
+
   it("D1 classifyUseItem 纯函数三分流", async () => {
     const { classifyUseItem } = await import("./judgeRoutes.js");
     const state = { inv: [] };

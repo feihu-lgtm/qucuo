@@ -16,7 +16,19 @@ export function processInspectContainers(J, actions) {
   for (let action of actions) {
     if (action.kind !== "inspect_container" || talkOnly) continue;
     // D2 坑⑥：前哨渲染带「(有主:X)」括注，小模型可能连括号抄进 target——入口先清洗
-    const targetName = String(action.target || "").replace(/[（(](?:户主|有主)[:：][^）)]+[）)]$/, "").trim();
+    let targetName = String(action.target || "").replace(/[（(](?:户主|有主)[:：][^）)]+[）)]$/, "").trim();
+    // F2 真机验收修：玩家指名容器确定性命中——已坍缩容器不进前哨名单，
+    // 模型只能抄到别的容器（指名「柜台」落「货架」），坍缩账被改嫁绕过。
+    // 用玩家原话 text 扫房间容器键名：命中即改 target 到被指名那只（哪怕已坍缩——
+    // 坍缩拦截在下方照常触发「已坍缩翻不出新东西」，绝不改路由到别的容器）。
+    // 多容器命中取最长名（「柜台角落」优先于「柜台」），并列长则按声明序取先——确定性。
+    const keys = Object.keys(envelope.containers || {});
+    const text = String(action.text || "");
+    const hits = keys.filter((k) => k && text.includes(k));
+    if (hits.length) {
+      hits.sort((a, b) => b.length - a.length || keys.indexOf(a) - keys.indexOf(b));
+      if (hits[0] !== targetName) targetName = hits[0];
+    }
     action = { ...action, target: targetName };
     const container = envelope.containers?.[action.target];
     // WO-22B-P2 裁决：悬空秘宝是地域级落点事件而非容器普通内容物——容器坍缩只封锁

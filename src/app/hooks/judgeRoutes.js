@@ -12,6 +12,7 @@ import { consumeItem } from "../../features/items/logic.js";
 import { findInvItem } from "../../features/intent/logic.js";
 import { itemNameOf } from "../../domain/rules/intent/actionKinds.js";
 import { CATALOG_INDEX } from "../../domain/data/items/catalog.js";
+import { consumableOfItem } from "../../domain/data/items/catalogOps.js";
 import { QUCUO_MAP, resolveExit, isNodeUnlocked } from "../../domain/data/map/qucuoMap.js";
 import { visibleInnerExits, getDistrictAnchor, hasInnerMap, resolveInnerExit } from "../../domain/rules/map/innerMap.js";
 import { serializeSquares } from "../../domain/rules/map/mapSquares.js";
@@ -169,7 +170,7 @@ export function classifyUseItem(state, itemObjOrName) {
     : itemObjOrName;
   if (!item || typeof item !== "object") return "present";
   const shielded = item.noCatalog;
-  const consumable = item.consumable || (shielded ? null : CATALOG_INDEX[itemNameOf(item)]?.consumable);
+  const consumable = consumableOfItem(item);
   if (consumable) return "consumable";
   // Review 修：accessory 里混着凭帖信物（赌石邀帖/私印等纸面物）——它们不带任何
   // 数值加持（sixDim/effect/atk/def 皆无），不是拿来穿戴佩挂的装备，走出示而非演练。

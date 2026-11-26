@@ -23,7 +23,7 @@
 //                   只有天机券实际编译入袋的新品计数（materializeFacts 写账），
 //                   预设物/备料物/悬空秘宝不占配额。账本不存在时按 0 读，不破坏旧档。
 import { factionTensionProxy } from "../conflict/tension.js";
-import { CATALOG_INDEX } from "../../data/items/catalog.js";
+import { consumableOfItem } from "../../data/items/catalogOps.js";
 
 const ACTION_RISK = {
   steal: 2, duel: 2,
@@ -77,8 +77,7 @@ export function buildCausalBudgetInput(state = {}, intakeResult = {}, opts = {})
     const item = (inv || []).find((it) => typeof it === "object" && it && (
       (itemId && it.id === itemId) || (!itemId && itemName && it.name === itemName)
     ));
-    if (!item) return false;
-    return !!(item.consumable || (!item.noCatalog && item.name && CATALOG_INDEX[item.name]?.consumable));
+    return !!consumableOfItem(item);
   };
   let costPaid = 0;
   for (const action of actions) {

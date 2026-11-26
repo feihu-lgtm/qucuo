@@ -137,3 +137,30 @@ describe("D2 Review/派工返修", () => {
     expect(facts.some((f) => f.op === "MUTATE_SOCIAL" && f.affectionDelta === -3)).toBe(true);
   });
 });
+
+describe("F2 容器坍缩不被绕过", () => {
+  const twoContainers = {
+    柜台: { collapsed: true, presetItems: [], isTemplate: true, owner: "掌柜" },
+    货架: { collapsed: false, presetItems: [], isTemplate: true, owner: "掌柜" },
+  };
+  it("指名已坍缩柜台：text 扫描改 target 回柜台，坍缩拦截不改嫁货架", () => {
+    const { J, facts, notes } = mkJ({ containers: twoContainers, npcs: [], roll: () => 0.1 });
+    // intake 因柜台坍缩不可见而抄了货架——但玩家原话指名柜台
+    processInspectContainers(J, [{ kind: "inspect_container", target: "货架", text: "再把这柜台底朝天翻一遍" }]);
+    expect(facts.filter((f) => f.op === "GRANT_ITEM")).toHaveLength(0);
+    expect(notes.some((n) => n.includes("柜台已坍缩"))).toBe(true);
+    expect(notes.some((n) => n.includes("货架")) && facts.some((f) => f.from === "货架")).toBe(false);
+  });
+  it("未指名时 target 原样生效（货架正常翻）", () => {
+    const { J, notes } = mkJ({ containers: twoContainers, npcs: [], roll: () => 0.3 });
+    processInspectContainers(J, [{ kind: "inspect_container", target: "货架", text: "翻翻货架" }]);
+    expect(notes.some((n) => n.includes("没什么可翻"))).toBe(false);
+  });
+  it("多容器命中取最长名确定性", () => {
+    const cs = { 柜台: { collapsed: false, presetItems: [], isTemplate: true, owner: "" }, 柜台角落: { collapsed: false, presetItems: [], isTemplate: true, owner: "" } };
+    const { J, notes } = mkJ({ containers: cs, npcs: [], roll: () => 0.3 });
+    processInspectContainers(J, [{ kind: "inspect_container", target: "柜台", text: "把柜台角落翻一遍" }]);
+    // text 含「柜台角落」也含「柜台」——最长命中「柜台角落」
+    expect(notes.some((n) => n.includes("没什么可翻"))).toBe(false);
+  });
+});

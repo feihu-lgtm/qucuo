@@ -1,7 +1,7 @@
 import { add, applyWrite, set, updateField } from "../../domain/rules/state/applyWrite.js";
 import { effectiveMaxHp } from "../../domain/data/kungfu/qucuoKungfu.js";
 import { CATALOG_INDEX } from "../../domain/data/items/catalog.js";
-import { useConsumable as resolveConsumable } from "../../domain/data/items/catalogOps.js";
+import { useConsumable as resolveConsumable, consumableOfItem } from "../../domain/data/items/catalogOps.js";
 import { tallyAdd } from "../../domain/rules/memory/tally.js";
 import { makeBuffFlag, mergeCombatBuff } from "../../utils/buffSystem.js";
 import { isGroundItemHere } from "../../domain/rules/map/groundScope.js";
@@ -15,9 +15,9 @@ export function consumeItem(state, item) {
   // noCatalog 盾：判官条件券新铸的拾取物撞图鉴名也不吃图鉴药效——
   // 它的数值出生证明只有 warrant 锁定值，预算外功效不能靠名字偷渡。
   const shielded = typeof item === "object" && item?.noCatalog;
-  const consumable = (typeof item === "object" && item?.consumable)
-    || (shielded ? null : CATALOG_INDEX[itemName]?.consumable)
-    || null;
+  // F1：consumable 判定走 catalogOps 单一来源（含 food 类默认可食）——
+  // shielded 判断保留在 helper 内（noCatalog 只挡图鉴不挡食物本性）。
+  const consumable = (typeof item === "object" && item) ? consumableOfItem(item) : null;
   if (!consumable) return { logs: [{ t: "sys", text: `  ${itemName}并非可服用之物。` }] };
 
   const result = resolveConsumable(consumable, state.char);
