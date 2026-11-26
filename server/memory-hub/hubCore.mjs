@@ -536,6 +536,30 @@ export function createHubStore(dbOrPath = ":memory:") {
     return { ok: true, status: 200, spaceId, slotId, deleted: info.changes };
   }
 
+  // E1 空间凭证（只存/只比 SHA-256 hex，明文绝不进库）
+  function createSpace(spaceId, tokenHash, createdAt = Date.now()) {
+    if (!spaceId || !tokenHash) throw new Error("spaceId/tokenHash required");
+    db.prepare("INSERT INTO spaces(space_id, token_hash, created_at) VALUES (?, ?, ?)").run(spaceId, tokenHash, createdAt);
+    return { spaceId, createdAt };
+  }
+
+  function spaceTokenHash(spaceId) {
+    const row = db.prepare("SELECT token_hash FROM spaces WHERE space_id = ?").get(spaceId);
+    return row?.token_hash || null;
+  }
+
+  function rotateSpaceToken(spaceId, newHash) {
+    const r = db.prepare("UPDATE spaces SET token_hash = ? WHERE space_id = ?").run(newHash, spaceId);
+    return r.changes > 0;
+  }
+
+  function spaceMeta(spaceId) {
+    const saves = db.prepare("SELECT COUNT(*) AS n FROM saves WHERE space_id = ?").get(spaceId)?.n || 0;
+    const chunks = db.prepare("SELECT COUNT(*) AS n FROM prose_chunks WHERE space_id = ?").get(spaceId)?.n || 0;
+    const registered = db.prepare("SELECT created_at FROM spaces WHERE space_id = ?").get(spaceId);
+    return { spaceId, saveCount: saves, chunkCount: chunks, registered: Boolean(registered), createdAt: registered?.created_at || null };
+  }
+
   function deleteSpace(spaceId) {
     if (!spaceId) throw new Error("spaceId is required");
     db.exec("BEGIN IMMEDIATE");
@@ -551,6 +575,9 @@ export function createHubStore(dbOrPath = ":memory:") {
       for (const row of rows) tombStmt.run(spaceId, row.slot_id, row.rev);
       deletedChunks = stmtDeleteChunks.run(spaceId).changes;
       deletedSaves = stmtDeleteSaves.run(spaceId).changes;
+      // E1 复审修：凭证行【保留】——wipe 是空间主自己的操作，删掉凭证行只会把主人
+      // 锁死在「绑定显示正常但永远 401」状态（备份无法恢复）；凭证只存哈希无正文泄漏，
+      // 且能删空间的本来就是持凭证者，删行没有安全收益。要换凭证走管理员 rotate。
       db.exec("COMMIT");
     } catch (err) {
       try { db.exec("ROLLBACK"); } catch { /* ignore */ }
@@ -591,6 +618,10 @@ export function createHubStore(dbOrPath = ":memory:") {
     queryProseChunks,
     hasProseAfter,
     deleteSave,
+    createSpace,
+    spaceTokenHash,
+    rotateSpaceToken,
+    spaceMeta,
     deleteSpace,
     close,
   };

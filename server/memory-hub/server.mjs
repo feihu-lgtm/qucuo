@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { timingSafeEqual } from "node:crypto";
+import { timingSafeEqual, randomBytes, createHash } from "node:crypto";
 import { createHubStore, assertNoApiKeyPayload } from "./hubCore.mjs";
 
 // node:http 入站 header 名已全部小写化（RFC 层面大小写不敏感），无需另行 canonicalize。
@@ -19,6 +19,43 @@ function tokenValid(presented, expected) {
     return false;
   }
 }
+
+function sha256hex(text) {
+  return createHash("sha256").update(String(text)).digest("hex");
+}
+
+function hashEqual(presented, storedHash) {
+  if (!presented || !storedHash) return false;
+  const a = Buffer.from(sha256hex(presented));
+  const b = Buffer.from(String(storedHash));
+  if (a.length !== b.length) return false;
+  try {
+    return timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
+
+// E1 写请求限流：同一来源 IP 每分钟最多 60 次写，超出 429。
+// 内存滑动窗口，键用 req.socket.remoteAddress——不盲信 x-forwarded-for
+// （反向代理部署时由部署方保证 socket 地址可信或自行前置限流）。
+const WRITE_RATE_LIMIT = 60;
+const WRITE_RATE_WINDOW_MS = 60_000;
+const writeBuckets = new Map(); // ip -> number[]（时间戳升序）
+function writeRateLimited(ip, now = Date.now()) {
+  const key = ip || "unknown";
+  const arr = (writeBuckets.get(key) || []).filter((t) => now - t < WRITE_RATE_WINDOW_MS);
+  if (!arr.length) writeBuckets.delete(key); // 窗口滑空即删 key——不无限留桶
+  if (arr.length >= WRITE_RATE_LIMIT) {
+    writeBuckets.set(key, arr);
+    return true;
+  }
+  arr.push(now);
+  writeBuckets.set(key, arr);
+  return false;
+}
+
+export function _resetWriteRateBuckets() { writeBuckets.clear(); }
 
 function readJsonBody(req, limitBytes = 2 * 1024 * 1024) {
   return new Promise((resolve, reject) => {
@@ -100,9 +137,89 @@ export function createHubServer({
         return;
       }
 
-      // /api/* 全部要 token——/health 是唯一公开端点
-      if (token && path.startsWith("/api/") && !tokenValid(req.headers[HUB_TOKEN_HEADER], token)) {
-        sendJson(res, 401, { error: "unauthorized" });
+      // E1 写限流前置（复审必修）：鉴权与业务路由之前统一计数——无论凭证对错、
+      // 空间存在与否，写请求（PUT/POST/DELETE；query/has-after 读型 POST 除外）
+      // 都计入同一 IP 60/min 配额，超出 429。错误凭证暴力试探、create/rotate 全覆盖。
+      const isWriteMethod = method === "PUT" || method === "POST" || method === "DELETE";
+      const readlikePostEarly = method === "POST" && /\/(query|has-after)$/.test(path);
+      if (token && isWriteMethod && !readlikePostEarly && writeRateLimited(req.socket?.remoteAddress)) {
+        sendJson(res, 429, { error: "rate_limited" });
+        return;
+      }
+
+      // E1 鉴权模型：
+      // · 空间数据路径（/api/spaces?/:spaceId/…）只认该空间自己的凭证——
+      //   库内 SHA-256 比对；全站 MEMORY_HUB_TOKEN 在此一律无效（降为管理员凭证）。
+      // · 运维端点（rotate/meta）只认管理员 token。
+      // · 无 write-claim：未登记空间一律 401——legacy 空间须管理员 rotate-token
+      //   provision 一次性新凭证后用户替换；普通写请求绝不自动登记（防先写即占）。
+      // · insecure 本机模式（无 token）跳过全部鉴权，仅限 loopback 开发。
+      const presented = req.headers[HUB_TOKEN_HEADER];
+      const insecure = !token;
+      const isAdmin = token && tokenValid(presented, token);
+
+      // 创建空间：管理员或 insecure 可建（写请求，计入限流）——凭证只返回一次。
+      if (method === "POST" && path === "/api/space") {
+        if (!insecure && !isAdmin) {
+          sendJson(res, 401, { error: "unauthorized" });
+          return;
+        }
+        const spaceId = `sp_${randomBytes(12).toString("hex")}`;
+        const spaceToken = randomBytes(24).toString("hex");
+        const createdAt = Date.now();
+        store.createSpace(spaceId, sha256hex(spaceToken), createdAt);
+        sendJson(res, 200, { spaceId, token: spaceToken, createdAt });
+        return;
+      }
+
+      // 运维端点：旋转凭证 / 空间元信息（不返回正文）——只认管理员 token
+      const rotateMatch = path.match(/^\/api\/spaces\/([^/]+)\/rotate-token$/);
+      if (rotateMatch && method === "POST") {
+        if (!insecure && !isAdmin) {
+          sendJson(res, 401, { error: "unauthorized" });
+          return;
+        }
+        const spaceId = decodeURIComponent(rotateMatch[1]);
+        const next = randomBytes(24).toString("hex");
+        const nextHash = sha256hex(next);
+        if (store.spaceTokenHash(spaceId)) {
+          store.rotateSpaceToken(spaceId, nextHash);
+        } else {
+          // legacy provision（协调者裁决）：管理员可为未登记空间 upsert 凭证行——
+          // 一次性新凭证只返回一次，由管理员转交用户替换；此操作不读正文。
+          store.createSpace(spaceId, nextHash, Date.now());
+        }
+        sendJson(res, 200, { spaceId, token: next, rotatedAt: Date.now() });
+        return;
+      }
+      const metaMatch = path.match(/^\/api\/spaces\/([^/]+)\/meta$/);
+      if (metaMatch && method === "GET") {
+        if (!insecure && !isAdmin) {
+          sendJson(res, 401, { error: "unauthorized" });
+          return;
+        }
+        sendJson(res, 200, store.spaceMeta(decodeURIComponent(metaMatch[1])));
+        return;
+      }
+
+      // 空间数据路径统一鉴权：单复数 /api/space(s)/:spaceId 都覆盖
+      const spaceDataMatch = path.match(/^\/api\/spaces?\/([^/]+)(\/|$)/);
+      if (spaceDataMatch) {
+        const spaceId = decodeURIComponent(spaceDataMatch[1]);
+        if (!insecure) {
+          // write-claim 已删除（复审必修）：公网「先写即占空间」不可接受——
+          // 未登记空间一律 401，legacy 空间须由管理员 rotate/provision 登记。
+          if (!hashEqual(presented, store.spaceTokenHash(spaceId))) {
+            sendJson(res, 401, { error: "unauthorized" });
+            return;
+          }
+          // 旋转竞态（Review SEC）：凭证在 body 解析期间被旋转时，旧凭证的在飞
+          // 写/读不得继续——handler 在 await 之后调 stillValid() 复核当前哈希。
+          req.__spaceRevalidate = (sid) => hashEqual(presented, store.spaceTokenHash(sid));
+        }
+      } else if (path.startsWith("/api/")) {
+        // 非空间路径的 /api/*（当前无此类端点）默认拒绝
+        sendJson(res, 404, { error: "not_found" });
         return;
       }
 
@@ -117,6 +234,10 @@ export function createHubServer({
         }
         if (method === "PUT") {
           const body = await readJsonBody(req);
+          if (req.__spaceRevalidate && !req.__spaceRevalidate(spaceId)) {
+            sendJson(res, 401, { error: "unauthorized" });
+            return;
+          }
           assertNoApiKeyPayload(body);
           const result = store.putSave(spaceId, slotId, body);
           sendJson(res, result.status, result);
@@ -127,6 +248,10 @@ export function createHubServer({
           // 是玩家在客户端显式裁决「确认删除/本地覆盖云端」，自动流程绝不许带。
           let body = {};
           try { body = await readJsonBody(req); } catch { body = {}; }
+          if (req.__spaceRevalidate && !req.__spaceRevalidate(spaceId)) {
+            sendJson(res, 401, { error: "unauthorized" });
+            return;
+          }
           const force = url.searchParams.get("force") === "1" || body?.force === true;
           const expectedRev = Number.isInteger(body?.expectedRev)
             ? body.expectedRev
@@ -148,6 +273,10 @@ export function createHubServer({
       if (proseAppendMatch && method === "POST") {
         const spaceId = decodeURIComponent(proseAppendMatch[1]);
         const body = await readJsonBody(req);
+        if (req.__spaceRevalidate && !req.__spaceRevalidate(spaceId)) {
+          sendJson(res, 401, { error: "unauthorized" });
+          return;
+        }
         assertNoApiKeyPayload(body);
         const result = store.appendProseChunks(spaceId, body.batchId, body.chunks);
         sendJson(res, 200, result);
@@ -158,6 +287,10 @@ export function createHubServer({
       if (proseHasAfterMatch && method === "POST") {
         const spaceId = decodeURIComponent(proseHasAfterMatch[1]);
         const body = await readJsonBody(req);
+        if (req.__spaceRevalidate && !req.__spaceRevalidate(spaceId)) {
+          sendJson(res, 401, { error: "unauthorized" });
+          return;
+        }
         assertNoApiKeyPayload(body);
         const result = store.hasProseAfter(spaceId, body);
         sendJson(res, 200, result);
@@ -168,6 +301,10 @@ export function createHubServer({
       if (proseQueryMatch && method === "POST") {
         const spaceId = decodeURIComponent(proseQueryMatch[1]);
         const body = await readJsonBody(req);
+        if (req.__spaceRevalidate && !req.__spaceRevalidate(spaceId)) {
+          sendJson(res, 401, { error: "unauthorized" });
+          return;
+        }
         assertNoApiKeyPayload(body);
         const result = store.queryProseChunks(spaceId, body);
         sendJson(res, 200, result);

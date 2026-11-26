@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { extractTerms, segmentToSpaceString } from "./ftsTokenizer.mjs";
 import { createHubStore } from "./hubCore.mjs";
-import { createHubServer } from "./server.mjs";
+import { createHubServer, _resetWriteRateBuckets } from "./server.mjs";
 
 describe("ftsTokenizer", () => {
   it("extracts 2-4 char Chinese n-grams, filters stop words, and keeps long names and ASCII", () => {
@@ -496,7 +496,8 @@ describe("hub token 鉴权", () => {
     if (oldEnv !== undefined) process.env.MEMORY_HUB_TOKEN = oldEnv;
     if (oldAllow !== undefined) process.env.ALLOW_INSECURE_LOCAL_ONLY = oldAllow;
 
-    const { server } = createHubServer({ dbPath: ":memory:", token: "secret-token" });
+    _resetWriteRateBuckets();
+    const { server } = createHubServer({ dbPath: ":memory:", token: "test-admin-token" });
     await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
     const { port } = server.address();
     const base = `http://127.0.0.1:${port}`;
@@ -510,9 +511,153 @@ describe("hub token 鉴权", () => {
       // 错 token → 401
       const badTok = await fetch(`${base}/api/spaces/spX/saves`, { headers: { "x-memory-hub-token": "wrong" } });
       assert.equal(badTok.status, 401);
-      // 正确 token → 200
-      const okTok = await fetch(`${base}/api/spaces/spX/saves`, { headers: { "x-memory-hub-token": "secret-token" } });
-      assert.equal(okTok.status, 200);
+      // E1：管理员 token 读不到玩家正文/列表——即使值正确也 401
+      const adminTok = await fetch(`${base}/api/spaces/spX/saves`, { headers: { "x-memory-hub-token": "test-admin-token" } });
+      assert.equal(adminTok.status, 401);
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+    }
+  });
+});
+
+describe("E1 空间分凭证", () => {
+  it("POST /api/space 发证只一次、库内只存哈希；跨空间读写删一律 401；claim 兼容；429 生效", async () => {
+    _resetWriteRateBuckets();
+    const { server, store } = createHubServer({ dbPath: ":memory:", token: "test-admin-token" });
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const { port } = server.address();
+    const base = `http://127.0.0.1:${port}`;
+    const admin = { "x-memory-hub-token": "test-admin-token" };
+    try {
+      // 创建空间需管理员凭证；无凭证 401
+      const noAuth = await fetch(`${base}/api/space`, { method: "POST" });
+      assert.equal(noAuth.status, 401);
+      const createRes = await fetch(`${base}/api/space`, { method: "POST", headers: admin });
+      assert.equal(createRes.status, 200);
+      const created = await createRes.json();
+      assert.ok(created.spaceId.startsWith("sp_"));
+      assert.equal(typeof created.token, "string");
+      assert.equal(typeof created.createdAt, "number");
+      // 库内只存 SHA-256——明文凭证绝不落库
+      const row = store.db.prepare("SELECT token_hash FROM spaces WHERE space_id = ?").get(created.spaceId);
+      assert.ok(row.token_hash);
+      assert.notEqual(row.token_hash, created.token);
+      assert.equal(row.token_hash.length, 64);
+      const spaceAuth = { "x-memory-hub-token": created.token };
+
+      // 空间自己的凭证可写可读
+      const put = await fetch(`${base}/api/spaces/${created.spaceId}/saves/slot1`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...spaceAuth },
+        body: JSON.stringify({ expectedRev: 0, payloadEnc: "cipher", updatedAt: 1 }),
+      });
+      assert.equal(put.status, 200);
+      const list = await fetch(`${base}/api/spaces/${created.spaceId}/saves`, { headers: spaceAuth });
+      assert.equal(list.status, 200);
+
+      // 第二个空间：跨空间读/写/删一律 401
+      const create2 = await fetch(`${base}/api/space`, { method: "POST", headers: admin });
+      const other = await create2.json();
+      const otherAuth = { "x-memory-hub-token": other.token };
+      const xRead = await fetch(`${base}/api/spaces/${created.spaceId}/saves`, { headers: otherAuth });
+      assert.equal(xRead.status, 401);
+      const xWrite = await fetch(`${base}/api/spaces/${created.spaceId}/saves/slot9`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...otherAuth },
+        body: JSON.stringify({ expectedRev: 0, payloadEnc: "x", updatedAt: 1 }),
+      });
+      assert.equal(xWrite.status, 401);
+      const xDel = await fetch(`${base}/api/space/${created.spaceId}`, { method: "DELETE", headers: otherAuth });
+      assert.equal(xDel.status, 401);
+      // 反向同样隔离
+      const xRead2 = await fetch(`${base}/api/spaces/${other.spaceId}/saves`, { headers: spaceAuth });
+      assert.equal(xRead2.status, 401);
+
+      // 管理员凭证不能代替空间凭证读写删玩家数据
+      const adminRead = await fetch(`${base}/api/spaces/${created.spaceId}/saves/slot1`, { headers: admin });
+      assert.equal(adminRead.status, 401);
+      const adminDel = await fetch(`${base}/api/space/${created.spaceId}`, { method: "DELETE", headers: admin });
+      assert.equal(adminDel.status, 401);
+
+      // 运维端点：meta 不含正文；rotate 后旧凭证失效新凭证生效
+      const meta = await fetch(`${base}/api/spaces/${created.spaceId}/meta`, { headers: admin });
+      assert.equal(meta.status, 200);
+      const metaJson = await meta.json();
+      assert.equal(metaJson.saveCount, 1);
+      assert.equal(metaJson.payloadEnc, undefined);
+      const metaNoAdmin = await fetch(`${base}/api/spaces/${created.spaceId}/meta`, { headers: spaceAuth });
+      assert.equal(metaNoAdmin.status, 401);
+      const rotate = await fetch(`${base}/api/spaces/${created.spaceId}/rotate-token`, { method: "POST", headers: admin });
+      assert.equal(rotate.status, 200);
+      const rotated = await rotate.json();
+      const staleAuth = await fetch(`${base}/api/spaces/${created.spaceId}/saves`, { headers: spaceAuth });
+      assert.equal(staleAuth.status, 401);
+      const freshAuth = await fetch(`${base}/api/spaces/${created.spaceId}/saves`, { headers: { "x-memory-hub-token": rotated.token } });
+      assert.equal(freshAuth.status, 200);
+
+      // 无 write-claim（复审必修）：任意写不能 claim 未登记空间——一律 401
+      _resetWriteRateBuckets();
+      const claimTok = { "x-memory-hub-token": "legacy-shared-token" };
+      const claimPut = await fetch(`${base}/api/spaces/spLegacy/saves/slot1`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...claimTok },
+        body: JSON.stringify({ expectedRev: 0, payloadEnc: "c", updatedAt: 1 }),
+      });
+      assert.equal(claimPut.status, 401);
+      // 该空间仍无凭证行——「先写即占」不存在
+      assert.equal(store.spaceTokenHash("spLegacy"), null);
+
+      // 最小安全迁移：管理员 rotate-token 为 legacy 空间 upsert 一次性新凭证
+      const provLegacy = await fetch(`${base}/api/spaces/spLegacy/rotate-token`, { method: "POST", headers: admin });
+      assert.equal(provLegacy.status, 200);
+      const legacyJson = await provLegacy.json();
+      assert.equal(legacyJson.spaceId, "spLegacy");
+      const legacyAuth = { "x-memory-hub-token": legacyJson.token };
+      const legacyPut = await fetch(`${base}/api/spaces/spLegacy/saves/slot1`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...legacyAuth },
+        body: JSON.stringify({ expectedRev: 0, payloadEnc: "c", updatedAt: 1 }),
+      });
+      assert.equal(legacyPut.status, 200);
+      // provision 后 admin token 仍读不到正文
+      const adminReadLegacy = await fetch(`${base}/api/spaces/spLegacy/saves/slot1`, { headers: admin });
+      assert.equal(adminReadLegacy.status, 401);
+
+      // 错误凭证写也计入限流（前置计数，不看凭证对错）
+      _resetWriteRateBuckets();
+      let wrongLast = 0;
+      for (let i = 0; i < 61; i += 1) {
+        const r = await fetch(`${base}/api/spaces/${created.spaceId}/saves/slot1`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", "x-memory-hub-token": "wrong-cred" },
+          body: JSON.stringify({ expectedRev: 0, payloadEnc: "c", updatedAt: i, force: true }),
+        });
+        wrongLast = r.status;
+      }
+      assert.equal(wrongLast, 429);
+
+      // create/rotate 也计入限流
+      _resetWriteRateBuckets();
+      let createLast = 0;
+      for (let i = 0; i < 61; i += 1) {
+        const r = await fetch(`${base}/api/space`, { method: "POST", headers: admin });
+        createLast = r.status;
+      }
+      assert.equal(createLast, 429);
+
+      // 429：同一 IP 每分钟写超 60 次返 429
+      _resetWriteRateBuckets();
+      let lastStatus = 0;
+      for (let i = 0; i < 61; i += 1) {
+        const r = await fetch(`${base}/api/spaces/${created.spaceId}/saves/slot1`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", "x-memory-hub-token": rotated.token },
+          body: JSON.stringify({ expectedRev: -1, payloadEnc: "c", updatedAt: i, force: true }),
+        });
+        lastStatus = r.status;
+      }
+      assert.equal(lastStatus, 429);
+      _resetWriteRateBuckets();
     } finally {
       await new Promise((resolve) => server.close(resolve));
     }
@@ -523,13 +668,20 @@ describe("HTTP server, DELETE /api/space/:spaceId + VACUUM, and API key rejectio
   it("physically deletes space data + FTS entries and runs VACUUM on DELETE /api/space/:spaceId", async () => {
     const dir = mkdtempSync(join(tmpdir(), "qucuo-hub-"));
     const dbPath = join(dir, "hub.sqlite");
+    _resetWriteRateBuckets();
     const { server, store } = createHubServer({ dbPath, token: "test-hub-token" });
     await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
     const { port } = server.address();
     const base = `http://127.0.0.1:${port}`;
-    const auth = { "x-memory-hub-token": "test-hub-token" };
+    let auth = { "x-memory-hub-token": "test-hub-token" };
 
     try {
+      // E1：空间数据不再认管理员 token——先 rotate provision 出 spA 的空间凭证
+      const prov = await fetch(`${base}/api/spaces/spA/rotate-token`, { method: "POST", headers: auth });
+      assert.equal(prov.status, 200);
+      const provJson = await prov.json();
+      auth = { "x-memory-hub-token": provJson.token };
+
       const saveRes = await fetch(`${base}/api/spaces/spA/saves/slot1`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", ...auth },
@@ -607,6 +759,15 @@ describe("HTTP server, DELETE /api/space/:spaceId + VACUUM, and API key rejectio
       assert.equal(delJson.vacuumed, true);
 
       assert.equal(store.getSave("spA", "slot1"), null);
+      // E1 复审修：wipe 删数据但【保留】凭证行——空间主用原凭证可重建/恢复备份，
+      // 不会被锁在「绑定显示正常但永远 401」状态
+      assert.ok(store.spaceTokenHash("spA"));
+      const rewrite = await fetch(`${base}/api/spaces/spA/saves/slot1`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...auth },
+        body: JSON.stringify({ expectedRev: 0, payloadEnc: "cipherA3", updatedAt: 7, force: true }),
+      });
+      assert.equal(rewrite.status, 200);
       const ftsLeft = store.db.prepare("SELECT count(*) AS n FROM prose_fts WHERE prose_fts MATCH ?").get('"青铜"');
       assert.equal(ftsLeft.n, 0);
       const freelist = store.db.prepare("PRAGMA freelist_count").get();

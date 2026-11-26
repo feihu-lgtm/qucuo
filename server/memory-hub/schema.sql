@@ -10,6 +10,13 @@ CREATE TABLE IF NOT EXISTS save_tombstones (
   PRIMARY KEY (space_id, slot_id)
 );
 
+-- E1：按空间分凭证——space 创建时随机发凭证，库内只存 SHA-256 hex，绝不落明文。
+CREATE TABLE IF NOT EXISTS spaces (
+  space_id TEXT PRIMARY KEY,
+  token_hash TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS saves (
   space_id TEXT NOT NULL,
   slot_id TEXT NOT NULL,
