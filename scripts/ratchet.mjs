@@ -408,8 +408,8 @@ export const KNOWN_EXTERNAL_INFRA_CAP = {
 // 数字降了就必须在同一个 PR 里把这里改成新值，否则同样失败——上限永远等于现状，
 // 下一次回涨一处也能被抓到。
 export const KNOWN_UI_STRUCTURE_CAP = {
-  overlayFiles: 24,
-  inlineStyles: 2458,
+  overlayFiles: 18,
+  inlineStyles: 2448,
   rulesImporters: 82,
   portsImporters: 7,
   zoneThemeFiles: 91,

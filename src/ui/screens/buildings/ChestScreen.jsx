@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useOverlayCloseGuard } from "../../../utils/overlayClose.js";
+import ModalShell from "../../primitives/ModalShell.jsx";
 import { loadChest, saveChest } from "../../../domain/rules/map/homestead.js";
 
 // 库房木箱：存取物件。开局预填全套食材+调味料（见 homestead.js defaultChestStock）。
@@ -98,14 +99,18 @@ export default function ChestScreen({ building, inv, setInv, zoneTheme, inline, 
 
   if (inline) return panel;
 
+  // 遮罩原透明度 0.88，并入 --ink-overlay；面板自带黄铜描边与渐变底，外壳去壳。
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(4,4,10,0.88)", zIndex: 120,
-      display: "flex", alignItems: "center", justifyContent: "center" }}
-      onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
-      <div style={{ width: 520, maxWidth: "92vw", maxHeight: "86vh", overflowY: "auto",
-        border: "1px solid var(--ink-brass-deep)", borderRadius: 0 }} onClick={e => e.stopPropagation()}>
-        {panel}
-      </div>
-    </div>
+    <ModalShell
+      onClose={onClose}
+      layer="building"
+      mobile="none"
+      chrome={false}
+      showClose={false}
+      ariaLabel="建筑面板"
+      panelStyle={{ width: 520, maxWidth: "92vw", maxHeight: "86vh", overflowY: "auto", border: "1px solid var(--ink-brass-deep)" }}
+    >
+      {panel}
+    </ModalShell>
   );
 }

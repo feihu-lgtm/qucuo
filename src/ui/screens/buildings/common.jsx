@@ -2,15 +2,14 @@
 // ---------------------------------------------------------------------------
 // 从 InnScreen.jsx 抽出：原来寄生在"客栈屏"里的这三件被 16 个建筑屏 + 任务日志
 // 复用，业务屏不该兼当共享库。新建筑屏要用就直接从这里 import。
-import { useOverlayCloseGuard } from "../../../utils/overlayClose.js";
+import ModalShell from "../../primitives/ModalShell.jsx";
 import { RADIUS } from "../../../utils/theme.js";
 
 // ── 共用子组件 ──
 export function Overlay({ children, onClose, zoneTheme, inline }) {
-  // 遮罩误触修复见 ../utils/overlayClose.js。这是全项目共享组件，13个建筑面板
-  // （当铺/武馆/钱庄/医馆/悬赏/镖局/寺庙/赌坊/藏书阁/铁匠铺/茶馆/运镖+任务日志）
-  // 都复用它——这一处改好，等于一次性修好全部13处同款"选字拖拽误关闭"的问题。
-  const closeGuard = useOverlayCloseGuard(onClose);
+  // 这是全项目共享组件，13个建筑面板（当铺/武馆/钱庄/医馆/悬赏/镖局/寺庙/赌坊/
+  // 藏书阁/铁匠铺/茶馆/运镖+任务日志）都复用它。浮出时套 ModalShell：遮罩、防拖选误关、
+  // Esc、焦点锁定都由外壳负责，这一处接入等于 13 个面板一起接入。
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
   if (inline) {
     return (
@@ -19,27 +18,22 @@ export function Overlay({ children, onClose, zoneTheme, inline }) {
       </div>
     );
   }
+  // 遮罩原透明度 0.88，并入 --ink-overlay（0.92）；原 z 120 即 building 档。
+  // 面板底色与零内边距在 tokens.css 的 .building-panel；手机上由 mobile-overlay-* 全屏接管。
   return (
-    <div
-      className="mobile-overlay-root"
-      style={{ position: "fixed", inset: 0, background: "rgba(4,4,10,0.88)", zIndex: 120, display: "flex",
-        alignItems: isMobile ? "flex-end" : "center", justifyContent: "center" }}
-      onMouseDown={closeGuard.onMouseDown}
-      onClick={closeGuard.onClick}
+    <ModalShell
+      onClose={onClose}
+      layer="building"
+      showClose={false}
+      ariaLabel="建筑面板"
+      panelClassName="mobile-building-panel building-panel"
+      rootStyle={isMobile ? { alignItems: "flex-end" } : undefined}
+      panelStyle={isMobile
+        ? { width: "100%", maxWidth: "100vw", maxHeight: "92vh", WebkitOverflowScrolling: "touch" }
+        : { width: 440, maxHeight: "80vh" }}
     >
-      <div
-        className="mobile-overlay-panel mobile-building-panel"
-        style={isMobile
-          ? { background: zoneTheme.panelBg || "var(--building-panel-bg)", border: `1px solid ${zoneTheme.border}`,
-              borderRadius: `${RADIUS.modal}px ${RADIUS.modal}px 0 0`, width: "100%", maxWidth: "100vw", maxHeight: "92vh",
-              overflowY: "auto", WebkitOverflowScrolling: "touch" }
-          : { background: zoneTheme.panelBg || "var(--building-panel-bg)", border: `1px solid ${zoneTheme.border}`,
-              borderRadius: RADIUS.modal, width: 440, maxWidth: "90vw", maxHeight: "80vh", overflowY: "auto" }}
-        onClick={e => e.stopPropagation()}
-      >
-        {children}
-      </div>
-    </div>
+      {children}
+    </ModalShell>
   );
 }
 

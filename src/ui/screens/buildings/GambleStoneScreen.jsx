@@ -159,9 +159,10 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
 
   // ── 最小化：缩成角标，主叙事照常用 ──
   if (minimized) {
+    // 角标定位与层级在 tokens.css 的 .gamble-minimized-chip（screen 档，原 z 200）。
     return (
-      <div className="mobile-gamble-minimized" onClick={restoreTable}
-        style={{ position: "fixed", bottom: 16, right: 16, zIndex: 200, cursor: "pointer",
+      <div className="mobile-gamble-minimized gamble-minimized-chip" onClick={restoreTable}
+        style={{ cursor: "pointer",
           background: "var(--gamble-toast-bg)", border: "1px solid var(--ink-brass)", borderRadius: 0, padding: "8px 14px",
           color: "var(--gold-light)", fontSize: "var(--fs-md)", boxShadow: "0 4px 16px rgba(0,0,0,.5)" }}>
         ⬒ 赌桌（{SKINS[stone.skin].label}）· 点击展开
@@ -173,8 +174,10 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
   const changKouLabel = stone ? CHANG_KOU[stone.changKou].label : "";
   const cardFont = "calc(min(100vw, 100vh*1672/941) * 0.011)"; // 背面文字随舞台缩放
 
+  // 赌桌是整屏舞台而不是弹窗（没有遮罩、不响应点空白关闭），定位与层级在 tokens.css 的
+    // .gamble-stage（screen 档，原 z 200）。舞台本身是层叠上下文，里面的弹窗层级只在舞台内比较。
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "var(--gamble-bg)", overflow: "hidden" }}>
+    <div className="gamble-stage" style={{ background: "var(--gamble-bg)", overflow: "hidden" }}>
       <style>{GS_CSS}</style>
 
       {/* 顶栏 */}

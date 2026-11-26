@@ -267,6 +267,8 @@
   /* 设置面板定色（原字面量，不随日间模式变） */
   --ink-overlay: rgba(4,4,10,0.92);
   --ink-overlay-soft: rgba(4,4,10,0.75);
+  --gamble-veil: rgba(5,4,2,.55);
+  --gamble-veil-deep: rgba(5,4,2,.72);
   --ink-divider: #1a1d2e;
   --ink-divider-blue: #1a2d3a;
   --ink-error-bg: #1a0e0e;
@@ -517,7 +519,9 @@ body {
 div[style*="position: fixed"][style*="z-index"],
 .ui-modal-root,
 .turn-status-float,
-.debug-panel-dock {
+.debug-panel-dock,
+.gamble-stage,
+.gamble-minimized-chip {
   animation: ink-overlay-in var(--dur) ease-out both;
   transform-origin: center;
 }
@@ -703,6 +707,27 @@ div[style*="position: fixed"][style*="z-index"],
   font-size: var(--fs-sm);
 }
 
+/* 建筑面板（screens/buildings/common.jsx 的 Overlay）：标题栏自带内边距，面板不再加。 */
+.ui-modal-panel.building-panel {
+  padding: 0;
+  background: var(--building-panel-bg);
+}
+
+/* 家园面板用墨拓定色，不随日夜切换。 */
+.ui-modal-panel.homestead-panel {
+  border-color: var(--ink-border);
+  background: var(--ink-bg-panel);
+  color: var(--ink-text);
+  font-size: var(--fs-md);
+}
+
+/* 赌石舞台里的两层弹窗：暖色遮罩，放大卡片那层再加模糊。 */
+.ui-modal-root.gamble-veil { background: var(--gamble-veil); }
+.ui-modal-root.gamble-veil-deep {
+  background: var(--gamble-veil-deep);
+  backdrop-filter: blur(3px);
+}
+
 .ui-modal-header {
   display: flex;
   align-items: center;
@@ -754,4 +779,17 @@ div[style*="position: fixed"][style*="z-index"],
   right: 0;
   bottom: 0;
   z-index: var(--z-screen-high);
+}
+
+.gamble-stage {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-screen);
+}
+
+.gamble-minimized-chip {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: var(--z-screen);
 }
