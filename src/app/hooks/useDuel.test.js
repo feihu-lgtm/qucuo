@@ -289,6 +289,20 @@ describe("端详门槛", () => {
     }
   });
 
+  it("夜班急修：打字路径 autoProceedAfterLook 未端详直拉邀战且照常捕获撤销点", async () => {
+    const { npc, handlers, act, setDuelPending, restoreStore } = setupGate();
+    try {
+      await handlers.handleNpcDuel(npc, { autoProceedAfterLook: true });
+      // 不跑 act("look ...") 整轮说书（决斗队列空转复发根因：老路 return 后邀战永不落地）
+      expect(act).not.toHaveBeenCalled();
+      expect(gameStore.getState().varTree.世界.端详过人物).toContain("才旦");
+      // 邀战当回合落地——入队后必出切磋确认
+      expect(setDuelPending).toHaveBeenCalledWith(npc);
+    } finally {
+      restoreStore();
+    }
+  });
+
   it("V3 按钮老路（无 skipCaptureUndo）保留二次确认习惯不变", async () => {
     const { npc, handlers, act, setDuelPending, restoreStore } = setupGate();
     try {

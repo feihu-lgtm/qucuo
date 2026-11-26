@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { gameStore, initGameStore } from "../../store/gameStore.js";
 import { useIntentRouter } from "./useIntentRouter.js";
+import { bindTurnRuntime } from "../../features/turnRuntime.js";
+import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../../infra/turnMonitor.js";
+bindTurnRuntime({ getTurnContext, PHASE, turnMonitor, withTurnContext });
+
 
 vi.mock("react", async (importOriginal) => ({
   ...await importOriginal(),
@@ -20,6 +24,16 @@ function useRouterHarness({ npcs = [], handleNpcTrade = vi.fn(), handleNpcDuel =
   });
   return { routerRef, handleNpcTrade, handleNpcDuel };
 }
+
+vi.mock("../../engine/intent/aiClassifier.js", async (importOriginal) => {
+  const original = await importOriginal();
+  return {
+    ...original,
+    createAiClassifier: () => ({
+      recognize: async () => ({ actions: [{ kind: "切磋", target: "珍珠", text: "向珍珠提出切磋，点到为止。", confidence: 0.97 }] }),
+    }),
+  };
+});
 
 describe("WO-16F-F2c runDeferred 暴露与守卫", () => {
   it("runDeferred 已暴露到 routerRef.current", () => {
@@ -56,5 +70,21 @@ describe("WO-16F-F2c runDeferred 暴露与守卫", () => {
     routerRef.current.runDeferred({ kind: "切磋", target: "铁匠" }, true, { skipCaptureUndo: true });
     expect(handleNpcDuel).toHaveBeenCalledTimes(1);
     expect(handleNpcDuel.mock.calls[0][1]).toEqual({ skipCaptureUndo: true });
+  });
+});
+
+describe("夜班急修：打字路径 deferred 决斗不再空转", () => {
+  it("未端详 NPC 的切磋输入——handleNpcDuel 收到 autoProceedAfterLook", async () => {
+    const handleNpcDuel = vi.fn();
+    initGameStore({ flags: [], inv: [], questProgress: {}, room: { name: "曲措乡", npcs: [{ name: "珍珠", id: "pearl" }] }, char: { name: "行旅" } });
+    const routerRef = { current: null };
+    useIntentRouter(routerRef, {
+      apiCfg: { intentRecognitionEnabled: true }, act: vi.fn(), addLog: vi.fn(), dispatchCommand: vi.fn((k, fn) => fn?.()),
+      handleNpcDuel, handleNpcTrade: vi.fn(), setActiveTarget: vi.fn(), setDuelPending: vi.fn(), setTradingShop: vi.fn(),
+    });
+    await routerRef.current("向珍珠提出切磋，点到为止。", { _trace: turnMonitor.start("向珍珠提出切磋，点到为止。") });
+    expect(handleNpcDuel).toHaveBeenCalledTimes(1);
+    expect(handleNpcDuel.mock.calls[0][0]?.name).toBe("珍珠");
+    expect(handleNpcDuel.mock.calls[0][1]).toEqual(expect.objectContaining({ autoProceedAfterLook: true }));
   });
 });
