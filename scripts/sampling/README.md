@@ -34,13 +34,25 @@ node scripts/sampling/postprocess.mjs
 node scripts/sampling/scanPack.mjs
 ```
 
-## 配额口径
+## 配额口径（lane-aware 全局调度）
 
-- 十四种 kind 每类 ≥10 回合；free_act 十种 outcome 每类 ≥5；settle 三类、群聊、条件动作各 ≥5。
-- 采集时按模板意图追踪配额（模板 target 含 2 余量抵消 skip/误分类）；**实际** kind 分布由后处理从 intake 响应实测，缺口写进 `a4_report.json` 的 `quotaGaps`，不粉饰。
-- 槽位缺料（没有合适的人/物）换下一条模板，跳过原因记进 exports 的 `skippedLog`。
+- 配额是**全局账**不是单 lane 账：模板按 target 展开成实例全局编号，`instanceIndex % lanes` 分配到各 lane（`buildLaneQueue`），多 lane 并发无重无漏。
+- lanes×turns 容量：实例总数 228（talk12+move12+inspect12+take10+give12+trade12+steal10+duel10+appease10+learn10+invite10+use_item10+equip10+free_act60+settle15+群聊5+条件5）。例：8 lane × 29 回合覆盖全部；单 lane 需 205+ 回合。`SAMPLING_TURNS` 超本 lane 队列长度自动截断。
+- 十四种 kind 每类 ≥10 回合；free_act 十种 outcome 每类 ≥5；settle 三类、群聊、条件动作各 ≥5——意图层达标有测试（1/4/8 lane 模拟）。
+- **实际** kind 分布由后处理从 intake 响应实测，缺口写进 `a4_report.json` 的 `quotaGaps`，不粉饰。
+- 槽位缺料（没有合适的人/物）在**同 lane 队列**内换下一条可填实例（缺料实例后移再试），跳过原因记进 exports 的 `skippedLog`。
+
+## 调用链分类口径（postprocess）
+
+按 system prompt 稳定标识分类，不靠长度/流式猜：
+- `intake`：含「前哨听意员」；`narrative_group`：含「【群聊回响】」；`narrative_judge`：含「【判官定案】」；`narrative_plain`：含「你是MUD引擎」的其余调用；其余一律 `other`（状态提取/分类/小调用）。
+- **SEAL 分母只含 narrative_judge + narrative_group**——提取器落 other 绝不进分母；单调用 narrative_plain 无 SEAL 契约也不进（判官管线只在 extractionEnabled 双调用下激活 SEAL）。
+- intake schema 合格率分母 = 全部 intake 调用（解析失败也计入）；合格 = 可解析 + actions 非空 + kind 全在十四枚举 + 每动作带 text/target。
 
 ## 注意事项
 
 - 自定义请求头触发 CORS 预检——预检到的是本代理（预检放行三头），上游中转永不见这些头。已用 `verifyCors.mjs` 实证通过。
+- 代理入站验签：令牌在 `~/.sampling/proxy.token`（0600，首启自动生成），collect 自动读用；无令牌一律 403，本机其他进程不能蹭配额。
+- 导出前 `drainShadowTasks(60000)` 收口，聚合 JSON 内嵌 `stageCounts`/`pendingAtExport`——影子死了/丢了/在途分得清。
+- trace 含批次 runId（`rXXX`），同目录重跑不串账。
 - 归属是按头的尽力而为：影子判官 fire-and-forget 可能跨回合尾巴，头的 turn 归属以发起时为准，比时间窗/文本推断严格占优。
