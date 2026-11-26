@@ -402,7 +402,9 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
     });
     if (!fb.ok && fb.error) throw fb.error;
     if (d.isStale?.() || fb.finishReason === "stale") return { rawFull: "", finishReason: "stale" };
-    if (d.judgePipelineActive) {
+    // Review 修：群聊回合（groupTalkRuleBlock）也要切尾章——否则流式群聊的合法
+    // SEAL 到不了 runTurn 校对/计量，被误记 missingSeal 压垮群聊合格率。
+    if (d.judgePipelineActive || d.groupTalkRuleBlock) {
       const split = splitStorytellerText(rawText);
       return { rawFull: split.screenText, finishReason: fb.finishReason, sealText: split.sealText, sealAnchors: split.anchors, sealed: split.sealed };
     }

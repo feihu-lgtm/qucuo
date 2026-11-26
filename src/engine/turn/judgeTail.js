@@ -89,6 +89,7 @@ export function verifyJudgeTail({ ctx, deps, judgeVerdict, sealParts, narrativeT
     recordSealMetric({
       epoch: String(ctx.proseEpoch ?? "default"),
       cfg: deps.apiCfg,
+      chain: "judge",
       sealText: sealParts?.sealText || "",
       sealData: verified.sealData,
       warnings: verified.warnings,

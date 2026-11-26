@@ -12,6 +12,7 @@ import { filterPlanDelta, filterRejectedEffects } from "../domain/rules/intent/p
 import { classifyError } from "../utils/apiErrors.js";
 import { withAI } from "./ports/withAI.js";
 import { parseGroupTalkSeal } from "../domain/rules/judge/judgeRuleBlock.js";
+import { recordSealMetric } from "./ports/releaseMetrics.js";
 import { writeTurnProse } from "./act/proseWrite.js";
 import { addProseChunks as proseChunkSink } from "./ports/recallBlock.js";
 import { runJudgePhase, getGameStateTime } from "./turn/judgePhase.js";
@@ -318,15 +319,31 @@ async function runTurnSteps(ctx, cmd, opts) {
 
   // WO-16H-H1 群聊尾章校对：parseGroupTalkSeal 按在场白名单过滤——越界名字
   // 安静丢弃并记 trace，绝不进状态（群聊不改任何游戏状态，只此一键）。
-  if (isGroupTalk && deps.groupTalkRuleBlock && sealParts?.sealText) {
+  if (isGroupTalk && deps.groupTalkRuleBlock) {
+    // B0：群聊尾章计量 chain=group——有 SEAL+JSON 可解析+白名单过滤后无 dropped 才 passed；
+    // 缺尾章/坏 JSON/越界名字都 failed。群聊不写状态不变，计量只读。
     const presentNames = visibleNpcsPre.map((n) => n?.name).filter(Boolean);
-    const parsed = parseGroupTalkSeal(sealParts.sealText, presentNames);
-    for (const dropped of parsed.dropped) {
-      trace("群聊尾章", "warn", `respondedNpcs 越界名字「${dropped}」不在场，已丢弃`);
+    const sealText = sealParts?.sealText || "";
+    const parsed = parseGroupTalkSeal(sealText, presentNames);
+    if (sealText) {
+      for (const dropped of parsed.dropped) {
+        trace("群聊尾章", "warn", `respondedNpcs 越界名字「${dropped}」不在场，已丢弃`);
+      }
+      if (parsed.respondedNpcs.length) {
+        p = { ...p, respondedNpcs: parsed.respondedNpcs };
+      }
     }
-    if (parsed.respondedNpcs.length) {
-      p = { ...p, respondedNpcs: parsed.respondedNpcs };
-    }
+    recordSealMetric({
+      epoch: String(ctx.proseEpoch ?? "default"),
+      cfg: apiCfg,
+      chain: "group",
+      sealText,
+      sealData: parsed.jsonOk ? parsed.data : null,
+      warnings: [
+        ...(parsed.validationErrors || []),
+        ...(parsed.dropped.length ? [`dropped:${parsed.dropped.join("/")}`] : []),
+      ],
+    });
   }
 
   // WO-18 原文段落写挂 payload：不在这里触发——commitRound 可能抛错回滚，

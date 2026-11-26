@@ -93,8 +93,8 @@ function mergeRowInto(target, delta) {
 function blankIntakeRow(provider, model) {
   return { provider, model, calls: 0, schemaOk: 0, parseFailed: 0, validateFailed: 0, otherFailed: 0 };
 }
-function blankSealRow(provider, model) {
-  return { provider, model, total: 0, withSeal: 0, missingSeal: 0, jsonOk: 0, jsonFailed: 0, passed: 0, failed: 0 };
+function blankSealRow(provider, model, chain = "judge") {
+  return { provider, model, chain, total: 0, withSeal: 0, missingSeal: 0, jsonOk: 0, jsonFailed: 0, passed: 0, failed: 0 };
 }
 
 function readCumulative(storage) {
@@ -104,7 +104,14 @@ function readCumulative(storage) {
     const parsed = JSON.parse(raw);
     // v1（epoch 分桶）旧数据直接放弃——epoch 无跨会话语义，混进来反而失真
     if (parsed?.version !== 2) return { intake: {}, seal: {} };
-    return { intake: parsed.cumulative?.intake || {}, seal: parsed.cumulative?.seal || {} };
+    const seal = {};
+    for (const [k, row] of Object.entries(parsed.cumulative?.seal || {})) {
+      // B0：chain 维度——旧行无 chain 按 judge 归并（键也随之带 chain 后缀，防与新键冲突）
+      const chain = row.chain || "judge";
+      const key = k.includes("::", k.indexOf("::") + 2) ? k : `${k}::${chain}`;
+      seal[key] = { ...row, chain };
+    }
+    return { intake: parsed.cumulative?.intake || {}, seal };
   } catch {
     return { intake: {}, seal: {} };
   }
@@ -138,7 +145,7 @@ function persist() {
       mergeRowInto(cumulative.intake[key], delta);
     }
     for (const [key, delta] of ownDeltas.seal) {
-      if (!cumulative.seal[key]) cumulative.seal[key] = blankSealRow(delta.provider, delta.model);
+      if (!cumulative.seal[key]) cumulative.seal[key] = blankSealRow(delta.provider, delta.model, delta.chain || "judge");
       mergeRowInto(cumulative.seal[key], delta);
     }
     const payload = JSON.stringify({ version: 2, cumulative });
@@ -168,7 +175,7 @@ export function releaseMetricsExport() {
     mergeRowInto(intake[key], delta);
   }
   for (const [key, delta] of ownDeltas.seal) {
-    if (!seal[key]) seal[key] = blankSealRow(delta.provider, delta.model);
+    if (!seal[key]) seal[key] = blankSealRow(delta.provider, delta.model, delta.chain || "judge");
     mergeRowInto(seal[key], delta);
   }
   return {
@@ -207,6 +214,7 @@ export function recordIntakeMetric({ epoch = "default", cfg, outcome } = {}) {
 export function recordSealMetric({
   epoch = "default",
   cfg,
+  chain = "judge",
   sealText = "",
   sealData = null,
   warnings = [],
@@ -217,10 +225,12 @@ export function recordSealMetric({
 } = {}) {
   if (!resolveReleaseMetricsEnabled()) return;
   hydrate();
-  const { provider, model, key } = resolveProviderModel(cfg);
+  const { provider, model, key: pmKey } = resolveProviderModel(cfg);
+  // B0：chain 维度——判官尾章 judge/群聊尾章 group 分桶分列，互不稀释合格率。
+  const key = `${pmKey}::${chain}`;
   const map = getBucketMap(epoch, "seal");
   if (!map.has(key)) {
-    map.set(key, { provider, model, total: 0, withSeal: 0, missingSeal: 0, jsonOk: 0, jsonFailed: 0, passed: 0, failed: 0 });
+    map.set(key, { provider, model, chain, total: 0, withSeal: 0, missingSeal: 0, jsonOk: 0, jsonFailed: 0, passed: 0, failed: 0 });
   }
   const row = map.get(key);
   const hasSeal = Boolean(String(sealText || "").trim());
@@ -241,7 +251,7 @@ export function recordSealMetric({
     && (!emergenceRejections || emergenceRejections.length === 0);
   if (passed) row.passed += 1;
   else row.failed += 1;
-  bumpOwn("seal", key, { provider, model, total: 1, withSeal: hasSeal ? 1 : 0, missingSeal: hasSeal ? 0 : 1, jsonOk: hasSeal && sealData ? 1 : 0, jsonFailed: hasSeal && !sealData ? 1 : 0, passed: passed ? 1 : 0, failed: passed ? 0 : 1 });
+  bumpOwn("seal", key, { provider, model, chain, total: 1, withSeal: hasSeal ? 1 : 0, missingSeal: hasSeal ? 0 : 1, jsonOk: hasSeal && sealData ? 1 : 0, jsonFailed: hasSeal && !sealData ? 1 : 0, passed: passed ? 1 : 0, failed: passed ? 0 : 1 });
   persist();
 }
 
@@ -270,7 +280,7 @@ export function formatReleaseMetricLines(agg) {
     lines.push(`intake[${r.provider}/${r.model}] 调用 ${r.calls} · 通过 ${r.schemaOk}（${pct(r.schemaOk, r.calls)}）· 解析失败 ${r.parseFailed} · 校验失败 ${r.validateFailed} · 网络/其他失败 ${r.otherFailed}`);
   }
   for (const r of seal) {
-    lines.push(`SEAL[${r.provider}/${r.model}] 回合 ${r.total} · 有尾章 ${r.withSeal}/缺尾章 ${r.missingSeal} · JSON可解析 ${r.jsonOk} · 通过 ${r.passed}（${pct(r.passed, r.total)}）· 失败 ${r.failed}`);
+    lines.push(`SEAL[${r.provider}/${r.model}/${r.chain || "judge"}] 回合 ${r.total} · 有尾章 ${r.withSeal}/缺尾章 ${r.missingSeal} · JSON可解析 ${r.jsonOk} · 通过 ${r.passed}（${pct(r.passed, r.total)}）· 失败 ${r.failed}`);
   }
   return lines;
 }
@@ -331,13 +341,18 @@ export function formatReleaseGateMarkdown({ epoch = "default", shadowAgg = null,
   }
 
   const seal = metricsAgg?.seal || [];
-  parts.push("", "### 3. ---SEAL--- 尾章合格率");
-  if (!seal.length) {
-    parts.push("暂无 `---SEAL---` 采样。");
-  } else {
+  // B0：判官尾章/群聊尾章分列——阈值按各自 chain 独立评估，互不稀释。
+  for (const chain of ["judge", "group"]) {
+    const rows = seal.filter((r) => (r.chain || "judge") === chain);
+    const title = chain === "judge" ? "### 3. ---SEAL--- 判官尾章合格率" : "### 4. ---SEAL--- 群聊尾章合格率";
+    parts.push("", title);
+    if (!rows.length) {
+      parts.push(chain === "judge" ? "暂无判官尾章采样。" : "暂无群聊尾章采样。");
+      continue;
+    }
     parts.push("| Provider | Model | 总回合 | 有尾章 | 缺尾章 | JSON 可解析 | 校验通过 | 校验失败 | 合格率 |",
       "|---|---|---:|---:|---:|---:|---:|---:|---:|");
-    for (const r of seal) {
+    for (const r of rows) {
       parts.push(`| ${r.provider} | ${r.model} | ${r.total} | ${r.withSeal} | ${r.missingSeal} | ${r.jsonOk} | ${r.passed} | ${r.failed} | ${pct(r.passed, r.total)} |`);
     }
   }

@@ -71,7 +71,8 @@ export function buildGroupTalkRuleBlock(playerName = "主角") {
 // 安静丢弃（调用方记 trace），JSON  malformed/缺键按空处理不崩。
 export function parseGroupTalkSeal(sealText, presentNpcNames = []) {
   const whitelist = new Set((presentNpcNames || []).filter(Boolean));
-  const out = { respondedNpcs: [], dropped: [] };
+  // B0：jsonOk/data 透出供群聊尾章计量（chain=group）——纯附加字段，消费方不变。
+  const out = { respondedNpcs: [], dropped: [], jsonOk: false, data: null };
   const text = String(sealText || "").trim();
   if (!text) return out;
   let data = null;
@@ -81,6 +82,17 @@ export function parseGroupTalkSeal(sealText, presentNpcNames = []) {
     if (m) { try { data = JSON.parse(m[0]); } catch { data = null; } }
   }
   if (!data || typeof data !== "object") return out;
+  out.jsonOk = true;
+  out.data = data;
+  // 初审修：契约严格化——尾章只允许 respondedNpcs 一个键且必须是数组。
+  // validationErrors 透出供计量判 failed；缺键/非数组/额外键都算校验不过。
+  out.validationErrors = [];
+  const keys = Object.keys(data);
+  for (const k of keys) {
+    if (k !== "respondedNpcs") out.validationErrors.push(`extraKey:${k}`);
+  }
+  if (!("respondedNpcs" in data)) out.validationErrors.push("missingKey:respondedNpcs");
+  else if (!Array.isArray(data.respondedNpcs)) out.validationErrors.push("notArray:respondedNpcs");
   const names = Array.isArray(data.respondedNpcs) ? data.respondedNpcs : [];
   for (const raw of names) {
     const name = typeof raw === "string" ? raw.trim() : "";

@@ -38,8 +38,10 @@ for (const entry of sources) {
     for (const f of ["calls", "schemaOk", "parseFailed", "validateFailed", "otherFailed"]) acc[f] += row[f] || 0;
   }
   for (const row of entry?.seal || []) {
-    const key = `${row.provider}::${row.model}`;
-    if (!seal.has(key)) seal.set(key, { provider: row.provider, model: row.model, total: 0, withSeal: 0, missingSeal: 0, jsonOk: 0, jsonFailed: 0, passed: 0, failed: 0 });
+    // B0：chain 维度分桶——判官/群聊分列评估；旧行无 chain 归并 judge（不丢旧样本）。
+    const chain = row.chain || "judge";
+    const key = `${row.provider}::${row.model}::${chain}`;
+    if (!seal.has(key)) seal.set(key, { provider: row.provider, model: row.model, chain, total: 0, withSeal: 0, missingSeal: 0, jsonOk: 0, jsonFailed: 0, passed: 0, failed: 0 });
     const acc = seal.get(key);
     for (const f of ["total", "withSeal", "missingSeal", "jsonOk", "jsonFailed", "passed", "failed"]) acc[f] += row[f] || 0;
   }
@@ -52,10 +54,75 @@ for (const r of intake.values()) {
   const thin = r.calls < MIN_SAMPLE ? ` ⚠ 样本不足（${r.calls}<${MIN_SAMPLE}）` : "";
   console.log(`- ${r.provider}/${r.model}: 调用 ${r.calls} · 通过 ${r.schemaOk}（${pct(r.schemaOk, r.calls)}）· 解析失败 ${r.parseFailed} · 校验失败 ${r.validateFailed} · 其他 ${r.otherFailed}${thin}`);
 }
-console.log("\n## ---SEAL--- 尾章合格率");
-if (!seal.size) console.log("（无样本）");
-for (const r of seal.values()) {
-  const thin = r.total < MIN_SAMPLE ? ` ⚠ 样本不足（${r.total}<${MIN_SAMPLE}）` : "";
-  console.log(`- ${r.provider}/${r.model}: 回合 ${r.total} · 有尾章 ${r.withSeal}/缺 ${r.missingSeal} · JSON可解析 ${r.jsonOk} · 通过 ${r.passed}（${pct(r.passed, r.total)}）· 失败 ${r.failed}${thin}`);
+for (const chain of ["judge", "group"]) {
+  const rows = [...seal.values()].filter((r) => r.chain === chain);
+  console.log(`\n## ---SEAL--- ${chain === "judge" ? "判官" : "群聊"}尾章合格率`);
+  if (!rows.length) { console.log("（无样本）"); continue; }
+  for (const r of rows) {
+    const thin = r.total < MIN_SAMPLE ? ` ⚠ 样本不足（${r.total}<${MIN_SAMPLE}）` : "";
+    console.log(`- ${r.provider}/${r.model}: 回合 ${r.total} · 有尾章 ${r.withSeal}/缺 ${r.missingSeal} · JSON可解析 ${r.jsonOk} · 通过 ${r.passed}（${pct(r.passed, r.total)}）· 失败 ${r.failed}${thin}`);
+  }
 }
-console.log("\n（阈值未最终定，本报告不置退出码。）");
+
+// ── B0 阈值评估（协调者在 B2 前登记的初始线，不许为放行下调）──────────────
+// intake schema 合格率 ≥ 98%（schemaOk/calls）
+// intake 调用成功率 ≥ 99%（(calls-otherFailed)/calls；parse/validate 失败算调用成功但 schema 不过）
+// 判官尾章合格率 ≥ 98%（passed/total）；群聊尾章合格率 ≥ 98%（群聊自己的 passed/total）
+export const RELEASE_THRESHOLDS_B0 = {
+  intakeSchemaPassRate: 0.98,
+  intakeCallSuccessRate: 0.99,
+  judgeSealPassRate: 0.98,
+  groupSealPassRate: 0.98,
+};
+
+// 初审修：无样本/样本不足不能算过线——三条线必须达标，登记最小样本线。
+export const MIN_SAMPLES_B0 = { intake: 100, judge: 50, group: 5 };
+
+const failures = [];
+// intake：无行=没测=不过
+if (!intake.size) {
+  failures.push("intake 无任何样本——没测不能算过线");
+}
+for (const r of intake.values()) {
+  if (!r.calls) continue;
+  if (r.calls < MIN_SAMPLES_B0.intake) {
+    failures.push(`intake 样本不足 ${r.provider}/${r.model}: ${r.calls}<${MIN_SAMPLES_B0.intake} 调用`);
+  }
+  const schemaRate = r.schemaOk / r.calls;
+  const callRate = (r.calls - r.otherFailed) / r.calls;
+  if (schemaRate < RELEASE_THRESHOLDS_B0.intakeSchemaPassRate) {
+    failures.push(`intake schema 合格率 ${r.provider}/${r.model}: ${pct(r.schemaOk, r.calls)} < 98%`);
+  }
+  if (callRate < RELEASE_THRESHOLDS_B0.intakeCallSuccessRate) {
+    failures.push(`intake 调用成功率 ${r.provider}/${r.model}: ${pct(r.calls - r.otherFailed, r.calls)} < 99%`);
+  }
+}
+for (const chain of ["judge", "group"]) {
+  const threshold = chain === "judge" ? RELEASE_THRESHOLDS_B0.judgeSealPassRate : RELEASE_THRESHOLDS_B0.groupSealPassRate;
+  const chainRows = [...seal.values()].filter((x) => x.chain === chain);
+  if (!chainRows.length) {
+    failures.push(`${chain === "judge" ? "判官" : "群聊"}尾章无任何样本——没测不能算过线`);
+    continue;
+  }
+  const minSample = chain === "judge" ? MIN_SAMPLES_B0.judge : MIN_SAMPLES_B0.group;
+  for (const r of chainRows) {
+    if (!r.total) continue;
+    if (r.total < minSample) {
+      failures.push(`${chain === "judge" ? "判官" : "群聊"}尾章样本不足 ${r.provider}/${r.model}: ${r.total}<${minSample} 回合`);
+    }
+    const rate = r.passed / r.total;
+    if (rate < threshold) {
+      failures.push(`${chain === "judge" ? "判官" : "群聊"}尾章合格率 ${r.provider}/${r.model}: ${pct(r.passed, r.total)} < 98%（样本 ${r.total} 回合如实计入）`);
+    }
+  }
+}
+
+console.log("\n## 阈值评估（B0 登记线，禁止为放行下调）");
+console.log(`- intake schema 合格率 ≥ 98% · 调用成功率 ≥ 99% · 判官尾章 ≥ 98% · 群聊尾章 ≥ 98%`);
+if (!failures.length) {
+  console.log("- 全部通过 ✅");
+  process.exit(0);
+} else {
+  for (const f of failures) console.log(`- 未过：${f}`);
+  process.exit(2);
+}
