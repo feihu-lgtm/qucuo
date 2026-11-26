@@ -79,7 +79,13 @@ export function resolveMoveTarget(state, action) {
     // Review 修：target 填了地名时只做地名反查——「从村口出发去忘忧谷」这类
     // 以村口为【出发点】的句子，不能让村口捷径抢在地名核验前面把人送进内层。
     if (target) {
-      const hit = matchPlaceName(target, Object.values(visExits));
+      // Review 三轮修：内层房常被据点前缀限定——「喇嘛庙大殿」就是本区「大殿」，
+      // 剥掉当前据点名前缀再匹配，别让玩家在门口原地踏步。
+      const stripped = target.startsWith(roomName) && target.length > roomName.length
+        ? target.slice(roomName.length).replace(/^[·・\s\/—-]/, "")
+        : target;
+      const hit = matchPlaceName(target, Object.values(visExits))
+        || (stripped !== target ? matchPlaceName(stripped, Object.values(visExits)) : "");
       if (hit) {
         const d = Object.entries(visExits).find(([, destRoom]) => destRoom === hit)?.[0];
         if (d) return { type: "inner", dir: d };

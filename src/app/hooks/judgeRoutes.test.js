@@ -625,6 +625,12 @@ describe("D4 外层自然语言移动确定性路由", () => {
     const r = resolveMoveTarget(mkState({ innerRoomName: "村口" }), mkAction({ target: "忘忧谷", text: "从村口出发去忘忧谷" }));
     expect(r.type).toBe("unknown");
   });
+  it("Review 三轮：据点前缀限定的内层房——「喇嘛庙大殿」剥前缀进大殿北行", () => {
+    const st = mkState({ room: { name: "喇嘛庙", npcs: [], items: [], exits: [] }, innerRoomName: "山门" });
+    const r = resolveMoveTarget(st, mkAction({ target: "喇嘛庙大殿", direction: "无", text: "进喇嘛庙大殿" }));
+    expect(r.type).toBe("inner");
+    expect(r.dir).toBe("n");
+  });
   it("Review 二轮：更长的新名/虚构名不许别名——「大草甸营地」「山门施药棚」unknown", () => {
     const r1 = resolveMoveTarget(mkState(), mkAction({ target: "大草甸营地", text: "去大草甸营地" }));
     expect(r1.type).toBe("unknown");
