@@ -206,7 +206,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
           })()}
           {showBasement && (
             <Suspense fallback={<ScreenFallback zoneTheme={zoneTheme} />}>
-              <BasementScreen char={char} time={time} zoneTheme={zoneTheme} inline
+              <BasementScreen char={char} time={time} inline
                 onClose={() => closeOverlay(OVERLAY.BASEMENT)} onOrder={buildingHandlers.handleServiceOrder} />
             </Suspense>
           )}

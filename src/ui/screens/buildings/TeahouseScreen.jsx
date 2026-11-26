@@ -17,7 +17,7 @@ const RUMORS = [
   "雪山派说最近开始收外门弟子，但要通过一关比试才行。",
 ];
 
-export default function TeahouseScreen({ building, char, flags, time, zoneTheme, onClose, inline, onListenRumor }) {
+export default function TeahouseScreen({ building, char, flags, time, onClose, inline, onListenRumor }) {
   const money = char.money || 0;
   const COST = 5;
   // WO-23C3：世界传闻账（宿敌争位等 deterministic 传闻）混入静态池——

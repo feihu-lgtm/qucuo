@@ -10,7 +10,7 @@ import { JADE_WARES } from "../../../domain/data/items/catalog.js";
 const QUAL_COLOR = { 白: "var(--ink-text)", 绿: "var(--ink-leaf)", 蓝: "var(--ink-sky)", 紫: "var(--violet)", 橙: "var(--ink-amber)", 红: "var(--ink-rose)" };
 const CAT_CN = { weapon: "玉兵", armor: "玉甲", accessory: "玉饰" };
 
-export default function JadeShopScreen({ building, char, inv = [], time, zoneTheme, onClose, inline, onDesign, onCraft }) {
+export default function JadeShopScreen({ building, char, inv = [], time, onClose, inline, onDesign, onCraft }) {
   const [tab, setTab] = useState("buy");          // buy=选购成品 / custom=定制
   const [jadeId, setJadeId] = useState(null);      // 选中的玉料 id
   const [material, setMaterial] = useState("");
@@ -27,8 +27,8 @@ export default function JadeShopScreen({ building, char, inv = [], time, zoneThe
   const jades = inv.filter(i => (typeof i === "object") && i.jadeSpec);
   const chosenJade = jades.find(j => j.id === jadeId) || null;
 
-  const inputStyle = { width: "100%", marginTop: 4, marginBottom: 10, background: "var(--bg-ink)", border: `1px solid ${zoneTheme.border}`, borderRadius: 0, color: "var(--ink-text)", fontSize: "var(--fs-sm)", padding: "5px 8px", boxSizing: "border-box" };
-  const tabStyle = (on) => ({ flex: 1, textAlign: "center", padding: "6px 0", cursor: "pointer", fontSize: "var(--fs-sm)", color: on ? "var(--ink-cream-dim)" : "var(--ink-text-dim)", borderBottom: on ? `2px solid ${zoneTheme.accent}` : "1px solid var(--ink-edge-quest)" });
+  const inputStyle = { width: "100%", marginTop: 4, marginBottom: 10, background: "var(--bg-ink)", border: `1px solid var(--border)`, borderRadius: 0, color: "var(--ink-text)", fontSize: "var(--fs-sm)", padding: "5px 8px", boxSizing: "border-box" };
+  const tabStyle = (on) => ({ flex: 1, textAlign: "center", padding: "6px 0", cursor: "pointer", fontSize: "var(--fs-sm)", color: on ? "var(--ink-cream-dim)" : "var(--ink-text-dim)", borderBottom: on ? `2px solid var(--accent)` : "1px solid var(--ink-edge-quest)" });
 
   async function doDesign() {
     if (designing || !chosenJade) return;
@@ -56,7 +56,7 @@ export default function JadeShopScreen({ building, char, inv = [], time, zoneThe
         const cap = j.jadeSpec?.qualityCap || j.quality || "白";
         const on = j.id === jadeId;
         return (
-          <div key={j.id} onClick={() => setJadeId(j.id)} style={{ cursor: "pointer", padding: "6px 10px", marginBottom: 4, borderRadius: 0, border: `1px solid ${on ? zoneTheme.accent : zoneTheme.border}`, background: on ? "rgba(255,255,255,0.05)" : "transparent", display: "flex", justifyContent: "space-between" }}>
+          <div key={j.id} onClick={() => setJadeId(j.id)} style={{ cursor: "pointer", padding: "6px 10px", marginBottom: 4, borderRadius: 0, border: `1px solid ${on ? "var(--accent)" : "var(--border)"}`, background: on ? "rgba(255,255,255,0.05)" : "transparent", display: "flex", justifyContent: "space-between" }}>
             <span style={{ color: "var(--ink-text)", fontSize: "var(--fs-sm)" }}>{j.jadeSpec?.tierLabel || j.name}</span>
             <span style={{ color: QUAL_COLOR[cap], fontSize: "var(--fs-xs)" }}>天花板 {cap}</span>
           </div>
@@ -102,7 +102,7 @@ export default function JadeShopScreen({ building, char, inv = [], time, zoneThe
                   {JADE_WARES.map((w, i) => {
                     const eff = effectBrief(w.effect, w.sixDim);
                     return (
-                      <div key={i} style={{ marginBottom: 8, padding: "8px 10px", background: "var(--ink-coffee)", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
+                      <div key={i} style={{ marginBottom: 8, padding: "8px 10px", background: "var(--ink-coffee)", borderRadius: 0, border: `1px solid var(--border)` }}>
                         <div style={{ display: "flex", justifyContent: "space-between" }}>
                           <span style={{ color: "var(--ink-cream-dim)", fontSize: "var(--fs-md)" }}>{w.name}</span>
                           <span style={{ color: QUAL_COLOR[w.quality], fontSize: "var(--fs-2xs)" }}>{CAT_CN[w.category]}·本档{w.quality}</span>
@@ -136,7 +136,7 @@ export default function JadeShopScreen({ building, char, inv = [], time, zoneThe
                 {candidates.map((c, i) => {
                   const eff = effectBrief(c.effect, c.sixDim);
                   return (
-                    <div key={i} style={{ marginBottom: 10, padding: "10px 12px", background: "var(--ink-coffee)", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
+                    <div key={i} style={{ marginBottom: 10, padding: "10px 12px", background: "var(--ink-coffee)", borderRadius: 0, border: `1px solid var(--border)` }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                         <span style={{ color: "var(--ink-cream-dim)", fontSize: "var(--fs-md)", fontWeight: "bold" }}>{c.name}</span>
                         <span style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-2xs)" }}>{CAT_CN[c.category] || "玉器"}</span>

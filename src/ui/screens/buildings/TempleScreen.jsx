@@ -5,7 +5,7 @@ import { clinicCare, clinicDoneToday, clinicOf, clinicWeekFull } from "../../../
 const SEVEN_DIMS = ["根骨", "悟性", "体魄", "魅力", "智谋", "身法", "气运"];
 
 // 大殿：花 karma 拜佛，随机七维属性 +1（上限10）
-export default function TempleScreen({ building, char, dao, varTree, flags, time, zoneTheme, onClose, inline, onPray, onClinic }) {
+export default function TempleScreen({ building, char, dao, varTree, flags, time, onClose, inline, onPray, onClinic }) {
   const karma = dao?.karma ?? 0;
   const karmaPerPray = building.karmaPerPray || 10;
   const special = char.special || {};

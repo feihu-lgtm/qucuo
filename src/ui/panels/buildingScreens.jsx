@@ -46,8 +46,7 @@ function shopWithCraftScreen(c, shopData, trading) {
     <>
       {c.tabs("mobile-trading-tabs-desktop")}
       {c.craftTab === "shop" ? trading : (c.isJade
-        ? <JadeShopScreen building={{ ...c.building, flags: c.flags }} char={c.char} inv={c.inv} time={c.time} inline
-            zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onDesign={c.handleJadeDesign} onCraft={c.handleJadeCraft} />
+        ? <JadeShopScreen building={{ ...c.building, flags: c.flags }} char={c.char} inv={c.inv} time={c.time} inline onClose={c.closeBuilding} onDesign={c.handleJadeDesign} onCraft={c.handleJadeCraft} />
         : <ForgeScreen building={c.building} char={c.char} time={c.time} flags={c.flags} inline onClose={c.closeBuilding} onCommission={c.handleForgeCommission} onDesign={c.handleForgeDesign} />)}
     </>
   );
@@ -128,39 +127,33 @@ export const BUILDING_SCREENS = {
     <GamblingScreen building={c.building} char={c.char} flags={c.flags} time={c.time} inline onClose={c.closeBuilding} onGamble={c.handleGamble} />
   ),
   [BUILDING_TYPE.PIGEON_COOP]: (c) => (
-    <PigeonCoopScreen building={c.building} char={c.char} flags={c.flags} time={c.time} inline
-      zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onCollect={c.handleCollectPigeons} />
+    <PigeonCoopScreen building={c.building} char={c.char} flags={c.flags} time={c.time} inline onClose={c.closeBuilding} onCollect={c.handleCollectPigeons} />
   ),
   [BUILDING_TYPE.TRANSPORT]: (c) => (
     <TransportScreen building={c.building} char={c.char} mapData={c.mapData} currentRoom={c.room.name} inline
       flags={c.flags} questProgress={c.questProgress}
-      inv={c.inv} metNpcs={c.varTree.世界?.曾经出现人物 || []} onBuyPigeon={c.buyPigeon} onSendLetter={c.handlePostSend}
-      zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onTravel={c.handleTravel} />
+      inv={c.inv} metNpcs={c.varTree.世界?.曾经出现人物 || []} onBuyPigeon={c.buyPigeon} onSendLetter={c.handlePostSend} onClose={c.closeBuilding} onTravel={c.handleTravel} />
   ),
   [BUILDING_TYPE.RESTAURANT]: (c) => (
-    <ServiceScreen building={c.building} char={c.char} time={c.time} flags={c.flags} inline
-      zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onOrder={c.handleServiceOrder}
+    <ServiceScreen building={c.building} char={c.char} time={c.time} flags={c.flags} inline onClose={c.closeBuilding} onOrder={c.handleServiceOrder}
       onEnterBasement={c.openBasement} />
   ),
   [BUILDING_TYPE.THEATER]: (c) => (
-    <ServiceScreen building={c.building} char={c.char} time={c.time} flags={c.flags} inline
-      zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onOrder={c.handleServiceOrder}
+    <ServiceScreen building={c.building} char={c.char} time={c.time} flags={c.flags} inline onClose={c.closeBuilding} onOrder={c.handleServiceOrder}
       onEnterBasement={c.openBasement} />
   ),
   [BUILDING_TYPE.TEMPLE]: (c) => (
-    <TempleScreen building={c.building} char={c.char} dao={c.dao} varTree={c.varTree} flags={c.flags} time={c.time}
-      zoneTheme={c.zoneTheme} inline onClose={c.closeBuilding} onPray={c.handlePray} onClinic={c.handleClinicService} />
+    <TempleScreen building={c.building} char={c.char} dao={c.dao} varTree={c.varTree} flags={c.flags} time={c.time} inline onClose={c.closeBuilding} onPray={c.handlePray} onClinic={c.handleClinicService} />
   ),
   [BUILDING_TYPE.LIBRARY]: (c) => (
-    <LibraryScreen building={c.building} char={c.char} skills={c.skills} flags={c.flags} time={c.time} zoneTheme={c.zoneTheme} inline
+    <LibraryScreen building={c.building} char={c.char} skills={c.skills} flags={c.flags} time={c.time} inline
       onClose={c.closeBuilding} onReadBook={c.handleReadBook} onBuyBook={c.handleBuyBook} onChaojing={c.handleChaojing} />
   ),
   [BUILDING_TYPE.BANK]: (c) => (
     <BankScreen building={c.building} char={c.char} time={c.time} deposit={c.deposit} depositedAt={c.depositedAt} inline onClose={c.closeBuilding} onDeposit={c.handleDeposit} onWithdraw={c.handleWithdraw} />
   ),
   [BUILDING_TYPE.PAWN]: (c) => (
-    <PawnScreen building={c.building} char={c.char} inv={c.inv} pledgedItems={c.pledgedItems} inline
-      zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onPledge={c.handlePledge} onRedeem={c.handleRedeem} />
+    <PawnScreen building={c.building} char={c.char} inv={c.inv} pledgedItems={c.pledgedItems} inline onClose={c.closeBuilding} onPledge={c.handlePledge} onRedeem={c.handleRedeem} />
   ),
   [BUILDING_TYPE.BOUNTY]: (c) => (
     <BountyScreen building={c.building} flags={c.flags} questProgress={c.questProgress} inline onClose={c.closeBuilding} onAcceptBounty={c.handleAcceptBounty} onClaimBounty={c.handleClaimBounty} />
@@ -169,8 +162,7 @@ export const BUILDING_SCREENS = {
     <ForgeScreen building={c.building} char={c.char} time={c.time} flags={c.flags} inline onClose={c.closeBuilding} onCommission={c.handleForgeCommission} onDesign={c.handleForgeDesign} />
   ),
   [BUILDING_TYPE.JEWELRY]: (c) => (
-    <JadeShopScreen building={{ ...c.building, flags: c.flags }} char={c.char} inv={c.inv} time={c.time} inline
-      zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onDesign={c.handleJadeDesign} onCraft={c.handleJadeCraft} />
+    <JadeShopScreen building={{ ...c.building, flags: c.flags }} char={c.char} inv={c.inv} time={c.time} inline onClose={c.closeBuilding} onDesign={c.handleJadeDesign} onCraft={c.handleJadeCraft} />
   ),
   [BUILDING_TYPE.GAMBLESTONE]: (c) => (
     <GambleStoneScreen building={c.building} char={c.char} time={c.time}
@@ -180,8 +172,7 @@ export const BUILDING_SCREENS = {
       onTalk={c.handleGambleTalk} onSettle={c.handleGambleSettle} onInspect={c.handleGambleInspect} />
   ),
   [BUILDING_TYPE.TEAHOUSE]: (c) => (
-    <TeahouseScreen building={c.building} char={c.char} flags={c.flags} time={c.time} inline
-      zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onListenRumor={c.handleListenRumor} />
+    <TeahouseScreen building={c.building} char={c.char} flags={c.flags} time={c.time} inline onClose={c.closeBuilding} onListenRumor={c.handleListenRumor} />
   ),
   [BUILDING_TYPE.SECT_ENTRY]: (c) => (
     <SectEntryScreen building={c.building} char={c.char} flags={c.flags} varTree={c.varTree} inline
