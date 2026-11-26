@@ -128,7 +128,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
       {derived.seaTraumaActive && (
         <Suspense fallback={null}>
           <SeaOfMindScreen
-            narratorVars={derived.narratorVarsNow} invNames={derived.invNames} zoneTheme={zoneTheme}
+            narratorVars={derived.narratorVarsNow} invNames={derived.invNames}
             onComfort={playerActionHandlers.handleComfort} onResolve={playerActionHandlers.handleResolveTrauma}
           />
         </Suspense>
@@ -227,8 +227,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
       )}
 
       <NarrativeLogFeed
-        hidden={hideNarrative}
-        zoneTheme={zoneTheme} clr={clr} isDayMode={isDayMode} act={turn.act}
+        hidden={hideNarrative} clr={clr} isDayMode={isDayMode} act={turn.act}
         collapsedGroups={collapsedGroups} setCollapsedGroups={setCollapsedGroups}
         loading={loading} queueCount={queueCount} pendingTalks={pendingTalks}
         inspecting={aiInspect.inspecting} logEnd={logEnd}

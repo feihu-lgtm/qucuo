@@ -19,7 +19,7 @@ import {
 // （被拒时的那句话），什么时候能做什么让玩家从她的反应里自己摸出来。
 // 心结进度是例外——那是叙事进度不是数值，给玩家看是应该的。
 export default function SeaOfMindScreen({
-  narratorVars, invNames = [], zoneTheme,
+  narratorVars, invNames = [],
   onComfort, onResolve, onClose, inline,
 }) {
   const comfort = narratorVars.comfort || {};
@@ -30,7 +30,7 @@ export default function SeaOfMindScreen({
 
   return (
     <div style={{
-      flexShrink: 0, borderBottom: `1px solid ${zoneTheme.border}`,
+      flexShrink: 0, borderBottom: `1px solid var(--border)`,
       background: "linear-gradient(180deg, rgba(232,200,106,0.07), transparent)",
       padding: "10px 16px",
     }}>
@@ -38,7 +38,7 @@ export default function SeaOfMindScreen({
         <span style={{ color: "var(--mind-gold)", fontSize: "var(--fs-sm)" }}>⟡ 她蜷在沙发角落里</span>
         <span style={{ flex: 1 }} />
         {onClose && (
-          <span onClick={onClose} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "var(--fs-2xs)" }}>▾ 收起</span>
+          <span onClick={onClose} style={{ cursor: "pointer", color: "var(--text-dim)", fontSize: "var(--fs-2xs)" }}>▾ 收起</span>
         )}
       </div>
 
@@ -103,7 +103,7 @@ export default function SeaOfMindScreen({
 
       {/* 引导：只在她还没开口时提一句，且不提数值 */}
       {!resolvable && (
-        <div style={{ marginTop: 7, fontSize: "var(--fs-2xs)", color: zoneTheme.textDim, lineHeight: 1.7 }}>
+        <div style={{ marginTop: 7, fontSize: "var(--fs-2xs)", color: "var(--text-dim)", lineHeight: 1.7 }}>
           {/* 只给感受与方向，不报数值、不列门槛清单——什么时候该做什么让玩家从她的
               反应里摸。但"心防够了却因为方式不对开不了下一条"这种情况必须给个方向，
               否则玩家会以为卡住了（他会一直说话，而说话正是推不动那一条的原因）。 */}

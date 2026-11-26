@@ -1,6 +1,6 @@
 import { getBuildingsForLocation, BUILDING_TYPE_LABEL } from "../../../domain/data/buildings/qucuoBuildings.js";
 import { hasInnerMap, getBuildingIdForInnerRoom } from "../../../domain/rules/map/innerMap.js";
-import { chromeBtn } from "../../../utils/theme.js";
+import { THEME_VARS, chromeBtn } from "../../../utils/theme.js";
 import { useSessionUi, setActiveBuilding } from "../../../store/sessionUiStore.js";
 
 export function visibleBuildings(room, innerRoomName) {
@@ -10,15 +10,15 @@ export function visibleBuildings(room, innerRoomName) {
   return bid ? all.filter(b => b.id === bid) : [];
 }
 
-export default function BuildingsModule({ zoneTheme, room, innerRoomName }) {
+export default function BuildingsModule({ room, innerRoomName }) {
   const activeBuilding = useSessionUi(s => s.activeBuilding);
   const list = visibleBuildings(room, innerRoomName);
   if (!list.length) return null;
   return <div>
-    <div style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-xs)", marginBottom: 5 }}>此地建筑</div>
+    <div style={{ color: "var(--accent-dim)", fontSize: "var(--fs-xs)", marginBottom: 5 }}>此地建筑</div>
     {list.map(b => <div key={b.id} style={{ marginBottom: 3 }}>
-      <button type="button" onClick={() => setActiveBuilding(activeBuilding?.id === b.id ? null : { ...b, district: room.name })} style={chromeBtn(zoneTheme, { active: activeBuilding?.id === b.id })}>{b.name}</button>
-      <span style={{ color: zoneTheme.textDim, fontSize: "var(--fs-xs)", marginLeft: 6 }}>{BUILDING_TYPE_LABEL[b.type] || ""}</span>
+      <button type="button" onClick={() => setActiveBuilding(activeBuilding?.id === b.id ? null : { ...b, district: room.name })} style={chromeBtn(THEME_VARS, { active: activeBuilding?.id === b.id })}>{b.name}</button>
+      <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", marginLeft: 6 }}>{BUILDING_TYPE_LABEL[b.type] || ""}</span>
     </div>)}
   </div>;
 }
