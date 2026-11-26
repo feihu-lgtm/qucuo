@@ -21,6 +21,7 @@ import {
   useSessionUi, setGm, setIsDayMode, setMobileTopMenu, setSettingsInitialTab,
 } from "../../store/sessionUiStore.js";
 import TurnStatusPill from "../components/TurnStatusPill.jsx";
+import { Button } from "../primitives/index.js";
 
 // 回合控制（停止/回滚）：桌面在中栏标题行，手机并入顶栏同一行
 export function TurnControls({ theme, loading, stopRunning, rollbackBlocked, rollbackOneStep }) {
@@ -89,8 +90,7 @@ export default function TopBar({
         {/* 手机端：顶栏收成一个☰按钮，点开才展开全部功能入口 */}
         {isMobile && (
           <>
-            <span className="mobile-touch-target mobile-menu-toggle" onClick={() => setMobileTopMenu(v => !v)}
-              style={{ ...topBtn(mobileTopMenu), fontSize: "var(--fs-md)" }}>☰ 菜单</span>
+            <Button variant="chrome" active={mobileTopMenu} className="mobile-touch-target mobile-menu-toggle" onClick={() => setMobileTopMenu(v => !v)} style={{ fontSize: "var(--fs-md)" }}>☰ 菜单</Button>
             <span style={{ flex: 1 }} />
             {!mobileTopMenu && turnControls && <><TurnControls theme={THEME_VARS} {...turnControls} /><TurnStatusPill theme={THEME_VARS} mobile /></>}
             {mobileTopMenu && <span className="mobile-touch-target" onClick={() => setMobileTopMenu(false)} style={{ cursor: "pointer", color: "var(--text-dim)", fontSize: "var(--fs-xs)" }}>收起 ✕</span>}
@@ -104,35 +104,31 @@ export default function TopBar({
           width: isMobile ? "100%" : "auto", flex: isMobile ? "none" : 1,
         }}>
         {isMobile && <DevControls theme={THEME_VARS} addLog={addLog} />}
-        {isMobile && <span className="qbtn" onClick={() => openOverlay(OVERLAY.TRACE)} style={topBtn()}>日志</span>}
-        <span
+        {isMobile && <Button variant="chrome" className="qbtn" onClick={() => openOverlay(OVERLAY.TRACE)}>日志</Button>}
+        <Button variant="chrome"
           className="qbtn"
           onClick={() => openOverlay(OVERLAY.TUTORIAL)}
-          style={topBtn()}
-        >新手教程</span>
-        <span
+        >新手教程</Button>
+        <Button variant="chrome"
           className="qbtn"
           onClick={() => openOverlay(OVERLAY.CODEX)}
           title="百物·武学总览：看全所有物品与武学的介绍、品阶、效果"
-          style={topBtn()}
-        >图鉴</span>
-        <span className="qbtn" onClick={() => openOverlay(OVERLAY.BUG_REPORT)} title="遇到问题或有建议，点这里上报" style={topBtn()}>上报bug</span>
+        >图鉴</Button>
+        <Button variant="chrome" className="qbtn" onClick={() => openOverlay(OVERLAY.BUG_REPORT)} title="遇到问题或有建议，点这里上报">上报bug</Button>
         {unreadLetters > 0 && (
-          <span className="qbtn" onClick={() => openOverlay(OVERLAY.LETTERS)}
-            title="有人给你捎了信——点开查看全部来信"
-            style={{ ...topBtn(), color: "var(--accent)", fontWeight: 600 }}>信×{unreadLetters}</span>
+          <Button variant="chrome" className="qbtn" onClick={() => openOverlay(OVERLAY.LETTERS)}
+            title="有人给你捎了信——点开查看全部来信" style={{ color: "var(--accent)", fontWeight: 600 }}>信×{unreadLetters}</Button>
         )}
 
         <span className="mobile-hide" style={{ flex: 1 }} />
 
         {/* 右组：其余全部右对齐 */}
-        <span
+        <Button variant="chrome"
           className="qbtn"
           onClick={() => openOverlay(OVERLAY.CARD_IMPORT)}
           title="角色入册：把外部角色卡导进曲措乡（快捷键 I）"
-          style={topBtn()}
-        >入册</span>
-        <span
+        >入册</Button>
+        <Button variant="chrome"
           className="qbtn"
           onClick={() => {
             if (window.confirm("返回开始菜单？当前进度已自动保存，可以随时继续。")) {
@@ -140,27 +136,23 @@ export default function TopBar({
               window.location.reload();
             }
           }}
-          style={topBtn()}
-        >主菜单</span>
-        <span
+        >主菜单</Button>
+        <Button variant="chrome"
           className="qbtn"
           onClick={() => openSettings("saves")}
-          style={topBtn()}
-        >存档</span>
-        <span className="qbtn" onClick={() => openSettings(null)} style={topBtn()}>设置</span>
-        <span
+        >存档</Button>
+        <Button variant="chrome" className="qbtn" onClick={() => openSettings(null)}>设置</Button>
+        <Button variant="chrome"
           className="qbtn"
           onClick={() => setIsDayMode(d => !d)}
           title={isDayMode ? "切回暗夜模式" : "切换到日间模式（米色底+棕框）"}
-          style={topBtn()}
-        >{isDayMode ? "日间" : "夜间"}</span>
+        >{isDayMode ? "日间" : "夜间"}</Button>
         {musicEnabled && (
-          <span
+          <Button variant="chrome" active={musicPlaying}
             className="qbtn"
             onClick={() => openOverlay(OVERLAY.MUSIC_PANEL)}
             title={musicState.error ? `音乐出错：${musicState.error}` : "音乐面板 — 曲库切换"}
-            style={topBtn(musicPlaying)}
-          >{musicPlaying ? "音乐·播放中" : "音乐"}</span>
+          >{musicPlaying ? "音乐·播放中" : "音乐"}</Button>
         )}
         {/* 🏠 家园入口已挪到左栏「此地建筑」区——它本来就是"这间屋子里有什么设施"，
             跟顶栏那排全局按钮（设置/存档/图鉴/音乐）不是一回事，摆在顶栏既占地方
@@ -177,7 +169,7 @@ export default function TopBar({
         {/* 桌面版右上角同 iOS：全流程日志入口 + 回合状态灯 */}
         {!isMobile && (
           <>
-            <span className="qbtn" onClick={() => openOverlay(OVERLAY.TRACE)} style={topBtn()}>日志</span>
+            <Button variant="chrome" className="qbtn" onClick={() => openOverlay(OVERLAY.TRACE)}>日志</Button>
             <TurnStatusPill theme={THEME_VARS} docked />
           </>
         )}

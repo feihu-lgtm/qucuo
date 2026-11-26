@@ -7,7 +7,6 @@
 // craft 现货/定制页签这类同类型多屏的分支）。
 import { BUILDING_TYPE } from "../../domain/data/buildings/qucuoBuildings.js";
 import { Suspense, lazy } from "react";
-import { THEME_VARS, chromeBtn } from "../../utils/theme.js";
 import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
 import { buildShopInventory, rollShopStock } from "../../domain/data/shops/qucuoShops.js";
 import { factionShopOffer, factionShopOutlet, isFactionShop } from "../../features/buildings/factionShop.js";
@@ -36,6 +35,7 @@ import AuctionScreen from "../screens/buildings/AuctionScreen.jsx";
 import CookingScreen from "../screens/buildings/CookingScreen.jsx";
 import ChestScreen from "../screens/buildings/ChestScreen.jsx";
 import FestivalScreen from "../screens/buildings/FestivalScreen.jsx";
+import { Button } from "../primitives/index.js";
 
 const DungeonScreen = lazy(() => import("../screens/dungeon/DungeonScreen.jsx"));
 
@@ -220,7 +220,7 @@ function ClosedBuilding({ c, text }) {
     <div style={{ padding: 12, color: "var(--text)", fontSize: "var(--fs-sm)" }}>
       <div style={{ color: "var(--accent)", marginBottom: 6 }}>{c.building.name}</div>
       <div style={{ marginBottom: 10 }}>{text}</div>
-      <button type="button" onClick={c.closeBuilding} style={chromeBtn(THEME_VARS)}>离开</button>
+      <Button variant="chrome" type="button" onClick={c.closeBuilding}>离开</Button>
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { showNotice } from "../../../store/uiStore.js";
 import { useSessionUi, setInteractMode, setMapView, setMapBig } from "../../../store/sessionUiStore.js";
 import { DIRS } from "../../../utils/mudHelpers.js";
 import NineGridMap from "../../components/NineGridMap.jsx";
-import { THEME_VARS, chromeBtn } from "../../../utils/theme.js";
+import { Button } from "../../primitives/index.js";
 
 export default function MapModule({ room, innerRoomName, questProgress, mapData, flags, autoTravelTo, act, inv, char, varTree }) {
   const loading = useSessionUi(s => s.loading);
@@ -22,8 +22,7 @@ export default function MapModule({ room, innerRoomName, questProgress, mapData,
         {hasInnerMap(room.name) && (
           <span style={{ display: "flex", fontSize: "var(--fs-2xs)", flexShrink: 0 }}>
             {[["outer", "外"], ["inner", "内"]].map(([v, lb]) => (
-              <span key={v} onClick={() => setMapView(v)}
-                style={chromeBtn(THEME_VARS, { active: view === v })}>{lb}</span>
+              <Button variant="chrome" active={view === v} key={v} onClick={() => setMapView(v)}>{lb}</Button>
             ))}
           </span>
         )}

@@ -1,9 +1,9 @@
-import { THEME_VARS, chromeBtn } from "../../../utils/theme.js";
 import { OVERLAY, openOverlay } from "../../../store/uiStore.js";
 import { useGameStore } from "../../../store/gameStore.js";
 import { reputationLabel } from "../../../domain/rules/prompt/mvu.js";
 import { listFactionRep } from "../../../domain/rules/economy/factionRep.js";
 import JianghuDials from "./jianghuDials.jsx";
+import { Button } from "../../primitives/index.js";
 
 export const JIANGHU_ENTRIES = [
   { label: "任务", overlay: OVERLAY.QUEST_LOG },
@@ -22,9 +22,8 @@ export default function JianghuModule({ isMobile }) {
       {isMobile ? (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {JIANGHU_ENTRIES.map(entry => (
-            <button key={entry.overlay} type="button" title={entry.title}
-              style={{ ...chromeBtn(THEME_VARS), fontFamily: "inherit" }}
-              onClick={() => openOverlay(entry.overlay)}>{entry.label}</button>
+            <Button variant="chrome" key={entry.overlay} type="button" title={entry.title} style={{ fontFamily: "inherit" }}
+              onClick={() => openOverlay(entry.overlay)}>{entry.label}</Button>
           ))}
         </div>
       ) : (
