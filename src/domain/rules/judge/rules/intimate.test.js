@@ -71,3 +71,26 @@ describe("V8 亲密回合社交结算", () => {
     expect(v.facts.filter((x) => x.op === "MUTATE_SOCIAL")).toHaveLength(1);
   });
 });
+
+describe("V8 Review 修：条件未成不颁奖/nsfw 关不吞调情", () => {
+  it("亲密动作前提未成（condition 不成立）不签发好感——行为未发生", () => {
+    const condAction = { ...intimateAction, condition: "到了地方", condition_text: "到了地方" };
+    // 无移动无到达——evaluateActionCondition 判未成的语境
+    const v = run({ npc: "元朵朵", ticket: false, threshold: 45, affection: 60 }, [condAction]);
+    expect(v.facts.filter((x) => x.op === "MUTATE_SOCIAL")).toHaveLength(0);
+  });
+  it("前提成立则照签不误", () => {
+    const v = run({ npc: "元朵朵", ticket: false, threshold: 45, affection: 60 });
+    expect(v.facts.filter((x) => x.op === "MUTATE_SOCIAL")).toHaveLength(1);
+  });
+  it("无 intimateCtx（nsfw 关/门禁未跑）时 intimate 动作落回 free_act 正路不吞", () => {
+    // nsfw 关：门禁不介入，flirt 动作按普通 free_act 处理——破费链可正常解读
+    const v = run(null, [{ ...intimateAction, outcome: "破费", text: "花五两银子买酒助兴" }]);
+    // 无亲密事实（无 ctx），但 free_act 破费链不被拦截——
+    // 验证点：动作未被「intimate 跳过」吞掉，freeAct 链有机会签发或留痕
+    expect(v.facts.filter((x) => x.op === "MUTATE_SOCIAL")).toHaveLength(0);
+    // 破费在册即证明没落黑洞（freeAct 签发 MUTATE_VITALS/CHANGE_MONEY 类或至少进 notes）
+    const signed = v.facts.length + v.notes.filter((n) => n.includes("破费") || n.includes("开销")).length;
+    expect(signed).toBeGreaterThan(0);
+  });
+});
