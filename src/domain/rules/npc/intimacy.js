@@ -43,6 +43,20 @@ export function intimacyGate(npc = {}, affection = 0) {
   };
 }
 
+// V5（10.4-1）代词回落纯函数：targetName 空且 cmd 无显式人名时——可见非随行 NPC
+// 仅 1 人回落唯一在场者；多人且含代词回落 convo 里最后一个仍在场的说话者。
+export function resolveIntimateTarget({ targetName = "", cmd = "", npcs = [], convo = [] } = {}) {
+  const explicitHit = (npcs || []).find((n) => n?.name && String(cmd).includes(n.name));
+  if (targetName || explicitHit) return { targetName, explicitHit: explicitHit || null };
+  const visible = (npcs || []).filter((n) => n?.name && n.companion !== true);
+  if (visible.length === 1) return { targetName: visible[0].name, explicitHit: null };
+  if (visible.length > 1 && /她|他|凑上去|对方/.test(String(cmd))) {
+    const lastSpoke = [...(convo || [])].reverse().find((c) => c?.npc && visible.some((n) => n.name === c.npc));
+    if (lastSpoke) return { targetName: lastSpoke.npc, explicitHit: null };
+  }
+  return { targetName: "", explicitHit: null };
+}
+
 import { random } from "../../../utils/rng.js";
 
 // 未过线的拒词事件：性格化拒词一句 + 好感微降（按 archetype 定区间）。

@@ -29,7 +29,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "才旦", innerRoom: "才旦家", id: "resident_caidan", levelCap: 1,
+      name: "才旦", innerRoom: "才旦家", id: "resident_caidan", levelCap: 1, archetype: "gentle",
       brief: "村长之女，鱼定村实际的账房，二十二岁，瓜子脸被高原风吹出健康的红晕，两条乌亮长辫用红绳扎得极紧，蓝布藏袍袖口总蹭着算盘木油；账算得滴水不漏",
       personality: "工于心计说话不留破绽，卸下防备才露出年纪相符的脆弱",
       carry: [

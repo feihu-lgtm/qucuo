@@ -175,8 +175,20 @@ export function buildBudgetInstruction(intent, rawInput, fallbackWordCount, budg
 // 亲密指令族（搂抱/亲吻/更进一步）——判定独立导出，对话/行动两种模式都要拦。
 // 「亲」只算亲吻义：前避父/母/至等尊称复词，后避亲自/亲手/亲信/亲王等日常
 // 复词——否则「我亲自去过锦官城」都会误判成亲密请求。
+// V5（10.3）：词表覆盖感官描摹与部位接触——摩挲/挑开/解开/盘扣/锁骨/胸前/
+// 揉按/揉捏/耳根/尾根/耳垂/颈窝等。护栏：纯疗伤敷药语境（敷|涂|抹+药/伤/膏
+// 且不含调情部位词）不误伤——「替她揉按伤口敷药」是疗伤不是亲密。
 export const INTIMATE_RE = new RegExp(
   "搂|抱一?下|(?<!父|母|至|嫡|庶|乡|探|相)亲(?!自|身|手|口|笔|眼|耳|信|历|命|征|赴|任|和|善|政|权|党|军|民|兵|王|族|友|戚|眷|属|情|事|家|子|生|爹|娘|父|母|舅|姑|叔|伯|姨|婶|哥|姐|弟|妹|旧|故|其|授)"
-  + "|(?<!口)吻(?!合)|亲热|亲密|亲昵|温存|云雨|欢好|翻云覆雨|共赴巫山|更进一步|宽衣|解衣|求欢|肌肤之亲|双修|扑倒|推倒",
+  + "|(?<!口)吻(?!合)|亲热|亲密|亲昵|温存|云雨|欢好|翻云覆雨|共赴巫山|更进一步|宽衣|解衣|求欢|肌肤之亲|双修|扑倒|推倒"
+  + "|摩挲|挑开|解开|盘扣|锁骨|胸前|揉捏|耳根|尾根|耳垂|颈窝|酥胸|香肩|秀发|柳腰|柔荑",
 );
-export const isIntimateInput = (cmd = "") => INTIMATE_RE.test(String(cmd));
+const INTIMATE_TOUCH_RE = /揉按/;
+const HEALING_GUARD_RE = /敷药|涂药|抹药|上药|疗伤|包扎|伤口|膏药|药酒/;
+export const isIntimateInput = (cmd = "") => {
+  const s = String(cmd);
+  if (!INTIMATE_RE.test(s) && !INTIMATE_TOUCH_RE.test(s)) return false;
+  // 疗伤护栏：只有「揉按」孤零零命中且满篇疗伤语境时放行；含明确部位/调情词的不救。
+  if (!INTIMATE_RE.test(s) && INTIMATE_TOUCH_RE.test(s) && HEALING_GUARD_RE.test(s)) return false;
+  return true;
+};
