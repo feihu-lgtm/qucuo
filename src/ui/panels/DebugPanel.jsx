@@ -48,7 +48,7 @@ export default function DebugPanel({
       <div style={{ position: "sticky", top: 0, zIndex: 5, display: "flex", alignItems: "center", justifyContent: "space-between",
         margin: "-10px -14px 4px", padding: "6px 14px", background: "rgba(16,18,26,.96)", borderBottom: "1px solid var(--ink-edge-quest)" }}>
         <span style={{ color: "var(--accent)", fontSize: "var(--fs-sm)", fontWeight: "bold" }}>🛠 调试面板</span>
-        <span onClick={() => closeOverlay(OVERLAY.DEBUG)} style={{ cursor: "pointer", color: "var(--debug-close)", fontSize: "var(--fs-md)", padding: "2px 12px", border: "1px solid var(--debug-close-edge)", borderRadius: 0 }}>✕ 关闭</span>
+        <span className="debug-close-btn" onClick={() => closeOverlay(OVERLAY.DEBUG)}>✕ 关闭</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <span style={{ width: 40, ...lbl }}>金钱</span>
@@ -136,7 +136,7 @@ export default function DebugPanel({
             setVarTree(prev => visible.reduce((tree, n) => markNpcAsKnown(tree, n.name), prev));
             addLog([{ t: "sys", text: `  [调试] 已认识在场者：${visible.map(n => n.name).join("、")}` }]);
           }}
-          style={{ cursor: "pointer", fontSize: "var(--fs-2xs)", color: "var(--clay)", border: "1px solid var(--ink-accent)", borderRadius: 0, padding: "2px 8px", userSelect: "none" }}
+          className="debug-action"
         >认识在场者</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
@@ -173,7 +173,7 @@ export default function DebugPanel({
             teleportLookRef.current = { dist: dbgDist, inner: inner2 };
           }
         }}
-          style={{ cursor: "pointer", fontSize: "var(--fs-2xs)", color: dbgDist ? "var(--accent)" : "var(--ink-dim-deep)", padding: "2px 8px", border: `1px solid ${dbgDist ? "var(--accent)" : "var(--ink-divider)"}`, borderRadius: 0, userSelect: "none" }}>传送</span>
+          className="debug-action debug-action-accent" data-on={Boolean(dbgDist)}>传送</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
         <span style={{ width: 40, ...lbl }}>增加武学</span>
@@ -211,7 +211,7 @@ export default function DebugPanel({
           setSkills(sk => [...sk, entry]);
           addLog([{ t: "sys", text: `  [调试] 习得并运功「${found.name}」（${found.quality}·${found.type}）` }]);
         }}
-          style={{ cursor: "pointer", fontSize: "var(--fs-2xs)", color: dbgPickedSkill ? "var(--clay)" : "var(--ink-dim-deep)", padding: "2px 8px", border: `1px solid ${dbgPickedSkill ? "var(--ink-accent)" : "var(--ink-divider)"}`, borderRadius: 0, userSelect: "none" }}
+          className="debug-action" data-on={Boolean(dbgPickedSkill)}
         >增加并装备</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
@@ -243,7 +243,7 @@ export default function DebugPanel({
           addLog([{ t: "sys", text: `  [调试] 获得「${item.name}」（${item.quality}·${CATEGORY_LABEL[item.category] || item.category}）` }]);
           setDbgPickedItem("");
         }}
-          style={{ cursor: "pointer", fontSize: "var(--fs-2xs)", color: dbgPickedItem ? "var(--clay)" : "var(--ink-dim-deep)", padding: "2px 8px", border: `1px solid ${dbgPickedItem ? "var(--ink-accent)" : "var(--ink-divider)"}`, borderRadius: 0, userSelect: "none" }}
+          className="debug-action" data-on={Boolean(dbgPickedItem)}
         >增加</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
@@ -265,7 +265,7 @@ export default function DebugPanel({
           addLog([{ t: "sys", text: `  [调试] 获得「${item.name}」（${item.quality}·${CATEGORY_LABEL[dbgItemCat] || dbgItemCat}）` }]);
           setDbgItemName("");
         }}
-          style={{ cursor: "pointer", fontSize: "var(--fs-2xs)", color: dbgItemName.trim() ? "var(--clay)" : "var(--ink-dim-deep)", padding: "2px 8px", border: `1px solid ${dbgItemName.trim() ? "var(--ink-accent)" : "var(--ink-divider)"}`, borderRadius: 0, userSelect: "none" }}
+          className="debug-action" data-on={Boolean(dbgItemName.trim())}
         >增加</span>
       </div>
     </div>

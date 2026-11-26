@@ -112,11 +112,7 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
               key={entry.quest.id}
               onClick={() => questPanel.triggerQuestFromPanel(entry)}
               title={entry.stage.playerHint ?? entry.stage.description}
-              style={{
-                cursor: "pointer", color: "var(--ember)", padding: "2px 10px",
-                border: "1px solid var(--gold-deep)", borderRadius: 0, fontSize: "var(--fs-xs)",
-                background: "var(--footer-progress-button)", whiteSpace: "nowrap",
-              }}
+              className="quest-progress-btn"
             >
               ❢ {entry.quest.title}{entry.stage.giver !== null && entry.quest.giver ? `（${entry.quest.giver}）` : ""}
             </span>
@@ -143,11 +139,7 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
                       key={choice.flag}
                       onClick={() => questPanel.triggerQuestChoice(entry, choice)}
                       title={choice.resolve === "combat" ? "会进入切磋，打赢才算数" : choice.resolve === "talk" ? "会进入对话，说赢才算数" : ""}
-                      style={{
-                        cursor: "pointer", color: "var(--clay)", padding: "2px 10px",
-                        border: "1px solid var(--accent)", borderRadius: 0, fontSize: "var(--fs-xs)",
-                        background: "var(--ink-tier-bg)", whiteSpace: "nowrap",
-                      }}
+                      className="quest-choice-btn"
                     >
                       {icon}{choice.label}
                     </span>
@@ -195,11 +187,7 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
               role="menuitem"
               data-at-option="whisper"
               onClick={() => pickCapsule({ kind: "whisper", name: narratorName })}
-              style={{
-                background: "transparent", border: "none", color: "var(--text)",
-                textAlign: "left", padding: "6px 10px", fontSize: "var(--fs-sm)",
-                fontFamily: "inherit", cursor: "pointer",
-              }}
+              className="at-menu-item"
             >◆ {narratorName}（旁白私语 · 不耗回合）</button>
             {visibleNpcs.map(npc => (
               <button
@@ -208,11 +196,7 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
                 role="menuitem"
                 data-at-option={`npc-${npc.name}`}
                 onClick={() => pickCapsule({ kind: "target", name: npc.name })}
-                style={{
-                  background: "transparent", border: "none", color: "var(--text)",
-                  textAlign: "left", padding: "6px 10px", fontSize: "var(--fs-sm)",
-                  fontFamily: "inherit", cursor: "pointer",
-                }}
+                className="at-menu-item"
               >{npc.name}</button>
             ))}
           </div>
@@ -255,17 +239,11 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
         <button
           type="button"
           className="game-send-button mobile-touch-target"
+          data-on={Boolean(input.trim())}
           disabled={!input.trim()}
           onPointerDown={(e) => e.preventDefault()}
           onClick={() => turn.onKey.submit?.()}
           aria-label={capsule?.kind === "pigeon" ? "放飞信鸽" : "发送"}
-          style={{
-            flexShrink: 0, minWidth: 52, minHeight: 32, padding: "4px 12px",
-            border: `1px solid ${input.trim() ? "var(--accent)" : "var(--border)"}`, borderRadius: 0,
-            background: "transparent", color: input.trim() ? "var(--accent)" : "var(--text-dim)",
-            fontFamily: "inherit", fontSize: "var(--fs-md)", letterSpacing: "2px",
-            cursor: input.trim() ? "pointer" : "default", opacity: input.trim() ? 1 : 0.5,
-          }}
         >{capsule?.kind === "pigeon" ? "放飞" : "发送"}</button>
       </div>
     </>

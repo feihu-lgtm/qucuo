@@ -228,7 +228,7 @@ export default function TopBar({
             </label>
             {playerAvatarCustom && (
               <span onClick={() => { setPlayerAvatarCustom(""); closeOverlay(OVERLAY.AVATAR_PICKER); }}
-                style={{ cursor: "pointer", fontSize: "var(--fs-sm)", color: "var(--ink-danger-soft)", padding: "6px 12px", border: "1px solid var(--footer-stalled-bg)", borderRadius: 0 }}>
+                className="avatar-reset-btn">
                 恢复默认（按性别）
               </span>
             )}

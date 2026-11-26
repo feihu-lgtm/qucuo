@@ -81,13 +81,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
   useEffect(() => { setGambleStoneMinimized(false); }, [activeBuilding?.id]);
   const isJade = activeBuilding?.craft === "jade";
   const tab = (key, label) => (
-    <span key={key} className="mobile-touch-target" onClick={() => setCraftTab(key)}
-      style={{
-        cursor: "pointer", padding: "2px 12px", fontSize: "var(--fs-sm)", borderRadius: 0,
-        color: craftTab === key ? "var(--bg)" : "var(--accent)",
-        background: craftTab === key ? "var(--accent)" : "transparent",
-        border: `1px solid ${craftTab === key ? "var(--accent)" : "var(--border)"}`,
-      }}>{label}</span>
+    <span key={key} className="mobile-touch-target craft-tab" data-on={craftTab === key} onClick={() => setCraftTab(key)}>{label}</span>
   );
   const tabs = (className) => (
     <div className={className} style={{ display: "flex", gap: 6, padding: "2px 16px 8px" }}>
@@ -139,8 +133,8 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
           <span style={{ color: "var(--text)", fontSize: "var(--fs-sm)", flex: 1 }}>{duelPending.lethal
             ? `是否与「${duelPending.name}」生死相搏？既分高下，也决生死——这一战没有点到为止。`
             : `是否与「${duelPending.name}」正式切磋？一旦开打，就要见真章了。`}</span>
-          <span onClick={duelHandlers.confirmDuel} style={{ cursor: "pointer", fontSize: "var(--fs-sm)", padding: "4px 12px", borderRadius: 0, color: "var(--ink-bg-panel)", background: "var(--red-soft)", border: "1px solid var(--red-soft)" }}>{duelPending.lethal ? "决生死" : "确认切磋"}</span>
-          <span onClick={duelHandlers.cancelDuel} style={{ cursor: "pointer", fontSize: "var(--fs-sm)", padding: "4px 12px", borderRadius: 0, color: "var(--text-dim)", border: "1px solid var(--ink-edge-quest)" }}>算了</span>
+          <span className="duel-confirm-btn" onClick={duelHandlers.confirmDuel}>{duelPending.lethal ? "决生死" : "确认切磋"}</span>
+          <span className="duel-cancel-btn" onClick={duelHandlers.cancelDuel}>算了</span>
         </div>
       )}
 

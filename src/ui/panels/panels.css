@@ -1,0 +1,113 @@
+/* panels 目录里可点击元素的样式（路线图 U2）。原先写在内联 style 里，原样搬到这里；
+   选中/可用等状态由 data-on="true|false" 切换。在 main.jsx 里排在 mobile.css 之后，
+   保持原内联样式压过 mobile.css 非 !important 规则的先后关系。panelsCss.test.js 逐属性比对原样式快照。 */
+
+/* CenterPanel：工艺标签（选中时朱红实底） */
+.craft-tab {
+  cursor: pointer;
+  padding: 2px 12px;
+  font-size: var(--fs-sm);
+  border-radius: 0;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--border);
+}
+.craft-tab[data-on="true"] { color: var(--bg); background: var(--accent); border-color: var(--accent); }
+
+/* CenterPanel：切磋确认 / 取消 */
+.duel-confirm-btn {
+  cursor: pointer;
+  font-size: var(--fs-sm);
+  padding: 4px 12px;
+  border-radius: 0;
+  color: var(--ink-bg-panel);
+  background: var(--red-soft);
+  border: 1px solid var(--red-soft);
+}
+.duel-cancel-btn {
+  cursor: pointer;
+  font-size: var(--fs-sm);
+  padding: 4px 12px;
+  border-radius: 0;
+  color: var(--text-dim);
+  border: 1px solid var(--ink-edge-quest);
+}
+
+/* DebugPanel：关闭；调试动作（可用时陶土色，不可用时淡墨；传送可用时用朱红） */
+.debug-close-btn {
+  cursor: pointer;
+  color: var(--debug-close);
+  font-size: var(--fs-md);
+  padding: 2px 12px;
+  border: 1px solid var(--debug-close-edge);
+  border-radius: 0;
+}
+.debug-action {
+  cursor: pointer;
+  font-size: var(--fs-2xs);
+  color: var(--clay);
+  border: 1px solid var(--ink-accent);
+  border-radius: 0;
+  padding: 2px 8px;
+  user-select: none;
+}
+.debug-action.debug-action-accent { color: var(--accent); border-color: var(--accent); }
+.debug-action[data-on="false"] { color: var(--ink-dim-deep); border-color: var(--ink-divider); }
+
+/* TopBar：头像选择里的「恢复默认」 */
+.avatar-reset-btn {
+  cursor: pointer;
+  font-size: var(--fs-sm);
+  color: var(--ink-danger-soft);
+  padding: 6px 12px;
+  border: 1px solid var(--footer-stalled-bg);
+  border-radius: 0;
+}
+
+/* CenterFooterBar：任务进度、任务选项、@ 菜单项、发送按钮 */
+.quest-progress-btn {
+  cursor: pointer;
+  color: var(--ember);
+  padding: 2px 10px;
+  border: 1px solid var(--gold-deep);
+  border-radius: 0;
+  font-size: var(--fs-xs);
+  background: var(--footer-progress-button);
+  white-space: nowrap;
+}
+.quest-choice-btn {
+  cursor: pointer;
+  color: var(--clay);
+  padding: 2px 10px;
+  border: 1px solid var(--accent);
+  border-radius: 0;
+  font-size: var(--fs-xs);
+  background: var(--ink-tier-bg);
+  white-space: nowrap;
+}
+.at-menu-item {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  text-align: left;
+  padding: 6px 10px;
+  font-size: var(--fs-sm);
+  font-family: inherit;
+  cursor: pointer;
+}
+.game-send-button {
+  flex-shrink: 0;
+  min-width: 52px;
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 1px solid var(--accent);
+  border-radius: 0;
+  background: transparent;
+  color: var(--accent);
+  font-family: inherit;
+  font-size: var(--fs-md);
+  letter-spacing: 2px;
+  cursor: pointer;
+  opacity: 1;
+}
+.game-send-button[data-on="false"] { border-color: var(--border); color: var(--text-dim); cursor: default; opacity: 0.5; }
