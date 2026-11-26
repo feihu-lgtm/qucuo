@@ -5,19 +5,19 @@ import React from "react";
 export const SAVE_KEY = "qucuo_tavern_sim_v1";
 
 // ── 共用小组件 ─────────────────────────────────────────────────────────
-export function Btn({ label, onClick, disabled, zoneTheme, secondary }) {
+export function Btn({ label, onClick, disabled, secondary }) {
   return (
     <span onClick={disabled ? undefined : onClick}
       style={{ fontSize: "var(--fs-sm)", padding: "4px 12px", borderRadius: 0, cursor: disabled ? "not-allowed" : "pointer",
-      color: disabled ? "var(--tavern-disabled-text)" : secondary ? zoneTheme.accentDim : zoneTheme.bg,
-      background: disabled ? "var(--tavern-disabled-bg)" : secondary ? "transparent" : zoneTheme.accent,
-      border: `1px solid ${disabled ? "var(--tavern-disabled-edge)" : secondary ? zoneTheme.border : zoneTheme.accent}`,
+      color: disabled ? "var(--tavern-disabled-text)" : secondary ? "var(--accent-dim)" : "var(--bg)",
+      background: disabled ? "var(--tavern-disabled-bg)" : secondary ? "transparent" : "var(--accent)",
+      border: `1px solid ${disabled ? "var(--tavern-disabled-edge)" : secondary ? "var(--border)" : "var(--accent)"}`,
       opacity: disabled ? 0.5 : 1, userSelect: "none", whiteSpace: "nowrap", }}>{label}</span>
   );
 }
 
-export function SectionTitle({ children, zoneTheme }) {
-  return <div style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-xs)", margin: "12px 0 6px", borderBottom: `1px solid ${zoneTheme.border}`, paddingBottom: 3 }}>{children}</div>;
+export function SectionTitle({ children }) {
+  return <div style={{ color: "var(--accent-dim)", fontSize: "var(--fs-xs)", margin: "12px 0 6px", borderBottom: `1px solid var(--border)`, paddingBottom: 3 }}>{children}</div>;
 }
 
 // ── 样式 ─────────────────────────────────────────────────────────────

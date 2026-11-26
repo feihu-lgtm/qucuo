@@ -504,6 +504,36 @@
   --log-quest: #8a5a0a;
   --log-dialogue: #8a1e6a;
 }
+/* 固定暗夜的子树（开始页、开场、创角、酒馆经营、开始页的卡牌导入）：根节点写
+   data-theme="night"，这里把日间块覆盖过的变量按 :root 的暗夜值重新声明一遍，
+   全局切到日间时子树仍是暗夜。变量清单与取值由 themeTokens.test.js 锁住。 */
+[data-theme="night"] {
+  color-scheme: dark;
+  --bg: #0a0a09;
+  --bg-panel: #111110;
+  --border: #4a453c;
+  --text: #e8e4d6;
+  --text-dim: #8f8a7c;
+  --accent: #c8323a;
+  --accent-dim: #8a4a48;
+  --good: #5a8a5a;
+  --warn: #d4a853;
+  --info: #8ac8b8;
+  --muted: #8a8270;
+  --plate: #111110;
+  --qc-hi: #e8e4d6;
+  --log-desc: initial; /* 暗夜下本无此变量（只给日间日志配色用），子树里同样置空 */
+  --log-room: initial; /* 暗夜下本无此变量（只给日间日志配色用），子树里同样置空 */
+  --log-item: initial; /* 暗夜下本无此变量（只给日间日志配色用），子树里同样置空 */
+  --log-skill: initial; /* 暗夜下本无此变量（只给日间日志配色用），子树里同样置空 */
+  --log-choice: #6aaa8a;
+  --log-narrator: initial; /* 暗夜下本无此变量（只给日间日志配色用），子树里同样置空 */
+  --log-affection: #f0a0c0;
+  --log-confess: initial; /* 暗夜下本无此变量（只给日间日志配色用），子树里同样置空 */
+  --log-quest: initial; /* 暗夜下本无此变量（只给日间日志配色用），子树里同样置空 */
+  --log-dialogue: #e8a0d8;
+}
+
 
 html,
 body {
