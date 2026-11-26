@@ -17,7 +17,8 @@ function cnNum(raw) {
 }
 
 // 期限：「三天之内/三日内/两个时辰内/48小时内」→ 小时。天/日×24、时辰×2、小时×1。
-const DEADLINE_RE = /([一二两三四五六七八九十\d]+)\s*(天|日|个?时辰|小时)之?内?/;
+// Review 修：期限必带「之内/以内」——「前两天我去过后山」的追忆不带内字不是期限。
+const DEADLINE_RE = /([一二两三四五六七八九十\d]+)\s*(天|日|个?时辰|小时)(?:之|以)?内/;
 // 要约：我+定/会/去/替/帮 起头的承诺从句（到标点或「事成」收尾）。
 const OFFER_RE = /我(?:定|会|去|替|帮)[^，。！？!?,]{2,28}/;
 // 酬谢：赏我/给我/谢我/酬我+X（到标点/语气词收尾，cap 20 字与 validPact 口径一致）。
@@ -30,6 +31,8 @@ export function parsePactOffer(text) {
   const om = t.match(OFFER_RE);
   const rm = t.match(REWARD_RE);
   if (!dm || !om || !rm) return null;
+  // Review 修：要约从句含「过/了」是过去式追忆（我去过后山），不是 forward 承诺——拒。
+  if (/[过了]/.test(om[0])) return null;
   const n = cnNum(dm[1]);
   if (!Number.isFinite(n) || n <= 0) return null;
   const unit = dm[2];

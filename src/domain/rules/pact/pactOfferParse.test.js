@@ -18,6 +18,13 @@ describe("F7 parsePactOffer 口头契约系统兜底解析", () => {
     expect(parsePactOffer("今天天气不错，我们去喝酒吧")).toBeNull();
     expect(parsePactOffer("")).toBeNull();
   });
+  it("Review 修：追忆往事不立约（无内字期限/过去式要约）", () => {
+    expect(parsePactOffer("前两天我去过后山，还是你给我指的路")).toBeNull();
+    expect(parsePactOffer("三天前我替你跑过一趟，你还欠我顿酒")).toBeNull();
+    // 带内的真立约不受误伤
+    expect(parsePactOffer("三天之内我定替你跑一趟，你赏我顿酒")).toBeTruthy();
+  });
+
   it("中文数字：十日=240h", () => {
     expect(parsePactOffer("十日之内我定会寻回那物件，你谢我五两银子")?.deadlineHours).toBe(240);
   });

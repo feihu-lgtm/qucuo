@@ -114,6 +114,13 @@ describe("verifySealAndMaterialize 铁律三：编译与 pact", () => {
     });
     expect(out2.facts.some((f) => f.op === "BIND_OR_SETTLE_PACT" && f.promise === "模型版承诺")).toBe(true);
     expect(out2.facts.some((f) => f.op === "BIND_OR_SETTLE_PACT" && f.promise.includes("后山"))).toBe(false);
+    // Review 修：fallback 豁免 allowSpontaneousPact 闸门（T0 闲聊回合玩家亲口立约也入账）
+    const verdictNoPact = { ...verdictWith(), allowSpontaneousPact: false };
+    const out4 = verifySealAndMaterialize({
+      sealText: empty, screenText: "x", verdict: verdictNoPact, anchorIds: ["F42_1"], state: STATE, turn: 42,
+      fallbackPact: fb,
+    });
+    expect(out4.facts.some((f) => f.op === "BIND_OR_SETTLE_PACT" && f.npc === "才旦")).toBe(true);
     // 无 fallback 且模型未填 → 无 pact（回归旧行为）
     const out3 = verifySealAndMaterialize({
       sealText: empty, screenText: "x", verdict: verdictWith(), anchorIds: ["F42_1"], state: STATE, turn: 42,

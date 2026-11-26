@@ -153,7 +153,11 @@ export function verifySealAndMaterialize({
 
   // spontaneousPact 校验并入 facts（F7：模型未填时系统兜底 pact 补位）
   const pactSource = sealData?.spontaneousPact || fallbackPact;
-  if (verdict?.allowSpontaneousPact && pactSource) {
+  // Review 修：系统兜底 pact 豁免 allowSpontaneousPact 闸门——该闸门防的是模型
+  // 在不该立约的回合虚构 pact；fallback 来自玩家原话三重门槛系统解析，
+  // 玩家亲口立约本身就是最强证据，T0 闲聊回合拒签等于把真约漏掉。
+  const usingFallback = !sealData?.spontaneousPact && !!fallbackPact;
+  if ((verdict?.allowSpontaneousPact || usingFallback) && pactSource) {
     const pactNpcNames = (verdict.reactionGuides || []).map((g) => g.npc);
     // 兜底 pact 的 npc 来自 intake/谈锋系统推导（不是模型自证），豁免在场名册核验
     if (!sealData?.spontaneousPact && fallbackPact?.npc && !pactNpcNames.includes(fallbackPact.npc)) {
