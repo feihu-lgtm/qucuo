@@ -31,7 +31,7 @@ describe("S2 talkTarget 回填：敌意不点名不落空", () => {
   it("选中温掌柜骂「你这混蛋」：模型听意 target 无 → 回填后签 -3 怨+生气", async () => {
     const intakeJson = JSON.stringify({
       read: "玩家辱骂掌柜", refIds: [],
-      actions: [{ kind: "talk", target: "无", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "hostile", outcome: "无", risk: "无", confidence: 0.9, text: "你这混蛋" }],
+      actions: [{ kind: "talk", target: "无", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "hostile", outcome: "无", risk: "无", confidence: 0.9, text: "你这混蛋", useKind: "" }],
       proposals: [],
     });
     const ai = createMockAi([intakeJson, "温掌柜拍案而起，怒目而视"]);
@@ -52,7 +52,7 @@ describe("S2 talkTarget 回填：敌意不点名不落空", () => {
     for (const talkTarget of ["温掌柜", null]) {
       const intakeJson = JSON.stringify({
         read: "玩家辱骂掌柜", refIds: [],
-        actions: [{ kind: "talk", target: "无", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "hostile", outcome: "无", risk: "无", confidence: 0.9, text: "我看你就是个混蛋" }],
+        actions: [{ kind: "talk", target: "无", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "hostile", outcome: "无", risk: "无", confidence: 0.9, text: "我看你就是个混蛋", useKind: "" }],
         proposals: [],
       });
       const ai = createMockAi([intakeJson, "温掌柜拍案而起"]);
@@ -68,7 +68,7 @@ describe("S2 talkTarget 回填：敌意不点名不落空", () => {
   it("未点选但单人在场：模型听意 target 无也回填唯一在场者", async () => {
     const intakeJson = JSON.stringify({
       read: "玩家辱骂掌柜", refIds: [],
-      actions: [{ kind: "talk", target: "无", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "hostile", outcome: "无", risk: "无", confidence: 0.9, text: "你这蠢货" }],
+      actions: [{ kind: "talk", target: "无", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "hostile", outcome: "无", risk: "无", confidence: 0.9, text: "你这蠢货", useKind: "" }],
       proposals: [],
     });
     const ai = createMockAi([intakeJson, "温掌柜拍案而起，怒目而视"]);
@@ -84,7 +84,7 @@ describe("S2 talkTarget 回填：敌意不点名不落空", () => {
   it("未点选但原话点名不在场者：不误罚唯一在场旁观者", async () => {
     const intakeJson = JSON.stringify({
       read: "玩家辱骂王五", refIds: [],
-      actions: [{ kind: "talk", target: "无", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "hostile", outcome: "无", risk: "无", confidence: 0.9, text: "王五你这个畜生" }],
+      actions: [{ kind: "talk", target: "无", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "hostile", outcome: "无", risk: "无", confidence: 0.9, text: "王五你这个畜生", useKind: "" }],
       proposals: [],
     });
     const ai = createMockAi([intakeJson, "……"]);
@@ -98,7 +98,7 @@ describe("S2 talkTarget 回填：敌意不点名不落空", () => {
   it("模型点了名的不覆盖：骂王五时 target 保持王五不回填", async () => {
     const intakeJson = JSON.stringify({
       read: "玩家辱骂王五", refIds: [],
-      actions: [{ kind: "talk", target: "王五", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "hostile", outcome: "无", risk: "无", confidence: 0.9, text: "王五你这个畜生" }],
+      actions: [{ kind: "talk", target: "王五", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "hostile", outcome: "无", risk: "无", confidence: 0.9, text: "王五你这个畜生", useKind: "" }],
       proposals: [],
     });
     const ai = createMockAi([intakeJson, "……"]);
@@ -115,7 +115,7 @@ describe("S7 送银桥集成：真实链 playerInput 接线防回归", () => {
   it("打字「把5两银子送给温掌柜」：判官签 CHANGE_VITALS_SILVER -5", async () => {
     const intakeJson = JSON.stringify({
       read: "玩家送银", refIds: [],
-      actions: [{ kind: "give", target: "温掌柜", item: "银两", itemId: "银两", direction: "none", condition: "无", condition_text: "", stance: "sincere", outcome: "无", risk: "无", confidence: 0.9, text: "把5两银子送给温掌柜" }],
+      actions: [{ kind: "give", target: "温掌柜", item: "银两", itemId: "银两", direction: "none", condition: "无", condition_text: "", stance: "sincere", outcome: "无", risk: "无", confidence: 0.9, text: "把5两银子送给温掌柜", useKind: "" }],
       proposals: [],
     });
     const ai = createMockAi([intakeJson, "温掌柜掂了掂银子，眉开眼笑"]);

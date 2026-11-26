@@ -78,7 +78,7 @@ describe("S5 修为 single_only 根因复现（结论：签发侧）", () => {
       const rng = createRng(7);
       const v = judgeTurn(base, {
         read: "", refIds: [],
-        actions: [{ kind: "free_act", target: "无", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome, risk: "无", confidence: 0.9, text: "打坐" }],
+        actions: [{ kind: "free_act", target: "无", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome, risk: "无", confidence: 0.9, text: "打坐", useKind: "" }],
         proposals: [],
       }, { rng: rng.random });
       const cultFacts = (v?.facts || []).filter((f) => f.op === "PROGRESS_CULTIVATION");

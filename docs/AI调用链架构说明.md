@@ -379,3 +379,5 @@ CI 有硬门禁：`npm run docs-gate` 会读取 PR 相对 base 的文件清单�
 - 不写愿望当事实；未合入 main 的只能标「施工中」或「基础已落地/未接主链」。
 - 设计稿和代码冲突时，在「已确认的设计取舍」里写清楚采用哪边。
 - 文档可以用文字、表格、Mermaid 图或 LLM 可读契约片段，但必须落在仓库里，不能只留在会话记录。
+
+| D7 use_item 意图细分上移 intake：intake schema/提示词加 useKind（consume/present/practice），前哨直接判意；judgeRoutes 以 useKind 为准（consume 但非耗材回失败），系统正则降级为缺失兜底 | 已开 PR 未合并 |
