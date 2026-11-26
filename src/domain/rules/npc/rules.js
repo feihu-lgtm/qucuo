@@ -43,6 +43,8 @@ const NPC_FIELDS = [
   "ocAdventurer", "npcRef", "tradeStyle",
   // 时段表跟人走：npc.roam 要靠它判断"此刻该去哪"，innerMap 的可见性也认它（见 isNpcVisibleInInnerRoom）
   "schedule",
+  // W-ROAM 最小步距节流时间戳：驻场重刷时不能丢，丢了等于每刻都重新计步距
+  "lastRoamTurn",
 ];
 
 export function buildRoomNpcWithCombat(poolNpc, { existingNpc, luck = 5, trade } = {}) {
@@ -74,6 +76,9 @@ export const residentNpcRule = {
     // 过滤所读状态必须进 deps：companion 解锁/宿敌招抚后不重刷就滤不掉
     state.companionState,
     state.varTree?.世界?.宿敌谱,
+    // W-ROAM：驻足锁本身也是名单过滤输入——锁过期后下一次重建（任何交互写锁都会
+    // 触发 deps 变化）把身份到期的昨日过客清走，不会赖到子夜。
+    state.varTree?.世界?.驻足锁,
   ],
   run(state, { importedRegistry, roomMap, companionState = state.companionState }) {
     const { room, time, questProgress = {}, flags = [], char } = state;
@@ -199,6 +204,7 @@ export const residentNpcRule = {
     const isStalePasser = (npc) => npc?.randomPasser != null && (npc.randomPasser !== dayIdx || !rosterNames.has(npc.name));
     const hasStalePassers = (room.npcs || []).some(isStalePasser);
     const toInject = [...poolNpcs, ...residentNpcs, ...activeEscortTargets, ...gambleBidders, ...importedNpcs, ...worldAdventurers, ...passers];
+    const injectNameSet = new Set(toInject.map((npc) => npc.name));
     // 不具名群众：按天固定，有内层地图的分散到各公共房间
     const crowdRooms = hasInnerMap(room.name) ? getPublicInnerRoomNames(room.name) : [];
     const crowd = getCrowd(room.name, time).map((label) => {
@@ -232,7 +238,23 @@ export const residentNpcRule = {
       changes: {
         room: (previous) => ({
           ...previous,
-          npcs: injectNpcs((previous.npcs || []).filter((npc) => !isStalePasser(npc) && !isStaleAdventurer(npc) && (npc.imported || !staleNames.has(npc.name))), toInject),
+          // W-ROAM Review 修：子夜换名单不清驻足锁未过期的过路人——玩家正找着他办事说话，
+          // 身份到期也留到锁过期后的下一次重建再离场。冒险者不保：他们按日在据点间
+          // 换防，保留旧 copy 会与新驻地的当日新身撞出同名双身——换人比锁更硬。
+          // Review 三轮修：游走池按时辰抽样——已不在当前时辰样本里的池客（非时段表
+          // 走班的）同样算离场，不然名单只进不出、越聊越膨胀；锁未过期者同例保留。
+          npcs: injectNpcs((previous.npcs || []).filter((npc) => {
+            if (!(npc.imported || !staleNames.has(npc.name))) return false;
+            const injectedNames = injectNameSet;
+            // Review 四轮修：随身物带 sold/stolen/dropped 痕迹的池客不按样本轮替清——
+            // 清掉重建会洗掉偷卖痕迹，同一件固定物能被重复扒第二次。
+            const hasLootHistory = Array.isArray(npc.carriedItems)
+              && npc.carriedItems.some((e) => e?.sold || e?.stolen || e?.dropped);
+            const isStalePool = npc.isPoolNpc && !Array.isArray(npc.schedule) && !hasLootHistory
+              && typeof npc.pursuitInnerRoom !== "string" && !injectedNames.has(npc.name);
+            if (!isStalePasser(npc) && !isStaleAdventurer(npc) && !isStalePool) return true;
+            return npc.adventurerDay == null && (state.varTree?.世界?.驻足锁?.[npc.name] ?? -1) > time;
+          }), toInject),
           crowd,
         }),
       },

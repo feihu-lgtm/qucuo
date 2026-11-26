@@ -382,6 +382,7 @@ async function runTurnSteps(ctx, cmd, opts) {
     newConvo,
     judgeEffects,
     derivedRespondedNpcs: deps.derivedRespondedNpcs || null,
+    intakeTargets: deps.intakeTargets || null,
     judgePipelineActive: !!deps.judgePipelineActive,
     groupTalk: !!deps.groupTalkRuleBlock,
     // WO-16F-F2c：交互意向随 turn 对象带出——finalizeTurn 无需特别处理，

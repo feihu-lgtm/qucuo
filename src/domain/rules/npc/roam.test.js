@@ -62,27 +62,93 @@ describe("npc.roam 一步一格", () => {
     }
   });
 
-  it("游走者每一步都落在上一间的邻居，并各写一行公屏日志", () => {
+  it("游走者每一步都落在上一间的邻居，公屏只报玩家视野内的进出", () => {
+    // 玩家在村口（innerRoomName null → playerSpot = 据点锚点村口）：
+    // 只有进出村口的步子上公屏，别院动静静默。
     let state = baseState({ name: "鱼定村", npcs: [{ name: "路人甲", isPoolNpc: true, innerRoom: "村口" }] });
     let moves = 0;
-    for (let time = 1; time <= 300; time++) {
+    const moveTimes = [];
+    for (let time = 1; time <= 600; time++) {
       const before = state.room.npcs[0].innerRoom;
       const out = tick(state, time);
       state = out.state;
       const after = state.room.npcs[0].innerRoom;
       if (after !== before) {
         moves++;
+        moveTimes.push(time);
         expect(neighborsOf("鱼定村", before)).toContain(after);
-        expect(out.logs).toHaveLength(1);
-        expect(out.logs[0]).toMatchObject({ t: "sys" });
-        expect(out.logs[0].text).toContain("路人甲");
-        expect(out.logs[0].text).toContain(`「${after}」`);
+        const visible = before === "村口" || after === "村口";
+        if (visible) {
+          expect(out.logs).toHaveLength(1);
+          expect(out.logs[0]).toMatchObject({ t: "sys" });
+          expect(out.logs[0].text).toContain("路人甲");
+          // 进场文案写来处、离场文案写去向——按方向各断一处
+          if (after === "村口") expect(out.logs[0].text).toContain(`「${before}」`);
+          else expect(out.logs[0].text).toContain(`「${after}」`);
+        } else {
+          // W-ROAM 公屏去噪：隔壁街走动静默改坐标
+          expect(out.logs).toEqual([]);
+        }
       } else {
         expect(out.logs).toEqual([]);
       }
     }
-    expect(moves).toBeGreaterThan(20);
-    expect(moves).toBeLessThan(150);
+    expect(moves).toBeGreaterThanOrEqual(1);
+    // W-ROAM 双重节流：0.08 低概率 + 4 刻最小步距——600 刻移动次数远少于旧制
+    expect(moves).toBeLessThan(40);
+    // 最小步距：相邻两次移动间隔不小于 4 刻
+    for (let i = 1; i < moveTimes.length; i++) {
+      expect(moveTimes[i] - moveTimes[i - 1]).toBeGreaterThanOrEqual(4);
+    }
+  });
+
+  it("W-ROAM 十回合驻足锁：锁期内随机游走与换班一律跳过，过期恢复", () => {
+    // 随机游走者被锁：锁到 time+10，期间一步不动
+    let state = baseState(
+      { name: "鱼定村", npcs: [{ name: "路人甲", isPoolNpc: true, innerRoom: "村口" }] },
+      { varTree: { 世界: { 驻足锁: { 路人甲: 11 } } } },
+    );
+    for (let time = 1; time <= 10; time++) {
+      state = tick(state, time).state;
+      expect(state.room.npcs[0].innerRoom).toBe("村口");
+    }
+    // 锁过期后（11 <= time）恢复掷骰——长跑内终会挪窝
+    for (let time = 11; time <= 400 && state.room.npcs[0].innerRoom === "村口"; time++) {
+      state = tick(state, time).state;
+    }
+    expect(state.room.npcs[0].innerRoom).not.toBe("村口");
+  });
+
+  it("W-ROAM 驻足锁连时段表换班也跳过：兰姐被锁不入夜回楼", () => {
+    const state0 = baseState(
+      { name: "天都镇", npcs: [{ name: "兰姐", isPoolNpc: true, innerRoom: "玉石料场", schedule: [{ slot: [18, 24], weights: { 天都镇: 1 }, lockInnerRoom: "百花楼" }] }] },
+      { varTree: { 世界: { 驻足锁: { 兰姐: 40 } } } },
+    );
+    let state = state0;
+    for (let time = 18; time <= 22; time++) {
+      state = tick(state, time).state;
+      expect(state.room.npcs[0].innerRoom).toBe("玉石料场");
+    }
+  });
+
+  it("W-ROAM 主叙事同源感知：视野内进出写入 recentMovements，隔街不入，旧记录清理", () => {
+    let state = baseState({ name: "鱼定村", npcs: [{ name: "路人甲", isPoolNpc: true, innerRoom: "村口" }] });
+    // 手工注入一条移动：从村口走出去——玩家在村口，应入记录
+    let sawRecord = null;
+    for (let time = 1; time <= 600 && !sawRecord; time++) {
+      const out = tick(state, time);
+      state = out.state;
+      const rec = (state.room.recentMovements || []).find((m) => m.name === "路人甲");
+      if (rec) sawRecord = rec;
+    }
+    expect(sawRecord).toBeTruthy();
+    expect(["arrive", "depart"]).toContain(sawRecord.kind);
+    expect(sawRecord.from).toBeTruthy();
+    expect(sawRecord.to).toBeTruthy();
+    // 记录只留最近一刻：很旧的条目会被清掉
+    for (const m of state.room.recentMovements || []) {
+      expect(m.turn).toBeGreaterThanOrEqual(state.time - 1);
+    }
   });
 
   it("日志按玩家所在房间换说法：离开此处 / 走了进来", () => {
@@ -93,9 +159,9 @@ describe("npc.roam 一步一格", () => {
       state = out.state;
       if (out.logs.length) left = out.logs[0].text;
     }
-    expect(left).toMatch(/^ {2}路人甲离开此处，往.去了「.+」。$/);
+    expect(left).toMatch(/^ {2}路人甲转身离开此处，往.朝「.+」去了。$/);
     const step = { dir: "e", to: "歇马居" };
-    expect(describeNpcMove("路人甲", "村口", step, "歇马居")).toBe("  路人甲从「村口」走了进来。");
+    expect(describeNpcMove("路人甲", "村口", step, "歇马居")).toBe("  脚步声近，路人甲从「村口」走了过来。");
     expect(describeNpcMove("路人甲", "村口", step, null)).toBe("  路人甲从「村口」往东去了「歇马居」。");
   });
 
@@ -112,8 +178,10 @@ describe("npc.roam 一步一格", () => {
       state = out.state;
       ticks++;
       expect(neighborsOf(district, before)).toContain(state.room.npcs[0].innerRoom);
-      expect(out.logs).toHaveLength(1);
-      expect(out.logs[0].text).toContain("兰姐");
+      // W-ROAM 公屏去噪：不进出玩家视野房的步子静默——兰姐走回百花楼沿途不经过
+      // 玩家所在处时不再逐刻刷屏，日志可有可无但不许超过一行
+      expect(out.logs.length).toBeLessThanOrEqual(1);
+      if (out.logs.length) expect(out.logs[0].text).toContain("兰姐");
     }
     expect(state.room.npcs[0].innerRoom).toBe("百花楼");
     expect(ticks).toBe(total);

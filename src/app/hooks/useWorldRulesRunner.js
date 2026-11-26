@@ -33,6 +33,8 @@ import {
 import { applyResult } from "../../features/run.js";
 import * as importedRegistry from "../../domain/rules/cards/importedRegistry.js";
 import { gameActions, gameStore, subscribeGameReplaced } from "../../store/gameStore.js";
+import { roamReactionBackfill } from "./roamReactionBackfill.js";
+import { newBackfillKey } from "../../engine/ports/backfill.js";
 
 export function useWorldRulesRunner({
   seaReturnRef, setForcedDuelNpc, schedulerRef, dispatchCommand = (_id, fn) => fn(),
@@ -109,7 +111,26 @@ export function useWorldRulesRunner({
           dispatchCommand("worldRules", () => {
             // WO-06：房间缓存写走 applyResult 统一写入口（changes.roomCache → setRoomCache）
             if (result.roomMap) result.changes = { ...result.changes, roomCache: result.roomMap };
+            // W-ROAM 增量：本拍有玩家视野内进出动向时，末条占位行打 backfill 标记
+            // （离线/无 Key 即保底），随后异步 roam.reaction 白描原位补到其下。
+            let roamKey = null;
+            let roamTrigger = null;
+            if (result.roamMovements?.length && result.logs?.length) {
+              roamKey = newBackfillKey("roamReact");
+              const cur = gameStore.getState();
+              roamTrigger = { roomName: cur.room?.name || "", innerRoomName: cur.innerRoomName ?? null };
+              const logs = [...result.logs];
+              logs[logs.length - 1] = { ...logs[logs.length - 1], fillKey: roamKey, fillSlot: 0 };
+              result = { ...result, logs };
+            }
             applyResult(featureCtx(), result);
+            if (roamKey) {
+              roamReactionBackfill(result.roamMovements, {
+                key: roamKey,
+                triggerRoomName: roamTrigger.roomName,
+                triggerInnerRoomName: roamTrigger.innerRoomName,
+              });
+            }
             if (result.forcedDuelNpc) {
               // 伏击开战先掐断自动寻路，不然打完还会接着往下跑剩下的路段。
               schedulerRef?.current?.clearRouteQueue?.();

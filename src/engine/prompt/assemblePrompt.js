@@ -1,6 +1,7 @@
 import { snowLeopardNote } from "../../domain/rules/quests/snowLeopardQuest.js";
 import { shouldSuppressModelFlags } from "./roundNotes.js";
 import { buildMainStatePrompt, renderPromptTemplate } from "../../domain/rules/prompt/promptRefs.js";
+import { buildRecentMovementNote } from "./roundNotes.js";
 
 const ATTEMPT_LABELS = {
   talk: "交谈",
@@ -82,6 +83,9 @@ export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo)
     suppressModelFlags: shouldSuppressModelFlags(apiCfg, !!(opts.settle || input.isSettle || opts.settleNpc)) }) || "";
   const forcedEventNote = input.buildForcedEventNote?.(opts.forcedEvent, opts.forcedEventNpc, apiCfg.targetWordCount) || "";
   const arrivalNote = input.buildArrivalNote?.({ isTalk, movingDir, lockedDestName, outerDepart, room }) || "";
+  // W-ROAM 11 号位动态现场段：玩家眼前的人物进出与公屏同源——公屏去噪后
+  // 主叙事不能跟着失明，否则正聊着的人走了叙事还在让他开口。
+  const movementNote = buildRecentMovementNote(room, time, innerRoomName);
   const encounterNote = input.encounter
     ? input.buildEncounterNote?.(input.encounter, lockedDestName) || ""
     : "";
@@ -109,7 +113,7 @@ export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo)
   const crowdNote = crowdHere.length
     ? `\n[此地群众] ${crowdHere.join("、")}。这些是不具名的寻常百姓，只作场景人气点缀，不要给他们起名字、不要让他们成为对话对象或推动情节。`
     : "";
-  const context = `${targetNote}${groundItemNote}${modeNote}${stateContext}${crowdNote}${pickupNote}${input.destinationLock || ""}${angryNote}${emergenceNote}${encounterNote}${questStageNote}${input.collectNote || ""}${arrivalNote}${forcedEventNote}`;
+  const context = `${targetNote}${groundItemNote}${modeNote}${stateContext}${crowdNote}${pickupNote}${input.destinationLock || ""}${angryNote}${emergenceNote}${encounterNote}${questStageNote}${input.collectNote || ""}${movementNote}${arrivalNote}${forcedEventNote}`;
 
   return {
     cmd, newConvo, mainConvo, hist, budgetInstruction,

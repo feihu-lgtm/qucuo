@@ -27,7 +27,8 @@ import { seededRand } from "../../../utils/seededRandom.js";
 import { DIRS } from "../../../utils/mudHelpers.js";
 
 // 没有目的地的游走者每刻动身的概率。
-export const ROAM_CHANCE = 0.25;
+// W-ROAM 降速：0.25 → 0.08——原先每回合三四人同时乱窜，院子里人来人往像赶集。
+export const ROAM_CHANCE = 0.08;
 
 // 房间的真实出口：只留目的地确实是该据点内层房间的那几条。
 function exitsOf(district, roomName) {
@@ -70,11 +71,12 @@ export function randomStep(district, from, passable, rng) {
   return { dir, to };
 }
 
-// 公屏上写的那一行。玩家所在房间的进出换一种说法，其余统一"从A往X去了B"。
+// W-ROAM 公屏固定文案（按路线图规格逐字）：只有玩家视野内的进出才上公屏，
+// 隔壁街的走动静默改坐标——调用方负责视野过滤，这里只管措辞。
 export function describeNpcMove(name, from, step, playerRoom) {
   const dir = DIRS[step.dir] || step.dir;
-  if (playerRoom && from === playerRoom) return `  ${name}离开此处，往${dir}去了「${step.to}」。`;
-  if (playerRoom && step.to === playerRoom) return `  ${name}从「${from}」走了进来。`;
+  if (playerRoom && from === playerRoom) return `  ${name}转身离开此处，往${dir}朝「${step.to}」去了。`;
+  if (playerRoom && step.to === playerRoom) return `  脚步声近，${name}从「${from}」走了过来。`;
   return `  ${name}从「${from}」往${dir}去了「${step.to}」。`;
 }
 
@@ -108,6 +110,11 @@ export const npcRoamRule = {
 
     const updates = new Map(); // name → { from, to?, schedule? }
     const logs = [];
+    // W-ROAM 玩家视野房：内层房优先，外层时取据点锚点——只有进出这间屋才上公屏/进叙事感知。
+    const playerSpot = state.innerRoomName || anchor;
+    // W-ROAM 十回合交互驻足锁：玩家找过的人钉在原地，锁期内的随机游走与时段表换班一律跳过。
+    const roamLocks = state.varTree?.世界?.驻足锁 || {};
+    const movements = []; // 玩家视野内的进出记录 → room.recentMovements（主叙事同源感知）
     for (const npc of room.npcs || []) {
       if (!npc?.name || npc.companion || npc.stationed || npc.hostile) continue;
       if (partyNames.has(npc.name) || isCompanionUnlockedByName(companionState, npc.name)) continue;
@@ -121,20 +128,38 @@ export const npcRoamRule = {
       // 房间绑定的家 = 驻场；唯独按时段表走的人（兰姐）家只是夜里的落点
       if (!scheduled && getResidentRoomForNpc(district, npc.name)) continue;
 
+      // W-ROAM 驻足锁：锁未过期（unlockAt > 此刻）无论随机游走还是换班一律不动
+      if ((roamLocks[npc.name] ?? -1) > time) continue;
+
       const from = npc.innerRoom || anchor;
       let step = null;
       if (scheduled) {
         const spot = scheduledSpot(poolEntry, district, hour);
         if (spot) step = stepToward(district, from, spot, passable);
       } else if (!npc.lockInnerRoom) {
-        const rng = seededRand(Math.floor(time), `roam|${district}|${npc.name}`);
-        if (rng() < ROAM_CHANCE) step = randomStep(district, from, passable, rng);
+        // W-ROAM 最小步距节流：距上次挪窝不足 4 刻，本刻不掷骰——同一人不会来回乱窜
+        if (time - (npc.lastRoamTurn ?? -99) >= 4) {
+          const rng = seededRand(Math.floor(time), `roam|${district}|${npc.name}`);
+          if (rng() < ROAM_CHANCE) step = randomStep(district, from, passable, rng);
+        }
       }
       // 老存档里的兰姐没带 schedule：补上，innerMap 的可见性判定认这个字段
       const needStamp = scheduled && !Array.isArray(npc.schedule);
       if (!step && !needStamp) continue;
-      updates.set(npc.name, { raw: npc.innerRoom ?? null, ...(step ? { to: step.to } : {}), ...(needStamp ? { schedule: poolEntry.schedule } : {}) });
-      if (step) logs.push({ t: "sys", text: describeNpcMove(npc.name, from, step, state.innerRoomName) });
+      updates.set(npc.name, { raw: npc.innerRoom ?? null, ...(step ? { to: step.to, lastRoamTurn: time } : {}), ...(needStamp ? { schedule: poolEntry.schedule } : {}) });
+      if (step) {
+        // W-ROAM 公屏去噪：只有从玩家眼前走开 / 走进玩家所在处才推公屏，
+        // 别院动静静默改坐标——不再隔街刷屏。
+        const visible = from === playerSpot || step.to === playerSpot;
+        if (visible) {
+          logs.push({ t: "sys", text: describeNpcMove(npc.name, from, step, playerSpot) });
+          movements.push({
+            name: npc.name,
+            kind: step.to === playerSpot ? "arrive" : "depart",
+            from, to: step.to, dir: step.dir, turn: time,
+          });
+        }
+      }
     }
     if (!updates.size) return null;
 
@@ -146,11 +171,20 @@ export const npcRoamRule = {
             const u = updates.get(npc.name);
             // 这一刻到提交之间人若已被别处改走（被追、被叫走），不覆盖
             if (!u || (npc.innerRoom ?? null) !== u.raw) return npc;
-            return { ...npc, ...(u.to ? { innerRoom: u.to } : {}), ...(u.schedule ? { schedule: u.schedule } : {}) };
+            return { ...npc, ...(u.to ? { innerRoom: u.to, lastRoamTurn: u.lastRoamTurn } : {}), ...(u.schedule ? { schedule: u.schedule } : {}) };
           }),
+          // W-ROAM 瞬态进出记录：只留最近一刻的玩家视野内条目，主叙事 11 号位同源感知用。
+          // 非瞬态持久化无意义——读档/换房后房间对象整体重建，它自然消散。
+          recentMovements: [
+            ...(previous.recentMovements || []).filter((m) => m.turn >= time - 1),
+            ...movements,
+          ],
         }),
       },
       ...(logs.length ? { logs } : {}),
+      // W-ROAM 增量：本拍玩家视野内的进出动向带出给 app 层——roamReactionBackfill
+      // 据此前后落占位行+触发 roam.reaction 轻量调用（domain 不碰 AI 网关）。
+      ...(movements.length ? { roamMovements: movements } : {}),
     };
   },
 };
