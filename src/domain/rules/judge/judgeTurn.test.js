@@ -311,6 +311,36 @@ describe("WO-21B 判官签发类目迁移：谊→恩、隙→怨、和→见", 
   });
 });
 
+describe("F8：对象落空的破费重定向 free_act 链", () => {
+  it("give 对象「无」+ outcome 破费 + 原话写数额——必须扣银落账", () => {
+    const act = { kind: "give", target: "无", item: "银两", itemId: "", direction: "none", stance: "clever", outcome: "破费", risk: "无", text: "花五两银子请脚夫喝一碗热茶" };
+    const verdict = judgeTurn(baseEnvelope({
+      playerInput: "花五两银子请路边歇脚的脚夫喝一碗热茶，顺便买一两碎茶带走，打听山里的动静",
+      char: { money: 20, special: {} },
+    }), { read: "", refIds: [], actions: [act], proposals: [] }, { rng: seqRng([0.5]) });
+    const silver = verdict.facts.find((f) => f.op === "CHANGE_VITALS_SILVER" && Number.isFinite(f.moneyDelta));
+    expect(silver).toBeTruthy();
+    expect(silver.moneyDelta).toBe(-5); // 原话五两
+    expect(verdict.notes.join()).toContain("破费");
+  });
+  it("trade 对象不在场 + outcome 破费——同样重定向扣银", () => {
+    const act = { kind: "trade", target: "不存在的人", item: "银两", itemId: "", direction: "none", stance: "casual", outcome: "破费", risk: "无", text: "花三两银子买碎茶" };
+    const verdict = judgeTurn(baseEnvelope({
+      playerInput: "花三两银子买一两碎茶",
+      char: { money: 20, special: {} },
+    }), { read: "", refIds: [], actions: [act], proposals: [] }, { rng: seqRng([0.5]) });
+    const silver = verdict.facts.find((f) => f.op === "CHANGE_VITALS_SILVER" && Number.isFinite(f.moneyDelta));
+    expect(silver).toBeTruthy();
+    expect(silver.moneyDelta).toBe(-3);
+  });
+  it("give 对象在场时仍走赠礼链不重定向", () => {
+    const act = { kind: "give", target: "才旦", item: "青稞酒", itemId: "", direction: "none", stance: "casual", outcome: "破费", risk: "无", text: "送酒" };
+    const verdict = judgeTurn(baseEnvelope(), { read: "", refIds: [], actions: [act], proposals: [] }, { rng: seqRng([0.01]) });
+    // 在场对象走 give 裁决（收/拒），绝不进破费链双扣
+    expect(verdict.notes.join()).not.toContain("对象落空但声明破费");
+  });
+});
+
 describe("D3：带前提动作确定性裁决", () => {
   const condInspect = {
     kind: "inspect_container", target: "木箱", itemId: "", direction: "none", stance: "casual",

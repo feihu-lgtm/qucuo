@@ -138,7 +138,17 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
     if (action.kind === "steal") { handleSteal(J, action); continue; }
 
     const npc = findNpc(npcs, action.target);
-    if (!npc) continue;
+    if (!npc) {
+      // F8 真机修：请客/买物式破费被 intake 误标 give/trade 且对象落空（「无」或
+      // 不在场）时，旧路静默丢弃——玩家声明的银两分文未扣，正文只能编「没递钱」
+      // 自相矛盾。outcome=破费 的自由开支语义与对象无关，改投 freeAct 查价链：
+      // 原话写数额按原话扣，余额够必须落账。
+      if ((action.kind === "give" || action.kind === "trade") && action.outcome === "破费") {
+        notes.push(`对象落空但声明破费——按 free_act 破费链结算（intake kind 误标 ${action.kind} 纠正）`);
+        handleFreeAct(J, action);
+      }
+      continue;
+    }
     const aff = affectionOf(varTree, npc.name);
     const stance = action.stance || "casual";
     const stanceMod = stance === "sincere" ? 0.1 : stance === "perfunctory" ? -0.1 : stance === "forceful" ? -0.15 : 0;

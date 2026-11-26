@@ -28,6 +28,30 @@ describe("writeTurnProse — 原文段落写挂", () => {
     expect(anchored.rawText).not.toContain("⟦");
   });
 
+  it("F9：搭话未点选+唯一在场者——witnesses 只含玩家+这位在场者", async () => {
+    writeTurnProse({
+      narrativeText: "你压低声音对老孙说出断镖的秘密。", turn: 22, location: "老孙饭馆",
+      playerName: "主角", roomNpcNames: ["老孙"], isTalk: true, talkTarget: "",
+      addChunks: addProseChunks,
+    });
+    await flush();
+    const all = await getAllProseChunks();
+    expect(all.length).toBeGreaterThan(0);
+    expect(all[0].witnesses).toEqual(["主角", "老孙"]);
+    expect(all[0].witnesses).not.toContain("才旦");
+  });
+
+  it("F9：多人在场未点选仍按全屋广播（保守口径不变）", async () => {
+    writeTurnProse({
+      narrativeText: "你随口说了一句闲话。", turn: 23, location: "老孙饭馆",
+      playerName: "主角", roomNpcNames: ["老孙", "才旦"], isTalk: true, talkTarget: "",
+      addChunks: addProseChunks,
+    });
+    await flush();
+    const all = await getAllProseChunks();
+    expect(all[0].witnesses).toEqual(["主角", "老孙", "才旦"]);
+  });
+
   it("私聊搭话回合 witnesses 只含玩家+对象（防串味）", async () => {
     writeTurnProse({
       narrativeText: "你低声问她旧事。",

@@ -35,4 +35,28 @@ describe("registerMemoryFact", () => {
   it("无 memory 返回 null", () => {
     expect(registerMemoryFact({ ...base(""), p: {} })).toBeNull();
   });
+
+  it("F9：搭话未点选+唯一在场者——密告只记唯一在场者为亲历，不广播全屋", () => {
+    const out = registerMemoryFact({
+      p: { memory: "后院青砖底下埋着半截断镖" },
+      room: { npcs: [{ name: "老孙" }] },
+      activeTarget: "", isTalk: true, talkTarget: "", time: 24, appendDayMaterial: null,
+    });
+    const tree = out.changes.varTree({ 世界: {} });
+    const facts = tree.世界.知识领域.事实 || {};
+    const entry = Object.values(facts)[0];
+    expect(Object.keys(entry.知晓者)).toEqual(["老孙"]);
+    expect(entry.知晓者.老孙.途径).toBe("亲历");
+  });
+
+  it("F9：多人在场未点选仍按全屋目击（无法确证私语对象，保守广播）", () => {
+    const out = registerMemoryFact({
+      p: { memory: "随口一句话" },
+      room: { npcs: [{ name: "老孙" }, { name: "才旦" }] },
+      activeTarget: "", isTalk: true, talkTarget: "", time: 24, appendDayMaterial: null,
+    });
+    const tree = out.changes.varTree({ 世界: {} });
+    const entry = Object.values(tree.世界.知识领域.事实 || {})[0];
+    expect(Object.keys(entry.知晓者)).toHaveLength(2);
+  });
 });

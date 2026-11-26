@@ -29,8 +29,14 @@ export function registerMemoryFact({ p, room, activeTarget, isTalk, talkTarget, 
     if (!p.memory) return null;
   }
   const roomNpcs = (p.room && Array.isArray(p.room.npcs) ? p.room.npcs : room.npcs) || [];
-  const witnesses = (activeTarget || (isTalk && talkTarget))
-    ? [{ name: activeTarget || talkTarget, 途径: "亲历" }]
+  // F9 知情隔离修：搭话回合未点选但场上只有一名 NPC 时，私语对象就是这位
+  // 唯一在场者（与 #531 intake soleTalkTarget 同一回落口径）——否则「压低声音
+  // 只对老孙说」的密告按 roomNpcs 全员目击者记账，秘密当场漏给所有知情人，
+  // 换房间后不知情者也能接茬（真机 T22 穿透实证）。
+  const soleWitness = isTalk && !activeTarget && !talkTarget && roomNpcs.length === 1 ? roomNpcs[0]?.name : "";
+  const witnessTarget = activeTarget || (isTalk && talkTarget) || soleWitness;
+  const witnesses = witnessTarget
+    ? [{ name: witnessTarget, 途径: "亲历" }]
     : roomNpcs.map(n => ({ name: n.name, 途径: "目击" }));
   // 同一回合对同一对象可能有多条记忆（连聊两次时间不前进时 time 相同），
   // id 只按 time+对象 命名会让 registerFact 静默丢弃后一条——把摘要文本
