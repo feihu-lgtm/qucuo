@@ -88,6 +88,15 @@ export function mergeProseSeqFloor(floor) {
   gameActions.setProseSeq(next);
   return next;
 }
+// V7c 同伴双人互动结果写收口（bonds 配对账/双向心账/携物转移）：applyDuoOutcome 纯函数
+// 算好的 companionState/varTree 一体落账——app/hooks 直写 state 受棘轮管控，写口统一在 store 层。
+export function commitCompanionDuoOutcome({ companionState, varTree }) {
+  gameStore.setState((state) => ({
+    companionState: companionState ?? state.companionState,
+    varTree: varTree ?? state.varTree,
+  }));
+}
+
 export function applyProseLineageFork(atTurn, upToSeq) {
   const cur = gameStore.getState().proseLineage;
   const forked = forkLineage(cur, atTurn, upToSeq);

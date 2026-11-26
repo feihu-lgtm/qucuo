@@ -11,6 +11,7 @@ import { buildSeaOfMindRule } from "../narrator/seaOfMind.js";
 import { makeBlock } from "./tavernMapping.js";
 import { ADULT_HUMAN_FORM, isHumanFormCompanion } from "../companion/companionSlots.js";
 import { getPromptOverrides } from "./registry.js";
+import { loadCopy } from "../../../copy/loadCopy.js";
 
 function applyPresetControlOverrides(preset, ov) {
   if (!preset || (!ov.preset_genrules && !ov.preset_wenfeng)) return preset;
@@ -279,7 +280,9 @@ JSON后若需维护角色/世界状态变量，另起一行独立输出 <mvu> �
     makeBlock("charDescription", `玩家角色：${playerName}。气血、内外功、物品等状态由系统维护，你只叙事，不擅自改状态。正文以第二人称「你」称玩家，严禁把存档栏位名或元数据名当作角色名写入正文。`),
     makeBlock("charPersonality", `旁白语气由给定的说书人声线控制，保持统一。`),
     makeBlock("scenario", scenarioIceberg.blue.join("\n\n")),
-    makeBlock("worldInfoAfter", `${wantIsolation ? `${ISOLATION}\n` : ""}\n\n${MAP_LAW}`),
+    // V7a：旁观者不点名/禁复读静态习性/非亲密回合禁发情模板——通用硬约束，
+    // 文案单源住 src/copy/bystanderRules.txt（copy-gate 规约）。
+    makeBlock("worldInfoAfter", `${wantIsolation ? `${ISOLATION}\n` : ""}\n\n${MAP_LAW}\n\n${loadCopy("bystanderRules.txt")}`),
     makeBlock("persona", `玩家以第一人称「我」扮演 ${playerName}，你是说书人/Gamemaster。`),
     makeBlock("exampleStart", "<START>"),
   ];
