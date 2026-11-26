@@ -152,6 +152,29 @@ describe("runShadowJudge 执行器门禁", () => {
   });
 });
 
+describe("trade/duel 在场受理豁免（Review 修：npcs 字符串形状）", () => {
+  // 直接命中 featureRoutedCats——影子 compareCategories 的豁免注入源；
+  // 接线断言钉死 shadowJudge 调用处确实把 npcs 传进 featureRoutedCats。
+  it("字符串/对象 npcs 在场：trade 豁免 inv+vitals；不在场不豁免", async () => {
+    const { featureRoutedCats } = await import("./shadowTaxonomy.js");
+    const acts = [{ kind: "trade", target: "温掌柜", condition: "无" }];
+    expect(featureRoutedCats(acts, { npcs: ["温掌柜"] })).toEqual(expect.arrayContaining(["inv", "vitals"]));
+    expect(featureRoutedCats(acts, { npcs: [{ name: "温掌柜" }] })).toEqual(expect.arrayContaining(["inv", "vitals"]));
+    expect(featureRoutedCats(acts, { npcs: ["别人"] })).toEqual([]);
+    expect(featureRoutedCats(acts, { npcs: [] })).toEqual([]);
+  });
+  it("接线断言：shadowJudge compareCategories 处 featureRoutedCats 带 { npcs }", async () => {
+    const { readFileSync } = await import("node:fs");
+    const src = readFileSync(new URL("./shadowJudge.js", import.meta.url), "utf8");
+    expect(src).toMatch(/featureRoutedCats\(intakeResult\?\.actions, \{ npcs \}\)/);
+  });
+  it("duel 在场受理同样豁免 vitals/cultivation（延期交互进 feature 战斗链）", async () => {
+    const { featureRoutedCats } = await import("./shadowTaxonomy.js");
+    expect(featureRoutedCats([{ kind: "duel", target: "温掌柜", condition: "无" }], { npcs: ["温掌柜"] }))
+      .toEqual(expect.arrayContaining(["vitals", "cultivation"]));
+  });
+});
+
 describe("影子时间口径（WO-16E 二审）", () => {
   beforeEach(() => { _resetShadowAggregates(); judgeTurn.mockClear?.(); });
   it("非搭话 commit 后 time+1，影子判官仍吃回合前 turn", async () => {

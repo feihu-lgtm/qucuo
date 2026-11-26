@@ -53,7 +53,9 @@ export const FEATURE_ROUTED_KIND_CATS = {
 
 export function featureRoutedCats(actions = [], { npcs = [] } = {}) {
   const out = new Set();
-  const present = new Set((npcs || []).map((n) => n?.name).filter(Boolean));
+  // 在场名单兼容对象/字符串两形——visibleNpcsForAI/room.npcs 上游形状不保证，
+  // 只认 n?.name 会把字符串名全滤空、trade/duel 在场受理豁免永不生效（Review 修）。
+  const present = new Set((npcs || []).map((n) => n?.name ?? n).filter(Boolean));
   // Review 修（S7）：trade 豁免只对「真的会被路由」的意向生效——复刻
   // collectDeferredIntents/useTurn 受理口径：target 在场非「无」、且是回合内
   // 第一个被受理的延期交互意向（useTurn 一回合只接第一场，其余「一场方休」
