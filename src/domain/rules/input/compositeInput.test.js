@@ -138,3 +138,13 @@ describe("V1 Review 二轮：移动不被对话吞/问句不扣回合", () => {
     expect(routeAutoInput("老孙，我喝一口酒", [{ name: "老孙" }]).kind).toBe("action");
   });
 });
+
+describe("V1 Review 三轮：行动软尾吧不被问句豁免吞掉", () => {
+  it("「我先翻一下桌上的册子吧」吧是行动软尾非疑问，归 action", () => {
+    expect(routeAutoInput("我先翻一下桌上的册子吧").kind).toBe("action");
+  });
+  it("真问句仍归免费 talk 不回退", () => {
+    expect(routeAutoInput("盐价稳当吗").kind).toBe("talk");
+    expect(routeAutoInput("老孙，今晚吃什么", [{ name: "老孙" }]).kind).toBe("talk");
+  });
+});

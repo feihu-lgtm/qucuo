@@ -125,7 +125,9 @@ export function isTradeInput(rawInput) {
 // 对象而非玩家的行动意图（「今晚吃什么」是问话不是吃）。
 // 注意：此处的「什么/谁/哪里」只服务于搭话闸豁免，不进 classifyIntent 的 TALK  patterns——
 // 裸「什么」进分类会把「随便敲点什么」这类 UNKNOWN 误归闲聊（V1 已踩过）。
-const QUESTION_SHAPE_RE = /[吗呢吧啊呀嘛][。？！？!?.]*$|[？?]$|如何|怎么样|咋样|是否|能否|可否|(什么|谁|哪里|哪儿|多少|几点|几时)[。？！？!?.]*$/;
+// 句末语气词只认「吗」——吧/呢/啊/呀在口语里更多是行动软尾（「我先翻一下册子吧」）
+// 而非疑问，放宽会把真行动误归免费搭话吞掉。真问号/疑问词/如何类另列，不受影响。
+const QUESTION_SHAPE_RE = /吗[。？！？!?.]*$|[？?]$|如何|怎么样|咋样|是否|能否|可否|(什么|谁|哪里|哪儿|多少|几点|几时)[。？！？!?.]*$/;
 export function isQuestionShape(rawInput) {
   return QUESTION_SHAPE_RE.test((rawInput || "").trim());
 }
