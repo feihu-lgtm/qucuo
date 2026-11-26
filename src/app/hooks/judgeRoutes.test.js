@@ -621,6 +621,16 @@ describe("D4 外层自然语言移动确定性路由", () => {
     }
   });
 
+  it("Review：村口作出发点+虚构地名 → unknown，村口捷径不抢地名核验", () => {
+    const r = resolveMoveTarget(mkState({ innerRoomName: "村口" }), mkAction({ target: "忘忧谷", text: "从村口出发去忘忧谷" }));
+    expect(r.type).toBe("unknown");
+  });
+  it("Review：短名唯一子串匹配——「饭馆」进老孙饭馆、「草甸」去大草甸；多义不猜", () => {
+    const inner = resolveMoveTarget(mkState({ innerRoomName: "村口" }), mkAction({ target: "饭馆", text: "去北边的饭馆" }));
+    expect(inner).toEqual({ type: "inner", dir: "n" });
+    const outer = resolveMoveTarget(mkState(), mkAction({ target: "草甸", text: "去草甸看看" }));
+    expect(outer).toEqual({ type: "outer", dir: "s", dest: "大草甸" });
+  });
   it("executeJudgeRoutes：外层相邻已解锁真实位移且剥 time/convo；隔站/未解锁/未知三类零位移", () => {
     const prevRoom = gameStore.getState().room;
     const prevCache = gameStore.getState().roomCache;
