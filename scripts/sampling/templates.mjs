@@ -4,7 +4,7 @@
 // 纯函数无依赖，node 与浏览器通用。
 
 // 槽位：{npc}=在场人物 {npc2}=另一位在场人物 {item}=背包物件 {food}=背包耗材
-// {weapon}=背包兵刃 {direction}=可用出口(n/s/e/w 的中文) {ground}=地上物
+// {weapon}=背包兵刃 {misc}=背包杂物/凭帖 {direction}=可用出口(n/s/e/w 的中文) {ground}=地上物
 export const TEMPLATES = [
   // ---- talk ×12（配额外溢 2 抵消 skip/误分类）----
   { id: "talk_news", kind: "talk", target: 4, needs: ["npc"], text: "跟{npc}打听一下，最近村里可有什么新鲜事" },
@@ -34,8 +34,10 @@ export const TEMPLATES = [
   { id: "learn_npc", kind: "learn", target: 10, needs: ["npc"], text: "求{npc}指点几手武艺" },
   // ---- invite ×10 ----
   { id: "invite_npc", kind: "invite", target: 10, needs: ["npc"], text: "邀{npc}与我结伴同行" },
-  // ---- use_item ×10 ----
-  { id: "use_food", kind: "use_item", target: 10, needs: ["food"], text: "吃一口{food}垫垫肚子" },
+  // ---- use_item ×10（B1 试跑修：D1 三分流覆盖——服用/演练/出示各占一席，总配额 10 不变）----
+  { id: "use_food", kind: "use_item", target: 4, needs: ["food"], text: "吃一口{food}垫垫肚子" },
+  { id: "use_wield", kind: "use_item", target: 3, needs: ["weapon"], text: "拔出{weapon}演练几式，揣摩其中章法" },
+  { id: "use_present", kind: "use_item", target: 3, needs: ["misc"], text: "取出{misc}亮出来，给在场的人瞧瞧" },
   // ---- equip ×10 ----
   { id: "equip_weapon", kind: "equip", target: 5, needs: ["weapon"], text: "把{weapon}装备起来握在手中" },
   { id: "unequip_weapon", kind: "equip", target: 5, needs: ["weapon"], text: "卸下{weapon}收回包袱" },
@@ -74,6 +76,15 @@ export function fillTemplate(tpl, presence) {
     else if (need === "item") slots.item = inv.map((i) => i?.name || i).filter(Boolean)[0];
     else if (need === "food") slots.food = byCat("food")[0] || inv.map((i) => i?.name || i).find((n) => /青稞|干粮|饼|肉|酒|药/.test(n || ""));
     else if (need === "weapon") slots.weapon = byCat("weapon")[0];
+    else if (need === "misc") {
+      // Review 修：use_present 必须命中出示分支——优先名目凭帖/牌/钥匙类信物，
+      // 其次无 consumable 的 misc；耗材/带加成饰品会被 classifyUseItem 分到服用/演练。
+      // inv 槽位只带 name/category（collect 不采 consumable 字段），名目优先是最稳口径。
+      const CRED_RE = /帖|牌|书信|信物|印|凭证|钥匙|令牌|路引|文书|残页/;
+      const names = inv.map((i) => ({ name: i?.name || "", category: i?.category || "" })).filter((i) => i.name);
+      slots.misc = names.find((i) => CRED_RE.test(i.name))?.name
+        || names.find((i) => i.category === "misc" && !/青稞|干粮|饼|肉|酒|药/.test(i.name))?.name;
+    }
     else if (need === "direction") {
       const dirMap = { n: "北", s: "南", e: "东", w: "西" };
       const d = (presence?.exits || [])[0];
