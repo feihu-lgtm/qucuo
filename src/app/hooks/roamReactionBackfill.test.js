@@ -155,7 +155,7 @@ describe("V6 原位替换占位行（验收）", () => {
     const state = mkState();
     let log = placeholderLog();
     const setLog = (fn) => { log = fn(log); };
-    const ask = vi.fn(async () => ({ text: "门帘一掀，寒气裹着个行脚客进来，他朝掌柜点了点头。" }));
+    const ask = vi.fn(async () => ({ text: "门帘一掀，寒气裹着路人甲进来，他朝掌柜点了点头。" }));
     roamReactionBackfill(movements, {
       key: "k9", triggerRoomName: "鱼定村", triggerInnerRoomName: "村口",
       getState: () => state, setLog, canAsk: () => true, ask,
@@ -202,3 +202,21 @@ describe("V6 原位替换占位行（验收）", () => {
     expect(row.text).not.toContain("不该落屏");
   });
 });
+
+  it("白描不含任何进出者名字：信息降级，保留占位行不替换", async () => {
+    const state = mkState();
+    let log = [
+      { t: "sys", text: "  你掸了掸衣襟上的雪。", turn: 7 },
+      { t: "sys", text: "  脚步声近，路人甲从「歇马居」走了过来。", fillKey: "k9", fillSlot: 0, turn: 7 },
+    ];
+    const setLog = (fn) => { log = fn(log); };
+    const ask = vi.fn(async () => ({ text: "门帘一掀，寒气裹着个行脚客进来，他朝掌柜点了点头。" }));
+    roamReactionBackfill(movements, {
+      key: "k9", triggerRoomName: "鱼定村", triggerInnerRoomName: "村口",
+      getState: () => state, setLog, canAsk: () => true, ask,
+    });
+    await new Promise((r) => setTimeout(r, 60));
+    const row = log.find((e) => e.fillKey === "k9");
+    expect(row.text).toContain("脚步声近");
+    expect(row.text).not.toContain("门帘一掀");
+  });

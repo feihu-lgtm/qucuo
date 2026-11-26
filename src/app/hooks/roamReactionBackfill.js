@@ -150,6 +150,9 @@ export function roamReactionBackfill(movements, {
       if (stale()) return false;
       const line = String(text || "").trim();
       if (!line) return false;
+      // Review 修：白描若连一个进出者名字都没写，替换后公屏反而丢了「谁来了/走了」
+      // 这一核心信息——宁可保留极简占位行（自带姓名与去向），不做信息降级的替换。
+      if (!movements.some((m) => m?.name && line.includes(m.name))) return false;
       // V6：原位替换占位行（不再追加在其下方）——公屏条数不变，杜绝双行重复。
       return await replaceWhenIdle(key, line, { setLog, isStale: stale });
     } catch {
