@@ -25,10 +25,13 @@ export function partitionPeople({ room, innerRoomName, companionState, everSeen 
   });
   const companionNames = new Set([...party, ...stationedHere].map(n => n.name));
   // 队友若同名挂在 room.npcs 里（导入前的本地 NPC 条目），以队友条目为准，避免重复一行。
-  const local = (room.npcs || [])
-    .filter(n => !companionNames.has(n.name) && isNpcVisibleInInnerRoom(room.name, innerRoomName, n));
+  const localAll = (room.npcs || []).filter(n => !companionNames.has(n.name));
+  const local = localAll.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n));
+  // D6：同据点但不在当前内层房间的本地人单独成组——他们在本据点别处，
+  // 不算在场、也不算"不在此地"（人没离开据点，走过去就能见到）。
+  const nearby = localAll.filter(n => !isNpcVisibleInInnerRoom(room.name, innerRoomName, n));
   const present = [...local, ...party, ...stationedHere];
   const roomNames = new Set([...(room.npcs || []).map(n => n.name), ...companionNames]);
   const absent = everSeen.filter(name => !roomNames.has(name));
-  return { present, absent };
+  return { present, nearby, absent };
 }

@@ -2,13 +2,20 @@
 // 单步行动保留原功能的结算叙事；复合行动去掉逐步结算，由一次合并叙事统一描写。
 import { ACTION_KINDS, SILVER, UNEQUIP_RE, itemNameOf, visibleNpcs } from "../../domain/rules/intent/actionKinds.js";
 import { giftNpc, giftSilver, learnNpcSkill, stealFromNpc } from "../npc/logic.js";
+import { followingCompanionKey, companionNpcEntry } from "../../domain/rules/companion/companion.js";
 import { appeaseAngryNpc } from "../npc/anger.js";
 import { inviteCompanion } from "../npc/inviteCompanion.js";
 import { consumeItem, pickGroundItem } from "../items/logic.js";
 import { getGroundItems } from "../../domain/rules/map/groundScope.js";
 
 export function findStepNpc(state, step) {
-  return visibleNpcs(state).find((npc) => npc.name === step.target) || null;
+  const local = visibleNpcs(state).find((npc) => npc.name === step.target);
+  if (local) return local;
+  // D6 Review 修：跟随同伴（含非出战位）就在玩家身边、判官/听意名单里可见，
+  // 执行链也按 buildPresence 同口径找得到——否则「跟非出战同伴切磋」被接受后
+  //  deferred 处理器在 room.npcs 里找不到人，切磋确认永远不开。
+  const ckey = followingCompanionKey(state?.companionState, step.target);
+  return ckey ? companionNpcEntry(state.companionState, ckey, { party: true }) : null;
 }
 
 // id 优先寻址（WO-16F-F2a Review 修）：同名两件并存时，带 itemId 的步骤必须命中

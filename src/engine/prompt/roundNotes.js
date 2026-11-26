@@ -7,7 +7,7 @@ import { hasInnerMap, getDistrictAnchor, isNpcVisibleInInnerRoom } from "../../d
 import { isAtQuestPlace } from "../../domain/rules/quests/questPlace.js";
 import { roadEncounterFor } from "../../domain/data/encounters/roadEncounters.js";
 import { getPresentNpcs } from "../../domain/rules/prompt/promptRefs.js";
-import { activeCompanion, activeCompanionKey, COMPANION_LORE, unlockedCompanions, stationedCompanions } from "../../domain/rules/companion/companion.js";
+import { activeCompanion, activeCompanionKey, COMPANION_LORE, unlockedCompanions, stationedCompanions, companionNpcEntry } from "../../domain/rules/companion/companion.js";
 import { formatCompanionBodyBlock } from "../../domain/rules/character/companionBodyProfiles.js";
 import { getAllResidentNpcLore } from "../../domain/data/npc/residentNpcs.js";
 import { matchNpcLore, buildNpcLoreBlock } from "../../domain/rules/prompt/worldbook.js";
@@ -183,17 +183,29 @@ export function buildArrivalNote({ isTalk, movingDir, lockedDestName, outerDepar
 // 一个真实在场的角色对待，不用另开一条"伙伴专属"的叙事通道。
 export function buildPresence({ isTalk, lockedDestName, room, innerRoomName, companionState }) {
   const { npcs } = room;
-  const visibleNpcs = (!isTalk && lockedDestName)
-    ? npcs
-    : getPresentNpcs({ room, innerRoomName });
+  const movingTurn = !isTalk && lockedDestName;
+  const filtered = movingTurn ? npcs : getPresentNpcs({ room, innerRoomName });
   // 随行队友并入喂给AI的在场名单（room.npcs 只存本地人口，不写队友）。
-  // 【改成读通用出战位】此前这里写死只认雪豹，明日香入队后 AI 压根不知道她跟着，
-  // 叙事里她就凭空消失了。现在读 activeCompanion（单槽互斥，同时只有一个）。
-  const comp = activeCompanion(companionState);
-  // D2 修：并入同伴时打 companion:true——companionAnimals 裸 data 无旗标，
-  // 翻箱目击等「排除出战同伴」口径（inspectContainer/在场旁观筛选）才能人机灵兽同源。
-  const visibleNpcsForAI = comp?.data ? [...visibleNpcs, { ...comp.data, companion: true }] : visibleNpcs;
-  return { visibleNpcs, visibleNpcsForAI };
+  // 【D6 修：全部跟随同伴】此前只并入 activeCompanion 出战位一个——多同伴格局下
+  // 未出战的跟随同伴明明形影不离，前哨/判官/主叙事却看不见，对账凭空失真。
+  // 口径与 buildPartyListBlock/peopleRoster 一致：已解锁 + 非留守即随行。
+  // 条目走 companionNpcEntry（自带 companion:true 旗标，与 D2 修同源），
+  // 翻箱目击等「排除同伴」口径人机灵兽同源。
+  const following = unlockedCompanions(companionState)
+    .filter((slot) => !companionState?.[slot.key]?.stationed)
+    .map((slot) => companionNpcEntry(companionState, slot.key, { party: true }));
+  const followingNames = new Set(following.map((n) => n.name));
+  // 同名本地条目以同伴条目为准，避免一个名字在名单里出现两次。
+  const visibleNpcs = filtered.filter((n) => !followingNames.has(n?.name));
+  const visibleNpcsForAI = following.length ? [...visibleNpcs, ...following] : visibleNpcs;
+  // 【D6 修：附近组】同据点但不在当前内层房间的本地人单独成组——既不能让模型
+  // 当他们不在场（人明明就在本据点），也不能和当前房间在场者混为一谈。
+  // 移动轮（lockedDestName）目的地内层未定，不算附近组，入场描述由 arrivalNote 负责。
+  const nearbyNpcs = movingTurn
+    ? []
+    : (npcs || []).filter((n) => n?.name && !followingNames.has(n.name)
+        && !isNpcVisibleInInnerRoom(room.name, innerRoomName, n));
+  return { visibleNpcs, visibleNpcsForAI, nearbyNpcs };
 }
 
 // 随行/留守清单注入块：随行=非留守且已解锁（含出战位），留守=挂在某据点房间待唤回。

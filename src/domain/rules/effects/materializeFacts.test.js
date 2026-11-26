@@ -108,6 +108,22 @@ describe("materializeFacts 十二律覆盖矩阵", () => {
     expect(give.changes.room.npcs.find((n) => n.name === "管家").carriedItems.some((e) => e.id === "it_sword1")).toBe(true);
   });
 
+  it("TRANSFER_ITEM：目标是跟随同伴时进 companionState，不落地上（D6 Review）", () => {
+    const state = baseState();
+    state.companionState = { pearl: { unlocked: true, active: false, data: { name: "珍珠", carriedItems: [] } } };
+    const out = materializeFacts(state, [
+      { id: "FC1", op: "TRANSFER_ITEM", itemId: "it_sword1", from: "player", to: "珍珠" },
+    ], {});
+    expect(out.changes.inv.some((e) => e.id === "it_sword1")).toBe(false);
+    // 不落地上
+    expect(out.changes.room.items.some((e) => e.id === "it_sword1")).toBe(false);
+    // 走 companionState 补丁
+    const patch = out.patches.find((p) => p.path.join(".") === "companionState.pearl.data.carriedItems");
+    expect(patch).toBeTruthy();
+    const next = patch.value([]);
+    expect(next.some((e) => e.id === "it_sword1")).toBe(true);
+  });
+
   it("TRANSFER_ITEM：目标 NPC 不在场时落地上，不丢事实", () => {
     const out = materializeFacts(baseState(), [
       { id: "F5", op: "TRANSFER_ITEM", itemId: "it_pill1", from: "player", to: "远行的人" },

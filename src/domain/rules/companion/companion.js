@@ -308,6 +308,20 @@ export function companionKeyByName(name) {
   return s ? s.key : null;
 }
 
+// 按名字找跟随中（已解锁非留守）同伴的槽位键——形影不离的同伴坐标恒等于玩家
+// （buildPresence 在场口径），判官/听意看得见他们，执行与结算链也得按名找得到，
+// 否则「跟珍珠切磋」「把药囊交给雪豹」被接受后落空。
+export function followingCompanionKey(companionState, name) {
+  if (!name) return null;
+  for (const k of allCompanionKeys(companionState)) {
+    const c = companionState?.[k];
+    if (!c?.unlocked || c?.stationed || !c?.data) continue;
+    const meta = companionMeta(companionState, k);
+    if (meta.label === name || c.data.name === name) return k;
+  }
+  return null;
+}
+
 // 某个具名伙伴候选是否已解锁（供 NpcActionMenu 判断"邀请入队"按钮要不要收起）。
 export function isCompanionUnlockedByName(companionState, name) {
   const key = companionKeyByName(name);
@@ -370,6 +384,12 @@ export function companionNpcEntry(companionState, key, extra = {}) {
   return {
     ...d, personalityProfile: d.profile,
     name: meta.label, id: key, companion: true, beast: !!(meta.beast || c?.beast), brief: d.brief || meta.label, levelCap: d.levelCap,
+    // D6 Review 修：同伴携物定为「非交互保管」——名册条目不暴露携物池。
+    // 玩家赠礼由 materializeFacts 落进 companionState.<key>.data.carriedItems（正本保留），
+    // 但同伴不是商贩/盗匪目标：条目若带 carriedItems，切磋福缘掉落/战斗顺手摸走/交易货架
+    // 都会把同一件物复制一份给玩家（正本在 companionState 里原样还在，room.npcs 标记
+    // 不到它），偷窃/交易还会开出莫名货架。条目置空后这些交互天然无的放矢。
+    carriedItems: [],
     ...(c?.mute || c?.cannotSpeak ? { cannotSpeak: true } : {}),
     ...extra,
   };

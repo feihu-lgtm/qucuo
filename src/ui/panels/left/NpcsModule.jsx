@@ -27,7 +27,7 @@ export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, ch
   // 随行队友（雪豹/小马/入队的 OC…）走到哪都算此地在场；留守队友只在留守房间在场，
   // 带 stationed 标记给动作菜单出「跟上我」。划分口径见 peopleRoster。
   const everSeen = varTree.世界?.曾经出现人物 || [];
-  const { present, absent } = partitionPeople({ room, innerRoomName, companionState, everSeen });
+  const { present, nearby = [], absent } = partitionPeople({ room, innerRoomName, companionState, everSeen });
   const crowd = (room.crowd || []).filter(c => !c.innerRoom || !innerRoomName || c.innerRoom === innerRoomName).map(c => c.label);
   const dbgPeople = showDebug && (
     <div style={{ fontSize: "var(--fs-2xs)", color: zoneTheme.textDim, background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: "4px 6px", marginBottom: 6, lineHeight: 1.5, wordBreak: "break-all" }}>
@@ -109,6 +109,27 @@ export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, ch
           })}</div>)}
       {peoplePanel.present && crowd.length > 0 && (
         <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-xs)", marginBottom: 8, paddingLeft: 16 }}>路人：{crowd.join("、")}</div>
+      )}
+      {nearby.length > 0 && (
+        <div style={{ paddingTop: 6, borderTop: `1px solid ${zoneTheme.border}` }}>
+          {header("在附近（本据点别处）", nearby.length, "nearby", zoneTheme.textDim)}
+          {peoplePanel.nearby && nearby.map((n) => {
+            // D6 Review 修：只有真有好感档案（认识过的人）才开得了详情页——
+            // CharacterPage 按好感度选人，陌生人点进去只会掉到关系列表。
+            const hasProfile = typeof varTree.角色?.[n.name]?.好感度 === "number";
+            return (
+            <div key={n.name} style={{ marginBottom: 4, paddingLeft: 16, display: "flex", alignItems: "center", gap: 6 }}>
+              <span onClick={hasProfile ? () => { setCharacterPageTarget(n.name); openOverlay(OVERLAY.CHARACTER_PAGE); } : undefined}
+                title={hasProfile ? "打开此人详情面板" : "尚未认识——走到他所在之处再交谈"}
+                style={{ cursor: hasProfile ? "pointer" : "default", color: zoneTheme.textDim, flex: 1, fontSize: "var(--fs-xs)" }}>
+                {n.name}
+                <span style={{ color: zoneTheme.textDim, fontSize: "var(--fs-2xs)", marginLeft: 6 }}>{n.brief || ""}</span>
+                {!hasProfile && <span style={{ color: zoneTheme.textDim, fontSize: "var(--fs-2xs)", marginLeft: 6 }}>尚未认识</span>}
+              </span>
+            </div>
+            );
+          })}
+        </div>
       )}
       {absent.length > 0 && (
         <div style={{ paddingTop: 6, borderTop: `1px solid ${zoneTheme.border}` }}>

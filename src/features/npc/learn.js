@@ -16,6 +16,7 @@ import { selectEffectiveStats } from "../stats/logic.js";
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 
 export function stealFromNpc(state, npc, { now = Date.now() } = {}) {
+  if (npc?.companion) return { logs: [{ t: "sys", text: `  ${npc.name}是与你同行的伙伴，贴身之物无从下手——也用不着。` }], kind: "blocked" };
   if (!npc) return { logs: [{ t: "err", text: "  此地没有这位人物。" }], kind: "blocked" };
   if (isNpcAngry(state.varTree, npc.name)) return appeaseAngryNpc(state, npc, { kind: "steal", detail: "偷窃", now });
   const agility = state.char?.special?.身法 ?? 0;
