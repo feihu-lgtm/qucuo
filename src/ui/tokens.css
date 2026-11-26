@@ -47,6 +47,18 @@
   --ctl-h: 22px;
   --ctl-pad-x: 9px;
   --radius-none: 0;
+  /* 浮层层级表（唯一来源）：ModalShell 的 layer 只能取这几档。档位按现存浮层的
+     z-index 分簇定值，保住原有先后：浮条/提示/界面内覆盖层 < 大地图 < 建筑面板
+     < 设置/交易/赌石 < 人物页/见闻录/图鉴等全屏界面 < 二级弹窗与菜单 < 教程/版本历史
+     < 错误兜底。 */
+  --z-float: 60;
+  --z-map: 100;
+  --z-building: 120;
+  --z-screen: 200;
+  --z-screen-high: 300;
+  --z-dialog: 400;
+  --z-top: 500;
+  --z-fatal: 9999;
   --sp-1: 4px;
   --sp-2: 8px;
   --sp-3: 12px;
@@ -500,7 +512,8 @@ body {
   font-family: var(--font-body);
 }
 
-div[style*="position: fixed"][style*="z-index"] {
+div[style*="position: fixed"][style*="z-index"],
+.ui-modal-root {
   animation: ink-overlay-in var(--dur) ease-out both;
   transform-origin: center;
 }
@@ -546,7 +559,7 @@ div[style*="position: fixed"][style*="z-index"] {
 .ink-spinner-screen {
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: var(--z-fatal);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -632,4 +645,72 @@ div[style*="position: fixed"][style*="z-index"] {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ── ModalShell 外壳（src/ui/primitives/ModalShell.jsx）──────────────────
+   桌面端居中浮出；手机端由 mobile.css 的 .mobile-overlay-* 规则接管成全屏。 */
+.ui-modal-root {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-4);
+  box-sizing: border-box;
+  background: var(--ink-overlay);
+}
+
+.ui-modal-root[data-layer="float"] { z-index: var(--z-float); }
+.ui-modal-root[data-layer="map"] { z-index: var(--z-map); }
+.ui-modal-root[data-layer="building"] { z-index: var(--z-building); }
+.ui-modal-root[data-layer="screen"] { z-index: var(--z-screen); }
+.ui-modal-root[data-layer="screen-high"] { z-index: var(--z-screen-high); }
+.ui-modal-root[data-layer="dialog"] { z-index: var(--z-dialog); }
+.ui-modal-root[data-layer="top"] { z-index: var(--z-top); }
+
+.ui-modal-panel {
+  position: relative;
+  max-width: 94vw;
+  max-height: 88vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: var(--sp-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-none);
+  background: var(--bg-panel);
+  color: var(--text);
+  font-family: inherit;
+  outline: none;
+}
+
+.ui-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+  background: var(--bg-panel);
+}
+
+.ui-modal-title {
+  min-width: 0;
+  color: var(--accent);
+  font-size: var(--fs-base);
+}
+
+.ui-modal-close {
+  flex: 0 0 auto;
+  padding: 0 var(--sp-1);
+  border: 0;
+  background: transparent;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: var(--fs-md);
+  cursor: pointer;
+}
+
+.ui-modal-close:hover,
+.ui-modal-close:focus-visible {
+  color: var(--accent);
 }
