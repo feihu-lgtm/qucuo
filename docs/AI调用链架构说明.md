@@ -130,7 +130,6 @@ flowchart LR
 ## 5. 当前旧新链路边界
 
 | 位置 | 现状 | 迁移方向 |
-|---|---|---|
 | 主叙事 | `turn.main` streaming | 保留，但输入改成判官公开事实与叙事约束。 |
 | 状态提取 | **已删除（WO-15）** | `turn.extraction`/extractionSpecs/extractionEngine/appeaseExtraction/ports/extraction 整块移除；双调用模式状态只来自判官 facts。 |
 | MVU 文本命令 | 仍有大量历史消费方 | 只保留必要字段协议，不再让 AI 自由写状态。 |
@@ -176,7 +175,6 @@ flowchart LR
 ## 5.2 当前施工状态看板
 
 | 工单 | 状态 | 当前事实 |
-|---|---|---|
 | WO-01～WO-12 | 已合并 | 地基、场记板、因果授信、编译器、十二律、前哨判官都在 main。 |
 | WO-13 | 已合并 | web 默认 `judgePipelineEnabled=true`；CLI 老录制默认 false。激活还需非 settle、非纯搭话且 `extractionEnabled` 双调用叙事模式。因 entries/containers/prepItems/floatingItems 还没宿主喂入，很多回合会 no-op 退化，不能当成旧提取已替换。 |
 | WO-14 | 已合并；动作结构化直写随修包落地 | `EffectReceiptCard` 消费 receipts 并随判官落账日志显示；按钮结构化 action 按 id 寻址确定性执行，equip/activate 幂等 explicit-on；`viewPact` 保留文本指令例外。 |
@@ -299,7 +297,6 @@ flowchart LR
 **放行阈值建议**（`DEFAULT_RELEASE_THRESHOLDS`，调整需过评审）：
 
 | 门槛 | 默认 | 理由 |
-|---|---|---|
 | 样本量 | ≥ 200 回合 | 小样本覆盖率无统计意义，宁可不放行 |
 | 每计入类目覆盖率 | ≥ 95% | 判官接管后漏判即丢账，5% 已是宽松上限 |
 | 回合级缺口率 | ≤ 5% | 与类目覆盖率互证，防单类目高缺口被平均 |
@@ -400,3 +397,5 @@ CI 有硬门禁：`npm run docs-gate` 会读取 PR 相对 base 的文件清单�
 | V7 队友互动去呆板化+村口复读根治：说书人提示词硬约束（旁观者不点名/禁复读静态习性/非亲密禁发情模板，copy 单源 bystanderRules.txt）+珍珠文案去骑乘诱导；companionChatterTick 事件加权（强事件 0.55~0.75/走路 0.2，强事件冷却减半）+说书末尾/数值变化/场景对象入上下文+CHATTER_MAX_TOKENS 120；随行满 2 人 35% 双人互怼接茬（关系档位+互涉心账装配，结构化 lines/bondDelta/ledgerNote/transfer）；companionBonds 配对账五档+双向心账+transfer 硬校验防凭空造物，store 层 commitCompanionDuoOutcome 收口落账 | 待合 |
 ||||||| parent of a8d66caf (feat(intake): D8 亲密判意上移 intake——intimate 布尔前哨判意，正则降级兜底)
 | D8 亲密判意上移 intake | 待合 | intake schema/提示词加 intimate 布尔前哨判意；judgePhase 执行门禁（拒词直写中止管线/过线 notes 注入/凭卡 ticket 挂 verdict 焚卡），resolveIntent 前置拦截撤除；intake 缺失或本地合成时正则降级兜底。 |
+||||||| parent of 13d485b (docs: D8 状态行待合 #575)
+| D8 亲密判意上移 intake | 待合 #575 | intake schema/提示词加 intimate 布尔前哨判意；judgePhase 执行门禁（拒词直写中止管线/过线 notes 注入/凭卡 ticket 挂 verdict 焚卡），resolveIntent 前置拦截撤除；intake 缺失或本地合成时正则降级兜底。 |
