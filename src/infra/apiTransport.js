@@ -5,6 +5,7 @@ import { readSSE, stripReasoning } from "./apiSse.js";
 import { getStoredVertexHeaders } from "./vertexCredentials.js";
 import { getApiModel } from "./apiModel.js";
 import { parseRetryAfter } from "./retryAfter.js";
+import { getSamplingHeaders } from "./samplingTags.js";
 import {
   API_TYPES, applyThinkingAnthropic, applyThinkingGemini, applyThinkingOpenAI,
   clampMaxTokensForProvider, DEFAULT_CALL_TOKEN_LIMITS, migrateProvider,
@@ -167,7 +168,7 @@ export async function fetchOpenAI(cfg, systemPrompt, messages, opts, stream = fa
     : { Authorization: `Bearer ${cfg.apiKey}` };
   try {
     const res = await fetchWithTimeout(url, {
-      method: "POST", headers: { "Content-Type": "application/json", ...provider.extraHeaders, ...auth },
+      method: "POST", headers: { "Content-Type": "application/json", ...provider.extraHeaders, ...auth, ...getSamplingHeaders() },
       body: JSON.stringify(body), ...(vertex ? { redirect: "error" } : {}),
     });
     if (vertex && !res.ok) throw await vertex.vertexResponseError(res, auth.Authorization);
@@ -246,6 +247,7 @@ async function requestModel(cfg, systemPrompt, messages, opts) {
           ...provider.extraHeaders,
           "x-api-key": cfg.apiKey,
           "anthropic-version": "2023-06-01",
+          ...getSamplingHeaders(),
         },
         body: JSON.stringify(abody),
       });
@@ -294,7 +296,7 @@ async function requestModel(cfg, systemPrompt, messages, opts) {
       applyThinkingGemini(genConfig, cfg, opts);
       const res = await fetchWithTimeout(url, {
         method: "POST",
-        headers: { ...provider.extraHeaders, "Content-Type": "application/json" },
+        headers: { ...provider.extraHeaders, "Content-Type": "application/json", ...getSamplingHeaders() },
         body: JSON.stringify({ contents, generationConfig: genConfig }),
       });
       raw = await readJsonOrThrow(res, "Gemini 调用", url);
