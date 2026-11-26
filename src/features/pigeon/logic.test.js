@@ -9,6 +9,7 @@ import {
   processPigeons,
   recordPigeonNpcLocations,
   sendPigeonLetter,
+  retryPigeonReply,
 } from "./logic.js";
 
 let previousRngState;
@@ -196,5 +197,56 @@ describe("pigeon reply logic", () => {
     expect(result.logs).toEqual([
       { t: "sys", text: "  （寄往商人的信鸽半途迷了路，这封回信终未送达。）" },
     ]);
+  });
+});
+
+describe("夜班急修：回信超时重试不丢信", () => {
+  const letter = { id: "L1", npcName: "才旦", arriveTime: 10, npcLoc: "天都镇", channel: "pigeon" };
+  const baseState = (over = {}) => ({
+    time: 12,
+    room: { name: "天都镇", npcs: [] },
+    char: { name: "主角" },
+    varTree: { 世界: { 飞鸽待回: [{ ...letter, ...over }] }, 角色: {} },
+  });
+
+  it("①首次超时→retryPigeonReply 不删信、attempts+1、nextRetryTime 延时", () => {
+    const state = baseState();
+    const r = retryPigeonReply(state, letter);
+    const vt = r.changes.varTree(state.varTree);
+    const kept = vt.世界.飞鸽待回.find((l) => l.id === "L1");
+    expect(kept).toBeTruthy();
+    expect(kept.attempts).toBe(1);
+    expect(kept.nextRetryTime).toBe(14);
+    // nextRetryTime 前 processPigeons 不重复触发；到点后重新到期
+    expect(processPigeons({ ...state, time: 13, varTree: vt })).toHaveLength(0);
+    expect(processPigeons({ ...state, time: 14, varTree: vt })).toHaveLength(1);
+  });
+
+  it("②三次连败→failPigeonReply 兜底迷路删信", () => {
+    const state = baseState({ attempts: 2 });
+    const r = failPigeonReply(state, { ...letter, attempts: 2 });
+    const vt = r.changes.varTree(state.varTree);
+    expect(vt.世界.飞鸽待回).toHaveLength(0);
+    expect(r.logs[0].text).toContain("迷了路");
+  });
+
+  it("无 nextRetryTime 的旧形状信件照常到期", () => {
+    expect(processPigeons(baseState())).toHaveLength(1);
+  });
+});
+
+describe("Review 修：兽类不通书信系统级拒信", () => {
+  it("寄信给 beast NPC 不耗鸽不入队，直接拒信", () => {
+    const state = {
+      time: 10,
+      room: { name: "鱼定村", npcs: [{ name: "测试兽", beast: true }] },
+      char: { name: "主角", pigeons: 2 },
+      inv: [],
+      varTree: { 世界: {}, 角色: {} },
+    };
+    const r = sendPigeonLetter(state, "测试兽", "你好");
+    expect(r.sent).toBeFalsy();
+    expect(r.logs[0].text).toContain("禽兽");
+    expect(r.changes).toBeUndefined();
   });
 });

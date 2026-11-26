@@ -9,7 +9,10 @@ export function registerSideCalls() {
       const state = ctx.state || {};
       const { npcName, giftName, channel } = ctx.letter || {};
       const preset = ctx.preset || {};
-      const npcObj = state.room?.npcs?.find((npc) => npc.name === npcName) || { name: npcName };
+      // 夜班急修：调用方（usePigeonReplies）已按 findNpcObject 全链路解析完整条目
+      // 随 letter 传入；不在场 NPC 不再 {name} 裸壳——人设/随身/品阶全量进 bio。
+      const npcObj = (ctx.letter?.npc && ctx.letter.npc.name === npcName ? ctx.letter.npc : null)
+        || state.room?.npcs?.find((npc) => npc.name === npcName) || { name: npcName };
       const { bio } = buildNpcContext(npcObj, state);
       const scope = { ...state, npcName, bio, scenario: preset.scenario || "", promptRefOptions: { factLimit: 12 } };
       const facts = render("@事实摘要", scope);
