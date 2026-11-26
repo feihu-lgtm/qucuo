@@ -308,6 +308,56 @@ function countDirectStateWrites(sourceFiles, srcRoot) {
   return Object.fromEntries(Object.entries(counts).sort());
 }
 
+// ── 前端结构统一（U 路线）的五项计数 ──────────────────────────────────────
+// 口径：src/ 下非测试 .jsx，排除 debug/（调试入口不算界面）；全部先去注释再计数，
+// 免得注释里提到 position:fixed 也被算进去。
+const UI_FIXED_OVERLAY_RE = /\bposition\s*:\s*["'`]fixed["'`]/;
+const UI_INLINE_STYLE_RE = /\bstyle=\{\{/g;
+const UI_ZONE_THEME_RE = /\bzoneTheme\b/;
+
+function isUiJsx(rel) {
+  return rel.endsWith(".jsx") && !rel.startsWith("debug/");
+}
+
+function importsLayerPath(importer, source, srcRoot, prefix) {
+  for (const specifier of extractImportSpecifiers(source)) {
+    if (!specifier.startsWith(".")) continue;
+    const target = resolveRelativeImport(importer, specifier, srcRoot);
+    if (target && relativePath(srcRoot, target).startsWith(prefix)) return true;
+  }
+  return false;
+}
+
+export function countUiStructure(sourceFiles, srcRoot) {
+  const overlayFiles = [];
+  const rulesImporters = [];
+  const portsImporters = [];
+  const zoneThemeFiles = [];
+  let inlineStyles = 0;
+
+  for (const file of sourceFiles) {
+    const rel = relativePath(srcRoot, file);
+    if (!isUiJsx(rel)) continue;
+    const raw = readFileSync(file, "utf8");
+    const source = stripComments(raw);
+    if (UI_FIXED_OVERLAY_RE.test(source)) overlayFiles.push(rel);
+    inlineStyles += (source.match(UI_INLINE_STYLE_RE) || []).length;
+    if (importsLayerPath(file, raw, srcRoot, "domain/rules/")) rulesImporters.push(rel);
+    if (importsLayerPath(file, raw, srcRoot, "engine/ports/")) portsImporters.push(rel);
+    if (UI_ZONE_THEME_RE.test(source)) zoneThemeFiles.push(rel);
+  }
+
+  return {
+    uiStructure: {
+      overlayFiles: overlayFiles.sort(),
+      inlineStyles,
+      rulesImporters: rulesImporters.sort(),
+      portsImporters: portsImporters.sort(),
+      zoneThemeFiles: zoneThemeFiles.sort(),
+    },
+  };
+}
+
 export function collectRatchetMetrics(repoRoot = REPO_ROOT) {
   const srcRoot = resolve(repoRoot, "src");
   const allFiles = listFiles(srcRoot);
@@ -325,6 +375,7 @@ export function collectRatchetMetrics(repoRoot = REPO_ROOT) {
       mudRpgHookArgs: countMudRpgHookArgs(srcRoot),
       directAiCalls: countDirectAiCalls(sourceFiles, srcRoot),
       directStateWrites: countDirectStateWrites(sourceFiles, srcRoot),
+      ...countUiStructure(sourceFiles, srcRoot),
     },
     notes: [bundle.note],
   };
@@ -352,6 +403,45 @@ export const KNOWN_EXTERNAL_INFRA_CAP = {
   store: 2,
   ui: 33,
 };
+
+// 前端结构统一棘轮（路线图 U0）：五个数只许持平或下降。
+// 数字降了就必须在同一个 PR 里把这里改成新值，否则同样失败——上限永远等于现状，
+// 下一次回涨一处也能被抓到。
+export const KNOWN_UI_STRUCTURE_CAP = {
+  overlayFiles: 32,
+  inlineStyles: 2471,
+  rulesImporters: 82,
+  portsImporters: 7,
+  zoneThemeFiles: 91,
+};
+
+const UI_STRUCTURE_LABELS = {
+  overlayFiles: "自建 position:fixed 浮层的 JSX 文件数",
+  inlineStyles: "内联 style={{…}} 处数",
+  rulesImporters: "import domain/rules 的 JSX 文件数",
+  portsImporters: "import engine/ports 的 JSX 文件数",
+  zoneThemeFiles: "使用 zoneTheme 的 JSX 文件数",
+};
+
+function uiStructureValue(value) {
+  return Array.isArray(value) ? value.length : value;
+}
+
+export function checkUiStructure(uiStructure, caps = KNOWN_UI_STRUCTURE_CAP) {
+  const failures = [];
+  if (!uiStructure) return failures;
+  for (const [key, cap] of Object.entries(caps)) {
+    const actual = uiStructureValue(uiStructure[key]);
+    if (actual === undefined) continue;
+    const label = UI_STRUCTURE_LABELS[key] || key;
+    if (actual > cap) {
+      failures.push(`${label}: ${actual}，超过上限 ${cap}（只减不增）`);
+    } else if (actual < cap) {
+      failures.push(`${label}: 已降到 ${actual}，请在本 PR 把 KNOWN_UI_STRUCTURE_CAP.${key} 从 ${cap} 改为 ${actual}`);
+    }
+  }
+  return failures;
+}
 
 // 路线甲硬红线：React ref 已赶出 engine/act，任何 .current 读写都不许回来。
 // （\b 保证不误伤 currentStageIndex 这类数据字段。）
@@ -412,6 +502,7 @@ export function checkLayerRedLines(metrics) {
   if ((metrics.mudRpgHookArgs ?? 0) > KNOWN_MUD_RPG_HOOK_ARGS_CAP) {
     failures.push(`MudRPG hook 参数数: ${metrics.mudRpgHookArgs}，超过存量上限 ${KNOWN_MUD_RPG_HOOK_ARGS_CAP}（只减不增）`);
   }
+  failures.push(...checkUiStructure(metrics.uiStructure));
   return { ok: failures.length === 0, failures };
 }
 
@@ -432,6 +523,10 @@ export function formatStats(metrics) {
   push("mainJsGzipBytes", metrics.mainJsGzipBytes ?? "n/a (dist missing)");
   push("featureCtxRefCount", metrics.featureCtxRefCount ?? 0);
   push("mudRpgHookArgs", metrics.mudRpgHookArgs ?? 0);
+  for (const key of Object.keys(UI_STRUCTURE_LABELS)) {
+    const value = metrics.uiStructure?.[key];
+    if (value !== undefined) push(`ui.${key}`, uiStructureValue(value));
+  }
   return lines;
 }
 

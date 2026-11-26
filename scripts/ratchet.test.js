@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkLayerRedLines, extractImportSpecifiers, formatStats, KNOWN_LAYER_DEBT } from "./ratchet.mjs";
+import { checkLayerRedLines, checkUiStructure, collectRatchetMetrics, extractImportSpecifiers, formatStats, KNOWN_LAYER_DEBT, KNOWN_UI_STRUCTURE_CAP } from "./ratchet.mjs";
 
 describe("extractImportSpecifiers", () => {
   it("ignores line and block comments without treating comment markers in strings as comments", () => {
@@ -86,5 +86,33 @@ describe("formatStats（软指标只打印不阻断）", () => {
     expect(lines.join("\n")).toContain("ui/x.jsx=500");
     expect(lines.join("\n")).toContain("featureCtxRefCount: 199");
     expect(lines.join("\n")).toContain("mudRpgHookArgs: 304");
+  });
+});
+
+describe("checkUiStructure（前端结构统一棘轮：只减不增，降了必须同步改上限）", () => {
+  const caps = { overlayFiles: 3, inlineStyles: 10 };
+
+  it("与上限持平时通过", () => {
+    expect(checkUiStructure({ overlayFiles: ["a", "b", "c"], inlineStyles: 10 }, caps)).toEqual([]);
+  });
+
+  it("超过上限即失败", () => {
+    const failures = checkUiStructure({ overlayFiles: ["a", "b", "c", "d"], inlineStyles: 10 }, caps);
+    expect(failures).toHaveLength(1);
+    expect(failures[0]).toContain("超过上限 3");
+  });
+
+  it("低于上限也失败，并提示把上限改成新值", () => {
+    const failures = checkUiStructure({ overlayFiles: ["a", "b", "c"], inlineStyles: 7 }, caps);
+    expect(failures).toHaveLength(1);
+    expect(failures[0]).toContain("KNOWN_UI_STRUCTURE_CAP.inlineStyles 从 10 改为 7");
+  });
+
+  it("当前仓库的五个数恰好等于登记的上限", () => {
+    const { metrics } = collectRatchetMetrics();
+    expect(checkUiStructure(metrics.uiStructure)).toEqual([]);
+    expect(Object.keys(KNOWN_UI_STRUCTURE_CAP).sort()).toEqual(
+      ["inlineStyles", "overlayFiles", "portsImporters", "rulesImporters", "zoneThemeFiles"],
+    );
   });
 });
