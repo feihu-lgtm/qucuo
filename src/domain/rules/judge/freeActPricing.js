@@ -42,32 +42,28 @@ export function parseStatedExpense(text) {
   let m; let firstDefinite = null;
   // 支付动词近旁优先于一切——「身上有50两银子，付5两房钱」余额不得当价；
   // 无动词近旁时明确钱文（银/钱/两银）按文取先；裸「N两」是货量不落价。
-  let verbDecimalSkipped = false;
   while ((m = re.exec(src))) {
-    // Review 二修：小数拒收口径收窄——只有「点号两侧都是数字」才算小数
-    // （1.5两 的 5 是角分尾数，误当五两扣是错账）；「茶.5两」ASCII 句读后的
-    // 整数价格不误伤。且支付动词近旁的小数被跳过时，绝不让前文余额
-    // （身上有50两银子）落进 firstDefinite 错当价——付款意图存在但不可解析，
-    // 保守交给查价链兜底。
     const prevCh = m.index > 0 ? src[m.index - 1] : "";
     const chBeforeDot = m.index > 1 ? src[m.index - 2] : "";
-    const isDecimalTail = (prevCh === "." || prevCh === "．") && /[0-9]/.test(chBeforeDot);
-    const unit0 = m[2];
-    const before0 = src.slice(Math.max(0, m.index - 3), m.index);
-    const verbNear0 = [...before0].some((ch) => PAY_VERBS.has(ch));
-    if (isDecimalTail) {
-      if (verbNear0) verbDecimalSkipped = true;
-      continue;
-    }
+    const unit = m[2];
+    const before = src.slice(Math.max(0, m.index - 3), m.index);
+    const verbNear = [...before].some((ch) => PAY_VERBS.has(ch));
+    // Review 三修：小数尾拒收三类口径——
+    // ① 点号前紧邻数字（含全角）：1.5两/１.5两 的 5 是角分尾数不是整两；
+    // ② 点号前非数字但支付动词近旁（付.5两=半两钱文）：动词+点币形必是分数，
+    //    保守拒收不误当五两；「茶.5两」无动词近旁仍按 ASCII 句读整数价认。
+    const dotDigitBefore = /[0-9０-９]/.test(chBeforeDot);
+    const isDecimal = (prevCh === "." || prevCh === "．") && (dotDigitBefore || verbNear);
+    if (isDecimal) continue;
+    // Review 三修：余额语境不是价——身上有/余额/囊中/存有/身带 近旁的银两陈述
+    // 是财力声明不是支付数额，整段跳过（既不当价也不占 firstDefinite）。
+    const beforeWide = src.slice(Math.max(0, m.index - 6), m.index);
+    if (/身上有|余额|囊中|身带|存有/.test(beforeWide)) continue;
     const n = parseCnNumeral(m[1]);
     if (!(Number.isFinite(n) && n > 0)) continue;
-    const unit = unit0;
-    const before = before0;
-    const verbNear = verbNear0;
     if (verbNear) return n;
     if (unit !== "两" && firstDefinite == null) firstDefinite = n;
   }
-  if (verbDecimalSkipped) return null;
   return firstDefinite;
 }
 
