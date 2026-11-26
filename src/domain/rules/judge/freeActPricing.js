@@ -43,6 +43,10 @@ export function parseStatedExpense(text) {
   // 支付动词近旁优先于一切——「身上有50两银子，付5两房钱」余额不得当价；
   // 无动词近旁时明确钱文（银/钱/两银）按文取先；裸「N两」是货量不落价。
   while ((m = re.exec(src))) {
+    // Review 修：小数点紧邻的阿拉伯数字整段拒收——「1.5两」的 5 是角分尾数
+    // 不是整两，误当五两扣是错账（与 give.js 送银拒收口径同源）；保守不签。
+    const prevCh = m.index > 0 ? src[m.index - 1] : "";
+    if (prevCh === "." || prevCh === "．") continue;
     const n = parseCnNumeral(m[1]);
     if (!(Number.isFinite(n) && n > 0)) continue;
     const unit = m[2];

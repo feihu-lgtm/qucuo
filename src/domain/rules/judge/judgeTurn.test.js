@@ -333,6 +333,16 @@ describe("F8：对象落空的破费重定向 free_act 链", () => {
     expect(silver).toBeTruthy();
     expect(silver.moneyDelta).toBe(-3);
   });
+  it("Review 修：小数数额（1.5两）不按尾数错扣——保守不签或按钱文另取", () => {
+    const act = { kind: "give", target: "无", item: "银两", itemId: "", direction: "none", stance: "casual", outcome: "破费", risk: "无", text: "花1.5两银子买茶" };
+    const verdict = judgeTurn(baseEnvelope({
+      playerInput: "花1.5两银子买茶",
+      char: { money: 20, special: {} },
+    }), { read: "", refIds: [], actions: [act], proposals: [] }, { rng: seqRng([0.5]) });
+    const silver = verdict.facts.find((f) => f.op === "CHANGE_VITALS_SILVER" && Number.isFinite(f.moneyDelta));
+    // 绝不按 5 两错扣——查价链无原话可认时走货架/兜底价（小额），总之不等于 -5
+    if (silver) expect(silver.moneyDelta).not.toBe(-5);
+  });
   it("give 对象在场时仍走赠礼链不重定向", () => {
     const act = { kind: "give", target: "才旦", item: "青稞酒", itemId: "", direction: "none", stance: "casual", outcome: "破费", risk: "无", text: "送酒" };
     const verdict = judgeTurn(baseEnvelope(), { read: "", refIds: [], actions: [act], proposals: [] }, { rng: seqRng([0.01]) });
