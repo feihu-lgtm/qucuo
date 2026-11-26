@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkLayerRedLines, extractImportSpecifiers, formatStats, KNOWN_LAYER_DEBT } from "./ratchet.mjs";
+import { checkCapEscalation, loadCapExemptions, checkLayerRedLines, checkUiStructure, collectRatchetMetrics, extractImportSpecifiers, formatStats, KNOWN_LAYER_DEBT, KNOWN_UI_STRUCTURE_CAP } from "./ratchet.mjs";
 
 describe("extractImportSpecifiers", () => {
   it("ignores line and block comments without treating comment markers in strings as comments", () => {
@@ -86,5 +86,66 @@ describe("formatStats（软指标只打印不阻断）", () => {
     expect(lines.join("\n")).toContain("ui/x.jsx=500");
     expect(lines.join("\n")).toContain("featureCtxRefCount: 199");
     expect(lines.join("\n")).toContain("mudRpgHookArgs: 304");
+  });
+});
+
+describe("checkUiStructure（前端结构统一棘轮：只减不增，降了必须同步改上限）", () => {
+  const caps = { overlayFiles: 3, inlineStyles: 10 };
+
+  it("与上限持平时通过", () => {
+    expect(checkUiStructure({ overlayFiles: ["a", "b", "c"], inlineStyles: 10 }, caps)).toEqual([]);
+  });
+
+  it("超过上限即失败", () => {
+    const failures = checkUiStructure({ overlayFiles: ["a", "b", "c", "d"], inlineStyles: 10 }, caps);
+    expect(failures).toHaveLength(1);
+    expect(failures[0]).toContain("超过上限 3");
+  });
+
+  it("低于上限也失败，并提示把上限改成新值", () => {
+    const failures = checkUiStructure({ overlayFiles: ["a", "b", "c"], inlineStyles: 7 }, caps);
+    expect(failures).toHaveLength(1);
+    expect(failures[0]).toContain("KNOWN_UI_STRUCTURE_CAP.inlineStyles 从 10 改为 7");
+  });
+
+  it("当前仓库的五个数恰好等于登记的上限", () => {
+    const { metrics } = collectRatchetMetrics();
+    expect(checkUiStructure(metrics.uiStructure)).toEqual([]);
+    expect(Object.keys(KNOWN_UI_STRUCTURE_CAP).sort()).toEqual(
+      ["inlineStyles", "overlayFiles", "portsImporters", "rulesImporters", "zoneThemeFiles"],
+    );
+  });
+});
+
+describe("U0 Review 修：caps 抬升拦截", () => {
+  // checkCapEscalation(baseMod)：把「当前模块 caps」与传入基线比对——
+  // 基线值比当前小 = 当前被抬升 = 拦截；基线值比当前大 = 当前只减不增 = 放行。
+  it("基线更低=同 PR 抬升被拦截", () => {
+    const fails = checkCapEscalation({ KNOWN_UI_STRUCTURE_CAP: { inlineStyles: 1 } });
+    expect(fails.some((f) => f.includes("inlineStyles") && f.includes("抬升拦截"))).toBe(true);
+  });
+  it("基线更高=只减不增放行", () => {
+    const fails = checkCapEscalation({ KNOWN_UI_STRUCTURE_CAP: { inlineStyles: 999999 } });
+    expect(fails.filter((f) => f.includes("inlineStyles"))).toHaveLength(0);
+  });
+  it("豁免按值绑定：登记值>=抬起值放行，超过登记值仍拦（防终身通行证）", () => {
+    const cur = KNOWN_UI_STRUCTURE_CAP.inlineStyles;
+    const exempt = new Map([["KNOWN_UI_STRUCTURE_CAP.inlineStyles", { value: cur, reason: "评审已过目" }]]);
+    expect(checkCapEscalation({ KNOWN_UI_STRUCTURE_CAP: { inlineStyles: 1 } }, exempt)
+      .filter((f) => f.includes("inlineStyles"))).toHaveLength(0);
+    // 登记值低于抬起值→不放行
+    const short = new Map([["KNOWN_UI_STRUCTURE_CAP.inlineStyles", { value: cur - 1, reason: "评审已过目" }]]);
+    expect(checkCapEscalation({ KNOWN_UI_STRUCTURE_CAP: { inlineStyles: 1 } }, short)
+      .some((f) => f.includes("inlineStyles"))).toBe(true);
+  });
+  it("豁免无理由不放行（裸键防蒙混）", () => {
+    const cur = KNOWN_UI_STRUCTURE_CAP.inlineStyles;
+    const bare = new Map([["KNOWN_UI_STRUCTURE_CAP.inlineStyles", { value: cur, reason: "" }]]);
+    expect(checkCapEscalation({ KNOWN_UI_STRUCTURE_CAP: { inlineStyles: 1 } }, bare)
+      .some((f) => f.includes("inlineStyles"))).toBe(true);
+  });
+  it("基线没有的新键/新对象不受限；基线模块缺失零拦截", () => {
+    expect(checkCapEscalation({})).toHaveLength(0);
+    expect(checkCapEscalation(null)).toHaveLength(0);
   });
 });

@@ -23,3 +23,7 @@ jobs:
       - run: npm run docs-gate
       - run: npm run verify
       - run: npm run ratchet
+        env:
+          # push 事件传推送前 tip——直推 main 抬上限与基线自比自蒙混的洞由此堵
+          # （pull_request 事件此值为空串，ratchet 候选链自动回落目标分支/origin/main）
+          RATCHET_BASE_REF: ${{ github.event.before }}

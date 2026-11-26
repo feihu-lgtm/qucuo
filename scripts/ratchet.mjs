@@ -1,5 +1,7 @@
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { basename, dirname, relative, resolve, sep } from "node:path";
+import { execSync } from "node:child_process";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { gzipSync } from "node:zlib";
 
@@ -308,6 +310,56 @@ function countDirectStateWrites(sourceFiles, srcRoot) {
   return Object.fromEntries(Object.entries(counts).sort());
 }
 
+// ── 前端结构统一（U 路线）的五项计数 ──────────────────────────────────────
+// 口径：src/ 下非测试 .jsx，排除 debug/（调试入口不算界面）；全部先去注释再计数，
+// 免得注释里提到 position:fixed 也被算进去。
+const UI_FIXED_OVERLAY_RE = /\bposition\s*:\s*["'`]fixed["'`]/;
+const UI_INLINE_STYLE_RE = /\bstyle=\{\{/g;
+const UI_ZONE_THEME_RE = /\bzoneTheme\b/;
+
+function isUiJsx(rel) {
+  return rel.endsWith(".jsx") && !rel.startsWith("debug/");
+}
+
+function importsLayerPath(importer, source, srcRoot, prefix) {
+  for (const specifier of extractImportSpecifiers(source)) {
+    if (!specifier.startsWith(".")) continue;
+    const target = resolveRelativeImport(importer, specifier, srcRoot);
+    if (target && relativePath(srcRoot, target).startsWith(prefix)) return true;
+  }
+  return false;
+}
+
+export function countUiStructure(sourceFiles, srcRoot) {
+  const overlayFiles = [];
+  const rulesImporters = [];
+  const portsImporters = [];
+  const zoneThemeFiles = [];
+  let inlineStyles = 0;
+
+  for (const file of sourceFiles) {
+    const rel = relativePath(srcRoot, file);
+    if (!isUiJsx(rel)) continue;
+    const raw = readFileSync(file, "utf8");
+    const source = stripComments(raw);
+    if (UI_FIXED_OVERLAY_RE.test(source)) overlayFiles.push(rel);
+    inlineStyles += (source.match(UI_INLINE_STYLE_RE) || []).length;
+    if (importsLayerPath(file, raw, srcRoot, "domain/rules/")) rulesImporters.push(rel);
+    if (importsLayerPath(file, raw, srcRoot, "engine/ports/")) portsImporters.push(rel);
+    if (UI_ZONE_THEME_RE.test(source)) zoneThemeFiles.push(rel);
+  }
+
+  return {
+    uiStructure: {
+      overlayFiles: overlayFiles.sort(),
+      inlineStyles,
+      rulesImporters: rulesImporters.sort(),
+      portsImporters: portsImporters.sort(),
+      zoneThemeFiles: zoneThemeFiles.sort(),
+    },
+  };
+}
+
 export function collectRatchetMetrics(repoRoot = REPO_ROOT) {
   const srcRoot = resolve(repoRoot, "src");
   const allFiles = listFiles(srcRoot);
@@ -325,6 +377,7 @@ export function collectRatchetMetrics(repoRoot = REPO_ROOT) {
       mudRpgHookArgs: countMudRpgHookArgs(srcRoot),
       directAiCalls: countDirectAiCalls(sourceFiles, srcRoot),
       directStateWrites: countDirectStateWrites(sourceFiles, srcRoot),
+      ...countUiStructure(sourceFiles, srcRoot),
     },
     notes: [bundle.note],
   };
@@ -352,6 +405,45 @@ export const KNOWN_EXTERNAL_INFRA_CAP = {
   store: 2,
   ui: 33,
 };
+
+// 前端结构统一棘轮（路线图 U0）：五个数只许持平或下降。
+// 数字降了就必须在同一个 PR 里把这里改成新值，否则同样失败——上限永远等于现状，
+// 下一次回涨一处也能被抓到。
+export const KNOWN_UI_STRUCTURE_CAP = {
+  overlayFiles: 32,
+  inlineStyles: 2471,
+  rulesImporters: 82,
+  portsImporters: 7,
+  zoneThemeFiles: 91,
+};
+
+const UI_STRUCTURE_LABELS = {
+  overlayFiles: "自建 position:fixed 浮层的 JSX 文件数",
+  inlineStyles: "内联 style={{…}} 处数",
+  rulesImporters: "import domain/rules 的 JSX 文件数",
+  portsImporters: "import engine/ports 的 JSX 文件数",
+  zoneThemeFiles: "使用 zoneTheme 的 JSX 文件数",
+};
+
+function uiStructureValue(value) {
+  return Array.isArray(value) ? value.length : value;
+}
+
+export function checkUiStructure(uiStructure, caps = KNOWN_UI_STRUCTURE_CAP) {
+  const failures = [];
+  if (!uiStructure) return failures;
+  for (const [key, cap] of Object.entries(caps)) {
+    const actual = uiStructureValue(uiStructure[key]);
+    if (actual === undefined) continue;
+    const label = UI_STRUCTURE_LABELS[key] || key;
+    if (actual > cap) {
+      failures.push(`${label}: ${actual}，超过上限 ${cap}（只减不增）`);
+    } else if (actual < cap) {
+      failures.push(`${label}: 已降到 ${actual}，请在本 PR 把 KNOWN_UI_STRUCTURE_CAP.${key} 从 ${cap} 改为 ${actual}`);
+    }
+  }
+  return failures;
+}
 
 // 路线甲硬红线：React ref 已赶出 engine/act，任何 .current 读写都不许回来。
 // （\b 保证不误伤 currentStageIndex 这类数据字段。）
@@ -412,6 +504,7 @@ export function checkLayerRedLines(metrics) {
   if ((metrics.mudRpgHookArgs ?? 0) > KNOWN_MUD_RPG_HOOK_ARGS_CAP) {
     failures.push(`MudRPG hook 参数数: ${metrics.mudRpgHookArgs}，超过存量上限 ${KNOWN_MUD_RPG_HOOK_ARGS_CAP}（只减不增）`);
   }
+  failures.push(...checkUiStructure(metrics.uiStructure));
   return { ok: failures.length === 0, failures };
 }
 
@@ -432,6 +525,10 @@ export function formatStats(metrics) {
   push("mainJsGzipBytes", metrics.mainJsGzipBytes ?? "n/a (dist missing)");
   push("featureCtxRefCount", metrics.featureCtxRefCount ?? 0);
   push("mudRpgHookArgs", metrics.mudRpgHookArgs ?? 0);
+  for (const key of Object.keys(UI_STRUCTURE_LABELS)) {
+    const value = metrics.uiStructure?.[key];
+    if (value !== undefined) push(`ui.${key}`, uiStructureValue(value));
+  }
   return lines;
 }
 
@@ -441,7 +538,116 @@ function printLines(title, lines) {
   for (const line of lines) console.log(`  - ${line}`);
 }
 
-function runRatchet() {
+// ── U0 Review 修：棘轮 caps 抬升拦截 ──
+// 漏洞：caps 与计数同文件同 PR——加一个 inline style 同时把上限 +1 两边都过。
+// 修复：与基线分支（PR 目标分支/origin/main）的 caps 逐键比对，抬升即失败；
+// 合法抬升须在 scripts/ratchet-cap-exemptions.txt 登记一行豁免（评审可见的显式 artifact）。
+// 新增 cap 键/新 cap 对象（基线不存在）不受限——它们本就是新登记欠账。
+const CAP_OBJECT_NAMES = [
+  "KNOWN_LAYER_DEBT",
+  "KNOWN_DIRECT_AI_CALL_DEBT",
+  "KNOWN_STATE_WRITE_DEBT",
+  "KNOWN_EXTERNAL_INFRA_CAP",
+  "KNOWN_UI_STRUCTURE_CAP",
+];
+
+// 候选链：RATCHET_BASE_REF（CI push 事件传 github.event.before=推送前 tip，
+// 防 main 直推抬上限自比自蒙混）→ PR 目标分支 → origin/main → main。
+// 每个候选都必须真实可解析，空串/全零 sha/不存在一律回落下一档。
+function resolveCapsBaseRef() {
+  const ghBase = process.env.GITHUB_BASE_REF;
+  const candidates = [
+    process.env.RATCHET_BASE_REF,
+    ghBase ? `origin/${ghBase}` : null,
+    "origin/main",
+    "main",
+  ].filter((cand) => cand && !/^0{40}$/.test(cand));
+  for (const cand of candidates) {
+    try {
+      execSync(`git rev-parse --verify --quiet ${cand}`, { cwd: REPO_ROOT, stdio: ["ignore", "ignore", "ignore"] });
+      return cand;
+    } catch { /* try next */ }
+  }
+  return null;
+}
+
+async function loadBaseCapModule(baseRef) {
+  try {
+    const content = execSync(`git show ${baseRef}:scripts/ratchet.mjs`, {
+      cwd: REPO_ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], maxBuffer: 8 * 1024 * 1024,
+    });
+    if (!content) return null;
+    const dir = mkdtempSync(join(tmpdir(), "ratchet-base-"));
+    const file = join(dir, "ratchet.base.mjs");
+    writeFileSync(file, content);
+    return await import(pathToFileURL(file).href);
+  } catch {
+    return null;
+  }
+}
+
+// 豁免行格式「KEY=值 理由」（Review 修两条）：
+// ①按值绑定——豁免只放行到登记的那个值，再往上抬需要新一行登记，
+//   防止一次登记终身通行证（后续抬升对评审不可见）；
+// ②理由必填——裸键/裸键=值没有评审可读的豁免缘由，一律视为无豁免。
+export function loadCapExemptions() {
+  const file = resolve(REPO_ROOT, "scripts/ratchet-cap-exemptions.txt");
+  if (!existsSync(file)) return new Map();
+  const map = new Map();
+  for (const line of readFileSync(file, "utf8").split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const m = trimmed.match(/^(\S+?)=(\d+)\s+(\S.+)$/);
+    if (m) map.set(m[1], { value: Number(m[2]), reason: m[3].trim() });
+  }
+  return map;
+}
+
+// 纯函数（测试直达）：当前 caps vs 基线 caps，抬升且无豁免的键列成 failures。
+export function checkCapEscalation(baseMod, exemptions = new Map()) {
+  if (!baseMod) return [];
+  const failures = [];
+  // 豁免只在「登记值 >= 当前抬起值」时放行——抬起超过登记值需新登记。
+  const exempted = (id, val) => {
+    const entry = exemptions.get(id);
+    return !!entry && typeof entry.value === "number" && entry.value >= val && !!entry.reason;
+  };
+  const hint = (id) => `确需抬升须在 scripts/ratchet-cap-exemptions.txt 登记一行「${id}=抬起后值 理由」供评审`;
+  const current = {
+    KNOWN_LAYER_DEBT, KNOWN_DIRECT_AI_CALL_DEBT, KNOWN_STATE_WRITE_DEBT,
+    KNOWN_EXTERNAL_INFRA_CAP, KNOWN_UI_STRUCTURE_CAP,
+  };
+  for (const name of CAP_OBJECT_NAMES) {
+    const curObj = current[name] || {};
+    const baseObj = baseMod[name] || {};
+    for (const [key, val] of Object.entries(curObj)) {
+      const baseVal = baseObj[key];
+      if (baseVal === undefined) continue; // 新登记键不受限
+      if (typeof val === "number" && typeof baseVal === "number" && val > baseVal) {
+        const id = `${name}.${key}`;
+        if (!exempted(id, val)) {
+          failures.push(`棘轮上限抬升拦截: ${id} 从 ${baseVal} 抬到 ${val}——上限只减不增；${hint(id)}`);
+        }
+      }
+    }
+  }
+  const curHook = KNOWN_MUD_RPG_HOOK_ARGS_CAP;
+  const baseHook = baseMod.KNOWN_MUD_RPG_HOOK_ARGS_CAP;
+  if (typeof baseHook === "number" && curHook > baseHook && !exempted("KNOWN_MUD_RPG_HOOK_ARGS_CAP", curHook)) {
+    failures.push(`棘轮上限抬升拦截: KNOWN_MUD_RPG_HOOK_ARGS_CAP 从 ${baseHook} 抬到 ${curHook}——上限只减不增`);
+  }
+  return failures;
+}
+
+async function capEscalationFailures() {
+  const baseRef = resolveCapsBaseRef();
+  if (!baseRef) return { failures: [], note: "caps 基线分支不可解析（非 git 环境），抬升拦截跳过" };
+  const baseMod = await loadBaseCapModule(baseRef);
+  if (!baseMod) return { failures: [], note: `caps 基线 ${baseRef} 读取失败，抬升拦截跳过` };
+  return { failures: checkCapEscalation(baseMod, loadCapExemptions()), note: "" };
+}
+
+async function runRatchet() {
   const { metrics, notes } = collectRatchetMetrics();
 
   if (process.argv.includes("--stats")) {
@@ -451,6 +657,9 @@ function runRatchet() {
   }
 
   const { failures } = checkLayerRedLines(metrics);
+  const escalation = await capEscalationFailures();
+  failures.push(...escalation.failures);
+  if (escalation.note) console.log(`Note: ${escalation.note}`);
   printLines("Layer red-line violations", failures);
   if (!failures.length) console.log("Ratchet passed.");
   else process.exitCode = 1;
