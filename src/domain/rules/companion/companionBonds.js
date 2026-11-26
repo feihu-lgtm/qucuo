@@ -82,7 +82,9 @@ export function applyDuoOutcome(companionState, varTree, a, b, outcome = {}, { t
     const fromSlot = Object.entries(cs).find(([key, c]) => key === from || c?.label === from || c?.data?.name === from)?.[0];
     const toSlot = Object.entries(cs).find(([key, c]) => key === to || c?.label === to || c?.data?.name === to)?.[0];
     const itemNameText = String(itemName || "");
-    const carried = Array.isArray(cs?.[fromSlot]?.carriedItems) ? cs[fromSlot].carriedItems : [];
+    // Review 修：玩家赠礼的正本在 data.carriedItems（materializeFacts 落此处），
+    // 槽位级 carriedItems 是另一本账——读写都必须走 data 正本，否则真实持有的礼被误判不存在。
+    const carried = Array.isArray(cs?.[fromSlot]?.data?.carriedItems) ? cs[fromSlot].data.carriedItems : [];
     const idx = carried.findIndex((it) => (typeof it === "string" ? it : it?.name) === itemNameText);
     const item = idx >= 0 ? carried[idx] : null;
     const bound = item && typeof item === "object" && (item.bound || item.equipped || item.已绑定);
@@ -92,11 +94,11 @@ export function applyDuoOutcome(companionState, varTree, a, b, outcome = {}, { t
       transferRejected = `硬拦截：「${itemNameText}」是绑定装备，不可转交`;
     } else {
       const nextFrom = carried.filter((_, i) => i !== idx);
-      const toCarried = Array.isArray(cs?.[toSlot]?.carriedItems) ? cs[toSlot].carriedItems : [];
+      const toCarried = Array.isArray(cs?.[toSlot]?.data?.carriedItems) ? cs[toSlot].data.carriedItems : [];
       cs = {
         ...cs,
-        [fromSlot]: { ...cs[fromSlot], carriedItems: nextFrom },
-        [toSlot]: { ...cs[toSlot], carriedItems: [...toCarried, item] },
+        [fromSlot]: { ...cs[fromSlot], data: { ...cs[fromSlot].data, carriedItems: nextFrom } },
+        [toSlot]: { ...cs[toSlot], data: { ...cs[toSlot].data, carriedItems: [...toCarried, item] } },
       };
       transferApplied = { from, to, itemName: itemNameText };
     }

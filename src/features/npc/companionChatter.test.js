@@ -189,8 +189,8 @@ describe("V7b 事件加权+双人互怼（验收）", () => {
   it("transfer 硬拦截：模型报的物品不在 from 携物里——applyDuoOutcome 拒绝且不造物", async () => {
     const { applyDuoOutcome } = await import("../../domain/rules/companion/companionBonds.js");
     const cs = {
-      pearl: { label: "珍珠", carriedItems: [{ name: "一袋青稞精料" }] },
-      snowLeopard: { label: "雪豹", carriedItems: [] },
+      pearl: { label: "珍珠", data: { carriedItems: [{ name: "一袋青稞精料" }] } },
+      snowLeopard: { label: "雪豹", data: { carriedItems: [] } },
     };
     const outcome = {
       bondDelta: 1,
@@ -201,7 +201,7 @@ describe("V7b 事件加权+双人互怼（验收）", () => {
     expect(res.transferRejected).toContain("不许凭空造物");
     // 绑定装备同样拦截
     const res2 = applyDuoOutcome(
-      { pearl: { label: "珍珠", carriedItems: [{ name: "藏纹小马鞍", bound: true }] }, snowLeopard: { label: "雪豹", carriedItems: [] } },
+      { pearl: { label: "珍珠", data: { carriedItems: [{ name: "藏纹小马鞍", bound: true }] } }, snowLeopard: { label: "雪豹", data: { carriedItems: [] } } },
       {}, "珍珠", "雪豹",
       { transfer: { from: "珍珠", to: "雪豹", itemName: "藏纹小马鞍" } }, {},
     );

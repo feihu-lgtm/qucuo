@@ -45,19 +45,19 @@ describe("companionBonds 配对账（V7c 验收）", () => {
 
   it("transfer 硬拦截：物品不存在于 from 携物——不许凭空造物", () => {
     const cs = {
-      pearl: { label: "珍珠", carriedItems: [{ name: "一袋青稞精料" }] },
-      snowLeopard: { label: "雪豹", carriedItems: [] },
+      pearl: { label: "珍珠", data: { carriedItems: [{ name: "一袋青稞精料" }] } },
+      snowLeopard: { label: "雪豹", data: { carriedItems: [] } },
     };
     const out = applyDuoOutcome(cs, {}, "珍珠", "雪豹", { transfer: { from: "珍珠", to: "雪豹", itemName: "龙涎香" } });
     expect(out.transferApplied).toBeNull();
     expect(out.transferRejected).toContain("不许凭空造物");
-    expect(out.companionState.pearl.carriedItems).toHaveLength(1);
+    expect(out.companionState.pearl.data.carriedItems).toHaveLength(1);
   });
 
   it("transfer 硬拦截：绑定装备不可转交", () => {
     const cs = {
-      pearl: { label: "珍珠", carriedItems: [{ name: "藏纹小马鞍", bound: true }] },
-      snowLeopard: { label: "雪豹", carriedItems: [] },
+      pearl: { label: "珍珠", data: { carriedItems: [{ name: "藏纹小马鞍", bound: true }] } },
+      snowLeopard: { label: "雪豹", data: { carriedItems: [] } },
     };
     const out = applyDuoOutcome(cs, {}, "珍珠", "雪豹", { transfer: { from: "珍珠", to: "雪豹", itemName: "藏纹小马鞍" } });
     expect(out.transferApplied).toBeNull();
@@ -66,13 +66,13 @@ describe("companionBonds 配对账（V7c 验收）", () => {
 
   it("transfer 合法：物品从 from 移到 to", () => {
     const cs = {
-      pearl: { label: "珍珠", carriedItems: [{ name: "一袋青稞精料" }] },
-      snowLeopard: { label: "雪豹", carriedItems: [] },
+      pearl: { label: "珍珠", data: { carriedItems: [{ name: "一袋青稞精料" }] } },
+      snowLeopard: { label: "雪豹", data: { carriedItems: [] } },
     };
     const out = applyDuoOutcome(cs, {}, "珍珠", "雪豹", { transfer: { from: "珍珠", to: "雪豹", itemName: "一袋青稞精料" } });
     expect(out.transferApplied).toEqual({ from: "珍珠", to: "雪豹", itemName: "一袋青稞精料" });
-    expect(out.companionState.pearl.carriedItems).toHaveLength(0);
-    expect(out.companionState.snowLeopard.carriedItems).toHaveLength(1);
+    expect(out.companionState.pearl.data.carriedItems).toHaveLength(0);
+    expect(out.companionState.snowLeopard.data.carriedItems).toHaveLength(1);
   });
 
   it("bondDelta 超 ±5 被 Clamp", () => {

@@ -269,6 +269,8 @@ export function useTurn({
         .map((m) => `${m.path || m.key}${m.op === "inc" ? (m.value > 0 ? "+" : "") + m.value : ""}`)
         .join("，");
       const sceneObjs = (cur.room?.objects || cur.room?.items || []).map((o) => o?.name || o).filter(Boolean).slice(0, 6).join("、");
+      // Review 修：undo 代数护栏之外补存档 epoch——读档/开新档后旧局的 bonds/心账不得写进新档。
+      const chatterEpoch = getGameEpoch();
       companionChatterTick({
         companionState: cur.companionState, roomName: cur.room?.name, state: cur,
         activity: {
@@ -278,7 +280,7 @@ export function useTurn({
         },
         ask: askStoryteller,
       }).then((c) => {
-        if (!c || isStale()) return;
+        if (!c || isStale() || isGameEpochStale(chatterEpoch)) return;
         if (c.duo) {
           // V7c 双人互怼：两句往来落屏+记账，bonds/心账/携物转移经纯函数核算后由 store 收口落账
           addLog(c.lines.map((l) => ({ t: "desc", text: `  ${l.speaker}：“${l.text}”` })));
