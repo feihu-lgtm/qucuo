@@ -411,7 +411,7 @@ export const KNOWN_UI_STRUCTURE_CAP = {
   overlayFiles: 1,
   inlineStyles: 2410,
   rulesImporters: 82,
-  portsImporters: 7,
+  portsImporters: 1,
   zoneThemeFiles: 0,
 };
 

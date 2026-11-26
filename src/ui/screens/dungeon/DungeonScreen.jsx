@@ -18,7 +18,7 @@ import {
 import { settleDungeonRun, settleMapRun } from "../../../features/dungeon/logic.js";
 import { applyResult } from "../../../features/run.js";
 import DungeonMapPanel from "../../components/DungeonMapPanel.jsx";
-import { narrateDungeonEvent } from "../../../engine/ports/dungeonNarration.js";
+import { narrateDungeonEvent } from "../../../app/calls/screenCalls.js";
 import { gameActions, gameStore } from "../../../store/gameStore.js";
 
 const DuelScreen = lazy(() => import("../DuelScreen.jsx"));

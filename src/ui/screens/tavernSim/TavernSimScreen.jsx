@@ -14,8 +14,7 @@ import {
   initSim, advanceTick, resolveEvent, getDailyCandidates, appendLog, setNightReport,
 } from "../../../domain/rules/tavernSim/simEngine.js";
 import { Btn, S, CSS_KEYFRAMES, SAVE_KEY } from "./tavernWidgets.jsx";
-import { createNarrator } from "../../../engine/ports/simNarrator.js";
-import { hasApiKey } from "../../../engine/ports/storyteller.js";
+import { createNarrator, hasApiKey } from "../../../app/calls/screenCalls.js";
 import { Scene } from "./Scene.jsx";
 import { ManageTab, HireTab, MenuTab, LedgerTab } from "./Tabs.jsx";
 import { LogPanel, EventModal } from "./Overlays.jsx";

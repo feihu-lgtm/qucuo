@@ -6,8 +6,7 @@ import {
   pickAiMove, resolveBattleTurn,
   nextAliveIndex, isTeamWiped,
 } from "../../../domain/rules/quickBattle/battleEngine.js";
-import { narrateTurn } from "../../../engine/ports/battleNarration.js";
-import { hasApiKey } from "../../../engine/ports/storyteller.js";
+import { narrateTurn, hasApiKey } from "../../../app/calls/screenCalls.js";
 import { explainMove, moveTypeGist } from "../../../domain/rules/economy/itemEffectText.js";
 import TextBtn from "./TextBtn.jsx";
 import { PORTRAIT, UI, tierColor, tierName, sx } from "./qbShared.js";

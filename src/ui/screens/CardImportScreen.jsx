@@ -9,7 +9,7 @@
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { parseCharacterCard } from "../../domain/rules/cards/cardParse.js";
-import { planScan, runScan, runClassify, peopleAfterClassify } from "../../engine/ports/cardScan.js";
+import { planScan, runScan, runClassify, peopleAfterClassify } from "../../app/calls/screenCalls.js";
 import * as scanStore from "../../infra/scanStore.js";
 import { bucketStatus } from "../../domain/rules/cards/rateLimiter.js";
 import {

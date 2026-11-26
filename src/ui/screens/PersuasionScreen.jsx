@@ -4,9 +4,8 @@
 // 判定走 persuasion.js 的隐藏结构化字段，UI 只呈现结果。
 
 import React, { useState, useRef, useEffect } from "react";
-import { createWebAi } from "../../engine/ports/ai.js";
+import { createWebAi, runPersuadeTurn } from "../../app/calls/screenCalls.js";
 import { hintsUnlockedByGuard } from "../../domain/rules/quests/persuasion.js";
-import { runPersuadeTurn } from "../../engine/ports/persuasion.js";
 import ModalShell from "../primitives/ModalShell.jsx";
 import { THEME_VARS } from "../../utils/theme.js";
 
