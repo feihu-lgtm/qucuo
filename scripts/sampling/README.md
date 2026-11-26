@@ -37,7 +37,7 @@ node scripts/sampling/scanPack.mjs
 ## 配额口径（lane-aware 全局调度）
 
 - 配额是**全局账**不是单 lane 账：模板按 target 展开成实例全局编号，`instanceIndex % lanes` 分配到各 lane（`buildLaneQueue`），多 lane 并发无重无漏。
-- lanes×turns 容量：实例总数 228（talk12+move12+inspect12+take10+give12+trade12+steal10+duel10+appease10+learn10+invite10+use_item10+equip10+free_act60+settle15+群聊5+条件5）。例：8 lane × 29 回合覆盖全部；单 lane 需 205+ 回合。`SAMPLING_TURNS` 超本 lane 队列长度自动截断。
+- lanes×turns 容量：实例总数 228（talk12+move12+inspect12+take10+give12+trade12+steal10+duel10+appease10+learn10+invite10+use_item10+equip10+free_act60+settle15+群聊5+条件5）是**全局总账**，不是每 lane 都要跑这么多。例：8 lane 时每 lane 队列仅 28/29 条，`SAMPLING_TURNS=30` 即覆盖全部；单 lane 全量才需要 228。`SAMPLING_TURNS` 超本 lane 队列长度自动截断（`targetTurns=min`），多退少不补。
 - 十四种 kind 每类 ≥10 回合；free_act 十种 outcome 每类 ≥5；settle 三类、群聊、条件动作各 ≥5——意图层达标有测试（1/4/8 lane 模拟）。
 - **实际** kind 分布由后处理从 intake 响应实测，缺口写进 `a4_report.json` 的 `quotaGaps`，不粉饰。
 - 槽位缺料（没有合适的人/物）在**同 lane 队列**内换下一条可填实例（缺料实例后移再试），跳过原因记进 exports 的 `skippedLog`。

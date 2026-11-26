@@ -27,7 +27,7 @@ const stream = createWriteStream(LOG, { flags: "a" });
 // collect.mjs 读同一文件配进游戏 apiKey——本机其他进程无令牌不能蹭配额/污染留底。
 import { randomBytes } from "node:crypto";
 import { chmodSync, existsSync } from "node:fs";
-const TOKEN_PATH = `${process.env.HOME}/.sampling/proxy.token`;
+const TOKEN_PATH = process.env.SAMPLING_PROXY_TOKEN_PATH || `${process.env.HOME}/.sampling/proxy.token`;
 mkdirSync(dirname(TOKEN_PATH), { recursive: true });
 if (!existsSync(TOKEN_PATH)) {
   writeFileSync(TOKEN_PATH, randomBytes(24).toString("hex"), { mode: 0o600 });
@@ -124,6 +124,6 @@ const server = http.createServer((req, res) => {
   });
 });
 server.listen(PORT, "127.0.0.1", () => {
-  writeFileSync(`${process.env.HOME}/.sampling/proxy.ready`, String(PORT));
+  writeFileSync(`${dirname(TOKEN_PATH)}/proxy.ready`, String(PORT));
   console.log(`sampling proxy on ${PORT} → ${UPSTREAM}`);
 });

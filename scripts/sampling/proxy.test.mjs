@@ -39,25 +39,30 @@ beforeAll(async () => {
     });
   });
   await new Promise((r) => stub.listen(STUB_PORT, "127.0.0.1", r));
+  const TOKEN = join(dir, "proxy.token");
   proxy = spawn("node", ["scripts/sampling/proxy.mjs"], {
     env: {
       ...process.env,
-      HOME: process.env.HOME,
       SAMPLING_KEYLINE: join(dir, "keyline"),
       SAMPLING_UPSTREAM: `http://127.0.0.1:${STUB_PORT}/v1/chat/completions`,
       SAMPLING_PROXY_PORT: String(PORT),
       SAMPLING_PROXY_LOG: LOG,
+      SAMPLING_PROXY_TOKEN_PATH: TOKEN,
     },
     stdio: "pipe",
   });
-  // 轮询代理就绪（CI 冷启动可能慢），最多 8s
-  for (let i = 0; i < 40; i++) {
+  let proxyErr = "";
+  proxy.stderr.on("data", (d) => { proxyErr += d; });
+  // 轮询 token 文件+端口就绪（不赌固定 sleep），超时打印子进程 stderr
+  let ready = false;
+  for (let i = 0; i < 40 && !ready; i++) {
     await new Promise((r) => setTimeout(r, 200));
     try {
       const probe = await fetch(`http://127.0.0.1:${PORT}/v1/chat/completions`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
-      if (probe.status === 403) break; // 代理已起（验签生效）
+      if (probe.status === 403) ready = true; // 代理已起（验签生效）
     } catch { /* 未起 */ }
   }
+  if (!ready) throw new Error(`proxy 8s 未就绪，子进程 stderr:\n${proxyErr}`);
 });
 
 afterAll(async () => {
@@ -67,7 +72,7 @@ afterAll(async () => {
 });
 
 function post(body, headers = {}) {
-  const token = readFileSync(`${process.env.HOME}/.sampling/proxy.token`, "utf8").trim();
+  const token = readFileSync(join(dir, "proxy.token"), "utf8").trim();
   return fetch(`http://127.0.0.1:${PORT}/v1/chat/completions`, {
     method: "POST",
     headers: { "content-type": "application/json", authorization: `Bearer ${token}`, ...headers },

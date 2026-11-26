@@ -180,7 +180,6 @@ for (let turnIdx = 0; turnIdx < targetTurns && !aborted; turnIdx++) {
     ...(picked.tpl.conditional ? { conditional: true } : {}),
     cmd: picked.text, startedAt: new Date().toISOString(),
   };
-  tracker[picked.tpl.id] = (tracker[picked.tpl.id] || 0) + 1;
   try {
     rec.turnBefore = before.turn; rec.roomBefore = before.room;
     const t0 = Date.now();
@@ -229,7 +228,14 @@ try {
       const { drainShadowTasks, shadowStageCounts } = await import("/src/engine/act/shadow/shadowStages.js");
       const { pending } = await drainShadowTasks(60000);
       out.pendingAtExport = pending;
-      out.stageCounts = shadowStageCounts("default");
+      // epoch 口径与 shadowAggregatesByEpoch 同一套键——真实影子按 proseEpoch 分桶，
+      // 只取 default 会是空壳；非空桶全收，B1 完成数以 A3 实际计数为准。
+      const sc = {};
+      for (const key of ["default", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]) {
+        const c = shadowStageCounts(key);
+        if (c && (c.shadowStarted || c.compareDone)) sc[key] = c;
+      }
+      out.stageCountsByEpoch = sc;
       const shadowMod = await import("/src/engine/act/shadow/shadowJudge.js");
       const aggs = {};
       for (const key of ["default", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]) {
