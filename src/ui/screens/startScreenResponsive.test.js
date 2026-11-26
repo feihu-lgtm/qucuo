@@ -111,11 +111,17 @@ describe("StartScreen mobile layout", () => {
     expect(readFileSync(join(HERE, "PortraitBodyStep.jsx"), "utf-8")).toContain("character-create-appearance-layout");
   });
 
-  it("renders bottom-right corner status with live real clock and version in StartScreen and responsive CSS", () => {
+  it("renders bottom-right corner status with live real clock and single version entry inside flex bottom bar", () => {
     const startSrc = readFileSync(join(HERE, "StartScreen.jsx"), "utf-8");
+    const stylesSrc = readFileSync(join(HERE, "startScreenStyles.js"), "utf-8");
+    expect(startSrc).toContain('className="start-screen-bottom-bar"');
     expect(startSrc).toContain('className="start-screen-corner-status"');
     expect(startSrc).toContain("<LiveClockText withDate />");
     expect(startSrc).toContain("CURRENT_VERSION.version");
+    expect(startSrc.match(/setShowVersionHistory\(true\)/g)?.length).toBe(1);
+    expect(stylesSrc).toContain("bottomBar:");
+    expect(stylesSrc).not.toMatch(/opacity:\s*disabled\s*\?\s*0\.35/);
+    expect(MOBILE_CSS).toContain(".start-screen-bottom-bar");
     expect(MOBILE_CSS).toContain(".start-screen-corner-status");
   });
 });

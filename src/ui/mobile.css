@@ -610,6 +610,10 @@
     box-sizing: border-box;
   }
 
+  .start-screen-bottom-bar {
+    display: contents !important;
+  }
+
   .start-screen-footer {
     position: static !important;
     inset: auto !important;
