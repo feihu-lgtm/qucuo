@@ -31,9 +31,14 @@ describe("isPureDirectionCmd 纯方向短令闸门", () => {
       expect(isPureDirectionCmd(cmd)).toBe(false);
     }
   });
-  it("地名后缀不放行：去.+谷/堡/山", () => {
+  it("地名后缀不放行：去/往+谷/堡/山（Review 修：往南边忘忧谷不得当地向秒结）", () => {
     expect(isPureDirectionCmd("去忘忧谷")).toBe(false);
-    expect(isPureDirectionCmd("往东堡")).toBe(true); // 非「去/往+地名」结构的方向短令不受误伤
+    expect(isPureDirectionCmd("往南边忘忧谷")).toBe(false);
+    expect(isPureDirectionCmd("往东堡去")).toBe(false);
+  });
+  it("中段句读不放行：往东。开门 的第二动作不得被吞（Review 修）", () => {
+    expect(isPureDirectionCmd("往东。开门")).toBe(false);
+    expect(isPureDirectionCmd("往东！翻柜")).toBe(false);
   });
   it("fromButton 直通：按钮/罗盘语义本来就是纯方向", () => {
     expect(isPureDirectionCmd("往东走进铺子里看看", { fromButton: true })).toBe(true);

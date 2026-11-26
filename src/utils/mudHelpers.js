@@ -59,11 +59,11 @@ export const isPureDirectionCmd = (cmd, { fromButton = false } = {}) => {
   if (!c) return false;
   // 长度不超过 6 个汉字（按字符计，英文方向短令 n/ne/east 也一并很短）
   if ([...c].length > 6) return false;
-  // 不含分句符（逗号/分号/空格分句）
-  if (/[，,；;、\s]/.test(c)) return false;
+  // 不含分句符（逗号/分号/顿号/空格分句；句末标点已剥，残留的。！？必是中段分句）
+  if (/[，,；;、。！？!?.\s]/.test(c)) return false;
   // 不含复合动作词或地名后缀——「要是到了就翻柜」「往忘忧谷走」都不是纯方向
   if (/要是|如果|万一|到了|顺便|看看|找|翻|若/.test(c)) return false;
-  if (/去.+谷|去.+堡|去.+山/.test(c)) return false;
+  if (/去.+谷|去.+堡|去.+山|往.+谷|往.+堡|往.+山/.test(c)) return false;
   return true;
 };
 
