@@ -384,6 +384,12 @@ export function companionNpcEntry(companionState, key, extra = {}) {
   return {
     ...d, personalityProfile: d.profile,
     name: meta.label, id: key, companion: true, beast: !!(meta.beast || c?.beast), brief: d.brief || meta.label, levelCap: d.levelCap,
+    // D6 Review 修：同伴携物定为「非交互保管」——名册条目不暴露携物池。
+    // 玩家赠礼由 materializeFacts 落进 companionState.<key>.data.carriedItems（正本保留），
+    // 但同伴不是商贩/盗匪目标：条目若带 carriedItems，切磋福缘掉落/战斗顺手摸走/交易货架
+    // 都会把同一件物复制一份给玩家（正本在 companionState 里原样还在，room.npcs 标记
+    // 不到它），偷窃/交易还会开出莫名货架。条目置空后这些交互天然无的放矢。
+    carriedItems: [],
     ...(c?.mute || c?.cannotSpeak ? { cannotSpeak: true } : {}),
     ...extra,
   };
