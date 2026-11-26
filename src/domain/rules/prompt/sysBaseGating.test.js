@@ -260,3 +260,15 @@ describe("settleKind 铁律的其余分支", () => {
     expect(textOff).not.toContain("---SEAL---");
   });
 });
+
+describe("V7a 旁观者与同伴写法硬约束（村口复读根治）", () => {
+  it("worldInfoAfter 带硬约束：旁观者不点名/禁复读静态习性/非亲密禁发情模板", () => {
+    const block = worldInfoAfter(mk("full", false, { hasNpc: true }));
+    expect(block).toContain("在场旁观者默认不点名");
+    expect(block).toContain("禁止复读近两轮已经写过的静态习性");
+    expect(block).toContain("雪豹母鸡蹲发痒");
+    expect(block).toContain("珍珠低头啃草");
+    expect(block).toContain("大公鸡扑棱啄脚");
+    expect(block).toContain("发情模板");
+  });
+});

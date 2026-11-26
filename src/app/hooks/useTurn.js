@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef } from "react";
-import { gameActions, gameStore, subscribeGameReplaced, getGameEpoch, isGameEpochStale, allocProseSeq } from "../../store/gameStore.js";
+import { gameActions, gameStore, subscribeGameReplaced, getGameEpoch, isGameEpochStale, allocProseSeq, commitCompanionDuoOutcome } from "../../store/gameStore.js";
+import { applyDuoOutcome } from "../../domain/rules/companion/companionBonds.js";
 import { snapshotIntentPending } from "../../store/intentPendingStore.js";
 import { applyResult } from "../../features/run.js";
 import { parseLocalCommand } from "../../engine/localCommands.js";
@@ -261,11 +262,36 @@ export function useTurn({
     // 随行同伴随机插话（评价玩家活动）：概率触发、AI 现写（无 API 兜底句），记日志 + 进记忆
     if (result.ok && !isStale()) {
       const cur = gameStore.getState();
+      // V7b 上下文补入：说书正文末尾 120 字、关键数值变化（气血/银两/得失物）、当前场景对象
+      const deltas = (result.turn?.mvuCommands || [])
+        .filter((m) => /气血|银两|物品|铜钱/.test(String(m?.path || m?.key || "")))
+        .slice(0, 4)
+        .map((m) => `${m.path || m.key}${m.op === "inc" ? (m.value > 0 ? "+" : "") + m.value : ""}`)
+        .join("，");
+      const sceneObjs = (cur.room?.objects || cur.room?.items || []).map((o) => o?.name || o).filter(Boolean).slice(0, 6).join("、");
       companionChatterTick({
         companionState: cur.companionState, roomName: cur.room?.name, state: cur,
-        activity: { text: cmd, intent: resolved.plan?.intent?.code }, ask: askStoryteller,
+        activity: {
+          text: cmd, intent: resolved.plan?.intent?.code,
+          narrative: String(result.turn?.narrativeText || "").slice(-120),
+          deltas: deltas || "", scene: sceneObjs || "",
+        },
+        ask: askStoryteller,
       }).then((c) => {
         if (!c || isStale()) return;
+        if (c.duo) {
+          // V7c 双人互怼：两句往来落屏+记账，bonds/心账/携物转移经纯函数核算后由 store 收口落账
+          addLog(c.lines.map((l) => ({ t: "desc", text: `  ${l.speaker}：“${l.text}”` })));
+          for (const l of c.lines) jotNote({ text: `${l.speaker}见状说道：“${l.text}”`, owner: [l.speaker] });
+          if (c.outcome && (c.outcome.bondDelta || c.outcome.ledgerNote || c.outcome.transfer)) {
+            const live = gameStore.getState();
+            const res = applyDuoOutcome(live.companionState, live.varTree || {}, c.speakers[0], c.speakers[1], c.outcome, { time: live.time, place: cur.room?.name });
+            commitCompanionDuoOutcome({ companionState: res.companionState, varTree: res.varTree });
+            if (res.transferRejected) addLog([{ t: "sys", text: `  ${res.transferRejected}` }]);
+            if (res.transferApplied) addLog([{ t: "desc", text: `  ${res.transferApplied.from}把「${res.transferApplied.itemName}」塞给了${res.transferApplied.to}。` }]);
+          }
+          return;
+        }
         addLog([{ t: "desc", text: `  ${c.speaker}：“${c.line}”` }]);
         jotNote({ text: `${c.speaker}见状说道：“${c.line}”`, owner: [c.speaker] });
       }).catch(() => {});

@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import {
   COMPANION_CHATTER_CHANCE,
+  STRONG_EVENT_WEIGHTS,
+  eventChatterWeight,
   CHATTER_COOLDOWN_TURNS,
   CHATTER_GAP_TURNS,
   createChatterMemory,
@@ -39,7 +41,7 @@ describe("companionChatterTick：评价玩家活动，AI 优先 + 兜底", () =>
   it("AI 句原样产出 {speaker,line}", async () => {
     const ask = vi.fn(async () => "这次买卖分红可别忘了本小姐！");
     const out = await companionChatterTick({
-      companionState: mkCs(FOLL), roomName: "天都镇", memory: createChatterMemory(),
+      companionState: mkCs({ a: FOLL.a }), roomName: "天都镇", memory: createChatterMemory(),
       activity: { text: "打劫货商", intent: "STEAL" }, ask, rng: () => 0,
     });
     expect(out).toEqual({ speaker: "元朵朵", line: "这次买卖分红可别忘了本小姐！" });
@@ -48,7 +50,7 @@ describe("companionChatterTick：评价玩家活动，AI 优先 + 兜底", () =>
 
   it("无 API 走兜底——偷东西的活动类评价", async () => {
     const out = await companionChatterTick({
-      companionState: mkCs(FOLL), memory: createChatterMemory(),
+      companionState: mkCs({ a: FOLL.a }), memory: createChatterMemory(),
       activity: { text: "偷她荷包", intent: "STEAL" }, rng: () => 0,
     });
     expect(out.speaker).toBe("元朵朵");
@@ -135,6 +137,87 @@ describe("开口节奏：只从随行队友里抽，全队间隔 + 个人冷却"
     expect(pickChatter(cs, { rng: () => 0, memory })).toBeNull();
     memory.last.a = 5 - CHATTER_COOLDOWN_TURNS;
     expect(pickChatter(cs, { rng: () => 0, memory })?.name).toBe("元朵朵");
+  });
+});
+
+describe("V7b 事件加权+双人互怼（验收）", () => {
+  it("强事件权重生效：切磋/赠送/偷盗权重 0.55~0.75，普通走路维持 0.2", () => {
+    expect(eventChatterWeight({ intent: "DUEL" })).toBe(0.75);
+    expect(eventChatterWeight({ intent: "GIFT" })).toBe(0.7);
+    expect(eventChatterWeight({ intent: "STEAL" })).toBe(0.65);
+    expect(eventChatterWeight({ intent: "TRADE" })).toBe(0.6);
+    expect(eventChatterWeight({ intent: "COMBAT" })).toBe(0.55);
+    expect(eventChatterWeight({ intent: "MOVE" })).toBe(COMPANION_CHATTER_CHANCE);
+    expect(eventChatterWeight({ intent: "MOVE", newPlace: true })).toBe(0.65);
+    expect(eventChatterWeight({ intent: "MOVE", setback: true })).toBe(0.6);
+    // 权重落到实处：0.3 的 rng 在普通回合不开口，切磋回合开口
+    const cs = mkCs({ a: FOLL.a });
+    expect(pickChatter(cs, { rng: () => 0.3 })).toBeNull();
+    expect(pickChatter(cs, { rng: () => 0.3, chance: STRONG_EVENT_WEIGHTS.DUEL })?.name).toBe("元朵朵");
+  });
+
+  it("双人接茬：装配两人关系档位与互涉心账进提示词，输出两句往来", async () => {
+    let captured = "";
+    const ask = vi.fn(async (sys, user) => {
+      captured = user;
+      return JSON.stringify({ lines: { 珍珠: "开饭了吗？", 雪豹: "闭嘴，有风。" }, bondDelta: 2 });
+    });
+    const cs = mkCs({
+      pearl: c("珍珠", { beast: true }),
+      snowLeopard: c("雪豹", { beast: true }),
+    });
+    cs.pearl.carriedItems = [];
+    cs.snowLeopard.carriedItems = [];
+    const state = { varTree: { 角色: {
+      珍珠: { 心账: [{ summary: "与雪豹：抢食拌嘴" }] },
+      雪豹: { 心账: [] },
+    } } };
+    const out = await companionChatterTick({
+      companionState: cs, roomName: "鱼定村", memory: createChatterMemory(),
+      activity: { text: "赶路", intent: "MOVE" }, ask, rng: () => 0, state,
+    });
+    expect(out.duo).toBe(true);
+    expect(out.lines).toEqual([
+      { speaker: "珍珠", text: "开饭了吗？" },
+      { speaker: "雪豹", text: "闭嘴，有风。" },
+    ]);
+    expect(out.outcome.bondDelta).toBe(2);
+    expect(captured).toMatch(/两人关系：生分/);
+    expect(captured).toMatch(/抢食拌嘴/);
+  });
+
+  it("transfer 硬拦截：模型报的物品不在 from 携物里——applyDuoOutcome 拒绝且不造物", async () => {
+    const { applyDuoOutcome } = await import("../../domain/rules/companion/companionBonds.js");
+    const cs = {
+      pearl: { label: "珍珠", carriedItems: [{ name: "一袋青稞精料" }] },
+      snowLeopard: { label: "雪豹", carriedItems: [] },
+    };
+    const outcome = {
+      bondDelta: 1,
+      transfer: { from: "珍珠", to: "雪豹", itemName: "龙涎香" },
+    };
+    const res = applyDuoOutcome(cs, {}, "珍珠", "雪豹", outcome, {});
+    expect(res.transferApplied).toBeNull();
+    expect(res.transferRejected).toContain("不许凭空造物");
+    // 绑定装备同样拦截
+    const res2 = applyDuoOutcome(
+      { pearl: { label: "珍珠", carriedItems: [{ name: "藏纹小马鞍", bound: true }] }, snowLeopard: { label: "雪豹", carriedItems: [] } },
+      {}, "珍珠", "雪豹",
+      { transfer: { from: "珍珠", to: "雪豹", itemName: "藏纹小马鞍" } }, {},
+    );
+    expect(res2.transferApplied).toBeNull();
+    expect(res2.transferRejected).toContain("绑定装备");
+  });
+
+  it("双人离线兜底：无 API 也有两句对口词", async () => {
+    const cs = mkCs({ pearl: c("珍珠", { beast: true }), snowLeopard: c("雪豹", { beast: true }) });
+    const out = await companionChatterTick({
+      companionState: cs, memory: createChatterMemory(),
+      activity: { text: "赶路", intent: "MOVE" }, rng: () => 0,
+    });
+    expect(out.duo).toBe(true);
+    expect(out.lines).toHaveLength(2);
+    expect(out.lines[0].text.length).toBeGreaterThan(0);
   });
 });
 
