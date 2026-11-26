@@ -194,7 +194,7 @@ export function callModel(cfg, systemPrompt, messages, opts = {}) {
 }
 
 async function requestModel(cfg, systemPrompt, messages, opts) {
-  if (cfg.timeoutMs) setRequestTimeout(cfg.timeoutMs);
+  setRequestTimeout(cfg.timeoutMs || 60000); // Review 修：无自定义超时的配置档必须把全局复位回默认，否则上一档的长超时泄漏
   const maxTokens = opts.maxTokens ?? cfg.maxTokens;
   const temperature = opts.temperature ?? cfg.temperature;
   // 采样参数（本轮新增）：top_p/top_k/frequency_penalty/presence_penalty 这几个概念

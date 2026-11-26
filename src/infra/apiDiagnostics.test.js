@@ -144,3 +144,18 @@ describe("readSSE idle 超时", () => {
     expect(events).toEqual([{ a: 1 }, { b: 2 }, { c: 3 }]);
   });
 });
+
+describe("W-FIX3 首包看门狗随用户超时缩放（协调裁决方案 c）", () => {
+  it("默认 60s 超时 → 18000ms 下限", async () => {
+    const { firstByteWatchdogMs } = await import("./apiDiagnostics.js");
+    // getRequestTimeout 出厂 60000：max(18000, 20000)=20000 → min(60000, 20000)=20000
+    expect(firstByteWatchdogMs()).toBe(Math.min(60000, Math.max(18000, Math.floor(60000 / 3))));
+  });
+  it("缩放式数学口径：短超时按比例缩、长超时 18s 起步不超用户上限", () => {
+    const scale = (t) => Math.min(t, Math.max(18000, Math.floor(t / 3)));
+    expect(scale(60000)).toBe(20000); // 默认档：1/3 比例超 18s 下限
+    expect(scale(30000)).toBe(18000); // 短超时：18s 下限兜底但仍 ≤ 用户上限
+    expect(scale(120000)).toBe(40000); // 长超时：慢思考模型首 token 合法晚到不误杀
+    expect(scale(15000)).toBe(15000); // 超短超时永不超用户上限
+  });
+});

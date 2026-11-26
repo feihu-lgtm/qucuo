@@ -27,9 +27,14 @@ export async function observeAi(messages, opts, request) {
     // Anthropic cache_read_input_tokens / Gemini cachedContentTokenCount，
     // 随 usage 一起写入流水线诊断日志，供 TraceViewer 观察前缀缓存命中率。
     const usage = result.usage;
+    // W-FIX3：补 OpenAI 兼容中转常见变体——顶层 usage.cached_tokens 与
+    // usage.prompt_cache_hit_tokens（部分中转不走 prompt_tokens_details 嵌套），
+    // 排查 cachedTokens 全零是字段名差异还是前缀不足 1024 tokens。
     const cachedTokens = usage?.prompt_tokens_details?.cached_tokens
       ?? usage?.cache_read_input_tokens
       ?? usage?.cachedContentTokenCount
+      ?? usage?.cached_tokens
+      ?? usage?.prompt_cache_hit_tokens
       ?? 0;
     // A1：dev 下短调用（disableThinking→reasoning_effort minimal）思考 token 超 200
     // 说明中转/端点吞了思考档参数——警告进 turnMonitor 全流程日志（TraceViewer 可见），

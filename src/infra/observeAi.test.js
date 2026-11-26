@@ -39,3 +39,32 @@ describe("A1 短调用思考档警告进全流程日志", () => {
     expect(warningNodes()).toHaveLength(0);
   });
 });
+
+describe("W-FIX3 cachedTokens 缓存计数字段兼容", () => {
+  async function runWithUsage(usage) {
+    const turn = turnMonitor.start("缓存字段测试");
+    await observeAi(
+      [{ role: "user", content: "hi" }],
+      { cfg: { model: "gemini-3.8-flash" } },
+      async () => ({ text: "ok", usage, finishReason: "stop", raw: {} }),
+    );
+    turnMonitor.finish(turn);
+    return turnMonitor.getTrees().flatMap((t) => t.nodes).map((n) => n.pipeline).find((pl) => pl && pl.success === true);
+  }
+  it("OpenAI 嵌套 prompt_tokens_details.cached_tokens", async () => {
+    const node = await runWithUsage({ prompt_tokens_details: { cached_tokens: 111 } });
+    expect(node?.cachedTokens).toBe(111);
+  });
+  it("中转顶层 usage.cached_tokens 变体", async () => {
+    const node = await runWithUsage({ cached_tokens: 222 });
+    expect(node?.cachedTokens).toBe(222);
+  });
+  it("中转 usage.prompt_cache_hit_tokens 变体", async () => {
+    const node = await runWithUsage({ prompt_cache_hit_tokens: 333 });
+    expect(node?.cachedTokens).toBe(333);
+  });
+  it("无任何缓存字段落 0", async () => {
+    const node = await runWithUsage({});
+    expect(node?.cachedTokens).toBe(0);
+  });
+});

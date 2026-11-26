@@ -3,9 +3,18 @@ import { readSSE, stripReasoning } from "./apiSse.js";
 import { getApiModel } from "./apiModel.js";
 import { withProxy, httpFailure, callModel, fetchWithTimeout, readJsonOrThrow, setRequestTimeout, getRequestTimeout, rejectNonStream, formatBlock, fetchOpenAI, isOpenAICompatible } from "./apiTransport.js";
 import { API_TYPES, migrateProvider, DEFAULT_CALL_TOKEN_LIMITS, PROVIDERS,
+
   normalizeOpenAIEndpoint, normalizeAnthropicEndpoint, normalizeGeminiBase,
   applyThinkingAnthropic, applyThinkingGemini, applyThinkingOpenAI,
   clampMaxTokensForProvider, ANTHROPIC_KNOWN_MODELS } from "./providers.js";
+
+// W-FIX3 协调裁决（方案 c）：首包看门狗随用户超时缩放 min(用户超时, max(18000, 用户超时/3))——
+// 慢思考模型首 token 合法晚到不该被硬 18s 误杀；假死连接（永远零字节）必须快切。
+export const firstByteWatchdogMs = () => {
+  const t = getRequestTimeout();
+  return Math.min(t, Math.max(18000, Math.floor(t / 3)));
+};
+
 
 export async function testConnection(cfg) {
   try {
@@ -29,7 +38,7 @@ export function callModelStream(cfg, systemPrompt, messages, onChunk, opts = {})
 }
 
 async function requestStream(cfg, systemPrompt, messages, onChunk, opts) {
-  if (cfg.timeoutMs) setRequestTimeout(cfg.timeoutMs);
+  setRequestTimeout(cfg.timeoutMs || 60000); // Review 修：无自定义超时的配置档必须把全局复位回默认，否则上一档的长超时泄漏
   const maxTokens = opts.maxTokens ?? cfg.maxTokens;
   const temperature = opts.temperature ?? cfg.temperature;
 
@@ -37,7 +46,8 @@ async function requestStream(cfg, systemPrompt, messages, onChunk, opts) {
     let full = "";
     let finishReason, usage; // 捕获停止原因与 token 用量，供 Pipeline 判断"是正常收尾还是被 length 截断"
     // idle 超时与请求超时同值：流式期间每次等 chunk 也受约束，持续有字不误杀长正文。
-    const sse = (res, handler) => readSSE(res, handler, { idleTimeoutMs: getRequestTimeout() });
+    // W-FIX3 协调裁决（方案 c）：首包看门狗随用户超时缩放，见模块级 firstByteWatchdogMs。
+    const sse = (res, handler) => readSSE(res, handler, { idleTimeoutMs: getRequestTimeout(), firstByteTimeoutMs: firstByteWatchdogMs() });
 
     if (cfg.apiType === API_TYPES.ANTHROPIC) {
       const provider = PROVIDERS[cfg.provider];
