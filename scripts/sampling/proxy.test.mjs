@@ -50,7 +50,14 @@ beforeAll(async () => {
     },
     stdio: "pipe",
   });
-  await new Promise((r) => setTimeout(r, 1000));
+  // 轮询代理就绪（CI 冷启动可能慢），最多 8s
+  for (let i = 0; i < 40; i++) {
+    await new Promise((r) => setTimeout(r, 200));
+    try {
+      const probe = await fetch(`http://127.0.0.1:${PORT}/v1/chat/completions`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+      if (probe.status === 403) break; // 代理已起（验签生效）
+    } catch { /* 未起 */ }
+  }
 });
 
 afterAll(async () => {

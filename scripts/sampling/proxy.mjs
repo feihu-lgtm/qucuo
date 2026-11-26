@@ -28,6 +28,7 @@ const stream = createWriteStream(LOG, { flags: "a" });
 import { randomBytes } from "node:crypto";
 import { chmodSync, existsSync } from "node:fs";
 const TOKEN_PATH = `${process.env.HOME}/.sampling/proxy.token`;
+mkdirSync(dirname(TOKEN_PATH), { recursive: true });
 if (!existsSync(TOKEN_PATH)) {
   writeFileSync(TOKEN_PATH, randomBytes(24).toString("hex"), { mode: 0o600 });
   chmodSync(TOKEN_PATH, 0o600);
