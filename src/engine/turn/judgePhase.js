@@ -17,6 +17,10 @@ import { inferAppeaseStance } from "../../domain/rules/npc/appeaseStance.js";
 import { resolveFloatingItems } from "../../domain/rules/judge/floatingRelics.js";
 import { questAdvanceCandidates } from "../../domain/rules/quests/questAdvanceCandidates.js";
 import { withAI } from "../ports/withAI.js";
+import { intimacyGate, intimacyRefusal, intimacyPromptNote, intimateTicketNote, resolveIntimateTarget } from "../../domain/rules/npc/intimacy.js";
+import { isIntimateInput } from "../../domain/rules/prompt/inputIntent.js";
+import { INTIMATE_TICKET_NAME } from "../../domain/rules/npc/goldenEgg.js";
+import { add, set, applyWrite } from "../../domain/rules/state/applyWrite.js";
 import { random } from "../../utils/rng.js";
 
 
@@ -188,6 +192,7 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
         let intakeRaw = intakeRes?.data;
         if (!intakeRaw && intakeRes?.text) { try { intakeRaw = JSON.parse(intakeRes.text); } catch { /* 落 degraded */ } }
         intakeResult = normalizeIntakeResult(intakeRaw);
+        if (intakeRaw) intakeResult.__aiIntake = true; // D8：真前哨判意标记——intimate 以布尔为准
         // S2/S2-review 补洞：模型听意 target 填「无」时与本地合成同一回填口径——
         // 显式点选优先；未点选但单人在场也落到这位唯一在场者，多人仍保持「无」。
         const soleTalkTarget = deps.talkTarget || (visibleNpcs.length === 1 ? visibleNpcs[0]?.name || "" : "");
@@ -245,6 +250,60 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
         containerPlace = reCtx.containerPlace;
         containerView = reCtx.containerView;
         trace("判官管线", "pass", `前置路由后现场刷新：${newRoomName}/${newInner || "外层"}，在场 ${visibleNpcs.length} 人`);
+      }
+
+      // ══ D8 亲密门禁：判意来自 intake（布尔字段），intake 缺失/本地合成时正则兜底。
+      // 拦截逻辑与 V5 前相同只换判意来源——拒：固定性格化拒词+扣好感+中止管线；
+      // 过：标已亲密+门槛行注入判官 notes 随定案单进主叙事；凭卡强开落 ticket 待焚。
+      let intimacyGateInfo = null;
+      {
+        const nsfwOnNow = deps.nsfwOn ?? ctx.getGameState?.()?.nsfwOn ?? false;
+        const acts = intakeResult?.actions || [];
+        const intakeAiVerdict = intakeResult?.__aiIntake === true;
+        const intimateHitNow = nsfwOnNow && (intakeAiVerdict
+          ? acts.some((a) => a?.intimate === true)
+          : isIntimateInput(cmd));
+        if (intimateHitNow) {
+          const intimateAction = acts.find((a) => a?.intimate === true) || acts[0] || {};
+          const rt = resolveIntimateTarget({
+            targetName: intimateAction.target && intimateAction.target !== "无" ? intimateAction.target : (ctx.talkTarget || deps.talkTarget || ""),
+            cmd, npcs: visibleNpcs, convo, allNpcs: deps.room?.npcs || [],
+          });
+          const npc = (deps.room?.npcs || []).find((n) => n?.name === rt.targetName) || rt.explicitHit;
+          if (npc?.name) {
+            const vtCur = ctx.getGameState?.()?.varTree || deps.varTree || {};
+            const aff = Number(vtCur?.角色?.[npc.name]?.好感度) || 0;
+            const gate = intimacyGate(npc, aff);
+            const invNow = ctx.getGameState?.()?.inv || deps.inv || [];
+            const hasTicket = invNow.some((it) => (typeof it === "object" && it ? it.name : it) === INTIMATE_TICKET_NAME);
+            const forceIntimate = !gate.unlocked && hasTicket && !npc.beast;
+            if (!gate.unlocked && !forceIntimate) {
+              const { line, loss } = intimacyRefusal(npc);
+              const logs = [{ t: "cmd", text: `> ${cmd}` }, { t: "desc", text: `  ${line}` }];
+              if (loss > 0) {
+                const cur = aff;
+                const written = applyWrite({ varTree: vtCur, inv: invNow, char: ctx.getGameState?.()?.char || {} }, add(["角色", npc.name, "好感度"], -loss));
+                deps.setVarTree?.(written.state.varTree);
+                logs.push({ t: "affection", text: `  💗 ${npc.name} 好感度 -${loss}（${cur} → ${cur - loss}）` });
+              }
+              (deps.addLog || (() => {}))(logs);
+              trace("亲密门槛", "fail", `${npc.name} 好感 ${aff}/${gate.threshold}，${gate.forbidden ? "不受人情" : "婉拒"}（intake 判意）`);
+              return { intimacyRefused: true, stale: false };
+            }
+            // 过线/凭卡：标已亲密（凭卡烙印随 commit 焚卡一步落盘——这里只记信息）
+            if (!forceIntimate) {
+              const stamped = applyWrite({ varTree: vtCur, inv: invNow, char: ctx.getGameState?.()?.char || {} }, set(["角色", npc.name, "已亲密"], true));
+              deps.setVarTree?.(stamped.state.varTree);
+              deps.setRoom?.((r) => ({ ...r, npcs: (r?.npcs || []).map((n) => (n.name === npc.name ? { ...n, intimate: true } : n)) }));
+            }
+            intimacyGateInfo = {
+              npc: npc.name,
+              note: forceIntimate ? intimateTicketNote(npc) : intimacyPromptNote(npc, aff),
+              ticket: forceIntimate ? npc.name : null,
+            };
+            trace("亲密门槛", "pass", `${npc.name} 好感 ${aff}/${gate.threshold}，${forceIntimate ? "凭卡强开" : "已亲密"}（intake 判意）`);
+          }
+        }
       }
 
       judgeVerdict = judgeTurn({
@@ -308,6 +367,11 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
         .map((a) => a?.target)
         .filter((t) => typeof t === "string" && t && t !== "无"))];
       deps.judgePipelineActive = true;
+      // D8：亲密过线——门槛行注入 notes 随定案单进主叙事；凭卡 ticket 挂 verdict 待 commit 焚。
+      if (intimacyGateInfo && judgeVerdict) {
+        judgeVerdict.notes = [...(judgeVerdict.notes || []), intimacyGateInfo.note];
+        if (intimacyGateInfo.ticket) judgeVerdict.intimateTicket = intimacyGateInfo.ticket;
+      }
       deps.judgeVerdict = judgeVerdict;
       deps.causalBudget = judgeVerdict.budget;
       // ── D3 条件路由裁决：判官跑完后，带前提的路由动作按 verdict.lastActionOutcome

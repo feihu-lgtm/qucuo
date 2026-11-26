@@ -24,7 +24,7 @@ describe("WO-16F-F2a 判官路由集成", () => {
   it("WO-16F-F2a：判官链下打字装备/用物/拾取状态真实变化且叙事输入含回执；单调用零变化", async () => {
     const mkAction = (kind, item, text) => ({
       kind, target: "无", item, itemId: "", direction: "none", condition: "无",
-      condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text, useKind: "",
+      condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text, useKind: "", intimate: false,
     });
     const runOnce = async (action, apiExtra = {}) => {
       const intakeJson = JSON.stringify({ read: "x", refIds: [], actions: [action], proposals: [] });
@@ -97,7 +97,7 @@ describe("WO-16F-F2a 判官路由集成", () => {
     const calls = [];
     const intakeJson = JSON.stringify({
       read: "x", refIds: [],
-      actions: [{ kind: "equip", target: "无", item: "屠龙宝刀", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "戴上屠龙宝刀", useKind: "" }],
+      actions: [{ kind: "equip", target: "无", item: "屠龙宝刀", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "戴上屠龙宝刀", useKind: "", intimate: false }],
       proposals: [],
     });
     const ai = {
@@ -168,7 +168,7 @@ describe("WO-16F-F2a 判官路由集成", () => {
     };
     const mk = (patch) => ({
       kind: "take", target: "无", item: "遗落的皮靴", itemId: "", direction: "none",
-      condition: "无", condition_text: "", useKind: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "捡起遗落的皮靴", useKind: "",
+      condition: "无", condition_text: "", useKind: "", intimate: false, stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "捡起遗落的皮靴", useKind: "", intimate: false,
       ...patch,
     });
     const prevInv = gameStore.getState().inv;
@@ -443,7 +443,7 @@ describe("WO-16F-F2a 判官路由集成", () => {
     };
     const mk = (patch) => ({
       kind: "invite", target: "阿岚", item: "无", itemId: "", direction: "none",
-      condition: "无", condition_text: "", useKind: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "邀阿岚同行", useKind: "",
+      condition: "无", condition_text: "", useKind: "", intimate: false, stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "邀阿岚同行", useKind: "", intimate: false,
       ...patch,
     });
     const prevComp = gameStore.getState().companionState;
@@ -534,7 +534,7 @@ describe("WO-16F-F2a 判官路由集成", () => {
 describe("S7 move 路由：内层移动确定性结算", () => {
   const mkMove = (direction, text) => ({
     kind: "move", target: "无", item: "无", itemId: "", direction, condition: "无",
-    condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text, useKind: "",
+    condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text, useKind: "", intimate: false,
   });
   function setupInnerRoom() {
     const prev = gameStore.getState();
@@ -623,7 +623,7 @@ describe("D4 外层自然语言移动确定性路由", () => {
   });
   const mkAction = (over = {}) => ({
     kind: "move", target: "无", item: "无", itemId: "", direction: "none", condition: "无",
-    condition_text: "", useKind: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "", useKind: "",
+    condition_text: "", useKind: "", intimate: false, stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "", useKind: "", intimate: false,
     ...over,
   });
 

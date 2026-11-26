@@ -92,8 +92,8 @@ describe("runTurn", () => {
     const intakeJson = JSON.stringify({
       read: "送刀再闲聊", refIds: [],
       actions: [
-        { kind: "give", target: "才旦", item: "霜牙短刀", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "送刀", useKind: "" },
-        { kind: "talk", target: "才旦", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "闲聊", useKind: "" },
+        { kind: "give", target: "才旦", item: "霜牙短刀", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "送刀", useKind: "", intimate: false },
+        { kind: "talk", target: "才旦", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "闲聊", useKind: "", intimate: false },
       ],
       proposals: [],
     });
@@ -183,7 +183,7 @@ describe("runTurn", () => {
     const calls = [];
     const intakeJson = JSON.stringify({
       read: "说动老猎户", refIds: [],
-      actions: [{ kind: "talk", target: "老猎户", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "sincere", outcome: "无", risk: "无", confidence: 0.8, text: "老猎户，教我几手吧", useKind: "" }],
+      actions: [{ kind: "talk", target: "老猎户", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "sincere", outcome: "无", risk: "无", confidence: 0.8, text: "老猎户，教我几手吧", useKind: "", intimate: false }],
       proposals: [{ claim: "说动了老猎户", kind: "quest_advance", fit: "natural", questId: "hunter_learn_quest", flag: "quest_village1_s1" }],
     });
     const ai = {
@@ -228,9 +228,9 @@ describe("runTurn", () => {
     const intakeJson = JSON.stringify({
       read: "邀战铁匠再问价掌柜", refIds: [],
       actions: [
-        { kind: "duel", target: "铁匠", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.8, text: "想和铁匠切磋", useKind: "" },
-        { kind: "trade", target: "掌柜", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.8, text: "问问掌柜有什么好货", useKind: "" },
-        { kind: "duel", target: "路人乙", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.5, text: "还想打路人", useKind: "" },
+        { kind: "duel", target: "铁匠", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.8, text: "想和铁匠切磋", useKind: "", intimate: false },
+        { kind: "trade", target: "掌柜", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.8, text: "问问掌柜有什么好货", useKind: "", intimate: false },
+        { kind: "duel", target: "路人乙", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.5, text: "还想打路人", useKind: "", intimate: false },
       ],
       proposals: [],
     });
@@ -280,7 +280,7 @@ describe("runTurn", () => {
     const intakeJson = JSON.stringify({
       read: "要是没人就打铁匠", refIds: [],
       actions: [
-        { kind: "duel", target: "铁匠", item: "无", itemId: "", direction: "none", condition: "遇敌", condition_text: "要是碰上", stance: "casual", outcome: "无", risk: "无", confidence: 0.8, text: "打铁匠", useKind: "" },
+        { kind: "duel", target: "铁匠", item: "无", itemId: "", direction: "none", condition: "遇敌", condition_text: "要是碰上", stance: "casual", outcome: "无", risk: "无", confidence: 0.8, text: "打铁匠", useKind: "", intimate: false },
       ],
       proposals: [],
     });

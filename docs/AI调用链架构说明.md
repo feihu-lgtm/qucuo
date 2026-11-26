@@ -396,4 +396,7 @@ CI 有硬门禁：`npm run docs-gate` 会读取 PR 相对 base 的文件清单�
 | W-INPUT 底栏单框合一：撤 NSFW/打坐/模式切换/选人芯片排，@触发浮层+一次性胶囊+三路直通发完即焚（私语/飞鸽/@人名）；appendConvo 落条 respondedNpcs（derived 优先 SEAL 兜底），judgePhase 取上轮 respondedNpcs[0] 注入 buildIntakeUserContent [指代候选] 行提示前哨 | 已开 PR 未合并 |
 | V6 游走白描原位替换：roam.reaction 补写成功时 replaceWhenIdle 原位改写极简占位行（公屏条数不变不双行），离线/失败/空文本占位行保底，换房/读档静默丢弃 | 待合 #572 |
 | V4 知情隔离根治：memoryFact 目击者池改 isNpcVisibleInInnerRoom 本房收窄（不再全据点广播）+soleWitness 放宽到非搭话密行；密告事实带房间作用域落「密告」标签；judgeTurn 跨房密谈自动入非目击者 unknownRefIds 并严禁复述；convo 落房间头、histWindow 他处旧幕标记；talk 透露秘闻缘由区分搭话投机 | 待合 #570 |
+
 | V7 队友互动去呆板化+村口复读根治：说书人提示词硬约束（旁观者不点名/禁复读静态习性/非亲密禁发情模板，copy 单源 bystanderRules.txt）+珍珠文案去骑乘诱导；companionChatterTick 事件加权（强事件 0.55~0.75/走路 0.2，强事件冷却减半）+说书末尾/数值变化/场景对象入上下文+CHATTER_MAX_TOKENS 120；随行满 2 人 35% 双人互怼接茬（关系档位+互涉心账装配，结构化 lines/bondDelta/ledgerNote/transfer）；companionBonds 配对账五档+双向心账+transfer 硬校验防凭空造物，store 层 commitCompanionDuoOutcome 收口落账 | 待合 |
+||||||| parent of a8d66caf (feat(intake): D8 亲密判意上移 intake——intimate 布尔前哨判意，正则降级兜底)
+| D8 亲密判意上移 intake | 待合 | intake schema/提示词加 intimate 布尔前哨判意；judgePhase 执行门禁（拒词直写中止管线/过线 notes 注入/凭卡 ticket 挂 verdict 焚卡），resolveIntent 前置拦截撤除；intake 缺失或本地合成时正则降级兜底。 |

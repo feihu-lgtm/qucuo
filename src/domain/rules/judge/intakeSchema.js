@@ -18,7 +18,7 @@ export const INTAKE_JSON_SCHEMA = {
           // WO-16G PR-G1：12 字段全 required（OpenAI strict 口径，禁联合类型），
           // 缺省语义 空串/none/无/0——outcome/risk 只进 schema 与喂料，
           // 判官消费在 WO-16F 接，risk 已被 budgetInput 兼容读取。
-          required: ["kind", "target", "item", "itemId", "direction", "condition", "condition_text", "stance", "outcome", "risk", "confidence", "text", "useKind"],
+          required: ["kind", "target", "item", "itemId", "direction", "condition", "condition_text", "stance", "outcome", "risk", "confidence", "text", "useKind", "intimate"],
           properties: {
             kind: { type: "string", enum: ["talk", "move", "inspect_container", "take", "give", "trade", "steal", "duel", "appease", "learn", "invite", "use_item", "equip", "free_act"] },
             target: { type: "string", description: "动作对象名：move 填目的地名（没说填「无」），其余动作为在场角色或容器的准确名字，不在场填「无」" },
@@ -36,6 +36,7 @@ export const INTAKE_JSON_SCHEMA = {
             // consume 吃下/喝下/服用/外敷；present 出示/亮出/给人看/查验；
             // practice 把玩/演练/端详（不损耗）。非 use_item 一律填空串。
             useKind: { type: "string", enum: ["", "consume", "present", "practice"], description: "仅 use_item 用：consume 服用或外敷消耗，present 出示查验不消耗，practice 把玩演练端详不消耗；其余动作填空串" },
+            intimate: { type: "boolean", description: "这个动作是否亲密/性暗示举动（搂抱亲吻宽衣解带抚摸部位等）。解包袱绳、疗伤敷药、寻常拉扯不算" },
           },
         },
       },

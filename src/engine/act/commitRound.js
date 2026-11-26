@@ -126,7 +126,7 @@ export function commitRound(d) {
     isTalk: d.isTalk, lockedDestName: d.lockedDestName, p: d.p, room: d.room,
   }));
   applyPostResult(d, emitNarrative({ p: d.p, questProgress: d.questProgress })); // 台本覆盖/切磋战报/正文/截断提示
-  applyPostResult(d, burnIntimateTicket({ intimateTicket: d.intimateTicket })); // 凭卡强开·焚卡
+  applyPostResult(d, burnIntimateTicket({ intimateTicket: d.intimateTicket || d.judgeVerdict?.intimateTicket })); // 凭卡强开·焚卡（D8：ticket 挂判官 verdict）
   applyPostResult(d, recordRumors({ p: d.p, narrativeText: d.narrativeText })); // 涌现·传闻登记
   applyPostResult(d, fixateNpcs({    // 在场名单幽灵过滤+战斗数据固化+新面孔/重逢
     p: d.p, room: d.room, innerRoomName: d.innerRoomName, narrativeText: d.narrativeText,

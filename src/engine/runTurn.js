@@ -182,6 +182,8 @@ async function runTurnSteps(ctx, cmd, opts) {
   // ── WO-13 判官管线：前哨听意 → 纯函数判官 → 定案单注入主叙事（S4 拆到 turn/judgePhase.js）──
   const judgePhaseOut = await runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cmd, ai, isTalk, isSettle, trace });
   if (judgePhaseOut?.stale) return { stale: true };
+  // D8：亲密门槛拒决——拒词与扣好感已在判官段直写落盘，本回合就此打住不进主叙事。
+  if (judgePhaseOut?.intimacyRefused) return { intimacyRefused: true, done: true };
   let judgeVerdict = judgePhaseOut?.judgeVerdict || null;
   const isGroupTalk = !!judgePhaseOut?.isGroupTalk;
   const visibleNpcsPre = judgePhaseOut?.visibleNpcsPre || [];
