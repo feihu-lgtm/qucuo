@@ -9,7 +9,7 @@ import { QUCUO_SHOPS, hasOcShop } from "../../domain/data/shops/qucuoShops.js";
 import ModalShell from "../primitives/ModalShell.jsx";
 
 export default function ItemActionMenu({
-  item, mode = "inventory", roomNpcs = [], zoneTheme,
+  item, mode = "inventory", roomNpcs = [],
   canConsume = false,
   onClose, onInspect, onConsume, onGive, onSell, onCollect, onEquip,
   awakenReady = false, onInscribe,
@@ -32,7 +32,7 @@ export default function ItemActionMenu({
   const shellProps = { onClose, layer: "dialog", backdrop: "soft", mobile: "sheet", showClose: false, panelStyle: { width: 320 } };
   const cell = (enabled) => ({
     cursor: enabled ? "pointer" : "not-allowed", padding: "12px 10px", borderRadius: 0, textAlign: "center",
-    background: zoneTheme.bg, border: `1px solid ${zoneTheme.border}`, opacity: enabled ? 1 : 0.4,
+    background: "var(--bg)", border: `1px solid var(--border)`, opacity: enabled ? 1 : 0.4,
   });
 
   // ── 房间NPC选择器（送人/卖掉）──
@@ -42,9 +42,9 @@ export default function ItemActionMenu({
     const act = picker === "sell" ? onSell : onGive;
     return (
       <ModalShell {...shellProps} ariaLabel={title}>
-        <div style={{ color: zoneTheme.accent, fontSize: "var(--fs-md)", marginBottom: 12 }}>{title}</div>
+        <div style={{ color: "var(--accent)", fontSize: "var(--fs-md)", marginBottom: 12 }}>{title}</div>
         {list.length === 0 ? (
-          <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-sm)", marginBottom: 12 }}>
+          <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-sm)", marginBottom: 12 }}>
             {picker === "sell" ? "此地没有肯收货的商家。" : "此地无人可赠。"}
           </div>
         ) : (
@@ -53,15 +53,15 @@ export default function ItemActionMenu({
               <div key={n.name}
                 className="mobile-action-choice"
                 onClick={() => { act(n, item); onClose(); }}
-                style={{ cursor: "pointer", padding: "9px 10px", borderRadius: 0, background: zoneTheme.bg, border: `1px solid ${zoneTheme.border}` }}>
-                <span style={{ color: zoneTheme.accent, fontSize: "var(--fs-md)" }}>{n.name}</span>
-                <span style={{ color: zoneTheme.textDim, fontSize: "var(--fs-2xs)", marginLeft: 6 }}>{n.brief}</span>
+                style={{ cursor: "pointer", padding: "9px 10px", borderRadius: 0, background: "var(--bg)", border: `1px solid var(--border)` }}>
+                <span style={{ color: "var(--accent)", fontSize: "var(--fs-md)" }}>{n.name}</span>
+                <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)", marginLeft: 6 }}>{n.brief}</span>
               </div>
             ))}
           </div>
         )}
         <div style={{ textAlign: "center", marginTop: 14 }}>
-          <span className="mobile-touch-target" onClick={() => setPicker(null)} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "var(--fs-xs)" }}>返回</span>
+          <span className="mobile-touch-target" onClick={() => setPicker(null)} style={{ cursor: "pointer", color: "var(--text-dim)", fontSize: "var(--fs-xs)" }}>返回</span>
         </div>
       </ModalShell>
     );
@@ -89,10 +89,10 @@ export default function ItemActionMenu({
 
   return (
     <ModalShell {...shellProps} ariaLabel={`${name} 的操作`}>
-      <div style={{ color: quality ? undefined : zoneTheme.accent, fontSize: "var(--fs-base)", marginBottom: 4 }}>
-        {name}{quality ? <span style={{ fontSize: "var(--fs-xs)", color: zoneTheme.textDim, marginLeft: 6 }}>（{quality}）</span> : null}
+      <div style={{ color: quality ? undefined : "var(--accent)", fontSize: "var(--fs-base)", marginBottom: 4 }}>
+        {name}{quality ? <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginLeft: 6 }}>（{quality}）</span> : null}
       </div>
-      <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-xs)", marginBottom: 16 }}>
+      <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", marginBottom: 16 }}>
         {mode === "ground" ? "地上之物"
           : canEquip ? `${{ weapon: "兵器", armor: "护身之具", accessory: "随身饰物" }[item.category]}${statLabel ? ` · ${statLabel}` : ""}${equipped ? " · 已在身" : ""}`
           : canConsume ? "可服用之物" : "随身之物"}
@@ -100,13 +100,13 @@ export default function ItemActionMenu({
       <div className="mobile-action-grid" style={{ display: "grid", gridTemplateColumns: mode === "ground" ? "1fr 1fr" : "1fr 1fr", gap: 8 }}>
         {actions.map((a) => (
           <div key={a.key} className="mobile-action-choice" onClick={a.onClick} style={cell(a.enabled)}>
-            <div style={{ color: zoneTheme.accent, fontSize: "var(--fs-md)", marginBottom: 3 }}>{a.label}</div>
-            <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-2xs)" }}>{a.desc}</div>
+            <div style={{ color: "var(--accent)", fontSize: "var(--fs-md)", marginBottom: 3 }}>{a.label}</div>
+            <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)" }}>{a.desc}</div>
           </div>
         ))}
       </div>
       <div style={{ textAlign: "center", marginTop: 14 }}>
-        <span className="mobile-touch-target" onClick={onClose} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "var(--fs-xs)" }}>取消</span>
+        <span className="mobile-touch-target" onClick={onClose} style={{ cursor: "pointer", color: "var(--text-dim)", fontSize: "var(--fs-xs)" }}>取消</span>
       </div>
     </ModalShell>
   );

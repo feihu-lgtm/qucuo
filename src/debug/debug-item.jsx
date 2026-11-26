@@ -32,7 +32,7 @@ function Bench() {
         当前已装备：{inv.filter(i => i.equipped).map(i => i.name).join("、") || "无"}
       </div>
       {open && (
-        <ItemActionMenu item={inv.find(i => i.id === open.id)} mode="inventory" roomNpcs={[]} zoneTheme={theme}
+        <ItemActionMenu item={inv.find(i => i.id === open.id)} mode="inventory" roomNpcs={[]}
           canConsume={false} onClose={() => setOpen(null)}
           onInspect={() => console.log("inspect")} onConsume={() => {}} onGive={() => {}} onSell={() => {}} onCollect={() => {}}
           onEquip={(it) => setInv(v => toggleEquip(v, it.id))} />

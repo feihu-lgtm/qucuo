@@ -7,9 +7,9 @@
 //   2. 头像选择弹层（showAvatarPicker）：8 张预制立绘 + 上传自定义 + 恢复默认。
 //      跟顶栏放一起是因为它只由顶栏右侧的头像入口触发，别处不用。
 //
-// 顶栏按钮的统一规格 topBtn() 内聚在本文件（只依赖 zoneTheme.border，
+// 顶栏按钮的统一规格 topBtn() 内聚在本文件（只依赖 "var(--border)"，
 // 别处不再需要）；头像选择弹窗套 ModalShell，遮罩点击关闭由外壳负责。
-import { chromeBtn } from "../../utils/theme.js";
+import { THEME_VARS, chromeBtn } from "../../utils/theme.js";
 import React, { useState, useEffect } from "react";
 import ModalShell from "../primitives/ModalShell.jsx";
 import { CURRENT_VERSION } from "../../utils/version.js";
@@ -54,8 +54,7 @@ export function VersionHistoryButton({ theme }) {
   return <button type="button" onClick={() => openOverlay(OVERLAY.VERSION_HISTORY)} title={`当前版本「${CURRENT_VERSION.codename}」· 点击查看版本历史目录`} style={chromeBtn(theme, { active: false })}>{label}</button>;
 }
 
-export default function TopBar({
-  zoneTheme,
+export default function TopBar({ 
   dispatchCommand,
   autoSaveError, lastAutoSave,
   playerAvatarCustom, setPlayerAvatarCustom,
@@ -74,7 +73,7 @@ export default function TopBar({
   const showAvatarPicker = useOverlay(OVERLAY.AVATAR_PICKER);
   // 顶栏按钮统一规格：此前每个按钮各自 padding/字号/色系，一字排开像彩虹糖纸。
   // 收敛成"同一副骨架 + 三色语义"：金=重要入口，松石绿=设置/切换，绛红=上报，其余用正文/次要色。
-  const topBtn = (active = false) => chromeBtn(zoneTheme, { active });
+  const topBtn = (active = false) => chromeBtn(THEME_VARS, { active });
   // 音乐按钮要同时跟 playing 和 enabled 走。原来只订阅了 playing，而
   // `{isMusicEnabled() && ...}` 是渲染期直接读 localStorage 的非响应式调用——
   // 在设置里勾上"音乐模式"，这个按钮不会冒出来，得等别的 state 变化捎带重渲染。
@@ -86,15 +85,15 @@ export default function TopBar({
 
   return (
     <>
-      <div className="mobile-top-row" style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px", borderBottom: `1px solid ${zoneTheme.border}`, flexShrink: 0, fontSize: "var(--fs-xs)", backgroundImage: `linear-gradient(180deg, ${zoneTheme.bgPanel}, transparent)`, flexWrap: "wrap", rowGap: 8 }}>
+      <div className="mobile-top-row" style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px", borderBottom: `1px solid var(--border)`, flexShrink: 0, fontSize: "var(--fs-xs)", backgroundImage: `linear-gradient(180deg, var(--bg-panel), transparent)`, flexWrap: "wrap", rowGap: 8 }}>
         {/* 手机端：顶栏收成一个☰按钮，点开才展开全部功能入口 */}
         {isMobile && (
           <>
             <span className="mobile-touch-target mobile-menu-toggle" onClick={() => setMobileTopMenu(v => !v)}
               style={{ ...topBtn(mobileTopMenu), fontSize: "var(--fs-md)" }}>☰ 菜单</span>
             <span style={{ flex: 1 }} />
-            {!mobileTopMenu && turnControls && <><TurnControls theme={zoneTheme} {...turnControls} /><TurnStatusPill theme={zoneTheme} mobile /></>}
-            {mobileTopMenu && <span className="mobile-touch-target" onClick={() => setMobileTopMenu(false)} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "var(--fs-xs)" }}>收起 ✕</span>}
+            {!mobileTopMenu && turnControls && <><TurnControls theme={THEME_VARS} {...turnControls} /><TurnStatusPill theme={THEME_VARS} mobile /></>}
+            {mobileTopMenu && <span className="mobile-touch-target" onClick={() => setMobileTopMenu(false)} style={{ cursor: "pointer", color: "var(--text-dim)", fontSize: "var(--fs-xs)" }}>收起 ✕</span>}
           </>
         )}
         {/* 顶栏功能入口：桌面常显；手机仅在展开菜单时显示（换行铺开） */}
@@ -104,7 +103,7 @@ export default function TopBar({
           alignItems: "center", gap: 8, flexWrap: "wrap", rowGap: 8,
           width: isMobile ? "100%" : "auto", flex: isMobile ? "none" : 1,
         }}>
-        {isMobile && <DevControls theme={zoneTheme} addLog={addLog} />}
+        {isMobile && <DevControls theme={THEME_VARS} addLog={addLog} />}
         {isMobile && <span className="qbtn" onClick={() => openOverlay(OVERLAY.TRACE)} style={topBtn()}>日志</span>}
         <span
           className="qbtn"
@@ -121,7 +120,7 @@ export default function TopBar({
         {unreadLetters > 0 && (
           <span className="qbtn" onClick={() => openOverlay(OVERLAY.LETTERS)}
             title="有人给你捎了信——点开查看全部来信"
-            style={{ ...topBtn(), color: zoneTheme.accent, fontWeight: 600 }}>信×{unreadLetters}</span>
+            style={{ ...topBtn(), color: "var(--accent)", fontWeight: 600 }}>信×{unreadLetters}</span>
         )}
 
         <span className="mobile-hide" style={{ flex: 1 }} />
@@ -179,7 +178,7 @@ export default function TopBar({
         {!isMobile && (
           <>
             <span className="qbtn" onClick={() => openOverlay(OVERLAY.TRACE)} style={topBtn()}>日志</span>
-            <TurnStatusPill theme={zoneTheme} docked />
+            <TurnStatusPill theme={THEME_VARS} docked />
           </>
         )}
         </div>

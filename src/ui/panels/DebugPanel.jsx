@@ -9,7 +9,7 @@ import { CATALOG, CATALOG_INDEX, makeCatalogItem } from "../../domain/data/items
 import { CATEGORY_LABEL, makeItem } from "../../domain/rules/economy/equipment.js";
 
 export default function DebugPanel({
-  isMobile, zoneTheme,
+  isMobile,
   char, setChar,
   pot, setPot, exp, setExp,
   dao, setDao,
@@ -41,10 +41,10 @@ export default function DebugPanel({
     // 手机端贴底浮出：定位与层级在 tokens.css 的 .debug-panel-dock（--z-screen-high）。
     <div className={isMobile ? "debug-panel-dock" : undefined} style={isMobile
       ? { padding: "10px 14px",
-          borderTop: `1px solid ${zoneTheme.border}`, background: "rgba(12,14,20,.98)", fontSize: "var(--fs-xs)", color: "var(--debug-text)",
+          borderTop: `1px solid var(--border)`, background: "rgba(12,14,20,.98)", fontSize: "var(--fs-xs)", color: "var(--debug-text)",
           display: "flex", flexDirection: "column", gap: 8, maxHeight: "70vh", overflowY: "auto", overflowX: "auto",
           WebkitOverflowScrolling: "touch", boxShadow: "0 -8px 30px rgba(0,0,0,.7)" }
-      : { flexShrink: 0, padding: "10px 14px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(110,198,198,0.05)", fontSize: "var(--fs-xs)", color: "var(--debug-text)", display: "flex", flexDirection: "column", gap: 8, position: "relative" }}>
+      : { flexShrink: 0, padding: "10px 14px", borderBottom: `1px solid var(--border)`, background: "rgba(110,198,198,0.05)", fontSize: "var(--fs-xs)", color: "var(--debug-text)", display: "flex", flexDirection: "column", gap: 8, position: "relative" }}>
       <div style={{ position: "sticky", top: 0, zIndex: 5, display: "flex", alignItems: "center", justifyContent: "space-between",
         margin: "-10px -14px 4px", padding: "6px 14px", background: "rgba(16,18,26,.96)", borderBottom: "1px solid var(--ink-edge-quest)" }}>
         <span style={{ color: "var(--accent)", fontSize: "var(--fs-sm)", fontWeight: "bold" }}>🛠 调试面板</span>

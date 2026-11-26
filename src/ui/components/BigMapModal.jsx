@@ -10,8 +10,7 @@ import { useGameStore } from "../../store/gameStore.js";
 import { useSessionUi, setInteractMode, setMapBig } from "../../store/sessionUiStore.js";
 import ModalShell from "../primitives/ModalShell.jsx";
 
-export default function BigMapModal({
-  zoneTheme, act, autoTravelTo,
+export default function BigMapModal({  act, autoTravelTo,
 }) {
   const loading = useSessionUi(s => s.loading);
   const mapView = useSessionUi(s => s.mapView);
@@ -76,10 +75,10 @@ export default function BigMapModal({
           if (dest && mapData[dest] && dest !== room.name) { autoTravelTo(dest); return; }
           if (dir) { setInteractMode("action"); act(DIRS[dir] || dir, [], { forceLayer: "outer" }); }
         };
-        return <ClickableMap nodes={nodes} onGo={go} accent={zoneTheme.accent} loading={loading} maxHeight="66vh" />;
+        return <ClickableMap nodes={nodes} onGo={go} accent={"var(--accent)"} loading={loading} maxHeight="66vh" />;
       })()}
       {view === "inner" && (() => {
-        if (!hasInnerMap(room.name)) return <div style={{ color: zoneTheme.textDim }}>此地无内景可绘。</div>;
+        if (!hasInnerMap(room.name)) return <div style={{ color: "var(--text-dim)" }}>此地无内景可绘。</div>;
         const curRoom = innerRoomName || getDistrictAnchor(room.name);
         const curExits = visibleInnerExits(room.name, curRoom, { questProgress, flags, inv, char, varTree });
         const adjacent = new Set(Object.values(curExits));

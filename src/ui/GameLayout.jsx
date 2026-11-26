@@ -143,7 +143,6 @@ export default function GameLayout({ layout }) {
       style={{ "--ui-scale": uiScale, display: "flex", flexDirection: "column", height: `${100 / uiScale}vh`, width: `${100 / uiScale}vw`, zoom: uiScale, background: zoneTheme.bg, color: zoneTheme.text, fontFamily: "var(--font-body)", fontSize: "var(--fs-md)", overflow: "hidden", transition: "background 1.2s ease, color 1.2s ease" }}
     >
       <TopBar
-        zoneTheme={zoneTheme}
         dispatchCommand={turn.dispatchCommand}
         autoSaveError={autosave.autoSaveError} lastAutoSave={autosave.lastAutoSave}
         playerAvatarCustom={ui.playerAvatarCustom} setPlayerAvatarCustom={ui.setPlayerAvatarCustom}
@@ -196,14 +195,13 @@ export default function GameLayout({ layout }) {
       {mapBig && (
         <Suspense fallback={null}>
           <BigMapModal
-            zoneTheme={zoneTheme}
             act={turn.act}
             autoTravelTo={turn.autoTravelTo}
           />
         </Suspense>
       )}
 
-      <NoticeToast zoneTheme={zoneTheme} />
+      <NoticeToast />
 
       <style>{`
         @keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }

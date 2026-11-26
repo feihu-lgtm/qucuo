@@ -113,7 +113,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
       {showDebug && (
         <Suspense fallback={<ScreenFallback zoneTheme={zoneTheme} />}>
           <DebugPanel
-            isMobile={isMobile} zoneTheme={zoneTheme}
+            isMobile={isMobile}
             char={char} setChar={setChar} pot={pot} setPot={setPot} exp={exp} setExp={setExp}
             dao={dao} setDao={setDao} varTree={varTree} setVarTree={setVarTree}
             narrator={narrator} setNarrator={setNarrator}
@@ -134,7 +134,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
         </Suspense>
       )}
 
-      <IntentConfirmBar zoneTheme={zoneTheme} />
+      <IntentConfirmBar />
       {duelPending && (
         <div style={{ flexShrink: 0, padding: "10px 16px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(196,80,68,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ color: "var(--text)", fontSize: "var(--fs-sm)", flex: 1 }}>{duelPending.lethal
