@@ -150,3 +150,37 @@
 .ui-badge[data-tone="dim"] { color: var(--text-dim); }
 .ui-badge[data-tone="good"] { color: var(--good); }
 .ui-badge[data-tone="warn"] { color: var(--warn); }
+
+/* ── 建筑面板公共件（screens/buildings/common.jsx）──────────
+   标题栏吸顶：面板内容一长往下滚，关闭按钮仍钉在滚动区顶部；z-index 免得被滚上来的内容盖住。 */
+.building-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--building-panel-bg);
+}
+
+.building-header-title {
+  font-size: var(--fs-base);
+  color: var(--text);
+}
+
+.ui-btn.building-header-close {
+  padding: 2px 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  transition: color 0.15s, background 0.15s;
+}
+
+.ui-btn.building-header-close:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--accent);
+}

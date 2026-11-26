@@ -3,7 +3,7 @@
 // 从 InnScreen.jsx 抽出：原来寄生在"客栈屏"里的这三件被 16 个建筑屏 + 任务日志
 // 复用，业务屏不该兼当共享库。新建筑屏要用就直接从这里 import。
 import ModalShell from "../../primitives/ModalShell.jsx";
-import { RADIUS } from "../../../utils/theme.js";
+import { Button } from "../../primitives/index.js";
 
 // ── 共用子组件 ──
 export function Overlay({ children, onClose, inline }) {
@@ -37,47 +37,23 @@ export function Overlay({ children, onClose, inline }) {
   );
 }
 
+// 建筑面板标题栏：吸顶（面板内容一长往下滚时，关闭按钮仍钉在滚动区顶部）。
+// 样式在 primitives.css 的 .building-header*，关闭按钮是 Button。
 export function Header({ name, onClose }) {
   return (
-    <div className="mobile-overlay-header" style={{
-      padding: "12px 16px", borderBottom: `1px solid var(--border)`, display: "flex",
-      justifyContent: "space-between", alignItems: "center",
-      // 吸顶：Header 所在的父容器（Overlay 的 inline 分支）自己是可滚动区域，
-      // 面板内容一长（比如武馆秘籍列表）玩家往下滚，Header 之前只是普通文档流
-      // 里的第一个元素，会跟着内容一起被滚出视野——关闭按钮消失，只能回滚一格
-      // 或者刷新页面才能退出。position:sticky + top:0 让它始终钉在这层滚动区域
-      // 顶部，不管滚多远都看得见、点得到。zIndex 避免被下面滚上来的内容盖住。
-      position: "sticky", top: 0, zIndex: 1, background: "var(--building-panel-bg)",
-    }}>
-      <span style={{ fontSize: "var(--fs-base)", color: "var(--text)" }}>{name}</span>
-      <span
-        className="mobile-overlay-close"
-        onClick={onClose}
-        style={{ color: "var(--text-dim)", fontSize: "var(--fs-sm)", cursor: "pointer", padding: "2px 8px", borderRadius: RADIUS.btn, transition: "color 0.15s, background 0.15s" }}
-        onMouseEnter={e => { e.currentTarget.style.color = "var(--accent)"; e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
-        onMouseLeave={e => { e.currentTarget.style.color = "var(--text-dim)"; e.currentTarget.style.background = "transparent"; }}
-      >× 关闭</span>
+    <div className="mobile-overlay-header building-header">
+      <span className="building-header-title">{name}</span>
+      <Button variant="settings" className="mobile-overlay-close building-header-close" onClick={onClose}>× 关闭</Button>
     </div>
   );
 }
 
+// 建筑面板按钮：主按钮朱红实底，secondary 为描边。外观、悬停、按下、禁用态都在 Button 的
+// primary / secondary 变体里，这里只保留建筑面板沿用已久的 label/secondary 写法。
 export function Btn({ label, onClick, disabled, secondary }) {
   return (
-    <span
-      className="mobile-touch-target"
-      onClick={disabled ? undefined : onClick}
-      style={{ fontSize: "var(--fs-sm)", padding: "5px 14px", borderRadius: RADIUS.btn, cursor: disabled ? "not-allowed" : "pointer",
-      color: disabled ? "var(--building-disabled-text)" : secondary ? "var(--accent-dim)" : "var(--bg)",
-      background: disabled ? "var(--building-disabled-bg)" : secondary ? "transparent" : "var(--accent)",
-      border: `1px solid ${disabled ? "var(--building-disabled-edge)" : secondary ? "var(--border)" : "var(--accent)"}`,
-      opacity: disabled ? 0.5 : 1,
-      userSelect: "none",
-      display: "inline-block",
-      transition: "transform 0.1s, filter 0.15s, border-color 0.15s", }}
-      onMouseEnter={e => { if (disabled) return; e.currentTarget.style.filter = "brightness(1.15)"; if (secondary) e.currentTarget.style.borderColor = "var(--accent)"; }}
-      onMouseLeave={e => { if (disabled) return; e.currentTarget.style.filter = "none"; e.currentTarget.style.transform = "scale(1)"; if (secondary) e.currentTarget.style.borderColor = "var(--border)"; }}
-      onMouseDown={e => { if (disabled) return; e.currentTarget.style.transform = "scale(0.97)"; }}
-      onMouseUp={e => { if (disabled) return; e.currentTarget.style.transform = "scale(1)"; }}
-    >{label}</span>
+    <Button variant={secondary ? "secondary" : "primary"} className="mobile-touch-target" onClick={onClick} disabled={disabled}>
+      {label}
+    </Button>
   );
 }

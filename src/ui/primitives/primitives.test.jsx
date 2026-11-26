@@ -72,6 +72,23 @@ describe("原语样式与原手写样式逐属性相等", () => {
   });
 });
 
+// 建筑面板标题栏迁移前的样式快照（screens/buildings/common.jsx 的 Header）。
+const FORMER_BUILDING_HEADER = {
+  root: { padding: "12px 16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 1, background: "var(--building-panel-bg)" },
+  title: { fontSize: "var(--fs-base)", color: "var(--text)" },
+  close: { color: "var(--text-dim)", fontSize: "var(--fs-sm)", cursor: "pointer", padding: "2px 8px", borderRadius: 0, transition: "color 0.15s, background 0.15s" },
+  closeHover: { color: "var(--accent)", background: "rgba(255, 255, 255, 0.04)" },
+};
+
+describe("建筑面板公共件与原样式逐属性相等", () => {
+  it("标题栏、标题、关闭按钮（含悬停）", () => {
+    expectSameStyle([".building-header"], FORMER_BUILDING_HEADER.root);
+    expectSameStyle([".building-header-title"], FORMER_BUILDING_HEADER.title);
+    expectSameStyle([".ui-btn", '.ui-btn[data-variant="settings"]', ".ui-btn.building-header-close"], FORMER_BUILDING_HEADER.close);
+    expectSameStyle([".ui-btn.building-header-close:hover"], FORMER_BUILDING_HEADER.closeHover);
+  });
+});
+
 describe("原语渲染", () => {
   const html = (type, props, ...children) => renderToStaticMarkup(createElement(type, props, ...children));
 
