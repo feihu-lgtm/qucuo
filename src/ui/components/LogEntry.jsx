@@ -1,7 +1,7 @@
 import React from "react";
 import LootCard from "./LootCard.jsx";
 import EffectReceiptCard from "./EffectReceiptCard.jsx";
-import { LOG_T } from "../../domain/rules/log/logTypes.js";
+import { LOG_T } from "../../domain/data/log/logTypes.js";
 
 // 参照酒馆预设的视觉层级：叙述是底色，对话高亮跳出，心理*斜体*
 //

@@ -1,8 +1,8 @@
 import LogEntry from "../../components/LogEntry.jsx";
-import { LOG_T } from "../../../domain/rules/log/logTypes.js";
 import { getGameDay } from "../../../utils/mudHelpers.js";
 import { useGameStore } from "../../../store/gameStore.js";
 import { openOverlay, OVERLAY } from "../../../store/uiStore.js";
+import { LOG_T } from "../../../domain/data/log/logTypes.js";
 
 function formatEntryTurnLabel(entry) {
   if (typeof entry?.turn !== "number" || !Number.isFinite(entry.turn)) return "";

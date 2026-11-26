@@ -4,10 +4,11 @@
 // 不经过AI：AI不该有权决定"这次交易到底扣了多少钱"，这跟拾取/战斗掉落是同一个原则。
 
 import React from "react";
-import { QUALITY_COLOR, discountedBuyPrice } from "../../domain/rules/economy/equipment.js";
+import { discountedBuyPrice } from "../../domain/rules/economy/equipment.js";
 import { THEME_VARS, chromeBtn } from "../../utils/theme.js";
 import { cherishHearts } from "../../domain/rules/npc/npcCarry.js";
 import ModalShell from "../primitives/ModalShell.jsx";
+import { QUALITY_COLOR } from "../../domain/data/items/qualityColor.js";
 
 export default function TradingScreen({ shopName, shopItems = [], playerInv, playerMoney, playerWit = 5, repCoef = 1, onBuy, onSell, onClose, inline, onInspect, queueCount = 0,
   // 随身货架三分区（身上装备/行囊/挂载伙伴）：传了 carrySections 时 shopItems

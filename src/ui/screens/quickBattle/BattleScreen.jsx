@@ -1,7 +1,6 @@
 // 阶段三：对战（对峙区 + 战报流 + 操作区），含 FighterPanel/Bar/StatusChip/MoveButton。
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { QUALITY_COLOR } from "../../../domain/rules/economy/equipment.js";
 import {
   pickAiMove, resolveBattleTurn,
   nextAliveIndex, isTeamWiped,
@@ -10,6 +9,7 @@ import { narrateTurn, hasApiKey } from "../../../app/calls/screenCalls.js";
 import { explainMove, moveTypeGist } from "../../../domain/rules/economy/itemEffectText.js";
 import TextBtn from "./TextBtn.jsx";
 import { PORTRAIT, UI, tierColor, tierName, sx } from "./qbShared.js";
+import { QUALITY_COLOR } from "../../../domain/data/items/qualityColor.js";
 
 export default function BattleScreen({ battle, setBattle, mode, onFinish, onQuit }) {
   const ally = battle.allyTeam[battle.allyIdx];

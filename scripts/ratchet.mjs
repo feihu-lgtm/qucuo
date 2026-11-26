@@ -410,7 +410,7 @@ export const KNOWN_EXTERNAL_INFRA_CAP = {
 export const KNOWN_UI_STRUCTURE_CAP = {
   overlayFiles: 1,
   inlineStyles: 2355,
-  rulesImporters: 82,
+  rulesImporters: 73,
   portsImporters: 1,
   zoneThemeFiles: 0,
 };

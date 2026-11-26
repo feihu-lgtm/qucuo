@@ -1,10 +1,10 @@
 // 招式详细察看弹层（TeamDuelScreen.jsx 经 DuelScreen 转发复用）。
 
 import React from "react";
-import { QUALITY_COLOR } from "../../../domain/rules/economy/equipment.js";
 import { useOverlayCloseGuard } from "../../../utils/overlayClose.js";
 import { TYPE_ICON, describeMoveEffects, styles } from "./duelShared.js";
 import { THEME_VARS } from "../../../utils/theme.js";
+import { QUALITY_COLOR } from "../../../domain/data/items/qualityColor.js";
 
 export function MoveInspect({ move, onClose }) {
   const closeGuard = useOverlayCloseGuard(onClose);

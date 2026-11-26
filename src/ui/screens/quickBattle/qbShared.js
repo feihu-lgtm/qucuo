@@ -2,8 +2,9 @@
 // 从 QuickBattleScreen.jsx 拆出（纯搬运）。高频硬编码色收敛为 tokens.css
 // 的 --qb-* 语义变量（值原样，见 tokens.css 斗蛐蛐一节）。
 
-import { QUALITY, QUALITY_COLOR } from "../../../domain/rules/economy/equipment.js";
+import { QUALITY } from "../../../domain/rules/economy/equipment.js";
 import { resolveCardPortrait } from "../../../domain/rules/companion/portraits.js";
+import { QUALITY_COLOR } from "../../../domain/data/items/qualityColor.js";
 
 const BASE = (import.meta.env && import.meta.env.BASE_URL) || "/";
 export const S = (f) => `${BASE}stones/${f}`;

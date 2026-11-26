@@ -2,11 +2,12 @@ import { useCallback } from "react";
 import { cleanJsonString } from "../../utils/jsonClean.js";
 import { bodyProfileFilled } from "../../domain/rules/character/bodyProfile.js";
 import { CATALOG_INDEX, CATALOG, makeCatalogItem } from "../../domain/data/items/catalog.js";
-import { QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL } from "../../domain/rules/economy/equipment.js";
+import { ITEM_CATEGORY, CATEGORY_LABEL } from "../../domain/rules/economy/equipment.js";
 import { effectBrief } from "../../domain/rules/economy/itemEffectText.js";
 import { createWebAi } from "../../engine/ports/ai.js";
 import { withAI } from "../../engine/ports/withAI.js";
 import "../calls/hookCalls.js";
+import { QUALITY_COLOR } from "../../domain/data/items/qualityColor.js";
 
 const webAi = createWebAi();
 

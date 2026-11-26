@@ -1,8 +1,8 @@
 // 出招按钮（TeamDuelScreen.jsx 经 DuelScreen 转发复用）。
 
 import React from "react";
-import { QUALITY_COLOR } from "../../../domain/rules/economy/equipment.js";
 import { TYPE_ICON } from "./duelShared.js";
+import { QUALITY_COLOR } from "../../../domain/data/items/qualityColor.js";
 
 export function MoveButton({ move, disabled, onClick, onInspect }) {
   const color = QUALITY_COLOR[move.quality] || "var(--text)";

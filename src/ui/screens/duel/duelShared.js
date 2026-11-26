@@ -2,8 +2,8 @@
 // 从 DuelScreen.jsx 拆出（纯搬运，无逻辑改动），供 duel/ 各区块组件与
 // TeamDuelScreen.jsx（经 DuelScreen 转发）复用。
 
-import { QUALITY_COLOR } from "../../../domain/rules/economy/equipment.js";
 import { MOVE_TYPE } from "../../../domain/rules/combat/moveTypes.js";
+import { QUALITY_COLOR } from "../../../domain/data/items/qualityColor.js";
 
 // TYPE_ICON 同时导出给 TeamDuelScreen.jsx（2v2团战界面）复用。
 export const TYPE_ICON = { [MOVE_TYPE.ATTACK]: "⚔", [MOVE_TYPE.DEFENSE]: "🛡", [MOVE_TYPE.STATUS]: "☯" };

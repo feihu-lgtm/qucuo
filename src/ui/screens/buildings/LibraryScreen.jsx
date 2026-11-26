@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Overlay, Header, Btn } from "./common.jsx";
-import { QUALITY_COLOR } from "../../../domain/rules/economy/equipment.js";
 import { FREE_BOOKS, LIBRARY_BOOKS_JINGGUAN } from "../../../domain/data/buildings/libraryData.js";
 import { CHAOJING, chaojingStatus } from "../../../features/sect/chaojing.js";
+import { QUALITY_COLOR } from "../../../domain/data/items/qualityColor.js";
 
 function ChaojingPanel({ char, flags, time, onChaojing }) {
   const status = chaojingStatus({ char, flags, time });

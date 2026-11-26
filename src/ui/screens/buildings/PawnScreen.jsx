@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { QUALITY_COLOR } from "../../../domain/rules/economy/equipment.js";
 import { Overlay, Header, Btn } from "./common.jsx";
+import { QUALITY_COLOR } from "../../../domain/data/items/qualityColor.js";
 
 // 当铺：质押物品换银两，可以赎回
 export default function PawnScreen({ building, char, inv, pledgedItems, onClose, inline, onPledge, onRedeem }) {

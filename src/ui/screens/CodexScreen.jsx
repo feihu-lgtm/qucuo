@@ -11,13 +11,14 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import { CATALOG } from "../../domain/data/items/catalog.js";
-import { CATEGORY_LABEL, QUALITY, QUALITY_COLOR } from "../../domain/rules/economy/equipment.js";
+import { CATEGORY_LABEL, QUALITY } from "../../domain/rules/economy/equipment.js";
 import { moveCodexBySource, groupMoves, moveCodexStats, MOVE_SOURCE } from "../../domain/data/kungfu/moveCodex.js";
 import { ITEM_DISTRIBUTION, isPoolable } from "../../domain/data/items/distribution.js";
 import { DISTRICT_REGION } from "../../domain/data/items/regionMap.js";
 import { moveEffectBrief, passiveBonusBrief } from "../../domain/rules/economy/itemEffectText.js";
 import ModalShell from "../primitives/ModalShell.jsx";
 import { THEME_VARS } from "../../utils/theme.js";
+import { QUALITY_COLOR } from "../../domain/data/items/qualityColor.js";
 
 const BASE = (import.meta.env && import.meta.env.BASE_URL) || "/";
 const S = (f) => `${BASE}stones/${f}`;

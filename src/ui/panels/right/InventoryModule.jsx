@@ -1,6 +1,6 @@
-import { QUALITY_COLOR } from "../../../domain/rules/economy/equipment.js";
 import { CATALOG_INDEX } from "../../../domain/data/items/catalog.js";
 import { setActiveItemMenu } from "../../../store/sessionUiStore.js";
+import { QUALITY_COLOR } from "../../../domain/data/items/qualityColor.js";
 
 export default function InventoryModule({ inv }) {
   return (
