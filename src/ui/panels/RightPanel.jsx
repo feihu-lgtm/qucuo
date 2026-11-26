@@ -12,6 +12,7 @@ import InventoryModule from "./right/InventoryModule.jsx";
 import NarratorModule from "./right/NarratorModule.jsx";
 import JianghuModule from "./right/JianghuModule.jsx";
 import QuestModule from "./right/QuestModule.jsx";
+import { THEME_VARS } from "../../utils/theme.js";
 
 const MODULES = {
   profile: ProfileModule, equipmentBonus: EquipmentBonusModule, attributes: AttributesModule,
@@ -23,7 +24,7 @@ const MODULES = {
 const isKeyboardBlocked = () => uiStore.getState().overlays.length > 0;
 
 export default function RightPanel(props) {
-  const { isMobile, mobileColumn, faces, zoneTheme, S, companionState, char } = props;
+  const { isMobile, mobileColumn, faces, S, companionState, char } = props;
   const isModuleVisible = id => {
     if (id === "team") return unlockedCompanions(companionState).length > 0;
     if (id === "combatMoves") return (char.moveset || []).some(move => !move.sourceSkill);
@@ -38,7 +39,7 @@ export default function RightPanel(props) {
       ? { ...S.panel, flex: 1, minHeight: 0, borderRight: "none", display: mobileColumn === "right" ? "flex" : "none" }
       : { flex: 30, ...S.panel, borderRight: "none", minHeight: 0 }}>
       <div style={S.label}>侠客</div>
-      <FacePanel faces={faces} theme={zoneTheme} label="侠客" isMobile={isMobile}
+      <FacePanel faces={faces} theme={THEME_VARS} label="侠客" isMobile={isMobile}
         renderModule={renderModule} isModuleVisible={isModuleVisible} isKeyboardBlocked={isKeyboardBlocked} />
     </div>
   );

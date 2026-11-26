@@ -21,24 +21,24 @@ export { HpBar, EnergyDots } from "./duel/DuelBars.jsx";
 export { MoveButton } from "./duel/MoveButton.jsx";
 export { MoveInspect } from "./duel/MoveInspect.jsx";
 
-export default function DuelScreen({ npc, playerChar, pendingCombatBuff, playerInv, playerMoveset, playerSkills = [], zoneTheme, onFinish }) {
+export default function DuelScreen({ npc, playerChar, pendingCombatBuff, playerInv, playerMoveset, playerSkills = [], onFinish }) {
   const b = useDuelBattle({ npc, playerChar, pendingCombatBuff, playerInv, playerMoveset, playerSkills, onFinish });
   const selecting = b.phase === "select";
 
   return (
     <div className="mobile-duel-root duel-solo-root" style={styles.overlay}>
-      <div className="mobile-duel-panel duel-solo-panel" style={{ ...styles.container, background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}` }}>
+      <div className="mobile-duel-panel duel-solo-panel" style={{ ...styles.container, background: "var(--bg-panel)", border: `1px solid var(--border)` }}>
 
         {/* ── 血/气条（保留）：双方对峙状态 ── */}
         <DuelTopBar
-          npc={npc} round={b.round} zoneTheme={zoneTheme}
+          npc={npc} round={b.round}
           playerHp={b.playerHp} playerEnergy={b.playerEnergy}
           npcHp={b.npcHp} npcEnergy={b.npcEnergy}
         />
 
         {/* ── 上半：操作区 ── */}
         <DuelOpPanel
-          npc={npc} zoneTheme={zoneTheme}
+          npc={npc}
           selecting={selecting} phase={b.phase} outcome={b.outcome} error={b.error}
           round={b.round} combatBuff={b.combatBuff}
           moveset={b.moveset} playerEnergy={b.playerEnergy} playerDefenseBroken={b.playerDefenseBroken}
@@ -50,11 +50,11 @@ export default function DuelScreen({ npc, playerChar, pendingCombatBuff, playerI
         />
 
         {/* ── 下半：MUD形式的结算展示 ── */}
-        <DuelLog battleLog={b.battleLog} npc={npc} zoneTheme={zoneTheme} />
+        <DuelLog battleLog={b.battleLog} npc={npc} />
       </div>
 
       {b.inspectMove && (
-        <MoveInspect move={b.inspectMove} zoneTheme={zoneTheme} onClose={() => b.setInspectMove(null)} />
+        <MoveInspect move={b.inspectMove} onClose={() => b.setInspectMove(null)} />
       )}
     </div>
   );

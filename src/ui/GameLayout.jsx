@@ -155,8 +155,7 @@ export default function GameLayout({ layout }) {
 
       <div className="mobile-game-columns" style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative", minHeight: 0 }}>
         <LeftPanel
-          isMobile={isMobile} mobileColumn={mobileColumn} faces={leftFaces}
-          zoneTheme={zoneTheme} zoneName={ui.zoneName} S={ui.S}
+          isMobile={isMobile} mobileColumn={mobileColumn} faces={leftFaces} zoneName={ui.zoneName} S={ui.S}
           room={room} innerRoomName={innerRoomName} time={time}
           varTree={varTree} char={char}
           inputRef={ui.inputRef} addLog={addLog}
@@ -171,8 +170,7 @@ export default function GameLayout({ layout }) {
 
         <RightPanel
           isMobile={isMobile} mobileColumn={mobileColumn} faces={rightFaces}
-          questProgress={questProgress} flags={flags}
-          zoneTheme={zoneTheme} S={ui.S}
+          questProgress={questProgress} flags={flags} S={ui.S}
           char={char} inv={inv} skills={skills} exp={exp} pot={pot}
           playerAvatar={ui.playerAvatar}
           companionState={companionState} onSwitchCompanion={playerActionHandlers.handleSwitchCompanion}

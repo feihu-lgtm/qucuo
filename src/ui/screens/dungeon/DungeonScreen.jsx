@@ -294,7 +294,6 @@ export default function DungeonScreen({
             playerInv={inv}
             playerMoveset={char?.moveset}
             playerSkills={skills}
-            zoneTheme={zoneTheme}
             onFinish={handleBattleFinish}
           />
         </Suspense>

@@ -260,7 +260,6 @@ export default function GlobalOverlays({
           playerInv={inv}
           playerMoveset={char.moveset}
           playerSkills={skills}
-          zoneTheme={zoneTheme}
           onFinish={duelFinishHandler}
         />
       ) : (
@@ -271,7 +270,6 @@ export default function GlobalOverlays({
           playerInv={inv}
           playerMoveset={char.moveset}
           playerSkills={skills}
-          zoneTheme={zoneTheme}
           onFinish={duelFinishHandler}
         />
       )}

@@ -3,14 +3,15 @@
 import React, { useRef, useEffect } from "react";
 import MudRoundLog from "./MudRoundLog.jsx";
 import { styles } from "./duelShared.js";
+import { THEME_VARS } from "../../../utils/theme.js";
 
-export default function DuelLog({ battleLog, npc, zoneTheme }) {
+export default function DuelLog({ battleLog, npc }) {
   const logRef = useRef(null);
   useEffect(() => { if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight; }, [battleLog.length]);
 
   return (
     <div className="duel-log" style={styles.logSection} ref={logRef}>
-      {battleLog.length === 0 && <div style={styles.logHint(zoneTheme)}>——两人拉开架势，静待第一招——</div>}
+      {battleLog.length === 0 && <div style={styles.logHint(THEME_VARS)}>——两人拉开架势，静待第一招——</div>}
       {battleLog.map((e, i) => (
         <MudRoundLog key={i} entry={e} npcName={npc.name} />
       ))}
