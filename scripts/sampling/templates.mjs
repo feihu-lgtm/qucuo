@@ -76,7 +76,15 @@ export function fillTemplate(tpl, presence) {
     else if (need === "item") slots.item = inv.map((i) => i?.name || i).filter(Boolean)[0];
     else if (need === "food") slots.food = byCat("food")[0] || inv.map((i) => i?.name || i).find((n) => /青稞|干粮|饼|肉|酒|药/.test(n || ""));
     else if (need === "weapon") slots.weapon = byCat("weapon")[0];
-    else if (need === "misc") slots.misc = byCat("misc")[0] || byCat("accessory")[0];
+    else if (need === "misc") {
+      // Review 修：use_present 必须命中出示分支——优先名目凭帖/牌/钥匙类信物，
+      // 其次无 consumable 的 misc；耗材/带加成饰品会被 classifyUseItem 分到服用/演练。
+      // inv 槽位只带 name/category（collect 不采 consumable 字段），名目优先是最稳口径。
+      const CRED_RE = /帖|牌|书信|信物|印|凭证|钥匙|令牌|路引|文书|残页/;
+      const names = inv.map((i) => ({ name: i?.name || "", category: i?.category || "" })).filter((i) => i.name);
+      slots.misc = names.find((i) => CRED_RE.test(i.name))?.name
+        || names.find((i) => i.category === "misc" && !/青稞|干粮|饼|肉|酒|药/.test(i.name))?.name;
+    }
     else if (need === "direction") {
       const dirMap = { n: "北", s: "南", e: "东", w: "西" };
       const d = (presence?.exits || [])[0];
