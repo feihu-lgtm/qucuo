@@ -551,10 +551,17 @@ const CAP_OBJECT_NAMES = [
   "KNOWN_UI_STRUCTURE_CAP",
 ];
 
+// 候选链：RATCHET_BASE_REF（CI push 事件传 github.event.before=推送前 tip，
+// 防 main 直推抬上限自比自蒙混）→ PR 目标分支 → origin/main → main。
+// 每个候选都必须真实可解析，空串/全零 sha/不存在一律回落下一档。
 function resolveCapsBaseRef() {
-  if (process.env.RATCHET_BASE_REF) return process.env.RATCHET_BASE_REF;
   const ghBase = process.env.GITHUB_BASE_REF;
-  const candidates = [ghBase ? `origin/${ghBase}` : null, "origin/main", "main"].filter(Boolean);
+  const candidates = [
+    process.env.RATCHET_BASE_REF,
+    ghBase ? `origin/${ghBase}` : null,
+    "origin/main",
+    "main",
+  ].filter((cand) => cand && !/^0{40}$/.test(cand));
   for (const cand of candidates) {
     try {
       execSync(`git rev-parse --verify --quiet ${cand}`, { cwd: REPO_ROOT, stdio: ["ignore", "ignore", "ignore"] });
@@ -579,22 +586,33 @@ async function loadBaseCapModule(baseRef) {
   }
 }
 
-function loadCapExemptions() {
+// 豁免行格式「KEY=值 理由」（Review 修两条）：
+// ①按值绑定——豁免只放行到登记的那个值，再往上抬需要新一行登记，
+//   防止一次登记终身通行证（后续抬升对评审不可见）；
+// ②理由必填——裸键/裸键=值没有评审可读的豁免缘由，一律视为无豁免。
+export function loadCapExemptions() {
   const file = resolve(REPO_ROOT, "scripts/ratchet-cap-exemptions.txt");
-  if (!existsSync(file)) return new Set();
-  return new Set(
-    readFileSync(file, "utf8")
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line && !line.startsWith("#"))
-      .map((line) => line.split(/\s+/)[0]),
-  );
+  if (!existsSync(file)) return new Map();
+  const map = new Map();
+  for (const line of readFileSync(file, "utf8").split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const m = trimmed.match(/^(\S+?)=(\d+)\s+(\S.+)$/);
+    if (m) map.set(m[1], { value: Number(m[2]), reason: m[3].trim() });
+  }
+  return map;
 }
 
 // 纯函数（测试直达）：当前 caps vs 基线 caps，抬升且无豁免的键列成 failures。
-export function checkCapEscalation(baseMod, exemptions = new Set()) {
+export function checkCapEscalation(baseMod, exemptions = new Map()) {
   if (!baseMod) return [];
   const failures = [];
+  // 豁免只在「登记值 >= 当前抬起值」时放行——抬起超过登记值需新登记。
+  const exempted = (id, val) => {
+    const entry = exemptions.get(id);
+    return !!entry && typeof entry.value === "number" && entry.value >= val && !!entry.reason;
+  };
+  const hint = (id) => `确需抬升须在 scripts/ratchet-cap-exemptions.txt 登记一行「${id}=抬起后值 理由」供评审`;
   const current = {
     KNOWN_LAYER_DEBT, KNOWN_DIRECT_AI_CALL_DEBT, KNOWN_STATE_WRITE_DEBT,
     KNOWN_EXTERNAL_INFRA_CAP, KNOWN_UI_STRUCTURE_CAP,
@@ -607,15 +625,15 @@ export function checkCapEscalation(baseMod, exemptions = new Set()) {
       if (baseVal === undefined) continue; // 新登记键不受限
       if (typeof val === "number" && typeof baseVal === "number" && val > baseVal) {
         const id = `${name}.${key}`;
-        if (!exemptions.has(id)) {
-          failures.push(`棘轮上限抬升拦截: ${id} 从 ${baseVal} 抬到 ${val}——上限只减不增；确需抬升须在 scripts/ratchet-cap-exemptions.txt 登记一行「${id}」豁免理由供评审`);
+        if (!exempted(id, val)) {
+          failures.push(`棘轮上限抬升拦截: ${id} 从 ${baseVal} 抬到 ${val}——上限只减不增；${hint(id)}`);
         }
       }
     }
   }
   const curHook = KNOWN_MUD_RPG_HOOK_ARGS_CAP;
   const baseHook = baseMod.KNOWN_MUD_RPG_HOOK_ARGS_CAP;
-  if (typeof baseHook === "number" && curHook > baseHook && !exemptions.has("KNOWN_MUD_RPG_HOOK_ARGS_CAP")) {
+  if (typeof baseHook === "number" && curHook > baseHook && !exempted("KNOWN_MUD_RPG_HOOK_ARGS_CAP", curHook)) {
     failures.push(`棘轮上限抬升拦截: KNOWN_MUD_RPG_HOOK_ARGS_CAP 从 ${baseHook} 抬到 ${curHook}——上限只减不增`);
   }
   return failures;

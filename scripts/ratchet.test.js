@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkCapEscalation, checkLayerRedLines, checkUiStructure, collectRatchetMetrics, extractImportSpecifiers, formatStats, KNOWN_LAYER_DEBT, KNOWN_UI_STRUCTURE_CAP } from "./ratchet.mjs";
+import { checkCapEscalation, loadCapExemptions, checkLayerRedLines, checkUiStructure, collectRatchetMetrics, extractImportSpecifiers, formatStats, KNOWN_LAYER_DEBT, KNOWN_UI_STRUCTURE_CAP } from "./ratchet.mjs";
 
 describe("extractImportSpecifiers", () => {
   it("ignores line and block comments without treating comment markers in strings as comments", () => {
@@ -128,12 +128,21 @@ describe("U0 Review 修：caps 抬升拦截", () => {
     const fails = checkCapEscalation({ KNOWN_UI_STRUCTURE_CAP: { inlineStyles: 999999 } });
     expect(fails.filter((f) => f.includes("inlineStyles"))).toHaveLength(0);
   });
-  it("豁免登记后放行", () => {
-    const fails = checkCapEscalation(
-      { KNOWN_UI_STRUCTURE_CAP: { inlineStyles: 1 } },
-      new Set(["KNOWN_UI_STRUCTURE_CAP.inlineStyles"]),
-    );
-    expect(fails.filter((f) => f.includes("inlineStyles"))).toHaveLength(0);
+  it("豁免按值绑定：登记值>=抬起值放行，超过登记值仍拦（防终身通行证）", () => {
+    const cur = KNOWN_UI_STRUCTURE_CAP.inlineStyles;
+    const exempt = new Map([["KNOWN_UI_STRUCTURE_CAP.inlineStyles", { value: cur, reason: "评审已过目" }]]);
+    expect(checkCapEscalation({ KNOWN_UI_STRUCTURE_CAP: { inlineStyles: 1 } }, exempt)
+      .filter((f) => f.includes("inlineStyles"))).toHaveLength(0);
+    // 登记值低于抬起值→不放行
+    const short = new Map([["KNOWN_UI_STRUCTURE_CAP.inlineStyles", { value: cur - 1, reason: "评审已过目" }]]);
+    expect(checkCapEscalation({ KNOWN_UI_STRUCTURE_CAP: { inlineStyles: 1 } }, short)
+      .some((f) => f.includes("inlineStyles"))).toBe(true);
+  });
+  it("豁免无理由不放行（裸键防蒙混）", () => {
+    const cur = KNOWN_UI_STRUCTURE_CAP.inlineStyles;
+    const bare = new Map([["KNOWN_UI_STRUCTURE_CAP.inlineStyles", { value: cur, reason: "" }]]);
+    expect(checkCapEscalation({ KNOWN_UI_STRUCTURE_CAP: { inlineStyles: 1 } }, bare)
+      .some((f) => f.includes("inlineStyles"))).toBe(true);
   });
   it("基线没有的新键/新对象不受限；基线模块缺失零拦截", () => {
     expect(checkCapEscalation({})).toHaveLength(0);
