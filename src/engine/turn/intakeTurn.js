@@ -247,7 +247,11 @@ export function normalizeIntakeResult(data) {
     // 不再连坐整张听意单——复合句里其余合法动作照常进判官。
     actions: (Array.isArray(data.actions) ? data.actions : [])
       .map((a) => repairEntry(a, ACTION_DEFAULTS))
-      .filter((a) => a && validateJsonSchema(a, INTAKE_JSON_SCHEMA.schema.properties.actions.items).ok),
+      .filter((a) => a && validateJsonSchema(a, INTAKE_JSON_SCHEMA.schema.properties.actions.items).ok)
+      // D7 Review 二轮修：模型漏填 condition 但 condition_text 明写前提时，
+      // 缺省「无」会让条件动作提前执行（先吃干粮再看有没有到地方）——补正「其他」。
+      .map((a) => (a.condition === "无" && typeof a.condition_text === "string" && a.condition_text.trim()
+        ? { ...a, condition: "其他" } : a)),
     proposals: (Array.isArray(data.proposals) ? data.proposals : []).map((x) => repairProposal(x)).filter(Boolean),
   };
   // F6-T17 复数称呼脱绑：玩家冲「众人/各位/大家」说话时，模型常硬把 target 绑成
