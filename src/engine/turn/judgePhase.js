@@ -85,7 +85,7 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
           const intimateAction = acts.find((a) => a?.intimate === true) || acts[0] || {};
           const rt = resolveIntimateTarget({
             targetName: intimateAction.target && intimateAction.target !== "无" ? intimateAction.target : (ctx.talkTarget || deps.talkTarget || ""),
-            cmd, npcs: visibleNpcs, convo, allNpcs: deps.room?.npcs || [],
+            cmd, npcs: visibleNpcsPre, convo, allNpcs: deps.room?.npcs || [],
           });
           const npc = (deps.room?.npcs || []).find((n) => n?.name === rt.targetName) || rt.explicitHit;
           if (npc?.name) {
@@ -227,7 +227,7 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
           playerInput: cmd,
           recentTurns: convo.slice(-4).map((m) => (m.role === "user" ? { user: m.content } : { engine: m.content }))
             .reduce((acc, cur) => { if (cur.user) acc.push({ user: cur.user, engine: "" }); else if (acc.length) acc[acc.length - 1].engine = cur.engine; return acc; }, []),
-          npcs: visibleNpcs,
+          npcs: visibleNpcsPre,
           entries: [],
           questCandidates,
           containers: openContainers,
@@ -331,7 +331,7 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
         // S7 送银桥：玩家原文是金额唯一可信来源（ground truth）——
         // action.text 是模型复述不可信（Review 实证可编数），判官绝不从模型输出取钱数。
         playerInput: cmd,
-        npcs: visibleNpcs, varTree: vtNow,
+        npcs: visibleNpcsPre, varTree: vtNow,
         inv: liveAfterRoutes.inv || deps.inv || [], entries: [],
         // WO-16F-F3：appease settle 听证不算纯搭话——否则 talkOnly 白名单会把
         // appease 动作整条拦掉，判官路空转、旧仲裁又已被跳过（零裁决穿帮）。
@@ -463,7 +463,7 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
         trace("判官管线", "skip", `talkOnly 回合禁止硬事实，${deferredCandidates.length} 条 duel/trade 意向不收集`);
       }
       const { intents: deferredIntents, failures: deferredFailures } = collectDeferredIntents(
-        [...(intakeResult.actions || []), ...deferredCondPassed], { npcs: visibleNpcs, isTalk },
+        [...(intakeResult.actions || []), ...deferredCondPassed], { npcs: visibleNpcsPre, isTalk },
       );
       if (deferredIntents.length || deferredFailures.length) {
         deps.deferredIntents = deferredIntents;
