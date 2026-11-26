@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  isTopModal, MODAL_LAYERS, modalStackSnapshot, normalizeLayer, popModal, pushModal, resetModalStack, wrapFocusIndex,
+  isCloseKey, isTopModal, MODAL_LAYERS, modalStackSnapshot, normalizeLayer, popModal, pushModal, resetModalStack, wrapFocusIndex,
 } from "./modalStack.js";
 import { readFileSync } from "node:fs";
 
@@ -28,6 +28,16 @@ describe("弹窗栈：Esc 只交给最上面那个", () => {
 
   it("空栈时谁都不是栈顶", () => {
     expect(isTopModal("a")).toBe(false);
+  });
+});
+
+describe("Esc 判定", () => {
+  it("普通 Esc 关闭，输入法组字中的 Esc 不关闭", () => {
+    expect(isCloseKey({ key: "Escape" })).toBe(true);
+    expect(isCloseKey({ key: "Escape", isComposing: true })).toBe(false);
+    expect(isCloseKey({ key: "Escape", keyCode: 229 })).toBe(false);
+    expect(isCloseKey({ key: "Enter" })).toBe(false);
+    expect(isCloseKey(null)).toBe(false);
   });
 });
 

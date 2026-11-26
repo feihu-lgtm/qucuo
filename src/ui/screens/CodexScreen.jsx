@@ -16,7 +16,7 @@ import { moveCodexBySource, groupMoves, moveCodexStats, MOVE_SOURCE } from "../.
 import { ITEM_DISTRIBUTION, isPoolable } from "../../domain/data/items/distribution.js";
 import { DISTRICT_REGION } from "../../domain/data/items/regionMap.js";
 import { moveEffectBrief, passiveBonusBrief } from "../../domain/rules/economy/itemEffectText.js";
-import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
+import ModalShell from "../primitives/ModalShell.jsx";
 
 const BASE = (import.meta.env && import.meta.env.BASE_URL) || "/";
 const S = (f) => `${BASE}stones/${f}`;
@@ -66,14 +66,8 @@ const Q_FILTERS = ["全部", ...QUALITY];
 const SRC_TABS = [MOVE_SOURCE.WUGUAN, MOVE_SOURCE.SIGNATURE, MOVE_SOURCE.STANDARD, MOVE_SOURCE.BURDEN];
 
 export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], skills = [], onClose }) {
-  const closeGuard = useOverlayCloseGuard(onClose);
   // ESC 关闭：玩家把字号调大之后，图鉴内容会顶出屏幕高度，右上角那个叉点不到，
-  // 除了刷新页面没有别的退路。键盘退路必须有。
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === "Escape") onClose?.(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  // 除了刷新页面没有别的退路。键盘退路必须有——现在由 ModalShell 统一提供。
   const [tab, setTab] = useState("item"); // item | skill
   const [srcTab, setSrcTab] = useState(MOVE_SOURCE.WUGUAN);
   const [catFilter, setCatFilter] = useState("all");
@@ -126,107 +120,100 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], sk
     color: on ? "var(--ink-cream)" : "var(--codex-tab-off)", textShadow: on ? "0 1px 2px var(--black)" : "none", opacity: on ? 1 : 0.55,
   });
 
+  // 卷轴背景自带版式，外壳去壳；暖色遮罩与留白留在 rootStyle。关闭叉沿用自己的绝对定位。
   return (
-    <div
-      className="mobile-overlay-root"
-      style={{ position: "fixed", inset: 0, background: "rgba(10,8,4,0.9)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
-      onMouseDown={closeGuard.onMouseDown}
-      onClick={closeGuard.onClick}
-    >
-      <div
-        className="mobile-overlay-panel mobile-codex-panel"
-        style={{
-          position: "relative", width: 760, maxWidth: "96vw", height: "88vh",
-          backgroundImage: `url(${S("ui/panel_big.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
-          padding: "42px 46px 40px", display: "flex", flexDirection: "column",
-        }}
-        onClick={e => e.stopPropagation()}
-      >
-        {/* 关闭 */}
-        <span className="mobile-overlay-close" onClick={onClose} title="合上（也可按 ESC）"
-          style={{ position: "absolute", top: 30, right: 34, cursor: "pointer", fontSize: "var(--fs-xl)", color: paperAccent, zIndex: 2 }}>✕</span>
+    <ModalShell onClose={onClose} layer="screen-high" chrome={false} showClose={false} ariaLabel="百物 · 武学总览"
+      rootStyle={{ background: "rgba(10,8,4,0.9)", padding: 16 }}
+      panelClassName="mobile-codex-panel"
+      panelStyle={{
+        width: 760, maxWidth: "96vw", height: "88vh",
+        backgroundImage: `url(${S("ui/panel_big.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
+        padding: "42px 46px 40px", display: "flex", flexDirection: "column",
+      }}>
+      {/* 关闭 */}
+      <span className="mobile-overlay-close" onClick={onClose} title="合上（也可按 ESC）"
+        style={{ position: "absolute", top: 30, right: 34, cursor: "pointer", fontSize: "var(--fs-xl)", color: paperAccent, zIndex: 2 }}>✕</span>
 
-        <div className="mobile-overlay-header" style={{ textAlign: "center", flexShrink: 0 }}>
-          <div style={{ fontSize: "var(--fs-xl)", color: paperAccent, fontWeight: "bold", letterSpacing: 3 }}>百物 · 武学总览</div>
-          <div style={{ fontSize: "var(--fs-xs)", color: paperDim, margin: "3px 0 14px" }}>此卷录尽曲措乡叫得出名号的物件与武学</div>
-        </div>
-
-        {/* 两大页签 */}
-        <div style={{ display: "flex", gap: 10, justifyContent: "center", marginBottom: 12, flexShrink: 0 }}>
-          <button style={tabStyle(tab === "item")} onClick={() => setTab("item")}>物 品</button>
-          <button style={tabStyle(tab === "skill")} onClick={() => setTab("skill")}>武 学</button>
-        </div>
-
-        {/* 搜索 + 只看已获得（两页签共用） */}
-        <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10, flexShrink: 0, flexWrap: "wrap" }}>
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="搜名字或介绍…"
-            style={{
-              flex: 1, minWidth: 140, padding: "5px 10px", fontSize: "var(--fs-sm)", fontFamily: "inherit",
-              background: "rgba(255,250,235,0.6)", border: "1px solid var(--codex-search-edge)", borderRadius: 0, color: "var(--codex-ink)",
-            }}
-          />
-          {search && <span onClick={() => setSearch("")} style={{ cursor: "pointer", color: paperDim, fontSize: "var(--fs-sm)" }}>✕清空</span>}
-          <span onClick={() => setOwnedOnly(o => !o)} style={chipStyle(ownedOnly)} title="只显示已获得的">
-            {ownedOnly ? "✓ 只看已得" : "只看已得"}
-          </span>
-        </div>
-
-        {/* 物品筛选 */}
-        {tab === "item" && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 10, padding: "7px 10px", background: "rgba(120,90,50,0.08)", borderRadius: 0, flexShrink: 0 }}>
-            <div style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap" }}>
-              <span style={{ color: paperDim, fontSize: "var(--fs-xs)" }}>类别</span>
-              {CAT_FILTERS.map(c => <span key={c.key} style={chipStyle(catFilter === c.key)} onClick={() => setCatFilter(c.key)}>{c.label}</span>)}
-            </div>
-            <div style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap" }}>
-              <span style={{ color: paperDim, fontSize: "var(--fs-xs)" }}>品阶</span>
-              {Q_FILTERS.map(q => <span key={q} style={chipStyle(qFilter === q)} onClick={() => setQFilter(q)}>{q}</span>)}
-            </div>
-          </div>
-        )}
-
-        {/* 滚动内容区 */}
-        <div className="mobile-codex-content" style={{ flex: 1, overflowY: "auto", paddingRight: 6 }}>
-          {tab === "item" ? (
-            <>
-              <div style={{ fontSize: "var(--fs-xs)", color: paperDim, marginBottom: 6, paddingLeft: 4 }}>
-                共 {items.length} 件 · 已收录 <span style={{ color: paperAccent }}>{itemOwnedCount}/{CATALOG.length}</span>
-              </div>
-              {items.map((it, i) => <ItemRow key={it.name + i} it={it} owned={ownedItems.has(it.name)} paperText={paperText} paperDim={paperDim} paperAccent={paperAccent} />)}
-              {items.length === 0 && <div style={{ color: paperDim, textAlign: "center", padding: 30 }}>{ownedOnly ? "尚无已获得的物件" : "此类暂无记载"}</div>}
-            </>
-          ) : (
-            <>
-              {/* 来源分页：武馆 / 专属 / 制式 / 博弈 —— 四源合计两百多招 */}
-              <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
-                {SRC_TABS.map(src => (
-                  <button key={src} onClick={() => setSrcTab(src)}
-                    style={{ fontSize: "var(--fs-sm)", padding: "3px 10px", borderRadius: 0, cursor: "pointer",
-                    border: `1px solid ${srcTab === src ? "var(--codex-tab-edge)" : "rgba(120,90,50,0.35)"}`,
-                    background: srcTab === src ? "rgba(160,101,26,0.18)" : "transparent",
-                    color: srcTab === src ? paperAccent : paperDim, fontFamily: "inherit", }}>
-                    {src}·{codexStats.bySource[src] || 0}
-                  </button>
-                ))}
-              </div>
-              <div style={{ fontSize: "var(--fs-xs)", color: paperDim, marginBottom: 6, paddingLeft: 4 }}>
-                全图共 <span style={{ color: paperAccent }}>{codexStats.total}</span> 招 · 本页 {skillGroups.reduce((n, [, l]) => n + l.length, 0)} 招
-              </div>
-              {skillGroups.map(([grp, list]) => (
-                <div key={grp}>
-                  <div style={{ fontSize: "var(--fs-base)", color: paperAccent, margin: "16px 0 6px", letterSpacing: 1, fontWeight: "bold", borderLeft: "4px solid var(--codex-tab-edge)", paddingLeft: 10 }}>{grp}</div>
-                  {list.map((sk, i) => <SkillRow key={sk.id || i} sk={sk} owned={ownedSkills.has(sk.name)} paperText={paperText} paperDim={paperDim} paperAccent={paperAccent} />)}
-                </div>
-              ))}
-              {skillGroups.length === 0 && <div style={{ color: paperDim, textAlign: "center", padding: 30 }}>{ownedOnly ? "尚未习得任何武学" : "无匹配武学"}</div>}
-            </>
-          )}
-        </div>
+      <div className="mobile-overlay-header" style={{ textAlign: "center", flexShrink: 0 }}>
+        <div style={{ fontSize: "var(--fs-xl)", color: paperAccent, fontWeight: "bold", letterSpacing: 3 }}>百物 · 武学总览</div>
+        <div style={{ fontSize: "var(--fs-xs)", color: paperDim, margin: "3px 0 14px" }}>此卷录尽曲措乡叫得出名号的物件与武学</div>
       </div>
-    </div>
+
+      {/* 两大页签 */}
+      <div style={{ display: "flex", gap: 10, justifyContent: "center", marginBottom: 12, flexShrink: 0 }}>
+        <button style={tabStyle(tab === "item")} onClick={() => setTab("item")}>物 品</button>
+        <button style={tabStyle(tab === "skill")} onClick={() => setTab("skill")}>武 学</button>
+      </div>
+
+      {/* 搜索 + 只看已获得（两页签共用） */}
+      <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10, flexShrink: 0, flexWrap: "wrap" }}>
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="搜名字或介绍…"
+          style={{
+            flex: 1, minWidth: 140, padding: "5px 10px", fontSize: "var(--fs-sm)", fontFamily: "inherit",
+            background: "rgba(255,250,235,0.6)", border: "1px solid var(--codex-search-edge)", borderRadius: 0, color: "var(--codex-ink)",
+          }}
+        />
+        {search && <span onClick={() => setSearch("")} style={{ cursor: "pointer", color: paperDim, fontSize: "var(--fs-sm)" }}>✕清空</span>}
+        <span onClick={() => setOwnedOnly(o => !o)} style={chipStyle(ownedOnly)} title="只显示已获得的">
+          {ownedOnly ? "✓ 只看已得" : "只看已得"}
+        </span>
+      </div>
+
+      {/* 物品筛选 */}
+      {tab === "item" && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 10, padding: "7px 10px", background: "rgba(120,90,50,0.08)", borderRadius: 0, flexShrink: 0 }}>
+          <div style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap" }}>
+            <span style={{ color: paperDim, fontSize: "var(--fs-xs)" }}>类别</span>
+            {CAT_FILTERS.map(c => <span key={c.key} style={chipStyle(catFilter === c.key)} onClick={() => setCatFilter(c.key)}>{c.label}</span>)}
+          </div>
+          <div style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap" }}>
+            <span style={{ color: paperDim, fontSize: "var(--fs-xs)" }}>品阶</span>
+            {Q_FILTERS.map(q => <span key={q} style={chipStyle(qFilter === q)} onClick={() => setQFilter(q)}>{q}</span>)}
+          </div>
+        </div>
+      )}
+
+      {/* 滚动内容区 */}
+      <div className="mobile-codex-content" style={{ flex: 1, overflowY: "auto", paddingRight: 6 }}>
+        {tab === "item" ? (
+          <>
+            <div style={{ fontSize: "var(--fs-xs)", color: paperDim, marginBottom: 6, paddingLeft: 4 }}>
+              共 {items.length} 件 · 已收录 <span style={{ color: paperAccent }}>{itemOwnedCount}/{CATALOG.length}</span>
+            </div>
+            {items.map((it, i) => <ItemRow key={it.name + i} it={it} owned={ownedItems.has(it.name)} paperText={paperText} paperDim={paperDim} paperAccent={paperAccent} />)}
+            {items.length === 0 && <div style={{ color: paperDim, textAlign: "center", padding: 30 }}>{ownedOnly ? "尚无已获得的物件" : "此类暂无记载"}</div>}
+          </>
+        ) : (
+          <>
+            {/* 来源分页：武馆 / 专属 / 制式 / 博弈 —— 四源合计两百多招 */}
+            <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
+              {SRC_TABS.map(src => (
+                <button key={src} onClick={() => setSrcTab(src)}
+                  style={{ fontSize: "var(--fs-sm)", padding: "3px 10px", borderRadius: 0, cursor: "pointer",
+                  border: `1px solid ${srcTab === src ? "var(--codex-tab-edge)" : "rgba(120,90,50,0.35)"}`,
+                  background: srcTab === src ? "rgba(160,101,26,0.18)" : "transparent",
+                  color: srcTab === src ? paperAccent : paperDim, fontFamily: "inherit", }}>
+                  {src}·{codexStats.bySource[src] || 0}
+                </button>
+              ))}
+            </div>
+            <div style={{ fontSize: "var(--fs-xs)", color: paperDim, marginBottom: 6, paddingLeft: 4 }}>
+              全图共 <span style={{ color: paperAccent }}>{codexStats.total}</span> 招 · 本页 {skillGroups.reduce((n, [, l]) => n + l.length, 0)} 招
+            </div>
+            {skillGroups.map(([grp, list]) => (
+              <div key={grp}>
+                <div style={{ fontSize: "var(--fs-base)", color: paperAccent, margin: "16px 0 6px", letterSpacing: 1, fontWeight: "bold", borderLeft: "4px solid var(--codex-tab-edge)", paddingLeft: 10 }}>{grp}</div>
+                {list.map((sk, i) => <SkillRow key={sk.id || i} sk={sk} owned={ownedSkills.has(sk.name)} paperText={paperText} paperDim={paperDim} paperAccent={paperAccent} />)}
+              </div>
+            ))}
+            {skillGroups.length === 0 && <div style={{ color: paperDim, textAlign: "center", padding: 30 }}>{ownedOnly ? "尚未习得任何武学" : "无匹配武学"}</div>}
+          </>
+        )}
+      </div>
+    </ModalShell>
   );
 }
 

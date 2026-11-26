@@ -34,6 +34,14 @@ export function resetModalStack() {
   stack.length = 0;
 }
 
+// Esc 是否应当关闭弹窗：输入法组字时按 Esc 是取消候选词，不能当成关闭。
+// isComposing 是标准字段；keyCode 229 是部分浏览器（含旧版 Safari）组字期间的占位码。
+export function isCloseKey(event) {
+  if (!event || event.key !== "Escape") return false;
+  if (event.isComposing || event.keyCode === 229) return false;
+  return true;
+}
+
 // 焦点锁定：Tab 走到最后一个可聚焦元素后回到第一个，Shift+Tab 反之。
 // 返回需要转去的下标；返回 -1 表示交给浏览器默认行为。
 export function wrapFocusIndex(count, activeIndex, shiftKey) {

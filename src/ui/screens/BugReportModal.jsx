@@ -120,7 +120,8 @@ export default function BugReportModal({
   // 标题栏沿用自己的（粗体大标题、✕ 按钮），外壳只管遮罩、层级、关闭与手机全屏。
     // 原先在遮罩上按下即关闭，现在走外壳的防拖选判定：按下和松开都在遮罩上才关。
   return (
-    <ModalShell onClose={onClose} layer="dialog" showClose={false} ariaLabel="上报 Bug · 意见信箱"
+    // 有三个文本框，原先也没有 Esc 关闭，误按会丢掉已写的内容，所以不开 Esc。
+    <ModalShell onClose={onClose} layer="dialog" showClose={false} closeOnEsc={false} ariaLabel="上报 Bug · 意见信箱"
       rootStyle={{ background: C.overlay, padding: 16 }}
       panelClassName="mobile-report-panel"
       panelStyle={{ width: 440, maxWidth: "94vw", maxHeight: "88vh", background: C.panel, border: `1px solid ${C.border}`, padding: "22px 24px", color: C.text }}>

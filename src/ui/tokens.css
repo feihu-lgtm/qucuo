@@ -712,7 +712,10 @@ div[style*="position: fixed"][style*="z-index"],
 
 .ui-modal-panel.settings-panel,
 .ui-modal-panel.music-panel,
-.ui-modal-panel.portrait-manager-panel {
+.ui-modal-panel.portrait-manager-panel,
+.ui-modal-panel.mobile-character-panel,
+.ui-modal-panel.character-detail-panel,
+.ui-modal-panel.body-profile-panel {
   font-size: var(--fs-md);
 }
 

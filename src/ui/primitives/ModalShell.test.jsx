@@ -33,6 +33,10 @@ describe("ModalShell", () => {
     expect(off).not.toContain("mobile-overlay-header");
     expect(off).not.toContain("mobile-overlay-close");
     expect(render({ mobile: "weird" })).toContain("mobile-overlay-panel");
+    const custom = render({ title: "x", mobile: "custom", panelClassName: "body-profile-panel" });
+    expect(custom).toContain("ui-modal-root mobile-overlay-root");
+    expect(custom).toContain('class="ui-modal-panel body-profile-panel"');
+    expect(custom).toContain("mobile-overlay-header");
   });
 
   it("遮罩深浅与面板去壳通过 data 属性选择", () => {

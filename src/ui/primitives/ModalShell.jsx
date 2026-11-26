@@ -19,7 +19,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 import {
-  FOCUSABLE_SELECTOR, isTopModal, normalizeLayer, nextModalId, popModal, pushModal, wrapFocusIndex,
+  FOCUSABLE_SELECTOR, isCloseKey, isTopModal, normalizeLayer, nextModalId, popModal, pushModal, wrapFocusIndex,
 } from "./modalStack.js";
 
 const NOOP = () => {};
@@ -30,7 +30,8 @@ const stopPropagation = (event) => event.stopPropagation();
 //   fullscreen —— mobile-overlay-panel，铺满屏幕（设置、版本历史这类长面板）
 //   sheet      —— mobile-action-panel，居中的整宽卡片（物品、NPC 这类短菜单）
 //   none       —— 不挂手机类，手机上保持桌面写法（大地图卷轴这类自带版式的）
-const MOBILE_PANEL_CLASS = { fullscreen: "mobile-overlay-panel", sheet: "mobile-action-panel", none: "" };
+//   custom     —— 根节点挂 mobile-overlay-root，面板不挂，由调用方用 panelClassName 自带手机规则
+const MOBILE_PANEL_CLASS = { fullscreen: "mobile-overlay-panel", sheet: "mobile-action-panel", custom: "", none: "" };
 
 export default function ModalShell({
   title = null,
@@ -66,7 +67,7 @@ export default function ModalShell({
 
     const onKeyDown = (event) => {
       if (!isTopModal(id)) return;
-      if (event.key === "Escape" && closeOnEsc) {
+      if (closeOnEsc && isCloseKey(event)) {
         event.stopPropagation();
         onCloseRef.current();
         return;
