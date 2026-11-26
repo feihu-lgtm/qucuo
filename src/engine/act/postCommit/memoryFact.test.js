@@ -124,7 +124,6 @@ describe("V4 在场收窄（验收）", () => {
     // 唯一非随行在场者是花嫂——收窄为亲历而非全屋广播
     expect(Object.keys(entry.知晓者)).toEqual(["花嫂"]);
   });
-});
 
   it("Review：移动+翻箱复合指令按目的地房间记账，不按出发地", () => {
     const destNpcs = [{ name: "花嫂", innerRoom: "老孙饭馆" }];
@@ -140,3 +139,18 @@ describe("V4 在场收窄（验收）", () => {
     expect(Object.keys(entry.知晓者)).toEqual(["花嫂"]);
     expect(entry.房间).toEqual({ district: "鱼定村", inner: "老孙饭馆" });
   });
+
+  it("Review：空房涌现新人——唯一见证者入账，事实不整条丢失", () => {
+    const out = registerMemoryFact({
+      p: { memory: "玩家与来人打了个照面" },
+      room: { name: "鱼定村", npcs: [] },
+      activeTarget: "", isTalk: false, talkTarget: "", time: 30, appendDayMaterial: null,
+      innerRoomName: "老孙饭馆",
+      emergedNpcName: "磨坊学徒",
+    });
+    const tree = out.changes.varTree({ 世界: {} });
+    const facts = tree.世界.知识领域.事实 || {};
+    expect(Object.keys(facts)).toHaveLength(1);
+    expect(Object.keys(Object.values(facts)[0].知晓者)).toEqual(["磨坊学徒"]);
+  });
+});

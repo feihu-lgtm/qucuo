@@ -187,6 +187,7 @@ export function commitRound(d) {
     innerRoomName: d.innerRoomName ?? null, refIds: d.intakeRefIds || [],
     // 移动复合指令：事件发生在路由后目的地，目击者池/房间作用域按目的地记账
     postRouteRoom: d.postRouteRoom || null, postRouteInnerRoom: d.postRouteInnerRoom ?? null,
+    emergedNpcName: d.p?.emergedNpcName || "",
   }));
   applyPostResult(d, markTalkAcquaintance({ isTalk: d.isTalk, talkTarget: d.talkTarget, room: d.room, p: d.p, derivedRespondedNpcs: d.derivedRespondedNpcs })); // 对话即认识
   applyPostResult(d, writeRoamLocks({  // W-ROAM 十回合交互驻足锁

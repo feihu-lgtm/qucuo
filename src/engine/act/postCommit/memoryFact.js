@@ -23,7 +23,7 @@ export function normalizeMemoryText(memory) {
   return String(memory);
 }
 
-export function registerMemoryFact({ p, room, activeTarget, isTalk, talkTarget, time, appendDayMaterial, innerRoomName = null, refIds = [], postRouteRoom = null, postRouteInnerRoom = null }) {
+export function registerMemoryFact({ p, room, activeTarget, isTalk, talkTarget, time, appendDayMaterial, innerRoomName = null, refIds = [], postRouteRoom = null, postRouteInnerRoom = null, emergedNpcName = "" }) {
   if (!p.memory) return null;
   if (typeof p.memory !== "string") {
     p = { ...p, memory: normalizeMemoryText(p.memory) };
@@ -43,7 +43,13 @@ export function registerMemoryFact({ p, room, activeTarget, isTalk, talkTarget, 
   // 本房真实在场者——在老孙饭馆翻酒坛，目击者绝无隔壁房间的人。
   const roomNpcs = innerRoomName
     ? allNpcs.filter(n => isNpcVisibleInInnerRoom(districtName, innerRoomName, n))
-    : allNpcs;
+    : [...allNpcs];
+  // Review 修：本轮刚涌现登场的新人不在回合前的 room.npcs 里——他既已登场便是
+  // 现场目击者，补进在场池（人就是在这房登场的，不再过可见性过滤）。否则空房登场
+  // 唯一见证者时 witnesses 为空，事实整条丢失。
+  if (emergedNpcName && !roomNpcs.some((n) => n?.name === emergedNpcName)) {
+    roomNpcs.push({ name: emergedNpcName });
+  }
   // F9+V4 知情隔离修：未点选但本房真实在场仅一名非随行 NPC 时，私语/密行对象
   // 就是这位唯一在场者——V4 起不再要求 isTalk（翻箱、偷盗等非搭话密行同理），
   // 否则「压低声音只对老孙说」的密告按全员目击者记账，秘密当场漏给所有知情人，
