@@ -65,66 +65,8 @@ export async function resolveIntent(cmd, env) {
 
   traceStep(_trace, "意图分类", "pass", `模式=${isTalk ? "对话" : "行动"} · 意图=${intent?.label || intent || "未知"}`);
 
-  // ── 亲密指令族（docs/设计_亲密互动好感门槛.md）──
-  // ■ 模式关掉时整族隐藏（nsfwOn=false 落回普通对话）。过没过线系统裁决：
-  // 未过线→性格化拒词+按性情扣好感；过线→标已亲密♥、prompt 注入 nsfw 段+style。
-  let intimateNote = "";
-  let intimateTicket = null; // 本轮凭卡强开的目标 NPC 名；commitRound 成功后才焚卡
-  const intimateHit = nsfwOn && (isTalk ? isIntimateInput(cmd) : intent === INTENT.INTIMATE);
-  if (intimateHit) {
-    // V5（10.4-1）封死代词绕过：回落纯函数 resolveIntimateTarget——唯一在场者
-    // 或上一轮搭话者，0 好感强吻绝不因指代不明漏过 intimacyGate。
-    // Review修：room.npcs 是全据点花名册——唯一在场者判定必须先按内层房间
-    // 可见性过滤（与 judgePhase 同口径），否则别屋住民搅局、指代不明漏门禁。
-    const visibleHere = (room?.npcs || []).filter((n) => !innerRoomName || isNpcVisibleInInnerRoom(room?.name, innerRoomName, n));
-    const rt = resolveIntimateTarget({
-      targetName: isTalk ? talkTarget : (talkTarget || activeTarget?.name || activeTarget),
-      cmd, npcs: visibleHere, convo, allNpcs: room?.npcs || [],
-    });
-    const npc = (room?.npcs || []).find((n) => n.name === rt.targetName)
-      || rt.explicitHit;
-    if (npc?.name) {
-      const aff = Number(vt()?.角色?.[npc.name]?.好感度) || 0;
-      const gate = intimacyGate(npc, aff);
-      // 「女眷一次卡·不可拒绝」：门槛卡住且行囊有卡才启用——threshold、forbidden
-      // 一票放行（beast 除外）。门槛本来就过的不耗卡；卡只在回合成功落盘时焚，
-      // 由 commitRound 收尾消耗（中途失败/回滚不吞卡）。
-      const invNow = getGameState().inv || [];
-      const hasTicket = invNow.some((i) => (typeof i === "object" && i ? i.name : i) === INTIMATE_TICKET_NAME);
-      const forceIntimate = !gate.unlocked && hasTicket && !npc.beast;
-      turnMonitor.activate(_trace);
-      setInput("");
-      setCmdHistory(p => [cmd, ...p].slice(0, 50));
-      setHistIdx(-1);
-      if (!gate.unlocked && !forceIntimate) {
-        const { line, loss } = intimacyRefusal(npc);
-        const logs = [{ t: "cmd", text: `> ${cmd}` }, { t: "desc", text: `  ${line}` }];
-        if (loss > 0) {
-          const cur = Number(vt()?.角色?.[npc.name]?.好感度) || 0;
-          const next = applyWrite({ ...getGameState(), varTree: vt() }, add(["角色", npc.name, "好感度"], -loss)).state.varTree;
-          gameActions.setVarTreeState(next);
-          logs.push({ t: "affection", text: `  💗 ${npc.name} 好感度 -${loss}（${cur} → ${cur - loss}）` });
-        }
-        applyLocal({ logs });
-        traceStep(_trace, "亲密门槛", "fail", `${npc.name} 好感 ${aff}/${gate.threshold}，${gate.forbidden ? "不受人情" : "婉拒"}`);
-        clearWait();
-        return { proceed: false, summary: gate.forbidden ? "亲密对象不通人情" : "亲密好感不足被婉拒" };
-      }
-      if (forceIntimate) {
-        intimateTicket = npc.name;
-        traceStep(_trace, "亲密门槛", "pass", `${npc.name} 凭「${INTIMATE_TICKET_NAME}」强开`);
-      }
-      // 过线：标已亲密（varTree 持久 + 当前房间条目挂 ♥），prompt 注入门槛行+nsfw 段+style。
-      // 凭卡强开时烙印挪到 commit 焚卡一步落盘——中断/失败的回合既不烧卡也不白送亲密。
-      if (!forceIntimate) {
-        const stamped = applyWrite({ ...getGameState(), varTree: vt() }, set(["角色", npc.name, "已亲密"], true)).state.varTree;
-        gameActions.setVarTreeState(stamped);
-        setRoom((r) => ({ ...r, npcs: (r.npcs || []).map((n) => (n.name === npc.name ? { ...n, intimate: true } : n)) }));
-      }
-      intimateNote = `\n${forceIntimate ? intimateTicketNote(npc) : intimacyPromptNote(npc, aff)}`;
-      traceStep(_trace, "亲密门槛", "pass", `${npc.name} 好感 ${aff}/${gate.threshold}，已亲密`);
-    }
-  }
+  // D8：亲密门禁已上移 judgePhase——判意来自 intake 布尔字段（本地合成/缺失时正则兜底），
+  // 拦截/拒词/凭卡/已亲密落账全部在判官段执行，此处不再前置拦截（双轨会误判）。
 
   const localCommand = !isTalk
     ? parseLocalCommand(cmd, { ...getGameState(), isTalk, convo }, { surface: "web" })
@@ -353,9 +295,8 @@ export async function resolveIntent(cmd, env) {
     proceed: true,
     plan: {
       intent, isTalk, isSettle, movingDir, lockedDestName, destinationLock,
-      collectNote: collectNote + (opts.intentPlanNote || "") + intimateNote,
+      collectNote: collectNote + (opts.intentPlanNote || ""),
       encounterToDescribe, activeGroundItemForTurn, lookNpcs,
-      intimateTicket,
       // WO-06：只读 plan 字段直传 TurnEnvelope（原跨层 ref 透传）
       pendDir, outerDepart, pickupJudgment, collectGranted,
     },

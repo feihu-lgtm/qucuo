@@ -48,7 +48,7 @@ describe("normalizeIntakeResult 本地复核", () => {
   const fullAction = {
     kind: "give", target: "才旦", item: "霜牙短刀", itemId: "it_8f3a", direction: "none",
     condition: "无", condition_text: "", stance: "casual",
-    outcome: "无", risk: "无", confidence: 0.9, text: "送刀", useKind: "",
+    outcome: "无", risk: "无", confidence: 0.9, text: "送刀", useKind: "", intimate: false,
   };
   const valid = {
     read: "送刀", refIds: [],

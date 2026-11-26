@@ -620,7 +620,7 @@ describe("S7 送银桥 Review 加固：金额只认玩家原文", () => {
 });
 
 describe("W-FIX2 即兴立约判官先定", () => {
-  const pactAction = { kind: "talk", target: "才旦", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "sincere", outcome: "无", risk: "无", confidence: 0.9, text: "三天之内我定去后山替你寻回旧物，你赏我十两银子如何", useKind: "" };
+  const pactAction = { kind: "talk", target: "才旦", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "sincere", outcome: "无", risk: "无", confidence: 0.9, text: "三天之内我定去后山替你寻回旧物，你赏我十两银子如何", useKind: "", intimate: false };
   const dealProposal = { claim: "替才旦寻回旧物他赏银十两", kind: "social_deal", fit: "natural", questId: "", flag: "" };
   const intake = (props) => ({ read: "", refIds: [], actions: [pactAction], proposals: props });
 
@@ -646,8 +646,8 @@ describe("W-FIX2 即兴立约判官先定", () => {
       { name: "李四", personality: "豪爽", brief: "b" },
     ], varTree: { 角色: {} }, inv: [], entries: [], budget: { riskLevel: 1 } };
     const acts = [
-      { kind: "talk", target: "张三", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "张三早", useKind: "" },
-      { kind: "talk", target: "李四", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "sincere", outcome: "无", risk: "无", confidence: 0.9, text: "三天之内我定替你寻回旧物，你赏我十两", useKind: "" },
+      { kind: "talk", target: "张三", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "张三早", useKind: "", intimate: false },
+      { kind: "talk", target: "李四", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "sincere", outcome: "无", risk: "无", confidence: 0.9, text: "三天之内我定替你寻回旧物，你赏我十两", useKind: "", intimate: false },
     ];
     const props = [{ claim: "替李四寻物", kind: "social_deal", fit: "natural", questId: "", flag: "" }];
     const v = judgeTurn(env, { read: "", refIds: [], actions: acts, proposals: props }, { rng: seqRng([0.01]) });
@@ -656,7 +656,7 @@ describe("W-FIX2 即兴立约判官先定", () => {
   });
 
   it("Review 修③：立约动作条件未成——不掷骰不立约", () => {
-    const acts = [{ kind: "talk", target: "才旦", item: "无", itemId: "", direction: "none", condition: "到达", condition_text: "到了后山就", stance: "sincere", outcome: "无", risk: "无", confidence: 0.9, text: "要是到了后山，我定替你寻回旧物", useKind: "" }];
+    const acts = [{ kind: "talk", target: "才旦", item: "无", itemId: "", direction: "none", condition: "到达", condition_text: "到了后山就", stance: "sincere", outcome: "无", risk: "无", confidence: 0.9, text: "要是到了后山，我定替你寻回旧物", useKind: "", intimate: false }];
     const props = [{ claim: "x", kind: "social_deal", fit: "natural", questId: "", flag: "" }];
     const v = judgeTurn(baseEnvelope(), { read: "", refIds: [], actions: acts, proposals: props }, { rng: seqRng([0.01]) });
     expect(v.notes.join()).not.toContain("已当面应下约定");

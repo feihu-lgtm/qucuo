@@ -71,6 +71,12 @@ export async function playTurn(ctx, cmd, opts = {}) {
     const turnOpts = { ...opts };
     const narrated = await narrateTurn(turnCtx, trace, cmd, turnOpts);
     if (narrated.stale) return stale();
+    // D8 Review修：亲密门槛拒决回合——拒词与扣好感已在判官段直写落盘，
+    // 无 turn 载荷不进 finalize/commit（否则 commitRound 缺载荷炸回合）。
+    if (narrated.intimacyRefused) {
+      turnMonitor.finish(trace, "亲密门槛拒决");
+      return { done: true, intimacyRefused: true };
+    }
     // WO-16D 影子对账：回合前快照切片在 commit 前捕获（store 值不可变，引用即快照）。
     const shadowPre = resolveShadowJudgeEnabled(turnCtx.apiCfg) && !turnCtx.apiCfg?.extractionEnabled && snapshot
       ? {

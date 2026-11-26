@@ -24,6 +24,8 @@ export async function finalizeTurn({ ctx, trace, turn, turnOpts, opts, setPhase 
       deliveredItems: opts.deliveredItems || null,
       // WO-13：判官管线 materializeFacts 产物（changes/patches/receipts/logs）经此落盘
       materialized: turn.judgeEffects?.materialized || null,
+      // D8 Review修：凭卡 ticket 随 turn 载荷直传——commit 成功才焚（中断/回滚不吞卡）。
+      intimateTicket: turn?.intimateTicket || null,
       _trace: trace,
     });
     return result;

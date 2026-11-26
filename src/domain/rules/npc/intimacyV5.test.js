@@ -63,7 +63,7 @@ describe("V5 买卖不误触自发契约", () => {
   it("当场称斤付钱买干粮 → allowSpontaneousPact false", () => {
     const v = judgeTurn(base(), {
       read: "", refIds: [],
-      actions: [{ kind: "trade", target: "才旦", text: "买三斤酥油炒面，称斤付钱", item: "酥油炒面", itemId: "", direction: "none", condition: "无", condition_text: "", useKind: "", stance: "casual", outcome: "破费", risk: "无", confidence: 0.8 }],
+      actions: [{ kind: "trade", target: "才旦", text: "买三斤酥油炒面，称斤付钱", item: "酥油炒面", itemId: "", direction: "none", condition: "无", condition_text: "", useKind: "", intimate: false, stance: "casual", outcome: "破费", risk: "无", confidence: 0.8 }],
       proposals: [{ kind: "social_deal", fit: "natural", claim: "买三斤酥油炒面当场付钱", questId: "", flag: "" }],
     }, { rng: () => 0.5 });
     expect(v.allowSpontaneousPact).toBe(false);
@@ -71,7 +71,7 @@ describe("V5 买卖不误触自发契约", () => {
   it("带未来履约条件的立约仍参与掷骰", () => {
     const v = judgeTurn(base(), {
       read: "", refIds: [],
-      actions: [{ kind: "talk", target: "才旦", text: "三天之内我定替你寻回旧物", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", useKind: "", stance: "sincere", outcome: "无", risk: "无", confidence: 0.8 }],
+      actions: [{ kind: "talk", target: "才旦", text: "三天之内我定替你寻回旧物", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", useKind: "", intimate: false, stance: "sincere", outcome: "无", risk: "无", confidence: 0.8 }],
       proposals: [{ kind: "social_deal", fit: "natural", claim: "三天之内我定替你寻回旧物，事成之后赏十两", questId: "", flag: "" }],
     }, { rng: () => 0.5 });
     expect(typeof v.allowSpontaneousPact).toBe("boolean");
