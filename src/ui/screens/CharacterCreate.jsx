@@ -243,8 +243,9 @@ export default function CharacterCreate({ onConfirm }) {
 }
 
 const styles = {
+  // 整屏定位在 tokens.css 的 .character-create-root。
   container: {
-    position: "fixed", inset: 0, overflow: "hidden",
+    overflow: "hidden",
     backgroundImage: `url('${BASE}start-bg.webp')`,
     backgroundSize: "cover", backgroundPosition: "center",
     display: "flex", alignItems: "center", justifyContent: "center",

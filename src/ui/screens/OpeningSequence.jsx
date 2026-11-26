@@ -87,9 +87,8 @@ export default function OpeningSequence({ onFinish, playerName }) {
 }
 
 const styles = {
+  // 整屏定位在 tokens.css 的 .opening-sequence-root。
   container: {
-    position: "fixed",
-    inset: 0,
     backgroundColor: "var(--black)",
     cursor: "pointer",
     overflow: "hidden",

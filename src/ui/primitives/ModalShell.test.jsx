@@ -30,6 +30,8 @@ describe("ModalShell", () => {
     const off = render({ title: "x", mobile: "none" });
     expect(off).not.toContain("mobile-overlay-root");
     expect(off).not.toContain("mobile-overlay-panel");
+    expect(off).not.toContain("mobile-overlay-header");
+    expect(off).not.toContain("mobile-overlay-close");
     expect(render({ mobile: "weird" })).toContain("mobile-overlay-panel");
   });
 
@@ -59,6 +61,12 @@ describe("ModalShell", () => {
     expect(html).not.toContain("aria-labelledby");
     expect(html).not.toContain("ui-modal-header");
     expect(html).not.toContain("position:fixed");
+  });
+
+  it("默认全屏形态下根节点同时带 mobile-overlay-root 与调用方的类（设置面板的 iOS 适配依赖这一点）", () => {
+    const html = render({ title: "⚙ 游戏设置", className: "settings-root", panelClassName: "mobile-settings-panel settings-panel" });
+    expect(html).toContain('class="ui-modal-root mobile-overlay-root settings-root"');
+    expect(html).toContain('class="ui-modal-panel mobile-overlay-panel mobile-settings-panel settings-panel"');
   });
 
   it("panelStyle 与 className 透传给面板和根节点", () => {

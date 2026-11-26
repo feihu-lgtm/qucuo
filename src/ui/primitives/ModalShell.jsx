@@ -119,11 +119,11 @@ export default function ModalShell({
         onClick={stopPropagation}
       >
         {hasHeader && (
-          <div className="ui-modal-header mobile-overlay-header">
+          <div className={mobileMode === "none" ? "ui-modal-header" : "ui-modal-header mobile-overlay-header"}>
             <div id={titleId} className="ui-modal-title">{title}</div>
             {headerExtra}
             {showClose && (
-              <button type="button" className="ui-modal-close mobile-overlay-close" aria-label={closeLabel} onClick={onClose}>
+              <button type="button" className={mobileMode === "none" ? "ui-modal-close" : "ui-modal-close mobile-overlay-close"} aria-label={closeLabel} onClick={onClose}>
                 {closeText}
               </button>
             )}

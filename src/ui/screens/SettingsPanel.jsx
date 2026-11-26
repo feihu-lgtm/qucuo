@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { hasApiCredentials, listConfigProfiles } from "../../infra/apiConfig.js";
 import { listSlots } from "../../infra/saves.js";
 import { countMemories } from "../../infra/memoryStore.js";
-import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
+import ModalShell from "../primitives/ModalShell.jsx";
 import InjectionStructurePanel from "./InjectionStructurePanel.jsx";
 import ApiTab from "./settings/ApiTab.jsx";
 import NarratorTab from "./settings/NarratorTab.jsx";
@@ -21,7 +21,6 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
   // 选字拖拽、鼠标移出弹窗范围松手时会被浏览器合成一次落在遮罩上的 click，
   // 导致"复制粘贴选着选着弹窗自己关了"。closeGuard 要求 mousedown 和 click
   // 都精确落在遮罩本身才真正关闭，见 utils/overlayClose.js。
-  const closeGuard = useOverlayCloseGuard(onClose);
   const [tab, setTab] = useState(initialTab || null); // null=主页卡片 | api | preset | saves | other
   const selectTab = (next) => { setTab(next); onSelectTab?.(next); };
   const [testStatus, setTestStatus] = useState(null); // null | 'testing' | 'ok' | 'error'
@@ -62,76 +61,74 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
   };
 
   return (
-    <div className="mobile-overlay-root settings-root" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "var(--ink-overlay)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
-      <div className="mobile-overlay-panel mobile-settings-panel settings-panel" style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: 20, width: 520, maxWidth: "90vw", maxHeight: "85vh", overflowY: "auto", fontFamily: "inherit", fontSize: "var(--fs-md)", color: "var(--text)" }} onClick={e => e.stopPropagation()}>
-
-        <div className="mobile-overlay-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <span style={{ color: "var(--accent)", fontSize: "var(--fs-base)" }}>
-            {tab === null ? "⚙ 游戏设置" : (
-              <span style={{ cursor: "pointer" }} onClick={() => selectTab(null)}>← 返回 · <span style={{ color: "var(--text)" }}>{TAB_LABELS[tab] || ""}</span></span>
-            )}
-          </span>
-          <span className="mobile-overlay-close" style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
-        </div>
-        {tab === null && (
-          <div className="settings-home-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 4 }}>
-            {[
-              ["api", "API 配置", "接口地址 · 密钥 · 模型"],
-              ["preset", "📜 预设", "对话补全预设 · 编辑器"],
-              ["narrator", "🎭 旁白", "好感度 · 阶段 · 私聊篇幅 · 专属世界书"],
-              ["saves", "💾 存档管理", "读取 · 导出 · 删除"],
-              ["other", "🎚 其他", "字号 · 显示"],
-              ["__portraits", "立绘管理", "上传 · 更换人物立绘"],
-              ["__cards", "🧾 角色入册", "游戏中 · 导入外部角色卡成江湖人物 · 快捷键 I"],
-            ].filter(([id]) => id !== "__portraits" || hasApiCredentials(cfg)).map(([id, title, sub]) => (
-              <div key={id} className="settings-home-card" onClick={() => {
-                // 入册界面本身是全屏浮层，塞在设置里会套两层弹窗。
-                // 这里改成关掉设置、把浮层交给 MudRPG 开。
-                if (id === "__portraits") { closeOverlay(OVERLAY.SETTINGS); openOverlay(OVERLAY.PORTRAIT_MANAGER); return; }
-                if (id === "__cards") { onOpenCardImport?.(); return; }
-                selectTab(id);
+    <ModalShell
+      onClose={onClose}
+      layer="screen"
+      className="settings-root"
+      panelClassName="mobile-settings-panel settings-panel"
+      panelStyle={{ width: 520 }}
+      title={tab === null ? "⚙ 游戏设置" : (
+        <span style={{ cursor: "pointer" }} onClick={() => selectTab(null)}>← 返回 · <span style={{ color: "var(--text)" }}>{TAB_LABELS[tab] || ""}</span></span>
+      )}
+    >
+      {tab === null && (
+        <div className="settings-home-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 4 }}>
+          {[
+            ["api", "API 配置", "接口地址 · 密钥 · 模型"],
+            ["preset", "📜 预设", "对话补全预设 · 编辑器"],
+            ["narrator", "🎭 旁白", "好感度 · 阶段 · 私聊篇幅 · 专属世界书"],
+            ["saves", "💾 存档管理", "读取 · 导出 · 删除"],
+            ["other", "🎚 其他", "字号 · 显示"],
+            ["__portraits", "立绘管理", "上传 · 更换人物立绘"],
+            ["__cards", "🧾 角色入册", "游戏中 · 导入外部角色卡成江湖人物 · 快捷键 I"],
+          ].filter(([id]) => id !== "__portraits" || hasApiCredentials(cfg)).map(([id, title, sub]) => (
+            <div key={id} className="settings-home-card" onClick={() => {
+              // 入册界面本身是全屏浮层，塞在设置里会套两层弹窗。
+              // 这里改成关掉设置、把浮层交给 MudRPG 开。
+              if (id === "__portraits") { closeOverlay(OVERLAY.SETTINGS); openOverlay(OVERLAY.PORTRAIT_MANAGER); return; }
+              if (id === "__cards") { onOpenCardImport?.(); return; }
+              selectTab(id);
+            }}
+              style={{
+                cursor: "pointer", padding: "20px 16px", borderRadius: 0,
+                background: "var(--bg-panel)", border: "1px solid var(--border)",
+                transition: "all 0.2s ease", textAlign: "center",
               }}
-                style={{
-                  cursor: "pointer", padding: "20px 16px", borderRadius: 0,
-                  background: "var(--bg-panel)", border: "1px solid var(--border)",
-                  transition: "all 0.2s ease", textAlign: "center",
-                }}
-            onMouseEnter={e => { e.currentTarget.style.background = "var(--bg)"; e.currentTarget.style.borderColor = "var(--accent)"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "var(--bg-panel)"; e.currentTarget.style.borderColor = "var(--border)"; }}>
-                <div style={{ fontSize: "var(--fs-base)", color: "var(--text)", marginBottom: 6 }}>{title}</div>
-                <div style={{ fontSize: "var(--fs-xs)", color: "var(--ink-sage)" }}>{sub}</div>
-              </div>
-            ))}
-          </div>
-        )}
+          onMouseEnter={e => { e.currentTarget.style.background = "var(--bg)"; e.currentTarget.style.borderColor = "var(--accent)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "var(--bg-panel)"; e.currentTarget.style.borderColor = "var(--border)"; }}>
+              <div style={{ fontSize: "var(--fs-base)", color: "var(--text)", marginBottom: 6 }}>{title}</div>
+              <div style={{ fontSize: "var(--fs-xs)", color: "var(--ink-sage)" }}>{sub}</div>
+            </div>
+          ))}
+        </div>
+      )}
 
-        {/* 预设 tab = 只有 Prompt 注入结构（本轮按作者要求精简）
-            原来这里上下各有一块：上面是预设切换/导入酒馆JSON/导出，下面是可编辑的
-            Prompt 条目列表。作者要的是"只看清楚喂了什么"，两头都拿掉了——
-            PresetEditor 与 PresetManager 均已删除（零引用）。 */}
-        {tab === "preset" && (
-          <InjectionStructurePanel
-            getLiveBlockText={getLiveBlockText}
-            extractionEnabled={!!cfg.extractionEnabled}
-            narratorLorebook={cfg.narratorLorebook || ""}
-          />
-        )}
+      {/* 预设 tab = 只有 Prompt 注入结构（本轮按作者要求精简）
+          原来这里上下各有一块：上面是预设切换/导入酒馆JSON/导出，下面是可编辑的
+          Prompt 条目列表。作者要的是"只看清楚喂了什么"，两头都拿掉了——
+          PresetEditor 与 PresetManager 均已删除（零引用）。 */}
+      {tab === "preset" && (
+        <InjectionStructurePanel
+          getLiveBlockText={getLiveBlockText}
+          extractionEnabled={!!cfg.extractionEnabled}
+          narratorLorebook={cfg.narratorLorebook || ""}
+        />
+      )}
 
-        {tab === "api" && <ApiTab cfg={cfg} setCfg={setCfg} patch={patch} zoneTheme={zoneTheme} st={st} />}
+      {tab === "api" && <ApiTab cfg={cfg} setCfg={setCfg} patch={patch} zoneTheme={zoneTheme} st={st} />}
 
-        {tab === "narrator" && <NarratorTab cfg={cfg} patch={patch} narrator={narrator} setNarrator={setNarrator} />}
+      {tab === "narrator" && <NarratorTab cfg={cfg} patch={patch} narrator={narrator} setNarrator={setNarrator} />}
 
-        {tab === "saves" && (
-          <SavesTab cfg={cfg} patch={patch} dispatchCommand={dispatchCommand}
-            currentSnapshot={currentSnapshot} onLoadSnapshot={onLoadSnapshot}
-            slots={slots} setSlots={setSlots} slotLabel={slotLabel} setSlotLabel={setSlotLabel} />
-        )}
+      {tab === "saves" && (
+        <SavesTab cfg={cfg} patch={patch} dispatchCommand={dispatchCommand}
+          currentSnapshot={currentSnapshot} onLoadSnapshot={onLoadSnapshot}
+          slots={slots} setSlots={setSlots} slotLabel={slotLabel} setSlotLabel={setSlotLabel} />
+      )}
 
-        {tab === "other" && (
-          <OtherTab uiScale={uiScale} setUiScale={setUiScale} font={font} setFont={setFont} zoneTheme={zoneTheme} />
-        )}
+      {tab === "other" && (
+        <OtherTab uiScale={uiScale} setUiScale={setUiScale} font={font} setFont={setFont} zoneTheme={zoneTheme} />
+      )}
 
-      </div>
-    </div>
+    </ModalShell>
   );
 }

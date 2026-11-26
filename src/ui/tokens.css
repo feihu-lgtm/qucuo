@@ -707,6 +707,11 @@ div[style*="position: fixed"][style*="z-index"],
   font-size: var(--fs-sm);
 }
 
+.ui-modal-panel.settings-panel,
+.ui-modal-panel.music-panel {
+  font-size: var(--fs-md);
+}
+
 /* 建筑面板（screens/buildings/common.jsx 的 Overlay）：标题栏自带内边距，面板不再加。 */
 .ui-modal-panel.building-panel {
   padding: 0;
@@ -792,4 +797,11 @@ div[style*="position: fixed"][style*="z-index"],
   right: 16px;
   bottom: 16px;
   z-index: var(--z-screen);
+}
+
+/* 开场与创角是整屏页面，不是弹窗：原先就没有 z-index，这里也不给。 */
+.opening-sequence-root,
+.character-create-root {
+  position: fixed;
+  inset: 0;
 }
