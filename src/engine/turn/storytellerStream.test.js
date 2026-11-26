@@ -65,3 +65,29 @@ describe("storytellerStream 锚点剥离", () => {
     expect(out.anchors).toHaveLength(1);
   });
 });
+
+describe("V1 内部标记全量剥离", () => {
+  it("⟦F1_1⟧ 记账保留，⟦W8_1⟧ 与 ⟦OP·...⟧ 类非锚标记全量剥除不上屏", () => {
+    const stream = createStorytellerStream();
+    stream.push("他推门进去⟦W8_1⟧，看见柜上摆着刀⟦F1_1⟧⟦OP·PROGRESS_CULTIVATION·x⟧。");
+    const out = stream.finish();
+    expect(out.screenText).not.toContain("⟦");
+    expect(out.screenText).not.toContain("⟧");
+    expect(out.anchors).toEqual([{ id: "F1_1", paragraph: 0 }]);
+  });
+  it("⟦PROGRESS_CULTIVATION·...⟧ 长标记跨 chunk 拆分也剥干净不裸泄公屏", () => {
+    const stream = createStorytellerStream();
+    const mark = "⟦PROGRESS_CULTIVATION·凝气三层·突破在即⟧";
+    stream.push("夜色深了⟦PROGRESS_CULTIV");
+    stream.push("ATION·凝气三层·突破在即⟧，他合衣而卧。");
+    const out = stream.finish();
+    expect(out.screenText).toBe("夜色深了，他合衣而卧。");
+    expect(out.screenText).not.toContain(mark.slice(0, 8));
+  });
+  it("正常正文无标记时逐字不动", () => {
+    const stream = createStorytellerStream();
+    stream.push("雪落无声。「走吧。」他说。");
+    const out = stream.finish();
+    expect(out.screenText).toBe("雪落无声。「走吧。」他说。");
+  });
+});

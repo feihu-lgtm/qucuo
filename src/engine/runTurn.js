@@ -230,6 +230,16 @@ async function runTurnSteps(ctx, cmd, opts) {
       try { dealResult = JSON.parse(dealMatch[1].replace(/[\x00-\x1f]/g, " ").trim()); } catch {}
       rawFull = rawFull.replace(/<deal>[\s\S]*?<\/deal>/gi, "").trim();
     }
+    // V1：半句腰斩不留账——撞上限时先把正文裁回最近一个完整句尾（。！？…」），
+    // 半截句子不进 convo/落账/公屏；流式已上屏部分由警告行说明。
+    if (/length|max[_ ]?tokens|max[_ ]?output/i.test(mainFinishReason || "")) {
+      const beforeLen = rawFull.length;
+      const trimmed = rawFull.replace(/[^。！？!?.…」』")\n]{1,80}$/, "");
+      if (trimmed.length >= Math.floor(beforeLen * 0.5) && trimmed.length < beforeLen) {
+        rawFull = trimmed;
+        trace("截断检查", "pass", `半句裁尾：${beforeLen - trimmed.length} 字残句不落账`);
+      }
+    }
     narrativeText = rawFull;
     if (!apiCfg.streamEnabled) {
       const lines = rawFull.split("\n").map((line) => line.trim()).filter(Boolean);

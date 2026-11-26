@@ -68,6 +68,9 @@ const COMBAT_PATTERNS = [
 
 const TALK_PATTERNS = [
   /(聊聊|问问|说说|寒暄|打招呼|唠嗑)/,
+  // V1：句首呼语直连逗号（周掌柜，…/老孙，…）——对着人喊话本就是搭话，
+  // 不应因没有「问问/聊聊」字眼跌出免费通道。
+  /^(?:(?:老|小|阿)[\u4e00-\u9fa5]{1,2}|[\u4e00-\u9fa5]{1,3}(?:掌柜|师傅|师父|大哥|哥|姐|嫂|叔|伯|爷|婶|长老|掌门|大人|娘子|公子|姑娘|婆婆|头儿|老板))[，,]/,
 ];
 
 const EXPLORE_PATTERNS = [
@@ -109,6 +112,9 @@ export function isTradeInput(rawInput) {
   if (!input) return false;
   // 元问题排除：「价格是什么/什么叫交易」这类概念问答不是交易意向。
   if (/(是什么|什么意思|什么叫)/.test(input)) return false;
+  // V1：泛泛打听行情归 talk——「盐价稳当吗」「最近行市如何」是闲谈不是开铺交易；
+  // 仅明确看货色、买、卖、询单价开铺才归 trade。
+  if (/行市|行情|价(?:稳|如何|咋样|怎么样|贵贱|高低|涨|跌)/.test(input) && !/买|卖|交易|开价|多少钱|拿货看看|什么货|进货|出货/.test(input)) return false;
   return TRADE_RE.test(input.replace(TRADE_NOUN_RE, ""));
 }
 

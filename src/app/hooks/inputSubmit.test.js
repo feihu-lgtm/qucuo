@@ -32,3 +32,21 @@ describe("send button and Enter share one submit path", () => {
     expect(deps.act).not.toHaveBeenCalled();
   });
 });
+
+describe("V1 (( )) 私语前缀成对剥括号", () => {
+  it("((...)) 首尾括号成对剥除，尾括号不残留进私语正文", () => {
+    const { deps, handler } = make({ input: "((今晚月色真美))" });
+    handler.submit();
+    expect(deps.act).toHaveBeenCalledWith("今晚月色真美", [], { whisper: true });
+  });
+  it("（（...））全角括号同样成对剥除", () => {
+    const { deps, handler } = make({ input: "（（风停了））" });
+    handler.submit();
+    expect(deps.act).toHaveBeenCalledWith("风停了", [], { whisper: true });
+  });
+  it("只有前缀没有尾括号时照剥前缀不误伤正文", () => {
+    const { deps, handler } = make({ input: "((月色真美" });
+    handler.submit();
+    expect(deps.act).toHaveBeenCalledWith("月色真美", [], { whisper: true });
+  });
+});

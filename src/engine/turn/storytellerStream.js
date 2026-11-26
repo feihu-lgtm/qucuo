@@ -6,7 +6,9 @@
 const ANCHOR_RE = /⟦(F\d+_\d+)⟧/g;
 const SEAL_MARK = "\n---SEAL---";
 // 锚点/SEAL 标记可能跨 chunk 到达：尾部保留 HOLD 字不复查，防半截标记上屏。
-const HOLD = 16;
+// V1：⟦⟧ 内部标记最长 60 字内容+双括号，跨 chunk 半截标记至少需保留 62 字不复查，
+// 否则 ⟦PROGRESS_CULTIVATION·...⟧ 一类长标记会截半裸泄公屏。
+const HOLD = 64;
 
 export function createStorytellerStream({ onScreen } = {}) {
   let pending = "";        // 未终审的滑动缓冲
@@ -22,6 +24,9 @@ export function createStorytellerStream({ onScreen } = {}) {
   };
 
   // 剥锚点并记录段落；sealBefore=true 时这段已确定在 SEAL 之前。
+  // V1：F\d+_\d+ 抽取记账保留，其余全部 ⟦...⟧ 内部标记（⟦W8_1⟧/⟦PROGRESS_CULTIVATION·...⟧
+  // /⟦OP·...⟧ 等）在写入玩家可见正文前一并剥除，杜绝裸泄公屏。
+  const INNER_MARK_RE = /⟦[^⟧]{1,60}⟧/g;
   const stripAnchors = (text) => {
     let out = "";
     let last = 0;
@@ -34,7 +39,8 @@ export function createStorytellerStream({ onScreen } = {}) {
       last = m.index + m[0].length;
     }
     out += text.slice(last);
-    return out;
+    INNER_MARK_RE.lastIndex = 0;
+    return out.replace(INNER_MARK_RE, "");
   };
 
   // 把 pending 中可终审的部分推到屏幕/尾章。

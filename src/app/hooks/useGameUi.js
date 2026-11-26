@@ -265,7 +265,14 @@ export function createInputKeyHandler({
     if (capsule?.kind === "whisper") whisperText = input;
     else {
       for (const p of prefixes) {
-        if (input.startsWith(p)) { whisperText = input.slice(p.length); break; }
+        if (input.startsWith(p)) {
+          whisperText = input.slice(p.length);
+          // V1：(( / （（ 前缀私语成对剥除尾部 )) / ）），消除尾括号残留进私聊正文
+          if ((p === "((" && whisperText.trimEnd().endsWith("))")) || (p === "（（" && whisperText.trimEnd().endsWith("））"))) {
+            whisperText = whisperText.trimEnd().slice(0, -2);
+          }
+          break;
+        }
       }
     }
     if (whisperText != null) {

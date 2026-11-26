@@ -88,3 +88,25 @@ describe("WO-16F-F2c isTradeInput 交易意向不进免费纯搭话", () => {
   });
 
 });
+
+describe("V1 呼语不拆段与盐价归 talk", () => {
+  it("句首呼语（老孙，…/周掌柜，…）不拆成两段", () => {
+    expect(splitCompositeInput("老孙，雅江盐价可稳当")).toHaveLength(1);
+    expect(splitCompositeInput("周掌柜，最近行市如何")).toHaveLength(1);
+  });
+  it("在场 NPC 名呼语不拆段，「周掌柜，雅江盐价可稳当」走免费 talk", () => {
+    const npcs = [{ name: "周掌柜" }];
+    expect(splitCompositeInput("周掌柜，雅江盐价可稳当", { npcs })).toHaveLength(1);
+    expect(routeAutoInput("周掌柜，雅江盐价可稳当", npcs).kind).toBe("talk");
+  });
+  it("非呼语首段照常拆段——往东走，翻柜子 仍两段", () => {
+    expect(splitCompositeInput("往东走，翻柜子").length).toBe(2);
+  });
+  it("盐价稳当吗/最近行市如何 归 talk 不归 trade", async () => {
+    const { isTradeInput } = await import("../prompt/inputIntent.js");
+    expect(isTradeInput("盐价稳当吗")).toBe(false);
+    expect(isTradeInput("最近行市如何")).toBe(false);
+    expect(isTradeInput("有什么货色卖")).toBe(true);
+    expect(isTradeInput("买两斤盐")).toBe(true);
+  });
+});

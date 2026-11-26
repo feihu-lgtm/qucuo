@@ -9,18 +9,37 @@ const SEG_SPLIT_RE = /[，,。.！!？?；;、\n]+/;
 
 // 把一句输入按书写顺序切成子段：括号（…）/（...）各自成段，
 // 段间按中英文逗号/句号/感叹/问号/分号/顿号/换行断句。
-export function splitCompositeInput(raw) {
+// V1：句首呼语（周掌柜，…/老孙，…）不拆段——称呼是搭话对象标注不是独立动作段。
+// 两路识别：在场 NPC 名字直连逗号，或 老X/小X/阿X/名字+称谓后缀 词形。
+const VOCATIVE_SHAPE_RE = /^(?:(?:老|小|阿)[\u4e00-\u9fa5]{1,2}|[\u4e00-\u9fa5]{1,3}(?:掌柜|师傅|师父|大哥|哥|姐|嫂|叔|伯|爷|婶|长老|掌门|大人|娘子|公子|姑娘|婆婆|头儿|老板))[，,](?=\S)/;
+function stripVocativePrefix(text, npcs = []) {
+  for (const npc of npcs) {
+    if (!npc?.name) continue;
+    if (text.startsWith(npc.name) && /^[，,]/.test(text.slice(npc.name.length))) {
+      return text.slice(0, npc.name.length + 1);
+    }
+  }
+  const m = text.match(VOCATIVE_SHAPE_RE);
+  return m ? m[0] : "";
+}
+
+export function splitCompositeInput(raw, { npcs = [] } = {}) {
   const text = String(raw || "").trim();
   if (!text) return [];
+  // 呼语前缀先剥下，切完再拼回首段——「周掌柜，雅江盐价可稳当」仍是一整段
+  const vocative = stripVocativePrefix(text, npcs);
+  const body = vocative ? text.slice(vocative.length) : text;
   const segments = [];
   const push = (s) => { const t = s.trim(); if (t) segments.push(t); };
   let last = 0;
-  for (const m of text.matchAll(PAREN_RE)) {
-    for (const p of text.slice(last, m.index).split(SEG_SPLIT_RE)) push(p);
+  for (const m of body.matchAll(PAREN_RE)) {
+    for (const p of body.slice(last, m.index).split(SEG_SPLIT_RE)) push(p);
     push(m[1]);
     last = m.index + m[0].length;
   }
-  for (const p of text.slice(last).split(SEG_SPLIT_RE)) push(p);
+  for (const p of body.slice(last).split(SEG_SPLIT_RE)) push(p);
+  if (vocative && segments.length) segments[0] = vocative + segments[0];
+  else if (vocative) segments.push(vocative.replace(/[，,]$/, ""));
   return segments;
 }
 
@@ -62,7 +81,7 @@ export function routeAutoInput(raw, npcs = []) {
   if (lookedNpc) return { kind: "lookNpc", npc: lookedNpc };
   // 纯搭话才免费：必须整句一段、判为闲聊、且不是「送给/递给」这类
   // classifyIntent 为篇幅归进 TALK_CASUAL 的真行动。
-  if (splitCompositeInput(s).length === 1
+  if (splitCompositeInput(s, { npcs }).length === 1
     && classifyIntent(s).code === "TALK_CASUAL" && !isGiftInput(s) && !isTradeInput(s)) {
     return { kind: "talk" };
   }

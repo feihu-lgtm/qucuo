@@ -119,8 +119,8 @@ export function parseLocalCommand(text, state = {}, { surface = "web" } = {}) {
   if (normalized === "help" || normalized === "帮助") {
     if (surface === "web") {
       return localLines([
-        { t: "sys", text: "  ▸ 方向 n/s/e/w 移动 · look 查看 · 输入框上方可切换「◈行动 / ◎对话 / ◆私聊旁白」三种模式" },
-        { t: "sys", text: "  ▸ 对话模式：只跟房间里的人说话，不移动、不消耗回合；私聊旁白：直接找旁白聊天，同样不消耗回合" },
+        { t: "sys", text: "  ▸ 方向 n/s/e/w 移动 · look 查看 · 单框直接输入即行动或搭话" },
+        { t: "sys", text: "  ▸ 输入 @ 唤起选人或飞鸽，`//`、`(( ))` 前缀直发旁白私语，均不消耗回合" },
         { t: "sys", text: "  ▸ 完整玩法说明见右上角 ⚙ 设置 →「玩法说明」" },
       ]);
     }
@@ -141,7 +141,7 @@ export function parseLocalCommand(text, state = {}, { surface = "web" } = {}) {
       { t: "sys", text: "  学武 [武学名]  在当前武馆查看或学习武学" },
       { t: "sys", text: `  推进任务 唐1·暗巷来客 [暗查取证${surface === "cli" ? "/硬闯截货" : ""}]  推进唐门任务` },
       { t: "sys", text: "  practice <武功>  运功修炼" },
-      { t: "sys", text: "  ◈行动/◎对话/◆私聊旁白 三态切换：行动消耗回合，对话与私聊不消耗回合" },
+      { t: "sys", text: "  单框合一：直接输入即行动或搭话；@ 选人或飞鸽、`//`、`(( ))` 旁白私语不耗回合" },
       { t: "sys", text: "  对话模式下只能和房间里的人说话，不能移动或战斗" },
       { t: "sys", text: "  ⊙ 打坐：消耗1回合，恢复部分气血" },
       { t: "sys", text: "  hp/状态  i/背包  skills/武功" },
