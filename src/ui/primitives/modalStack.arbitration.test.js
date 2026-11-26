@@ -24,6 +24,15 @@ describe("U1-2 Review 修：卡片导入器参与弹窗栈键盘仲裁", () => {
     expect(src).toContain('"Escape"');
   });
 
+  it("Esc 联动内层浮层接线钉死：教程开着先关教程不关导入器", () => {
+    const src = readFileSync("src/ui/screens/CardImportScreen.jsx", "utf8");
+    expect(src).toContain("escInnerRef.current");
+    expect(src).toContain("showTutorial ? dismissTutorial : null");
+    // 处理器必须先试内层浮层再关导入器
+    const escBody = src.match(/const onKey = \(event\) => \{[\s\S]*?\n    \}/)?.[0] || "";
+    expect(escBody.indexOf("escInnerRef.current")).toBeLessThan(escBody.indexOf("onCloseRef.current?.()"));
+  });
+
   it("tokens.css：debug dock 层级在 screen-high 之下", () => {
     const css = readFileSync("src/ui/tokens.css", "utf8");
     // 两个同名块（动画定义+定位定义）——取带 z-index 的定位块

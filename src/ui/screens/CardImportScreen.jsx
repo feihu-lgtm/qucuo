@@ -46,11 +46,15 @@ export default function CardImportScreen({
   const [stackId] = useState(nextModalId);
   const onCloseRef = useRef(onClose);
   useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+  // Review 修（数据丢失）：内层浮层（入门教程）开着时 Esc 先关浮层不关导入器——
+  // 否则一键连浮层带草稿全灭。ref 在每次渲染后刷新，监听器无需重挂。
+  const escInnerRef = useRef(null);
   useEffect(() => {
     pushModal(stackId);
     const onKey = (event) => {
       if (event.key !== "Escape" || !isTopModal(stackId)) return;
       event.stopPropagation();
+      if (escInnerRef.current) { escInnerRef.current(); return; }
       onCloseRef.current?.();
     };
     window.addEventListener("keydown", onKey);
@@ -80,6 +84,8 @@ export default function CardImportScreen({
     try { localStorage.setItem(IMPORT_SELF_TUTORIAL_KEY, "1"); } catch { /* ignore */ }
     setShowTutorial(false);
   }, []);
+  // Esc 联动：教程浮层开着时第一层 Esc 只关教程（见顶部 escInnerRef 注释）。
+  useEffect(() => { escInnerRef.current = showTutorial ? dismissTutorial : null; });
 
   // 是否把这张卡当主角：只由入口(playerMode)决定，界面里不再让玩家临时勾。
   const asPlayer = playerMode;
