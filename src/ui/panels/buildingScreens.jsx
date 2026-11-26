@@ -6,6 +6,7 @@
 // 新建筑只需在本表登记一行。行为与原先逐分支一致（含 ESCORT.shopKey、
 // craft 现货/定制页签这类同类型多屏的分支）。
 import { BUILDING_TYPE } from "../../domain/data/buildings/qucuoBuildings.js";
+import { findNpcObject } from "../../domain/rules/npc/npcLookup.js";
 import { Suspense, lazy } from "react";
 import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
 import { buildShopInventory, rollShopStock } from "../../domain/data/shops/qucuoShops.js";
@@ -131,7 +132,7 @@ export const BUILDING_SCREENS = {
   [BUILDING_TYPE.TRANSPORT]: (c) => (
     <TransportScreen building={c.building} char={c.char} mapData={c.mapData} currentRoom={c.room.name} inline
       flags={c.flags} questProgress={c.questProgress}
-      inv={c.inv} metNpcs={c.varTree.世界?.曾经出现人物 || []} onBuyPigeon={c.buyPigeon} onSendLetter={c.handlePostSend} onClose={c.closeBuilding} onTravel={c.handleTravel} />
+      inv={c.inv} metNpcs={(c.varTree.世界?.曾经出现人物 || []).filter((n) => !findNpcObject({ room: c.room }, n).beast)} onBuyPigeon={c.buyPigeon} onSendLetter={c.handlePostSend} onClose={c.closeBuilding} onTravel={c.handleTravel} />
   ),
   [BUILDING_TYPE.RESTAURANT]: (c) => (
     <ServiceScreen building={c.building} char={c.char} time={c.time} flags={c.flags} inline onClose={c.closeBuilding} onOrder={c.handleServiceOrder}
