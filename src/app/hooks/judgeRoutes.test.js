@@ -398,6 +398,21 @@ describe("S7 move 路由：内层移动确定性结算", () => {
     }
   });
 
+  it("评审 blocker：路由移动不提前扣回合/不提前写 convo（commitRound 统一推进）", () => {
+    const prev = setupInnerRoom();
+    try {
+      gameStore.setState({ time: 6, convo: [] });
+      const timeBefore = gameStore.getState().time;
+      const convoLenBefore = (gameStore.getState().convo || []).length;
+      executeJudgeRoutes([mkMove("e", "去东边看看")]);
+      expect(gameStore.getState().innerRoomName).toBe("歇马居"); // 位移照结
+      expect(gameStore.getState().time).toBe(timeBefore); // 时间不提前 +1
+      expect((gameStore.getState().convo || []).length).toBe(convoLenBefore); // convo 不提前追加
+    } finally {
+      gameStore.setState({ innerRoomName: prev.innerRoomName, room: prev.room, convo: prev.convo, time: prev.time });
+    }
+  });
+
   it("direction none/无效：失败回执不得写成已移动", () => {
     setupInnerRoom();
     const { receipts } = executeJudgeRoutes([mkMove("none", "走走")]);

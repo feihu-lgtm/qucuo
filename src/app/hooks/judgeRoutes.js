@@ -23,14 +23,25 @@ function runMove(action) {
     return { kind: "move", ok: false, text: "移动方向不明——系统未结算，叙事不得写成已移动。" };
   }
   const state = gameStore.getState();
-  const result = innerMove(state, { direction: dir });
+  // includeCommand:false——不造「e」式伪用户输入日志；文字用玩家原话。
+  const result = innerMove(state, { direction: dir, command: action.text || dir, includeCommand: false });
+  // 评审 blocker 修：路由内层移动只是「本 AI 回合内的位置前置结算」——
+  // 本回合 commitRound 还会统一 setTime+1 并 append 主叙事 convo，
+  // innerMove 自造的 time+1/convo 不能提前落账（否则一次移动扣 2 回合、
+  // convo 多一条伪用户输入）。剥离 time/convo 键（clone 不改原对象），
+  // innerRoomName/varTree lastSeen/logs 等确定性结果保留。
+  const stripTurnSpan = (res) => {
+    if (!res?.changes) return res;
+    const { time: _t, convo: _c, ...restChanges } = res.changes;
+    return { ...res, changes: restChanges };
+  };
   if (result?.changes?.innerRoomName) {
-    applyResult(featureCtx(), result, { feature: "judgeRoute.move" });
+    applyResult(featureCtx(), stripTurnSpan(result), { feature: "judgeRoute.move" });
     return { kind: "move", ok: true, text: `你已进入${result.changes.innerRoomName}——系统已结算，叙事须照此写。` };
   }
   if (result?.logs?.length) {
     // 内层被挡（锁门/无去处）：日志照落（玩家要看见为什么走不通），但不构成位移
-    applyResult(featureCtx(), result, { feature: "judgeRoute.move" });
+    applyResult(featureCtx(), stripTurnSpan(result), { feature: "judgeRoute.move" });
     const why = result.logs.map((l) => l.text?.trim()).filter((t) => t && !t.startsWith(">")).pop();
     return { kind: "move", ok: false, text: `向${DIR_LABEL[dir]}走不通（${why || "此方向没有去处"}）——系统未结算移动，叙事不得写成已移动。` };
   }
