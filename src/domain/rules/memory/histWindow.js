@@ -62,6 +62,18 @@ export function buildHistBlock(convo, opts = {}) {
   const list = Array.isArray(convo) ? convo : [];
   if (!list.length) return "";
 
+  // V4 跨房知情隔离：条目带房间元数据（appendConvo 落条）且与当前房间不同时，
+  // 行首加「他处旧幕」标记——模型据此知道这是别处的旧场景，当前在场不知情者
+  // 严禁复述或默认知晓其中密谈细节。老存档条目无 room 键，不外推。
+  const curRoom = o.currentRoom || "";
+  const curInner = o.currentInner ?? null;
+  const roomTag = (entry) => {
+    if (!entry?.room || !curRoom) return "";
+    if (entry.room === curRoom && (entry.innerRoomName ?? null) === curInner) return "";
+    const label = entry.innerRoomName ? `${entry.room}·${entry.innerRoomName}` : entry.room;
+    return `[他处旧幕·${label}，当前在场者不知情] `;
+  };
+
   const recentCount = Math.max(0, o.recentPairs * 2);
   const recent = recentCount ? list.slice(-recentCount) : [];
   const older = recentCount ? list.slice(0, -recentCount) : list;
@@ -73,7 +85,7 @@ export function buildHistBlock(convo, opts = {}) {
     if (picked.length >= o.maxSummaries) break;
     const s = summarize(older[i]);
     if (!s) continue;
-    const line = `${label(older[i].role)} ${s}`;
+    const line = `${roomTag(older[i])}${label(older[i].role)} ${s}`;
     if (used + line.length > o.budgetChars) break;   // 超预算：更旧的一律不要
     picked.unshift(line);
     used += line.length;
@@ -87,7 +99,7 @@ export function buildHistBlock(convo, opts = {}) {
   if (recent.length) {
     if (parts.length) parts.push("");
     parts.push("[最近对话]（原文，接着往下写要照应它的语气与未完的话头）");
-    parts.push(recent.map(m => `${label(m.role)} ${String(m.content || "").slice(0, o.rawClip)}`).join("\n"));
+    parts.push(recent.map(m => `${roomTag(m)}${label(m.role)} ${String(m.content || "").slice(0, o.rawClip)}`).join("\n"));
   }
   return parts.join("\n");
 }

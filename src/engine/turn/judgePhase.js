@@ -228,6 +228,10 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
       }
       // 刷新现场：前置路由可能已位移/用物——judgeTurn 与条件裁决必须读新现场。
       const liveAfterRoutes = ctx.getGameState?.() || liveNow;
+      // Review 修：移动+翻箱复合指令的事件发生在目的地——把路由后房间传给 commitRound，
+      // memoryFact 的目击者池与房间作用域按目的地记账，不按出发地。
+      deps.postRouteRoom = liveAfterRoutes.room || null;
+      deps.postRouteInnerRoom = liveAfterRoutes.innerRoomName ?? null;
       if (preReceipts.some((r) => r.kind === "move")) {
         const newInner = liveAfterRoutes.innerRoomName ?? innerRoomNow;
         const newRoomName = liveAfterRoutes.room?.name || deps.room?.name || "";
@@ -246,7 +250,8 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
       judgeVerdict = judgeTurn({
         turn: timeNow, day: Math.floor(timeNow / 24) + 1, place: deps.room?.name || "",
         // V2 Review修：场所判定用前置路由刷新后的现场——移动回合后破费不在旧房间误判。
-        roomName: liveAfterRoutes?.room?.name || deps.room?.name || "", innerRoomName: liveAfterRoutes?.innerRoomName || "",
+        roomName: liveAfterRoutes?.room?.name || deps.room?.name || "",
+        innerRoomName: innerRoomNow ?? liveAfterRoutes?.innerRoomName ?? null,
         // S7 送银桥：玩家原文是金额唯一可信来源（ground truth）——
         // action.text 是模型复述不可信（Review 实证可编数），判官绝不从模型输出取钱数。
         playerInput: cmd,
@@ -298,6 +303,7 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
       deps.derivedRespondedNpcs = [...new Set(derivedTalk)];
       // W-ROAM 驻足锁数据源：本轮听意单全部具名对象（不只 talk——送礼/求教/赔罪
       // 都算「找过他」），commitRound 据此刻在场写 驻足锁[name]=time+10。
+      deps.intakeRefIds = Array.isArray(intakeResult.refIds) ? intakeResult.refIds : [];
       deps.intakeTargets = [...new Set((intakeResult.actions || [])
         .map((a) => a?.target)
         .filter((t) => typeof t === "string" && t && t !== "无"))];

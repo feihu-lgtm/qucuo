@@ -48,6 +48,9 @@ export function registerFact(varTree, fact, currentTurn) {
     忘却回合数: fact.忘却回合数 ?? KNOWLEDGE_PARAMS.传闻默认忘却回合,
     标签: fact.标签 || "",
     诞生回合: currentTurn,
+    // V4 跨房知情隔离：事实诞生时的房间作用域（据点+内层房），
+    // 供判官把「他处密谈」自动归进非目击者的 unknownRefIds。老事实无此键不外推。
+    ...(fact.房间 ? { 房间: fact.房间 } : {}),
     知晓者,
   };
   return writeRoot(varTree, 领域);
