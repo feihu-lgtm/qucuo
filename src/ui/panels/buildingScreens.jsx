@@ -48,8 +48,7 @@ function shopWithCraftScreen(c, shopData, trading) {
       {c.craftTab === "shop" ? trading : (c.isJade
         ? <JadeShopScreen building={{ ...c.building, flags: c.flags }} char={c.char} inv={c.inv} time={c.time} inline
             zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onDesign={c.handleJadeDesign} onCraft={c.handleJadeCraft} />
-        : <ForgeScreen building={c.building} char={c.char} time={c.time} flags={c.flags} inline
-            zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onCommission={c.handleForgeCommission} onDesign={c.handleForgeDesign} />)}
+        : <ForgeScreen building={c.building} char={c.char} time={c.time} flags={c.flags} inline onClose={c.closeBuilding} onCommission={c.handleForgeCommission} onDesign={c.handleForgeDesign} />)}
     </>
   );
 }
@@ -84,7 +83,7 @@ function escortScreen(c) {
   if (!c.building.shopKey) {
     return (
       <EscortScreen building={c.building} char={c.char} flags={c.flags} questProgress={c.questProgress}
-        currentRoom={c.room.name} zoneTheme={c.zoneTheme} inline onClose={c.closeBuilding}
+        currentRoom={c.room.name} inline onClose={c.closeBuilding}
         time={c.time} onAcceptEscort={c.handleAcceptEscort} />
     );
   }
@@ -92,7 +91,7 @@ function escortScreen(c) {
   // 镖局都有 shopKey（卖防身器）：镖单嵌进交易屏的 footer 槽，外层堆叠在移动端会被 fixed 全屏商店盖住。
   const escortBoard = (
     <EscortScreen building={c.building} char={c.char} flags={c.flags} questProgress={c.questProgress}
-      currentRoom={c.room.name} zoneTheme={c.zoneTheme} inline onClose={c.closeBuilding}
+      currentRoom={c.room.name} inline onClose={c.closeBuilding}
       time={c.time} onAcceptEscort={c.handleAcceptEscort} />
   );
   return shopData ? (
@@ -107,7 +106,7 @@ function escortScreen(c) {
 
 function innScreen(c) {
   return (
-    <InnScreen building={c.building} char={c.char} skills={c.skills} time={c.time} varTree={c.varTree} flags={c.flags} zoneTheme={c.zoneTheme} inline
+    <InnScreen building={c.building} char={c.char} skills={c.skills} time={c.time} varTree={c.varTree} flags={c.flags} inline
       onClose={c.closeBuilding} onRest={c.handleBuildingInn} onHeal={c.handleBuildingHeal} onClinic={c.handleClinicService} />
   );
 }
@@ -126,8 +125,7 @@ export const BUILDING_SCREENS = {
       onClose={c.closeBuilding} onBuySkill={c.handleBuySkill} />
   ),
   [BUILDING_TYPE.GAMBLING]: (c) => (
-    <GamblingScreen building={c.building} char={c.char} flags={c.flags} time={c.time} inline
-      zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onGamble={c.handleGamble} />
+    <GamblingScreen building={c.building} char={c.char} flags={c.flags} time={c.time} inline onClose={c.closeBuilding} onGamble={c.handleGamble} />
   ),
   [BUILDING_TYPE.PIGEON_COOP]: (c) => (
     <PigeonCoopScreen building={c.building} char={c.char} flags={c.flags} time={c.time} inline
@@ -158,20 +156,17 @@ export const BUILDING_SCREENS = {
       onClose={c.closeBuilding} onReadBook={c.handleReadBook} onBuyBook={c.handleBuyBook} onChaojing={c.handleChaojing} />
   ),
   [BUILDING_TYPE.BANK]: (c) => (
-    <BankScreen building={c.building} char={c.char} time={c.time} deposit={c.deposit} depositedAt={c.depositedAt} inline
-      zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onDeposit={c.handleDeposit} onWithdraw={c.handleWithdraw} />
+    <BankScreen building={c.building} char={c.char} time={c.time} deposit={c.deposit} depositedAt={c.depositedAt} inline onClose={c.closeBuilding} onDeposit={c.handleDeposit} onWithdraw={c.handleWithdraw} />
   ),
   [BUILDING_TYPE.PAWN]: (c) => (
     <PawnScreen building={c.building} char={c.char} inv={c.inv} pledgedItems={c.pledgedItems} inline
       zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onPledge={c.handlePledge} onRedeem={c.handleRedeem} />
   ),
   [BUILDING_TYPE.BOUNTY]: (c) => (
-    <BountyScreen building={c.building} flags={c.flags} questProgress={c.questProgress} inline
-      zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onAcceptBounty={c.handleAcceptBounty} onClaimBounty={c.handleClaimBounty} />
+    <BountyScreen building={c.building} flags={c.flags} questProgress={c.questProgress} inline onClose={c.closeBuilding} onAcceptBounty={c.handleAcceptBounty} onClaimBounty={c.handleClaimBounty} />
   ),
   [BUILDING_TYPE.FORGE]: (c) => (
-    <ForgeScreen building={c.building} char={c.char} time={c.time} flags={c.flags} inline
-      zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onCommission={c.handleForgeCommission} onDesign={c.handleForgeDesign} />
+    <ForgeScreen building={c.building} char={c.char} time={c.time} flags={c.flags} inline onClose={c.closeBuilding} onCommission={c.handleForgeCommission} onDesign={c.handleForgeDesign} />
   ),
   [BUILDING_TYPE.JEWELRY]: (c) => (
     <JadeShopScreen building={{ ...c.building, flags: c.flags }} char={c.char} inv={c.inv} time={c.time} inline
@@ -194,8 +189,7 @@ export const BUILDING_SCREENS = {
       zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onJoinSect={c.handleJoinSect} onLeaveSect={c.handleLeaveSect} />
   ),
   [BUILDING_TYPE.AUCTION]: (c) => (
-    <AuctionScreen building={c.building} char={c.char} inv={c.inv} inline
-      zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onWin={c.handleAuctionWin} />
+    <AuctionScreen building={c.building} char={c.char} inv={c.inv} inline onClose={c.closeBuilding} onWin={c.handleAuctionWin} />
   ),
   [BUILDING_TYPE.KITCHEN]: (c) => (
     <CookingScreen building={c.building} char={c.char} inv={c.inv} inline onClose={c.closeBuilding} onCook={c.handleCook} />

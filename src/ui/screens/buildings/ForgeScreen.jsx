@@ -8,7 +8,7 @@ import { Overlay, Header, Btn } from "./common.jsx";
 const QUAL_COLOR = { 白: "var(--ink-text)", 绿: "var(--ink-leaf)", 蓝: "var(--ink-sky)", 紫: "var(--violet)", 橙: "var(--ink-amber)", 红: "var(--ink-rose)" };
 const CAT_CN = { weapon: "武器", armor: "护甲", accessory: "饰品" };
 
-export default function ForgeScreen({ building, char, time, flags, zoneTheme, onClose, inline, onCommission, onDesign }) {
+export default function ForgeScreen({ building, char, time, flags, onClose, inline, onCommission, onDesign }) {
   const [material, setMaterial] = useState("");
   const [category, setCategory] = useState("");
   const [requirement, setRequirement] = useState("");
@@ -26,7 +26,7 @@ export default function ForgeScreen({ building, char, time, flags, zoneTheme, on
   const qualities = ["白", "绿", "蓝", "紫", "橙"];
   const previewQuality = qualities[Math.min(qualities.length - 1, Math.floor(luck / 2.5))];
 
-  const inputStyle = { width: "100%", marginTop: 4, marginBottom: 10, background: "var(--bg-ink)", border: `1px solid ${zoneTheme.border}`, borderRadius: 0, color: "var(--ink-text)", fontSize: "var(--fs-sm)", padding: "5px 8px", boxSizing: "border-box" };
+  const inputStyle = { width: "100%", marginTop: 4, marginBottom: 10, background: "var(--bg-ink)", border: `1px solid var(--border)`, borderRadius: 0, color: "var(--ink-text)", fontSize: "var(--fs-sm)", padding: "5px 8px", boxSizing: "border-box" };
 
   async function doDesign() {
     if (designing) return;
@@ -98,7 +98,7 @@ export default function ForgeScreen({ building, char, time, flags, zoneTheme, on
             {candidates.map((c, i) => {
               const eff = effectBrief(c.effect, c.sixDim);
               return (
-                <div key={i} style={{ marginBottom: 10, padding: "10px 12px", background: "var(--ink-coffee)", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
+                <div key={i} style={{ marginBottom: 10, padding: "10px 12px", background: "var(--ink-coffee)", borderRadius: 0, border: `1px solid var(--border)` }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                     <span style={{ color: "var(--ink-cream-dim)", fontSize: "var(--fs-md)", fontWeight: "bold" }}>{c.name}</span>
                     <span style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-2xs)" }}>{CAT_CN[c.category] || "武器"}</span>

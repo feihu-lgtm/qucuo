@@ -3,7 +3,7 @@ import { makeItem, ITEM_CATEGORY, rollQuality } from "../../../domain/rules/econ
 import { Overlay, Header, Btn } from "./common.jsx";
 
 // 赌坊：每日一次，押注银两，按气运值决定输赢；或固定押100两抽物品
-export default function GamblingScreen({ building, char, flags, time, zoneTheme, onClose, inline, onGamble }) {
+export default function GamblingScreen({ building, char, flags, time, onClose, inline, onGamble }) {
   const [mode, setMode] = useState("money"); // "money" | "item"
   const [bet, setBet] = useState(50);
   const money = char.money || 0;
@@ -35,12 +35,12 @@ export default function GamblingScreen({ building, char, flags, time, zoneTheme,
           <div style={{ color: "var(--red-soft)", marginBottom: 12, fontSize: "var(--fs-sm)" }}>今日已赌过，明日再来。</div>
         )}
 
-        <div style={{ display: "flex", gap: 0, marginBottom: 12, borderBottom: `1px solid ${zoneTheme.border}` }}>
+        <div style={{ display: "flex", gap: 0, marginBottom: 12, borderBottom: `1px solid var(--border)` }}>
           {[["money", "赌银两"], ["item", "抽物品（100两）"]].map(([id, label]) => (
             <span key={id} onClick={() => setMode(id)}
               style={{ padding: "6px 14px", fontSize: "var(--fs-xs)", cursor: "pointer", userSelect: "none",
-                color: mode === id ? zoneTheme.accent : zoneTheme.accentDim,
-                borderBottom: mode === id ? `2px solid ${zoneTheme.accent}` : "2px solid transparent" }}
+                color: mode === id ? "var(--accent)" : "var(--accent-dim)",
+                borderBottom: mode === id ? `2px solid var(--accent)` : "2px solid transparent" }}
             >{label}</span>
           ))}
         </div>
@@ -55,7 +55,7 @@ export default function GamblingScreen({ building, char, flags, time, zoneTheme,
               <input
                 type="number" value={bet} min={10} max={Math.min(maxBet, money)}
                 onChange={e => setBet(Math.max(10, Math.min(Number(e.target.value), maxBet, money)))}
-                style={{ width: 80, background: "var(--bg-ink)", border: `1px solid ${zoneTheme.border}`, borderRadius: 0, color: "var(--ink-text)", fontSize: "var(--fs-sm)", padding: "3px 6px" }}
+                style={{ width: 80, background: "var(--bg-ink)", border: `1px solid var(--border)`, borderRadius: 0, color: "var(--ink-text)", fontSize: "var(--fs-sm)", padding: "3px 6px" }}
               />
               <span style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)" }}>两（最多 {maxBet}）</span>
             </div>

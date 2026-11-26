@@ -3,7 +3,7 @@ import { Overlay, Header, Btn } from "./common.jsx";
 import { withdrawalSummary } from "../../../features/bank/logic.js";
 
 // 钱庄：存取银两，每24时间单位生息2%
-export default function BankScreen({ building, char, time, deposit, depositedAt, zoneTheme, onClose, inline, onDeposit, onWithdraw }) {
+export default function BankScreen({ building, char, time, deposit, depositedAt, onClose, inline, onDeposit, onWithdraw }) {
   const [amount, setAmount] = useState(0);
   const [mode, setMode] = useState("deposit");
   const money = char.money || 0;
@@ -18,12 +18,12 @@ export default function BankScreen({ building, char, time, deposit, depositedAt,
           银两 {money} 两 · 存款 {deposit} 两 · 利息 +{interest} 两（存入以来过了 {elapsed} 天，利率2%/天）
         </div>
 
-        <div style={{ display: "flex", gap: 0, marginBottom: 12, borderBottom: `1px solid ${zoneTheme.border}` }}>
+        <div style={{ display: "flex", gap: 0, marginBottom: 12, borderBottom: `1px solid var(--border)` }}>
           {[["deposit", "存款"], ["withdraw", "取款"]].map(([id, label]) => (
             <span key={id} onClick={() => setMode(id)}
               style={{ padding: "6px 14px", fontSize: "var(--fs-xs)", cursor: "pointer", userSelect: "none",
-                color: mode === id ? zoneTheme.accent : zoneTheme.accentDim,
-                borderBottom: mode === id ? `2px solid ${zoneTheme.accent}` : "2px solid transparent" }}
+                color: mode === id ? "var(--accent)" : "var(--accent-dim)",
+                borderBottom: mode === id ? `2px solid var(--accent)` : "2px solid transparent" }}
             >{label}</span>
           ))}
         </div>
@@ -34,7 +34,7 @@ export default function BankScreen({ building, char, time, deposit, depositedAt,
               <span style={{ color: "var(--ink-text)", fontSize: "var(--fs-sm)" }}>存入：</span>
               <input type="number" value={amount} min={1} max={money}
                 onChange={e => setAmount(Math.max(0, Math.min(Number(e.target.value), money)))}
-                style={{ width: 80, background: "var(--bg-ink)", border: `1px solid ${zoneTheme.border}`, borderRadius: 0, color: "var(--ink-text)", fontSize: "var(--fs-sm)", padding: "3px 6px" }}
+                style={{ width: 80, background: "var(--bg-ink)", border: `1px solid var(--border)`, borderRadius: 0, color: "var(--ink-text)", fontSize: "var(--fs-sm)", padding: "3px 6px" }}
               />
               <span style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)" }}>两</span>
             </div>

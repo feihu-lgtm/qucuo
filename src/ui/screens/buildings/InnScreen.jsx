@@ -5,7 +5,7 @@ import { clinicCare, clinicDoneToday, clinicOf } from "../../../features/buildin
 
 // 客栈：花银两住宿，气血回满，时间推进24单位（一天）
 // 医馆（type=hospital）：按 healPerLiang 换算回血，回到含内功被动的有效气血上限
-export default function InnScreen({ building, char, skills, time, varTree, flags, zoneTheme, onClose, onRest, onHeal, onClinic, inline }) {
+export default function InnScreen({ building, char, skills, time, varTree, flags, onClose, onRest, onHeal, onClinic, inline }) {
   const [choice, setChoice] = useState(null); // null | "普通" | "上等"
 
   const isHospital = building.type === "hospital";
@@ -27,7 +27,7 @@ export default function InnScreen({ building, char, skills, time, varTree, flags
       <Overlay onClose={onClose} inline={inline}>
         <Header name={building.name} onClose={onClose} />
         <div style={{ padding: 16 }}>
-          <p style={{ color: zoneTheme.text, marginBottom: 12, fontSize: "var(--fs-md)" }}>{building.desc}</p>
+          <p style={{ color: "var(--text)", marginBottom: 12, fontSize: "var(--fs-md)" }}>{building.desc}</p>
           <div style={{ color: "var(--ink-text-dim)", marginBottom: 12 }}>
             气血 {hp}/{maxHp} · 银两 {money} 两 · 每两回 {healPerLiang} 点气血
           </div>
@@ -55,7 +55,7 @@ export default function InnScreen({ building, char, skills, time, varTree, flags
     <Overlay onClose={onClose} inline={inline}>
       <Header name={building.name} onClose={onClose} />
       <div style={{ padding: 16 }}>
-        <p style={{ color: zoneTheme.text, marginBottom: 12, fontSize: "var(--fs-md)" }}>{building.desc}</p>
+        <p style={{ color: "var(--text)", marginBottom: 12, fontSize: "var(--fs-md)" }}>{building.desc}</p>
         <div style={{ color: "var(--ink-text-dim)", marginBottom: 16 }}>
           气血 {hp}/{maxHp} · 银两 {money} 两
         </div>

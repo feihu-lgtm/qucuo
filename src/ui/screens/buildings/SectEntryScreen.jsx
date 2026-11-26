@@ -11,8 +11,7 @@ import { factionRepOf } from "../../../domain/rules/economy/factionRep.js";
 export default function SectEntryScreen({ building, char, narratorAffection, flags, varTree, questProgress, zoneTheme, onClose, inline, onJoinSect, onLeaveSect }) {
   const entry = FACTION_ENTRIES[building?.sect];
   if (entry) {
-    return <FactionEntryScreen entry={entry} building={building} char={char} flags={flags} varTree={varTree} questProgress={questProgress} inline
-      zoneTheme={zoneTheme} onClose={onClose} onJoinSect={onJoinSect} onLeaveSect={onLeaveSect} />;
+    return <FactionEntryScreen entry={entry} building={building} char={char} flags={flags} varTree={varTree} questProgress={questProgress} inline onClose={onClose} onJoinSect={onJoinSect} onLeaveSect={onLeaveSect} />;
   }
   const status = checkSectEntry({
     affection: narratorAffection,
@@ -37,7 +36,7 @@ export default function SectEntryScreen({ building, char, narratorAffection, fla
             <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-sm)" }}>
               内堂之后的弟子别院已对你开放。令牌随身收好，那也是别院的钥匙。
             </div>
-            <LeaveSectButton sect={SECT_ENTRY.sect} onLeaveSect={onLeaveSect} zoneTheme={zoneTheme} />
+            <LeaveSectButton sect={SECT_ENTRY.sect} onLeaveSect={onLeaveSect} />
           </>
         ) : (
           <>

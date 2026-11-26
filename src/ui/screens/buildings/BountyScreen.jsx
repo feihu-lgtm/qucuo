@@ -5,7 +5,7 @@ export { BOUNTY_QUESTS } from "../../../domain/data/quests/bountyQuests.js";
 
 // 悬赏任务列表：官府发布的通缉/清剿任务
 // 完成条件通过 flags 判断（击败目标时由 DuelScreen 写入）
-export default function BountyScreen({ building, flags, questProgress, zoneTheme, onClose, inline, onAcceptBounty, onClaimBounty }) {
+export default function BountyScreen({ building, flags, questProgress, onClose, inline, onAcceptBounty, onClaimBounty }) {
   const available = BOUNTY_QUESTS.filter(q => !flags.includes(`quest_done_${q.id}`) && !questProgress[q.id]?.active);
   const active = BOUNTY_QUESTS.filter(q => questProgress[q.id]?.active);
   const claimable = active.filter(q => {
@@ -45,11 +45,11 @@ export default function BountyScreen({ building, flags, questProgress, zoneTheme
           );
         })}
 
-        <div style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-xs)", marginBottom: 8 }}>
+        <div style={{ color: "var(--accent-dim)", fontSize: "var(--fs-xs)", marginBottom: 8 }}>
           可接任务（{available.length}）：
         </div>
         {available.map(q => (
-          <div key={q.id} style={{ marginBottom: 10, padding: "10px 12px", background: "var(--bg-ink)", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
+          <div key={q.id} style={{ marginBottom: 10, padding: "10px 12px", background: "var(--bg-ink)", borderRadius: 0, border: `1px solid var(--border)` }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
               <span style={{ color: "var(--ink-text)", fontSize: "var(--fs-md)" }}>{q.title}</span>
               <span style={{ color: "var(--ink-fern)", fontSize: "var(--fs-sm)" }}>{q.reward} 两 +{q.karmaBonus}功德</span>
