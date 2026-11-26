@@ -66,7 +66,17 @@ export function classifyUseItem(state, itemObjOrName) {
   const shielded = item.noCatalog;
   const consumable = item.consumable || (shielded ? null : CATALOG_INDEX[itemNameOf(item)]?.consumable);
   if (consumable) return "consumable";
-  if (["weapon", "armor", "accessory"].includes(item.category)) return "wield";
+  // Review 修：accessory 里混着凭帖信物（赌石邀帖/私印等纸面物）——它们不带任何
+  // 数值加持（sixDim/effect/atk/def 皆无），不是拿来穿戴佩挂的装备，走出示而非演练。
+  // 真饰品（旧护身符/虎乳牙/红线等带 sixDim 或 effect）仍为 wield。
+  if (item.category === "weapon" || item.category === "armor") return "wield";
+  if (item.category === "accessory") {
+    const hasBonus = !!(item.sixDim && Object.keys(item.sixDim).length)
+      || !!(item.effect && Object.keys(item.effect).length)
+      || Number.isFinite(item.atk) || Number.isFinite(item.def)
+      || !!(item.sixDimTemp && Object.keys(item.sixDimTemp).length);
+    return hasBonus ? "wield" : "present";
+  }
   return "present";
 }
 

@@ -242,6 +242,15 @@ describe("WO-16F-F2a 判官路由集成", () => {
     gameActions.setInv([]);
   });
 
+  it("D1 Review 修：accessory 邀帖（无数值加持）出示而非演练", async () => {
+    gameActions.setInv([{ id: "starter_letter", name: "赌石邀帖", category: "accessory", quality: "白", equipped: true, durability: 25 }]);
+    const out = executeJudgeRoutes([{ kind: "use_item", item: "赌石邀帖", itemId: "starter_letter", target: "无", text: "亮出赌石邀帖说明来意" }]);
+    expect(out.receipts[0].ok).toBe(true);
+    expect(out.receipts[0].text).toContain("当场出示或查验");
+    expect(out.receipts[0].text).not.toContain("端详");
+    gameActions.setInv([]);
+  });
+
   it("D1：凭帖钥匙杂物出示零状态改动", async () => {
     gameActions.setInv([{ id: "it_let", name: "赌石邀帖", category: "misc" }]);
     const invBefore = JSON.stringify(gameStore.getState().inv);
@@ -268,7 +277,9 @@ describe("WO-16F-F2a 判官路由集成", () => {
     expect(classifyUseItem(state, { name: "青稞酒", consumable: { hpDelta: 1 } })).toBe("consumable");
     expect(classifyUseItem(state, { name: "鱼定枪", category: "weapon" })).toBe("wield");
     expect(classifyUseItem(state, { name: "铁护甲", category: "armor" })).toBe("wield");
-    expect(classifyUseItem(state, { name: "玉佩", category: "accessory" })).toBe("wield");
+    expect(classifyUseItem(state, { name: "玉佩", category: "accessory", sixDim: { 魅力: 1 } })).toBe("wield");
+    // Review 修：accessory 纸面凭帖无数值加持走出示（赌石邀帖 starter）
+    expect(classifyUseItem(state, { name: "赌石邀帖", category: "accessory", quality: "白", equipped: true, durability: 25 })).toBe("present");
     expect(classifyUseItem(state, { name: "赌石邀帖", category: "misc" })).toBe("present");
     expect(classifyUseItem(state, { name: "溪边小屋钥匙", category: "misc" })).toBe("present");
     // noCatalog 盾：撞图鉴名也不吃图鉴药效
