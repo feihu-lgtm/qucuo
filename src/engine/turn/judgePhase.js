@@ -294,21 +294,16 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
         return true;
       });
       const condReceipts = [];
+      // Review 修：裁决结果以 judgeTurn 的 conditionResults 为准——它在主循环内按
+      // 动作序评估（被拒信号只反映该动作位置之前的拒收），且 notes 已在循环内写过，
+      // 此处绝不重估（终态 lastActionOutcome 会被更晚的拒收污染）也不重写批注。
+      const condResultOf = (a) => (judgeVerdict?.conditionResults || []).find((r) => r.action === a);
       for (const a of condRoutes) {
-        const verdict0 = evaluateActionCondition(a, {
-          encounter: ctx.encounter || deps.encounter || null,
-          moved: preMoved || !!systemMoveTurn,
-          roomName: liveAfterRoutes.room?.name || deps.room?.name || "",
-          innerRoomName: innerRoomNow ?? null,
-          visibleNpcs,
-          lastActionOutcome: judgeVerdict?.lastActionOutcome || { rejected: false },
-        });
+        const verdict0 = condResultOf(a) || { met: false, reason: "前提未经判官裁决" };
         if (!verdict0.met) {
-          judgeVerdict.notes.push(conditionUnmetNote(a, verdict0.reason));
           trace("判官管线", "skip", `条件未成立不路由：${a.kind}（${a.condition}，${verdict0.reason}）`);
           continue;
         }
-        judgeVerdict.notes.push(conditionMetNote(a));
         if (typeof ctx.executeJudgeRoutes === "function") {
           try {
             const outcome = ctx.executeJudgeRoutes([a]) || null;
@@ -322,21 +317,13 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
       const deferredCandidatesPre = (intakeResult.actions || []).filter((a) => DEFERRED_INTENT_KINDS.has(a?.kind));
       const deferredConditioned = deferredCandidatesPre.filter((a) => a?.condition && a.condition !== "无");
       const deferredCondPassed = [];
+      const condResultOfDef = (a) => (judgeVerdict?.conditionResults || []).find((r) => r.action === a);
       for (const a of deferredConditioned) {
-        const verdict0 = evaluateActionCondition(a, {
-          encounter: ctx.encounter || deps.encounter || null,
-          moved: preMoved || !!systemMoveTurn,
-          roomName: liveAfterRoutes.room?.name || deps.room?.name || "",
-          innerRoomName: innerRoomNow ?? null,
-          visibleNpcs,
-          lastActionOutcome: judgeVerdict?.lastActionOutcome || { rejected: false },
-        });
+        const verdict0 = condResultOfDef(a) || { met: false, reason: "前提未经判官裁决" };
         if (!verdict0.met) {
-          judgeVerdict.notes.push(conditionUnmetNote(a, verdict0.reason));
           trace("判官管线", "skip", `条件未成立不收集意向：${a.kind}（${a.condition}，${verdict0.reason}）`);
           continue;
         }
-        judgeVerdict.notes.push(conditionMetNote(a));
         deferredCondPassed.push({ ...a, condition: "无", condition_text: "" });
       }
       // WO-16H-H1：判官铁律块换 roadmap d.judgeRuleBlock 正文——锚点/分寸/条件券/

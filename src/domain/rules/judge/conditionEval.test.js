@@ -48,6 +48,19 @@ describe("D3 evaluateActionCondition 四类口径", () => {
     expect(vague.met).toBe(false);
     expect(vague.reason).toContain("无法确证");
   });
+  it("Review 修：复合连词前提保守不成立（「没人而且天黑」天亮不可放行）", () => {
+    const r = evaluateActionCondition(act("其他", "要是没人而且已经天黑"), { ...base, visibleNpcs: [] });
+    expect(r.met).toBe(false);
+    expect(r.reason).toContain("无法确证");
+  });
+  it("Review 修：「不是独处」不按独处命中（语义相反）", () => {
+    // 有人时「不是独处」属实→成立；无人时不属实→不成立；绝不能反着来
+    expect(evaluateActionCondition(act("其他", "不是独处"), base).met).toBe(true);
+    expect(evaluateActionCondition(act("其他", "不是独处"), { ...base, visibleNpcs: [] }).met).toBe(false);
+    // 肯定式独处仍按原口径
+    expect(evaluateActionCondition(act("其他", "趁独处"), { ...base, visibleNpcs: [] }).met).toBe(true);
+    expect(evaluateActionCondition(act("其他", "趁独处"), base).met).toBe(false);
+  });
   it("未知条件类型保守不成立", () => {
     expect(evaluateActionCondition(act("天黑"), base).met).toBe(false);
   });

@@ -46,7 +46,19 @@ export function evaluateActionCondition(action, ctx = {}) {
   if (cond === "其他") {
     const text = String(action?.condition_text || "");
     const npcCount = (ctx.visibleNpcs || []).length;
-    if (/没人|无人|四下无人|独处/.test(text)) {
+    // Review 修：复合连词（而且/并且/同时/还要）意味着前提不止一截——
+    // 可核验的一截成立不代表整句成立（「要是没人而且已经天黑」天亮时也绝不可放行），
+    // 无法逐截确证一律保守不成立。
+    if (/而且|并且|同时|还要/.test(text)) {
+      return { met: false, reason: "前提无法确证，按未成立处理" };
+    }
+    // Review 修：「不（是）独处」是否定式——语义为「有人在旁」，先独立核验，
+    // 绝不能落进下面的肯定式独处分支（语义恰好相反）。
+    if (/不是独处|不独处/.test(text)) {
+      if (npcCount > 0) return { met: true };
+      return { met: false, reason: "场上并无旁人" };
+    }
+    if (/没人|无人|四下无人/.test(text) || /独处/.test(text)) {
       if (npcCount === 0) return { met: true };
       return { met: false, reason: "场上并非无人" };
     }
