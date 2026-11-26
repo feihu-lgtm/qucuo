@@ -176,7 +176,11 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
         // 不再是主模型直传——#451 审查指出的前哨模型口径在此钉住。buildExtractionCfg 自带关思考。
         const intakeRes = await withAI("turn.intake", { userContent: intakeContent, cfg: buildExtractionCfg("INTAKE", deps.apiCfg) }, { ai, apiCfg: deps.apiCfg, throwOnError: false, epoch: String(ctx.proseEpoch ?? "default") });
         if (ctx.isStale?.()) return { stale: true };
-        intakeResult = normalizeIntakeResult(intakeRes?.data);
+        // D7 Review 修：严格 schema 校验失败（宽容中转缺 useKind 等缺省键）但正文可解析时，
+        // 回落 normalize 修复链补默认值——整张听意单不因一个可补缺省键全废。
+        let intakeRaw = intakeRes?.data;
+        if (!intakeRaw && intakeRes?.text) { try { intakeRaw = JSON.parse(intakeRes.text); } catch { /* 落 degraded */ } }
+        intakeResult = normalizeIntakeResult(intakeRaw);
         // S2/S2-review 补洞：模型听意 target 填「无」时与本地合成同一回填口径——
         // 显式点选优先；未点选但单人在场也落到这位唯一在场者，多人仍保持「无」。
         const soleTalkTarget = deps.talkTarget || (visibleNpcs.length === 1 ? visibleNpcs[0]?.name || "" : "");
