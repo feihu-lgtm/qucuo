@@ -330,8 +330,12 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
         // （多对象边缘，宁可不签也不错账）。
         if (intimacyGateInfoOut.info) {
           const gateName = intimacyGateInfoOut.info.npc;
-          for (const a of intakeResult?.actions || []) {
-            if (a?.intimate === true && a.target !== gateName
+          const intimateActs = (intakeResult?.actions || []).filter((a) => a?.intimate === true);
+          // Review 修：回写只在全场仅一条 intimate 动作时——多对象回合代词归属歧义，
+          // 保守不回写（宁可签空也不错账：把指向乙的动作改签到甲头上是倒贴好感）。
+          if (intimateActs.length === 1) {
+            const a = intimateActs[0];
+            if (a.target !== gateName
               && (!a.target || a.target === "无" || !String(cmd).includes(a.target))) {
               a.target = gateName;
             }

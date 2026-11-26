@@ -36,3 +36,10 @@ describe("夜班三单 Review 0003：门禁修正目标回写动作", () => {
     expect(src).toMatch(/!String\(cmd\)\.includes\(a\.target\)/);
   });
 });
+
+describe("Review 修：多对象回合保守不回写", () => {
+  it("回写只在全场仅一条 intimate 动作——多对象歧义宁签空不错账", () => {
+    const src = readFileSync("src/engine/turn/judgePhase.js", "utf8");
+    expect(src).toContain("intimateActs.length === 1");
+  });
+});
