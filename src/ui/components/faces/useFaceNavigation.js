@@ -13,12 +13,14 @@ export function faceSwipeDirection(start, end) {
   return Math.abs(dx) >= 56 && Math.abs(dx) > Math.abs(dy) * 1.3 ? (dx < 0 ? 1 : -1) : 0;
 }
 
+// U1-3 Review 修：整屏舞台（纯 CSS 类定位，无内联 style）用 data-blocking-layer 显式
+// 标记纳入判定——[style*=] 选择器认不出类定位的 fixed 层，方向键会穿透改隐藏侧栏。
 function hasBlockingLayer() {
-  return [...document.querySelectorAll('[role="dialog"], [aria-modal="true"], [style*="position: fixed"]')]
+  return [...document.querySelectorAll('[role="dialog"], [aria-modal="true"], [data-blocking-layer], [style*="position: fixed"]')]
     .some(element => {
       const style = getComputedStyle(element);
       return element.getClientRects().length && style.display !== "none" && style.visibility !== "hidden"
-        && (element.matches('[role="dialog"], [aria-modal="true"]') || Number(style.zIndex) >= 50);
+        && (element.matches('[role="dialog"], [aria-modal="true"], [data-blocking-layer]') || Number(style.zIndex) >= 50);
     });
 }
 

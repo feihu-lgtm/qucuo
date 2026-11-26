@@ -177,7 +177,7 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
   // 赌桌是整屏舞台而不是弹窗（没有遮罩、不响应点空白关闭），定位与层级在 tokens.css 的
     // .gamble-stage（screen 档，原 z 200）。舞台本身是层叠上下文，里面的弹窗层级只在舞台内比较。
   return (
-    <div className="gamble-stage" style={{ background: "var(--gamble-bg)", overflow: "hidden" }}>
+    <div className="gamble-stage" data-blocking-layer="true" style={{ background: "var(--gamble-bg)", overflow: "hidden" }}>
       <style>{GS_CSS}</style>
 
       {/* 顶栏 */}
