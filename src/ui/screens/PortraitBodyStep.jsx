@@ -3,6 +3,7 @@ import { BODY_LAYER, INTIMATE_FIELDS, PUBLIC_FIELDS, bodyProfileFilled } from ".
 import {
   ALL_BODY_PRESETS,
   BODY_PRESETS,
+  BODY_SNIPPET_GROUPS,
   BODY_TAG_POOL,
   PLAYER_PORTRAIT_PRESETS,
   appendBodyTag,
@@ -10,10 +11,11 @@ import {
   portraitPresetUrl,
 } from "../../domain/rules/character/bodyPresets.js";
 import { maskText, previewText } from "../format/bodyProfile.js";
+import BodySnippetComposer from "../components/BodySnippetComposer.jsx";
 
 const MODES = [
   { id: "matched", label: "立绘体貌" },
-  { id: "library", label: "预设库混搭" },
+  { id: "library", label: "预设库拼凑" },
   { id: "custom", label: "自行编辑" },
 ];
 
@@ -28,8 +30,8 @@ export default function PortraitBodyStep({
   theme,
 }) {
   const [mode, setMode] = useState("matched");
-  const [includeIntimate, setIncludeIntimate] = useState(false);
-  const [showIntimateEdit, setShowIntimateEdit] = useState(false);
+  const [includeIntimate, setIncludeIntimate] = useState(true);
+  const [showIntimateEdit, setShowIntimateEdit] = useState(true);
   const [editingKey, setEditingKey] = useState(null);
   const [activePresetName, setActivePresetName] = useState(
     () => (PLAYER_PORTRAIT_PRESETS.find((item) => item.id === selectedPortraitId) || PLAYER_PORTRAIT_PRESETS[0]).name,
@@ -225,13 +227,32 @@ export default function PortraitBodyStep({
                     <span>{bodyProfile?.[field.key] || "未填"}</span>
                   </div>
                 ))}
+                {showIntimateEdit && (
+                  <>
+                    <div className="body-intimate-preview-head">
+                      私密设定（默认开启并按当前形象预制）
+                    </div>
+                    {INTIMATE_FIELDS.map((field) => (
+                      <div key={field.key} className="body-intimate-preview-row">
+                        <span className="body-intimate-preview-label">{field.label}：</span>
+                        <span>{bodyProfile?.[field.key] || "未填"}</span>
+                      </div>
+                    ))}
+                  </>
+                )}
               </div>
             )}
 
             {mode === "library" && (
               <div style={{ display: "grid", gap: 6 }}>
-                <div style={{ fontSize: "var(--fs-xs)", color: "var(--muted)" }}>
-                  预设人（8 张立绘体貌）+ 预设库（{BODY_PRESETS.length} 套江湖体型），可与当前立绘自由混搭：
+                <BodySnippetComposer
+                  groups={BODY_SNIPPET_GROUPS}
+                  onAppend={appendBodyTag}
+                  bodyProfile={bodyProfile}
+                  onBodyChange={onBodyChange}
+                />
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--muted)", marginTop: 4 }}>
+                  或整套套用（8 张立绘体貌 + {BODY_PRESETS.length} 套江湖模板）：
                 </div>
                 {ALL_BODY_PRESETS.map((preset) => {
                   const chosen = activePresetName === preset.name;
