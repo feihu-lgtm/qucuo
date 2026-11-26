@@ -1,5 +1,7 @@
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { basename, dirname, relative, resolve, sep } from "node:path";
+import { execSync } from "node:child_process";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { gzipSync } from "node:zlib";
 
@@ -536,7 +538,98 @@ function printLines(title, lines) {
   for (const line of lines) console.log(`  - ${line}`);
 }
 
-function runRatchet() {
+// ── U0 Review 修：棘轮 caps 抬升拦截 ──
+// 漏洞：caps 与计数同文件同 PR——加一个 inline style 同时把上限 +1 两边都过。
+// 修复：与基线分支（PR 目标分支/origin/main）的 caps 逐键比对，抬升即失败；
+// 合法抬升须在 scripts/ratchet-cap-exemptions.txt 登记一行豁免（评审可见的显式 artifact）。
+// 新增 cap 键/新 cap 对象（基线不存在）不受限——它们本就是新登记欠账。
+const CAP_OBJECT_NAMES = [
+  "KNOWN_LAYER_DEBT",
+  "KNOWN_DIRECT_AI_CALL_DEBT",
+  "KNOWN_STATE_WRITE_DEBT",
+  "KNOWN_EXTERNAL_INFRA_CAP",
+  "KNOWN_UI_STRUCTURE_CAP",
+];
+
+function resolveCapsBaseRef() {
+  if (process.env.RATCHET_BASE_REF) return process.env.RATCHET_BASE_REF;
+  const ghBase = process.env.GITHUB_BASE_REF;
+  const candidates = [ghBase ? `origin/${ghBase}` : null, "origin/main", "main"].filter(Boolean);
+  for (const cand of candidates) {
+    try {
+      execSync(`git rev-parse --verify --quiet ${cand}`, { cwd: REPO_ROOT, stdio: ["ignore", "ignore", "ignore"] });
+      return cand;
+    } catch { /* try next */ }
+  }
+  return null;
+}
+
+async function loadBaseCapModule(baseRef) {
+  try {
+    const content = execSync(`git show ${baseRef}:scripts/ratchet.mjs`, {
+      cwd: REPO_ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], maxBuffer: 8 * 1024 * 1024,
+    });
+    if (!content) return null;
+    const dir = mkdtempSync(join(tmpdir(), "ratchet-base-"));
+    const file = join(dir, "ratchet.base.mjs");
+    writeFileSync(file, content);
+    return await import(pathToFileURL(file).href);
+  } catch {
+    return null;
+  }
+}
+
+function loadCapExemptions() {
+  const file = resolve(REPO_ROOT, "scripts/ratchet-cap-exemptions.txt");
+  if (!existsSync(file)) return new Set();
+  return new Set(
+    readFileSync(file, "utf8")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith("#"))
+      .map((line) => line.split(/\s+/)[0]),
+  );
+}
+
+// 纯函数（测试直达）：当前 caps vs 基线 caps，抬升且无豁免的键列成 failures。
+export function checkCapEscalation(baseMod, exemptions = new Set()) {
+  if (!baseMod) return [];
+  const failures = [];
+  const current = {
+    KNOWN_LAYER_DEBT, KNOWN_DIRECT_AI_CALL_DEBT, KNOWN_STATE_WRITE_DEBT,
+    KNOWN_EXTERNAL_INFRA_CAP, KNOWN_UI_STRUCTURE_CAP,
+  };
+  for (const name of CAP_OBJECT_NAMES) {
+    const curObj = current[name] || {};
+    const baseObj = baseMod[name] || {};
+    for (const [key, val] of Object.entries(curObj)) {
+      const baseVal = baseObj[key];
+      if (baseVal === undefined) continue; // 新登记键不受限
+      if (typeof val === "number" && typeof baseVal === "number" && val > baseVal) {
+        const id = `${name}.${key}`;
+        if (!exemptions.has(id)) {
+          failures.push(`棘轮上限抬升拦截: ${id} 从 ${baseVal} 抬到 ${val}——上限只减不增；确需抬升须在 scripts/ratchet-cap-exemptions.txt 登记一行「${id}」豁免理由供评审`);
+        }
+      }
+    }
+  }
+  const curHook = KNOWN_MUD_RPG_HOOK_ARGS_CAP;
+  const baseHook = baseMod.KNOWN_MUD_RPG_HOOK_ARGS_CAP;
+  if (typeof baseHook === "number" && curHook > baseHook && !exemptions.has("KNOWN_MUD_RPG_HOOK_ARGS_CAP")) {
+    failures.push(`棘轮上限抬升拦截: KNOWN_MUD_RPG_HOOK_ARGS_CAP 从 ${baseHook} 抬到 ${curHook}——上限只减不增`);
+  }
+  return failures;
+}
+
+async function capEscalationFailures() {
+  const baseRef = resolveCapsBaseRef();
+  if (!baseRef) return { failures: [], note: "caps 基线分支不可解析（非 git 环境），抬升拦截跳过" };
+  const baseMod = await loadBaseCapModule(baseRef);
+  if (!baseMod) return { failures: [], note: `caps 基线 ${baseRef} 读取失败，抬升拦截跳过` };
+  return { failures: checkCapEscalation(baseMod, loadCapExemptions()), note: "" };
+}
+
+async function runRatchet() {
   const { metrics, notes } = collectRatchetMetrics();
 
   if (process.argv.includes("--stats")) {
@@ -546,6 +639,9 @@ function runRatchet() {
   }
 
   const { failures } = checkLayerRedLines(metrics);
+  const escalation = await capEscalationFailures();
+  failures.push(...escalation.failures);
+  if (escalation.note) console.log(`Note: ${escalation.note}`);
   printLines("Layer red-line violations", failures);
   if (!failures.length) console.log("Ratchet passed.");
   else process.exitCode = 1;

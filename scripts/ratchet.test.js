@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkLayerRedLines, checkUiStructure, collectRatchetMetrics, extractImportSpecifiers, formatStats, KNOWN_LAYER_DEBT, KNOWN_UI_STRUCTURE_CAP } from "./ratchet.mjs";
+import { checkCapEscalation, checkLayerRedLines, checkUiStructure, collectRatchetMetrics, extractImportSpecifiers, formatStats, KNOWN_LAYER_DEBT, KNOWN_UI_STRUCTURE_CAP } from "./ratchet.mjs";
 
 describe("extractImportSpecifiers", () => {
   it("ignores line and block comments without treating comment markers in strings as comments", () => {
@@ -114,5 +114,29 @@ describe("checkUiStructure（前端结构统一棘轮：只减不增，降了必
     expect(Object.keys(KNOWN_UI_STRUCTURE_CAP).sort()).toEqual(
       ["inlineStyles", "overlayFiles", "portsImporters", "rulesImporters", "zoneThemeFiles"],
     );
+  });
+});
+
+describe("U0 Review 修：caps 抬升拦截", () => {
+  // checkCapEscalation(baseMod)：把「当前模块 caps」与传入基线比对——
+  // 基线值比当前小 = 当前被抬升 = 拦截；基线值比当前大 = 当前只减不增 = 放行。
+  it("基线更低=同 PR 抬升被拦截", () => {
+    const fails = checkCapEscalation({ KNOWN_UI_STRUCTURE_CAP: { inlineStyles: 1 } });
+    expect(fails.some((f) => f.includes("inlineStyles") && f.includes("抬升拦截"))).toBe(true);
+  });
+  it("基线更高=只减不增放行", () => {
+    const fails = checkCapEscalation({ KNOWN_UI_STRUCTURE_CAP: { inlineStyles: 999999 } });
+    expect(fails.filter((f) => f.includes("inlineStyles"))).toHaveLength(0);
+  });
+  it("豁免登记后放行", () => {
+    const fails = checkCapEscalation(
+      { KNOWN_UI_STRUCTURE_CAP: { inlineStyles: 1 } },
+      new Set(["KNOWN_UI_STRUCTURE_CAP.inlineStyles"]),
+    );
+    expect(fails.filter((f) => f.includes("inlineStyles"))).toHaveLength(0);
+  });
+  it("基线没有的新键/新对象不受限；基线模块缺失零拦截", () => {
+    expect(checkCapEscalation({})).toHaveLength(0);
+    expect(checkCapEscalation(null)).toHaveLength(0);
   });
 });
