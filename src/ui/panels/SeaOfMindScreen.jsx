@@ -63,20 +63,13 @@ export default function SeaOfMindScreen({
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         {Object.entries(COMFORT_ACTIONS).map(([key, spec]) => {
           const gate = canComfort(key, comfort, invNames);
+          // 越级/缺物**不置灰也不禁用**——玩家该被允许试，然后从她的反应里
+          // 知道时候未到。置灰等于把机制摊开，那一段的手感就没了。
           return (
             <span
               key={key}
               onClick={() => onComfort(key)}
-              title={spec.needItem ? `需要「${spec.needItem}」` : ""}
-              style={{
-                cursor: "pointer", userSelect: "none",
-                fontSize: "var(--fs-xs)", padding: "4px 11px", borderRadius: 0,
-                // 越级/缺物**不置灰也不禁用**——玩家该被允许试，然后从她的反应里
-                // 知道时候未到。置灰等于把机制摊开，那一段的手感就没了。
-                color: gate.ok ? "var(--mind-gate-ok)" : "var(--text-dim)",
-                border: `1px solid ${gate.ok ? "var(--mind-gate-ok-edge)" : "var(--mind-gate-edge)"}`,
-                background: gate.ok ? "rgba(232,200,106,.08)" : "transparent",
-              }}
+              title={spec.needItem ? `需要「${spec.needItem}」` : ""} className="mind-gate-btn" data-on={Boolean(gate.ok)}
             >
               {spec.label}
               {spec.needItem && !invNames.includes(spec.needItem) && (
@@ -90,12 +83,7 @@ export default function SeaOfMindScreen({
       {/* 收束入口：三结说尽且心防够低才出现 */}
       {resolvable && (
         <div
-          onClick={onResolve}
-          style={{
-            marginTop: 9, padding: "7px 10px", borderRadius: 0, cursor: "pointer",
-            border: "1px solid var(--mind-button-edge)", background: "rgba(232,200,106,.13)",
-            color: "var(--mind-button-text)", fontSize: "var(--fs-sm)", textAlign: "center",
-          }}
+          onClick={onResolve} className="mind-confess-btn"
         >
           ⟡ 跟她说那句她自己说不出口的话
         </div>

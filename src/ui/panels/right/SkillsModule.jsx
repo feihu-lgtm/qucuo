@@ -21,8 +21,7 @@ export default function SkillsModule({ skills, setSkills, inspectItem, inspectin
           if (!idle) return null;
           return (
             <span
-              onClick={() => setShowIdleSkills(v => !v)}
-              style={{ cursor: "pointer", fontSize: "var(--fs-2xs)", color: "var(--accent)", border: `1px solid var(--border)`, borderRadius: 0, padding: "0 4px", flexShrink: 0 }}
+              onClick={() => setShowIdleSkills(v => !v)} className="skills-idle-toggle"
             >{showIdleSkills ? `收起未上阵 ${idle}` : `未上阵 ${idle} ▾`}</span>
           );
         })()}
@@ -112,13 +111,7 @@ export default function SkillsModule({ skills, setSkills, inspectItem, inspectin
                         ? <span style={{ fontSize: "var(--fs-2xs)", color: qc }}>✦ 登峰造极</span>
                         : <span
                             onClick={() => afford && breakthroughSkill(s.id ?? s.name)}
-                            title={afford ? `潜心修炼：花${cost}潜能，${s.stage}→${nextStage}（现有潜能${pot}）` : `潜能不足，突破${nextStage}需${cost}点（现有${pot}）`}
-                            style={{
-                              cursor: afford ? "pointer" : "not-allowed", fontSize: "var(--fs-2xs)", padding: "1px 7px", borderRadius: 0,
-                              color: afford ? "var(--violet)" : "var(--ink-text-dim)",
-                              background: afford ? "var(--bg-panel)" : "transparent",
-                              border: `1px solid ${afford ? "var(--building-desc)" : "var(--border)"}`, userSelect: "none",
-                            }}
+                            title={afford ? `潜心修炼：花${cost}潜能，${s.stage}→${nextStage}（现有潜能${pot}）` : `潜能不足，突破${nextStage}需${cost}点（现有${pot}）`} className="skills-train-btn" data-on={Boolean(afford)}
                           >↑修炼·{nextStage}（{cost}潜能）</span>}
                     </div>
                   );

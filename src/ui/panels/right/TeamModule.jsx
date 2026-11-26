@@ -39,13 +39,7 @@ export default function TeamModule({ companionState, varTree, onSwitchCompanion,
             {/* 换出战：点整行左侧区域 */}
             <div
               onClick={() => onSwitchCompanion?.(isOn ? null : slot.key)}
-              title={isOn ? "点一下换下出战位" : stationedAt ? `${slot.label}留守在${stationedAt.roomName || stationedAt.district}，先去接回来` : `换 ${slot.label} 出战`}
-              style={{
-                flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, cursor: "pointer",
-                padding: "6px 8px", borderRadius: 0,
-                background: isOn ? "var(--accent)" + "18" : "var(--bg-panel)",
-                border: `1px solid ${isOn ? "var(--accent)" : "var(--border)"}`,
-              }}
+              title={isOn ? "点一下换下出战位" : stationedAt ? `${slot.label}留守在${stationedAt.roomName || stationedAt.district}，先去接回来` : `换 ${slot.label} 出战`} className="team-portrait-card" data-on={Boolean(isOn)}
             >
               <span style={{ fontSize: "var(--fs-base)", opacity: isOn ? 1 : 0.45 }}>{ICON[slot.key] || "◈"}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -90,11 +84,7 @@ export default function TeamModule({ companionState, varTree, onSwitchCompanion,
                 companionNpcEntry（带 cannotSpeak 等），不会说话的队友点交谈走不通人言的分支 */}
             <span
               onClick={() => setActiveNpcMenu(companionNpcEntry(companionState, slot.key, BRIEF[slot.key] ? { brief: BRIEF[slot.key] } : {}))}
-              title="细看/切磋/送礼等"
-              style={{
-                cursor: "pointer", fontSize: "var(--fs-2xs)", color: "var(--accent-dim)",
-                padding: "5px 7px", borderRadius: 0, border: `1px solid var(--border)`,
-              }}
+              title="细看/切磋/送礼等" className="team-detail-btn"
             >◈</span>
           </div>
         );

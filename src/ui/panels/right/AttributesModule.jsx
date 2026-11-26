@@ -9,22 +9,14 @@ export default function AttributesModule({ char, trainNeigong, trainWaigong, tra
           <span>内功 <span style={{ color: "var(--violet)" }}>{bar(char.neigong ?? 0, 100, 6)}</span> <span style={{ color: "var(--attr-value)" }}>{char.neigong ?? 0}</span></span>
           <span
             onClick={trainNeigong}
-            title={`运气打坐：消耗${trainCost(char.neigong ?? 0)}点潜能，内功+1（现有潜能${pot}）`}
-            style={{
-              cursor: "pointer", fontSize: "var(--fs-2xs)", padding: "1px 5px", borderRadius: 0,
-              color: "var(--attr-neigong-tag)", background: "var(--bg-panel)", border: "1px solid var(--attr-neigong-edge)", whiteSpace: "nowrap",
-            }}
+            title={`运气打坐：消耗${trainCost(char.neigong ?? 0)}点潜能，内功+1（现有潜能${pot}）`} className="attr-train-neigong"
           >+1（{trainCost(char.neigong ?? 0)}潜能）</span>
         </div>
         <div style={{ fontSize: "var(--fs-sm)", display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
           <span>外功 <span style={{ color: "var(--attr-waigong-bar)" }}>{bar(char.waigong ?? 0, 100, 6)}</span> <span style={{ color: "var(--attr-value)" }}>{char.waigong ?? 0}</span></span>
           <span
             onClick={trainWaigong}
-            title={`拆招练武：消耗${trainCost(char.waigong ?? 0)}点潜能，外功+1（现有潜能${pot}）`}
-            style={{
-              cursor: "pointer", fontSize: "var(--fs-2xs)", padding: "1px 5px", borderRadius: 0,
-              color: "var(--attr-waigong-tag)", background: "var(--bg-panel)", border: "1px solid var(--attr-waigong-edge)", whiteSpace: "nowrap",
-            }}
+            title={`拆招练武：消耗${trainCost(char.waigong ?? 0)}点潜能，外功+1（现有潜能${pot}）`} className="attr-train-waigong"
           >+1（{trainCost(char.waigong ?? 0)}潜能）</span>
         </div>
       </div>

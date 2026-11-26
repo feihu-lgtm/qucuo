@@ -31,12 +31,7 @@ export default function ProfileModule({ char, exp, pot, playerAvatar, companionS
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flexShrink: 0, width: 90 }}>
         <div
           onClick={() => openOverlay(OVERLAY.AVATAR_PICKER)}
-          title="点击更换头像"
-          style={{
-            width: 90, aspectRatio: "2/3", borderRadius: 0, overflow: "hidden",
-            border: `1px solid var(--border)`, background: "var(--bg-panel)", cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center", position: "relative",
-          }}
+          title="点击更换头像" className="profile-avatar-card"
         >
           {playerAvatar ? (
             <img src={playerAvatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -47,12 +42,7 @@ export default function ProfileModule({ char, exp, pot, playerAvatar, companionS
         </div>
         <span
           onClick={() => openOverlay(OVERLAY.BODY)}
-          title="体貌 · 身量体型与身体细节，动作描写和私聊都会照着写"
-          style={{
-            cursor: "pointer", fontSize: "var(--fs-2xs)", padding: "1px 6px", borderRadius: 0,
-            border: `1px solid var(--border)`, whiteSpace: "nowrap",
-            color: bodyProfileFilled(char.bodyProfile).total ? "var(--accent)" : "var(--text-dim)",
-          }}
+          title="体貌 · 身量体型与身体细节，动作描写和私聊都会照着写" className="profile-body-btn" data-on={Boolean(bodyProfileFilled(char.bodyProfile).total)}
         >
           ◈ 体貌{bodyProfileFilled(char.bodyProfile).total ? ` ${bodyProfileFilled(char.bodyProfile).total}` : ""}
         </span>
@@ -63,13 +53,7 @@ export default function ProfileModule({ char, exp, pot, playerAvatar, companionS
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flexShrink: 0, width: 90 }}>
           <div
             onClick={compForms ? cycleCompForm : undefined}
-            title={compForms ? `${comp.label} · 点击切换立绘形态` : comp.label}
-            style={{
-              width: 90, aspectRatio: "2/3", borderRadius: 0, overflow: "hidden",
-              border: `1px solid var(--border)`, background: "var(--bg-panel)",
-              cursor: compForms ? "pointer" : "default",
-              display: "flex", alignItems: "center", justifyContent: "center", position: "relative",
-            }}
+            title={compForms ? `${comp.label} · 点击切换立绘形态` : comp.label} className="profile-companion-card" data-on={Boolean(compForms)}
           >
             {compForms && !compImgErr ? (
               <img src={companionPortraitUrl(comp.key, compFormKey)} alt={comp.label} style={{ width: "100%", height: "100%", objectFit: "cover" }}
@@ -84,13 +68,7 @@ export default function ProfileModule({ char, exp, pot, playerAvatar, companionS
               <div style={{ display: "flex", gap: 4 }}>
                 {COMPANION_DESC_FORMS.map(f => (
                   <span key={f.key} onClick={() => pickCompForm(f.key)}
-                    title={`注入 AI 的${comp.label}外貌描述：${f.label}`}
-                    style={{
-                      cursor: "pointer", fontSize: "var(--fs-2xs)", padding: "1px 7px", borderRadius: 0,
-                      color: compForm === f.key ? "var(--bg)" : "var(--accent)",
-                      background: compForm === f.key ? "var(--accent)" : "var(--bg-panel)",
-                      border: `1px solid ${compForm === f.key ? "var(--accent)" : "var(--border)"}`,
-                    }}>{f.label}</span>
+                    title={`注入 AI 的${comp.label}外貌描述：${f.label}`} className="profile-form-tab" data-on={Boolean(compForm === f.key)}>{f.label}</span>
                 ))}
               </div>
               <span onClick={() => setCompDescOpen(v => !v)}
@@ -118,12 +96,7 @@ export default function ProfileModule({ char, exp, pot, playerAvatar, companionS
           <span>信鸽 <span style={{ color: "var(--gold)" }}>{char.pigeons || 0}</span> 只</span>
           <span
             onClick={() => inspectItem("pigeon", "信鸽", `现有${char.pigeons || 0}只`, null, { worldLook: true })}
-            title="查看：信鸽是什么、能做什么"
-            style={{
-              cursor: inspecting === "信鸽" ? "wait" : "pointer", fontSize: "var(--fs-2xs)", padding: "1px 5px", borderRadius: 0,
-              color: "var(--text-dim)", background: "var(--bg-panel)", border: `1px solid var(--border)`,
-              opacity: inspecting === "信鸽" ? 0.6 : 1,
-            }}
+            title="查看：信鸽是什么、能做什么" className="profile-inspect-btn" data-on={Boolean(inspecting === "信鸽")}
           >查看{inspecting === "信鸽" ? "…" : ""}</span>
         </div>
       </div>

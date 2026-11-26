@@ -202,8 +202,7 @@ export default function TopBar({
               AV_BASE + "preset1.webp", AV_BASE + "preset2.webp", AV_BASE + "preset3.webp",
               AV_BASE + "preset4.webp", AV_BASE + "preset5.webp"].map((src, i) => (
               <div key={i}
-                onClick={() => { setPlayerAvatarCustom(src); closeOverlay(OVERLAY.AVATAR_PICKER); }}
-                style={{ aspectRatio: "2/3", borderRadius: 0, overflow: "hidden", cursor: "pointer", border: playerAvatarCustom === src ? "2px solid var(--accent)" : "1px solid var(--border)", background: "var(--bg-panel)" }}
+                onClick={() => { setPlayerAvatarCustom(src); closeOverlay(OVERLAY.AVATAR_PICKER); }} className="avatar-pick-card" data-on={Boolean(playerAvatarCustom === src)}
               >
                 <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }}
                   onError={(e) => { e.currentTarget.style.display = "none"; }} />

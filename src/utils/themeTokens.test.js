@@ -129,3 +129,29 @@ describe("NIGHT_VARS：逐元素固定暗夜", () => {
     }
   });
 });
+
+describe("不许给 CSS 变量直接拼十六进制透明度", () => {
+  // 旧写法 zoneTheme.accent + "18" 对十六进制色有效；颜色换成 var(--accent) 后，同样的拼接
+  // 得到 var(--accent)18，是无效 CSS，浏览器会丢掉整条声明，CI 也不会报错。透明度一律写成
+  // color-mix(in srgb, var(--某色) N%, transparent)。U3-2c 在 TeamModule 里留下过一处，已在 U2-7 修复。
+  it("src 下的 JS/JSX 里没有 var(--某色)XX 或 \"var(--某色)\" + \"XX\"", () => {
+    const bad = [];
+    const pattern = /"var\(--[\w-]+\)"\s*\+\s*["'][0-9a-fA-F]{2}["']|var\(--[\w-]+\)[0-9a-fA-F]{2}\b/;
+    for (const file of jsxFiles("src")) {
+      if (pattern.test(readFileSync(file, "utf-8"))) bad.push(file);
+    }
+    for (const file of jsFiles("src")) {
+      if (!/\.test\./.test(file) && pattern.test(readFileSync(file, "utf-8"))) bad.push(file);
+    }
+    expect(bad).toEqual([]);
+  });
+});
+
+function jsFiles(dir, out = []) {
+  for (const name of readdirSync(dir)) {
+    const path = join(dir, name);
+    if (statSync(path).isDirectory()) jsFiles(path, out);
+    else if (/\.js$/.test(name)) out.push(path);
+  }
+  return out;
+}

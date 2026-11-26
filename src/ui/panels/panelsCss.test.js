@@ -78,3 +78,40 @@ describe("panels.css 与搬迁前的内联样式逐属性相等", () => {
     order('.game-send-button[data-on="false"]', ".game-send-button {");
   });
 });
+
+
+// 第二批（工具提取）：搬迁前内联样式的快照，值已换算成 CSS 写法（数字补 px）。
+const EXTRACTED = [
+  { cls: "mind-confess-btn", on: {"marginTop": "9px", "padding": "7px 10px", "borderRadius": "0", "cursor": "pointer", "border": "1px solid var(--mind-button-edge)", "background": "rgba(232,200,106,.13)", "color": "var(--mind-button-text)", "fontSize": "var(--fs-sm)", "textAlign": "center"}, off: null },
+  { cls: "attr-train-waigong", on: {"cursor": "pointer", "fontSize": "var(--fs-2xs)", "padding": "1px 5px", "borderRadius": "0", "color": "var(--attr-waigong-tag)", "background": "var(--bg-panel)", "border": "1px solid var(--attr-waigong-edge)", "whiteSpace": "nowrap"}, off: null },
+  { cls: "attr-train-neigong", on: {"cursor": "pointer", "fontSize": "var(--fs-2xs)", "padding": "1px 5px", "borderRadius": "0", "color": "var(--attr-neigong-tag)", "background": "var(--bg-panel)", "border": "1px solid var(--attr-neigong-edge)", "whiteSpace": "nowrap"}, off: null },
+  { cls: "profile-inspect-btn", on: {"fontSize": "var(--fs-2xs)", "padding": "1px 5px", "borderRadius": "0", "color": "var(--text-dim)", "background": "var(--bg-panel)", "border": "1px solid var(--border)", "cursor": "wait", "opacity": "0.6"}, off: {"fontSize": "var(--fs-2xs)", "padding": "1px 5px", "borderRadius": "0", "color": "var(--text-dim)", "background": "var(--bg-panel)", "border": "1px solid var(--border)", "cursor": "pointer", "opacity": "1"} },
+  { cls: "profile-form-tab", on: {"cursor": "pointer", "fontSize": "var(--fs-2xs)", "padding": "1px 7px", "borderRadius": "0", "color": "var(--bg)", "background": "var(--accent)", "border": "1px solid var(--accent)"}, off: {"cursor": "pointer", "fontSize": "var(--fs-2xs)", "padding": "1px 7px", "borderRadius": "0", "color": "var(--accent)", "background": "var(--bg-panel)", "border": "1px solid var(--border)"} },
+  { cls: "profile-companion-card", on: {"width": "90px", "aspectRatio": "2/3", "borderRadius": "0", "overflow": "hidden", "border": "1px solid var(--border)", "background": "var(--bg-panel)", "display": "flex", "alignItems": "center", "justifyContent": "center", "position": "relative", "cursor": "pointer"}, off: {"width": "90px", "aspectRatio": "2/3", "borderRadius": "0", "overflow": "hidden", "border": "1px solid var(--border)", "background": "var(--bg-panel)", "display": "flex", "alignItems": "center", "justifyContent": "center", "position": "relative", "cursor": "default"} },
+  { cls: "profile-body-btn", on: {"cursor": "pointer", "fontSize": "var(--fs-2xs)", "padding": "1px 6px", "borderRadius": "0", "border": "1px solid var(--border)", "whiteSpace": "nowrap", "color": "var(--accent)"}, off: {"cursor": "pointer", "fontSize": "var(--fs-2xs)", "padding": "1px 6px", "borderRadius": "0", "border": "1px solid var(--border)", "whiteSpace": "nowrap", "color": "var(--text-dim)"} },
+  { cls: "profile-avatar-card", on: {"width": "90px", "aspectRatio": "2/3", "borderRadius": "0", "overflow": "hidden", "border": "1px solid var(--border)", "background": "var(--bg-panel)", "cursor": "pointer", "display": "flex", "alignItems": "center", "justifyContent": "center", "position": "relative"}, off: null },
+  { cls: "skills-train-btn", on: {"fontSize": "var(--fs-2xs)", "padding": "1px 7px", "borderRadius": "0", "userSelect": "none", "cursor": "pointer", "color": "var(--violet)", "background": "var(--bg-panel)", "border": "1px solid var(--building-desc)"}, off: {"fontSize": "var(--fs-2xs)", "padding": "1px 7px", "borderRadius": "0", "userSelect": "none", "cursor": "not-allowed", "color": "var(--ink-text-dim)", "background": "transparent", "border": "1px solid var(--border)"} },
+  { cls: "skills-idle-toggle", on: {"cursor": "pointer", "fontSize": "var(--fs-2xs)", "color": "var(--accent)", "border": "1px solid var(--border)", "borderRadius": "0", "padding": "0 4px", "flexShrink": "0"}, off: null },
+  { cls: "team-detail-btn", on: {"cursor": "pointer", "fontSize": "var(--fs-2xs)", "color": "var(--accent-dim)", "padding": "5px 7px", "borderRadius": "0", "border": "1px solid var(--border)"}, off: null },
+  { cls: "team-portrait-card", on: {"flex": "1", "minWidth": "0", "display": "flex", "alignItems": "center", "gap": "8px", "cursor": "pointer", "padding": "6px 8px", "borderRadius": "0", "border": "1px solid var(--accent)"}, off: {"flex": "1", "minWidth": "0", "display": "flex", "alignItems": "center", "gap": "8px", "cursor": "pointer", "padding": "6px 8px", "borderRadius": "0", "border": "1px solid var(--border)"} },
+  { cls: "avatar-pick-card", on: {"aspectRatio": "2/3", "borderRadius": "0", "overflow": "hidden", "cursor": "pointer", "background": "var(--bg-panel)", "border": "2px solid var(--accent)"}, off: {"aspectRatio": "2/3", "borderRadius": "0", "overflow": "hidden", "cursor": "pointer", "background": "var(--bg-panel)", "border": "1px solid var(--border)"} },
+  { cls: "mind-gate-btn", on: {"cursor": "pointer", "userSelect": "none", "fontSize": "var(--fs-xs)", "padding": "4px 11px", "borderRadius": "0", "color": "var(--mind-gate-ok)", "border": "1px solid var(--mind-gate-ok-edge)", "background": "rgba(232,200,106,.08)"}, off: {"cursor": "pointer", "userSelect": "none", "fontSize": "var(--fs-xs)", "padding": "4px 11px", "borderRadius": "0", "color": "var(--text-dim)", "border": "1px solid var(--mind-gate-edge)", "background": "transparent"} },
+];
+
+describe("panels.css 第二批：工具提取的类与快照逐属性相等", () => {
+  for (const { cls, on, off } of EXTRACTED) {
+    it(`.${cls}`, () => {
+      const base = rule(`.${cls}`);
+      for (const [key, value] of Object.entries(on)) expect(base[kebab(key)], `${cls} 开 → ${key}`).toBe(value);
+      if (off) {
+        const merged = { ...base, ...rule(`.${cls}[data-on="false"]`) };
+        for (const [key, value] of Object.entries(off)) expect(merged[kebab(key)], `${cls} 关 → ${key}`).toBe(value);
+      }
+    });
+  }
+});
+
+it("队伍头像卡片的出战底色：修复 U3-2c 拼出的无效 var(--accent)18，改为 color-mix 9.4%", () => {
+  expect(rule(".team-portrait-card").background).toBe("color-mix(in srgb, var(--accent) 9.4%, transparent)");
+  expect(rule('.team-portrait-card[data-on="false"]').background).toBe("var(--bg-panel)");
+});

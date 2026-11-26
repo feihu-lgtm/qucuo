@@ -111,3 +111,208 @@
   opacity: 1;
 }
 .game-send-button[data-on="false"] { border-color: var(--border); color: var(--text-dim); cursor: default; opacity: 0.5; }
+
+/* ui/panels/TopBar.jsx */
+.avatar-pick-card {
+  aspect-ratio: 2/3;
+  border-radius: 0;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--bg-panel);
+  border: 2px solid var(--accent);
+}
+.avatar-pick-card[data-on="false"] {
+  border: 1px solid var(--border);
+}
+
+/* ui/panels/right/TeamModule.jsx */
+.team-portrait-card {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 0;
+  border: 1px solid var(--accent);
+  /* 出战态的淡朱红底。U3-2c 曾把原 zoneTheme.accent + "18" 换成 "var(--accent)" + "18"，
+     拼出无效的 var(--accent)18，背景整条失效；这里按 0x18≈9.4% 改回 color-mix。 */
+  background: color-mix(in srgb, var(--accent) 9.4%, transparent);
+}
+.team-portrait-card[data-on="false"] {
+  border: 1px solid var(--border);
+  background: var(--bg-panel);
+}
+
+/* ui/panels/right/TeamModule.jsx */
+.team-detail-btn {
+  cursor: pointer;
+  font-size: var(--fs-2xs);
+  color: var(--accent-dim);
+  padding: 5px 7px;
+  border-radius: 0;
+  border: 1px solid var(--border);
+}
+
+/* ui/panels/right/SkillsModule.jsx */
+.skills-idle-toggle {
+  cursor: pointer;
+  font-size: var(--fs-2xs);
+  color: var(--accent);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+
+/* ui/panels/right/SkillsModule.jsx */
+.skills-train-btn {
+  font-size: var(--fs-2xs);
+  padding: 1px 7px;
+  border-radius: 0;
+  user-select: none;
+  cursor: pointer;
+  color: var(--violet);
+  background: var(--bg-panel);
+  border: 1px solid var(--building-desc);
+}
+.skills-train-btn[data-on="false"] {
+  cursor: not-allowed;
+  color: var(--ink-text-dim);
+  background: transparent;
+  border: 1px solid var(--border);
+}
+
+/* ui/panels/right/ProfileModule.jsx */
+.profile-avatar-card {
+  width: 90px;
+  aspect-ratio: 2/3;
+  border-radius: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg-panel);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* ui/panels/right/ProfileModule.jsx */
+.profile-body-btn {
+  cursor: pointer;
+  font-size: var(--fs-2xs);
+  padding: 1px 6px;
+  border-radius: 0;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+  color: var(--accent);
+}
+.profile-body-btn[data-on="false"] {
+  color: var(--text-dim);
+}
+
+/* ui/panels/right/ProfileModule.jsx */
+.profile-companion-card {
+  width: 90px;
+  aspect-ratio: 2/3;
+  border-radius: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg-panel);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+}
+.profile-companion-card[data-on="false"] {
+  cursor: default;
+}
+
+/* ui/panels/right/ProfileModule.jsx */
+.profile-form-tab {
+  cursor: pointer;
+  font-size: var(--fs-2xs);
+  padding: 1px 7px;
+  border-radius: 0;
+  color: var(--bg);
+  background: var(--accent);
+  border: 1px solid var(--accent);
+}
+.profile-form-tab[data-on="false"] {
+  color: var(--accent);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+}
+
+/* ui/panels/right/ProfileModule.jsx */
+.profile-inspect-btn {
+  font-size: var(--fs-2xs);
+  padding: 1px 5px;
+  border-radius: 0;
+  color: var(--text-dim);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  cursor: wait;
+  opacity: 0.6;
+}
+.profile-inspect-btn[data-on="false"] {
+  cursor: pointer;
+  opacity: 1;
+}
+
+/* ui/panels/right/AttributesModule.jsx */
+.attr-train-neigong {
+  cursor: pointer;
+  font-size: var(--fs-2xs);
+  padding: 1px 5px;
+  border-radius: 0;
+  color: var(--attr-neigong-tag);
+  background: var(--bg-panel);
+  border: 1px solid var(--attr-neigong-edge);
+  white-space: nowrap;
+}
+
+/* ui/panels/right/AttributesModule.jsx */
+.attr-train-waigong {
+  cursor: pointer;
+  font-size: var(--fs-2xs);
+  padding: 1px 5px;
+  border-radius: 0;
+  color: var(--attr-waigong-tag);
+  background: var(--bg-panel);
+  border: 1px solid var(--attr-waigong-edge);
+  white-space: nowrap;
+}
+
+/* ui/panels/SeaOfMindScreen.jsx */
+.mind-confess-btn {
+  margin-top: 9px;
+  padding: 7px 10px;
+  border-radius: 0;
+  cursor: pointer;
+  border: 1px solid var(--mind-button-edge);
+  background: rgba(232,200,106,.13);
+  color: var(--mind-button-text);
+  font-size: var(--fs-sm);
+  text-align: center;
+}
+
+/* ui/panels/SeaOfMindScreen.jsx */
+.mind-gate-btn {
+  cursor: pointer;
+  user-select: none;
+  font-size: var(--fs-xs);
+  padding: 4px 11px;
+  border-radius: 0;
+  color: var(--mind-gate-ok);
+  border: 1px solid var(--mind-gate-ok-edge);
+  background: rgba(232,200,106,.08);
+}
+.mind-gate-btn[data-on="false"] {
+  color: var(--text-dim);
+  border: 1px solid var(--mind-gate-edge);
+  background: transparent;
+}
