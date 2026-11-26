@@ -21,7 +21,7 @@ export const INTAKE_JSON_SCHEMA = {
           required: ["kind", "target", "item", "itemId", "direction", "condition", "condition_text", "stance", "outcome", "risk", "confidence", "text"],
           properties: {
             kind: { type: "string", enum: ["talk", "move", "inspect_container", "take", "give", "trade", "steal", "duel", "appease", "learn", "invite", "use_item", "equip", "free_act"] },
-            target: { type: "string", description: "在场角色或容器的准确名字，没点名或不在场填「无」" },
+            target: { type: "string", description: "动作对象名：move 填目的地名（没说填「无」），其余动作为在场角色或容器的准确名字，不在场填「无」" },
             item: { type: "string", description: "物件名从清单里选；选不出填「无」" },
             itemId: { type: "string", description: "清单括号里的编号；选不出填空串" },
             direction: { type: "string", enum: ["n", "s", "e", "w", "none"] },

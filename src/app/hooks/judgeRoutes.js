@@ -7,11 +7,14 @@ import { featureCtx } from "../runtime/gameRuntime.js";
 import { applyResult } from "../../features/run.js";
 import { stepEffect } from "../../features/intent/logic.js";
 import { ACTION_KINDS, UNEQUIP_RE } from "../../domain/rules/intent/actionKinds.js";
-import { innerMove } from "../../features/map/logic.js";
+import { innerMove, outerArrival } from "../../features/map/logic.js";
 import { consumeItem } from "../../features/items/logic.js";
 import { findInvItem } from "../../features/intent/logic.js";
 import { itemNameOf } from "../../domain/rules/intent/actionKinds.js";
 import { CATALOG_INDEX } from "../../domain/data/items/catalog.js";
+import { QUCUO_MAP, resolveExit, isNodeUnlocked } from "../../domain/data/map/qucuoMap.js";
+import { visibleInnerExits, getDistrictAnchor, hasInnerMap, resolveInnerExit } from "../../domain/rules/map/innerMap.js";
+import { serializeSquares } from "../../domain/rules/map/mapSquares.js";
 
 // S7 move 路由：intake.direction（n/s/e/w）直接消费，不从长文本重猜。
 const VALID_DIRS = new Set(["n", "s", "e", "w"]);
@@ -27,31 +30,133 @@ function stripTurnSpan(res) {
   return { ...res, changes: restChanges };
 }
 
-// 内层移动确定性路由：复用 features/map innerMove 同一套账（锁门/无出口/新人物/
-// lastSeen 全在里头），写账仍走 applyResult 单边界。
-// 外层大地图移动不支持——缺口与阻塞点见 PR 描述；回执明确「系统未结算」，
-// 叙事不得写成已移动，但也绝不编「到了某处」。
-function runMove(action) {
-  const dir = String(action?.direction || "").trim().toLowerCase();
-  if (!VALID_DIRS.has(dir)) {
-    return { kind: "move", ok: false, text: "移动方向不明——系统未结算，叙事不得写成已移动。" };
+// D4：已完成任务集合（questProgress status === "completed"）——与 features/map 同口径。
+function completedQuestIdSet(questProgress) {
+  const out = new Set();
+  for (const [id, q] of Object.entries(questProgress || {})) {
+    if (q?.status === "completed") out.add(id);
   }
+  return out;
+}
+
+// D4 目的地名解析纯函数：move 复用 target 填地名（不加 schema 键）。
+// 返回{type} 分派：
+//   inner       同据点内层相邻房间（含「回村/出去/去村口」命中内层出口）→ dir 走 innerMove
+//   outer       相邻已解锁外层据点 → dir+dest 走 outerArrival
+//   noexit      direction 有效但当前据点该方向无外层出口
+//   unknown     名字不在 QUCUO_MAP 也不在本区 INNER_MAP（或根本说不出地名/方向）
+//   unreachable 名字在 QUCUO_MAP 但不在当前相邻 exits——隔站单步不直通
+//   locked      相邻但 !isNodeUnlocked——前路未开启
+export function resolveMoveTarget(state, action) {
+  const text = String(action?.text || "");
+  const targetRaw = String(action?.target || "").trim();
+  const target = targetRaw && targetRaw !== "无" ? targetRaw : "";
+  const dir = String(action?.direction || "").trim().toLowerCase();
+  const dirValid = VALID_DIRS.has(dir) ? dir : "";
+  const roomName = state?.room?.name || "";
+  const innerNow = state?.innerRoomName ?? null;
+  const unlockCtx = { completedQuests: completedQuestIdSet(state?.questProgress), flags: state?.flags || [] };
+
+  // 1. 内层：在据点内层房间时，target/口话命中同据点内层相邻房间 → 反查 visibleInnerExits
+  if (innerNow && hasInnerMap(roomName)) {
+    const visExits = visibleInnerExits(roomName, innerNow, {
+      questProgress: state?.questProgress, flags: state?.flags || [],
+      inv: state?.inv || [], char: state?.char || {}, varTree: state?.varTree || {},
+    });
+    if (/回村|出去|去村口/.test(text) || target) {
+      for (const [d, destRoom] of Object.entries(visExits)) {
+        if ((target && destRoom === target) || (/村口/.test(text) && /村口/.test(destRoom)) || (/出去|回村/.test(text) && !target && destRoom)) {
+          // 「出去/回村」无具体名时取第一个可见出口（多为出门方向）
+          if (target || /村口/.test(destRoom) || /出去|回村/.test(text)) return { type: "inner", dir: d };
+        }
+      }
+    }
+    // 方向型移动按内层【拓扑】判（resolveInnerExit 含锁房）——锁房不在可见出口里，
+    // 但 innerMove 自己产锁因拦阻回执；拓扑没这个方向才落外层解析。
+    if (dirValid && resolveInnerExit(roomName, innerNow, dirValid)) return { type: "inner", dir: dirValid };
+  }
+
+  // 2. 外层：direction 优先
+  if (dirValid) {
+    const dest = resolveExit(roomName, dirValid);
+    if (!dest) return { type: "noexit", dir: dirValid };
+    if (!isNodeUnlocked(dest, unlockCtx)) return { type: "locked", dir: dirValid, dest };
+    return { type: "outer", dir: dirValid, dest };
+  }
+
+  // 3. direction=none：target 或从原文提取据点名；「回村」在鱼定周边映射鱼定村
+  let destName = target;
+  if (!destName) {
+    for (const name of Object.keys(QUCUO_MAP)) {
+      if (name !== roomName && text.includes(name)) { destName = name; break; }
+    }
+  }
+  if (!destName && /回村/.test(text) && roomName !== "鱼定村") destName = "鱼定村";
+  if (!destName) return { type: "unknown", target: target || "" };
+  if (destName === roomName) return { type: "unknown", target: destName };
+  if (!QUCUO_MAP[destName]) return { type: "unknown", target: destName };
+
+  // 反查当前据点 exits 找直通方向
+  const exits = QUCUO_MAP[roomName]?.exits || {};
+  const hitDir = Object.entries(exits).find(([, d]) => d === destName)?.[0] || "";
+  if (!hitDir) return { type: "unreachable", target: destName };
+  if (!isNodeUnlocked(destName, unlockCtx)) return { type: "locked", dir: hitDir, dest: destName };
+  return { type: "outer", dir: hitDir, dest: destName };
+}
+
+// 移动确定性路由：内层复用 features/map innerMove（锁门/无出口/新人物/lastSeen 同一套账），
+// 外层复用 outerArrival（格子缓存/路遇/拾取同一套账）——写账都走 applyResult 单边界，
+// 都 stripTurnSpan 剥 time/convo 防与 commitRound 双跑。系统移动回合由 judgePhase
+// 上游滤掉 move（lockedDestName/movingDir 已锁），本路由绝不双跑。
+function runMove(action) {
   const state = gameStore.getState();
-  // includeCommand:false——不造「e」式伪用户输入日志；文字用玩家原话。
-  const result = innerMove(state, { direction: dir, command: action.text || dir, includeCommand: false });
+  const res = resolveMoveTarget(state, action);
+
+  if (res.type === "unknown") {
+    return { kind: "move", ok: false, text: `去不了「${res.target || "彼处"}」（曲措乡并无此去处或方向不明），系统未移动，严禁编造新地名或写成已离开原地。` };
+  }
+  if (res.type === "unreachable") {
+    return { kind: "move", ok: false, text: `去不了「${res.target}」（从「${state.room?.name}」没有直通「${res.target}」的道路，须先经相邻出口分段赶路），系统未移动，正文须写明路途遥远尚未动身或只看清方向，严禁写成已抵达。` };
+  }
+  if (res.type === "locked") {
+    return { kind: "move", ok: false, text: `去不了「${res.dest}」（前路尚未开启，机缘或信物未足），系统未移动，正文须写明受阻折返，严禁写成已进入「${res.dest}」。` };
+  }
+  if (res.type === "noexit") {
+    return { kind: "move", ok: false, text: `向${DIR_LABEL[res.dir]}走不通（此方向没有去处）——系统未结算移动，叙事不得写成已移动。` };
+  }
+
+  if (res.type === "outer") {
+    const arrival = outerArrival(state, {
+      direction: res.dir, destName: res.dest,
+      // 必传真实格子（Review 修）：否则格子预埋拾取/路遇永不发放，
+      // squareOps 却照消耗——重访玩家永远错失当批奖励。
+      roomMap: state.roomCache || {}, squares: serializeSquares(),
+      command: action.text || res.dest,
+    });
+    if (arrival?.cached && arrival.changes) {
+      // innerRoomName 落到目标据点锚点（外层到达后站在锚点房）
+      const anchor = getDistrictAnchor(res.dest);
+      const changes = { ...arrival.changes };
+      if (anchor) changes.innerRoomName = anchor;
+      applyResult(featureCtx(), stripTurnSpan({ ...arrival, changes }), { feature: "judgeRoute.move" });
+      return { kind: "move", ok: true, text: `你已沿${DIR_LABEL[res.dir]}路赶至「${res.dest}」${anchor ? `（落脚于${anchor}）` : ""}，系统已结算位置变更，正文须描写途中风物与初抵「${res.dest}」的景象。` };
+    }
+    // 格子未就绪（cached:false）或 null：目的地合法但无缓存——按未结算处理，不编位移
+    return { kind: "move", ok: false, text: `去不了「${res.dest}」（路途格子尚未就绪），系统未移动，正文不得写成已抵达。` };
+  }
+
+  // inner：沿用原 innerMove 路径
+  const result = innerMove(state, { direction: res.dir, command: action.text || res.dir, includeCommand: false });
   if (result?.changes?.innerRoomName) {
     applyResult(featureCtx(), stripTurnSpan(result), { feature: "judgeRoute.move" });
     return { kind: "move", ok: true, text: `你已进入${result.changes.innerRoomName}——系统已结算，叙事须照此写。` };
   }
   if (result?.logs?.length) {
-    // 内层被挡（锁门/无去处）：日志照落（玩家要看见为什么走不通），但不构成位移
     applyResult(featureCtx(), stripTurnSpan(result), { feature: "judgeRoute.move" });
     const why = result.logs.map((l) => l.text?.trim()).filter((t) => t && !t.startsWith(">")).pop();
-    return { kind: "move", ok: false, text: `向${DIR_LABEL[dir]}走不通（${why || "此方向没有去处"}）——系统未结算移动，叙事不得写成已移动。` };
+    return { kind: "move", ok: false, text: `向${DIR_LABEL[res.dir]}走不通（${why || "此方向没有去处"}）——系统未结算移动，叙事不得写成已移动。` };
   }
-  // result 为 null：当前房间无内层箱庭，方向属外层大地图——本路由不支持（缺口），
-  // 明确未结算，叙事不得编位移。
-  return { kind: "move", ok: false, text: "该方向属外层赶路，判官链暂不接外层移动——系统未结算，叙事不得写成已移动，也不可编造抵达。" };
+  return { kind: "move", ok: false, text: "移动方向不明——系统未结算，叙事不得写成已移动。" };
 }
 
 // D1 用物分流纯函数：耗材服用 / 兵刃衣饰演练端详 / 凭帖钥匙信物出示。

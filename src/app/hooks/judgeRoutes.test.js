@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 // WO-16F-F2a 集成测试放 app 层：engine 测试不可反引 app 模块（分层门禁），
 // app 层向下 import engine/store 合规。
 import { runTurn } from "../../engine/runTurn.js";
-import { executeJudgeRoutes } from "./judgeRoutes.js";
+import { executeJudgeRoutes, resolveMoveTarget } from "./judgeRoutes.js";
 import { initialNarratorState } from "../../domain/rules/narrator/narrator.js";
 import { emptyBodyProfile } from "../../domain/rules/character/bodyProfile.js";
 import { gameActions, gameStore } from "../../store/gameStore.js";
@@ -499,18 +499,30 @@ describe("S7 move 路由：内层移动确定性结算", () => {
     setupInnerRoom();
     const { receipts } = executeJudgeRoutes([mkMove("none", "走走")]);
     expect(receipts[0].ok).toBe(false);
-    expect(receipts[0].text).toContain("系统未结算");
-    expect(receipts[0].text).toContain("不得写成已移动");
+    // D4：无地名无方向走「查无此地/方向不明」确定拦截文案
+    expect(receipts[0].text).toContain("系统未移动");
+    expect(receipts[0].text).toContain("严禁编造");
   });
 
-  it("无内层箱庭房间（外层方向）：不串账不位移，回执明示缺口", () => {
-    gameActions.setRoom({ name: "雪山派", npcs: [], items: [], exits: [] });
-    gameStore.setState({ innerRoomName: null });
-    const before = gameStore.getState().room?.name;
-    const { receipts } = executeJudgeRoutes([mkMove("n", "往北走")]);
-    expect(receipts[0].ok).toBe(false);
-    expect(receipts[0].text).toContain("外层");
-    expect(gameStore.getState().room?.name).toBe(before);
+  it("D4：无内层箱庭据点的外层方向移动——相邻已解锁真实位移（雪山派向北进山洞）", () => {
+    const prevCache = gameStore.getState().roomCache;
+    try {
+      gameActions.setRoom({ name: "雪山派", npcs: [], items: [], exits: ["e", "n"] });
+      gameStore.setState({ innerRoomName: null, roomCache: { 山洞: { npcs: [], items: [] } } });
+      const { receipts } = executeJudgeRoutes([mkMove("n", "往北走")]);
+      expect(receipts[0].ok).toBe(true);
+      expect(receipts[0].text).toContain("赶至「山洞」");
+      expect(gameStore.getState().room?.name).toBe("山洞");
+      // 格子未就绪（无缓存）：明确未移动、不编位移
+      gameActions.setRoom({ name: "雪山派", npcs: [], items: [], exits: ["e", "n"] });
+      gameStore.setState({ roomCache: {} });
+      const miss = executeJudgeRoutes([mkMove("n", "往北走")]);
+      expect(miss.receipts[0].ok).toBe(false);
+      expect(miss.receipts[0].text).toContain("系统未移动");
+      expect(gameStore.getState().room?.name).toBe("雪山派");
+    } finally {
+      gameStore.setState({ roomCache: prevCache });
+    }
   });
 
   it("内层锁门不穿帮：无钥匙进溪边小屋被挡，失败回执带锁因", () => {
@@ -524,6 +536,96 @@ describe("S7 move 路由：内层移动确定性结算", () => {
       expect(gameStore.getState().innerRoomName).toBe("村口·广场"); // 原地未动
     } finally {
       gameStore.setState({ innerRoomName: prev.innerRoomName, room: prev.room, convo: prev.convo, time: prev.time });
+    }
+  });
+});
+
+describe("D4 外层自然语言移动确定性路由", () => {
+  const mkState = (over = {}) => ({
+    room: { name: "鱼定村", npcs: [], items: [], exits: ["w", "n", "s", "e"] },
+    innerRoomName: null, questProgress: {}, flags: [], inv: [], char: {}, varTree: {},
+    roomCache: { 喇嘛庙: { npcs: [], items: [] }, 大草甸: { npcs: [], items: [] }, 天龙营: { npcs: [], items: [] } },
+    ...over,
+  });
+  const mkAction = (over = {}) => ({
+    kind: "move", target: "无", item: "无", itemId: "", direction: "none", condition: "无",
+    condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "",
+    ...over,
+  });
+
+  it("target 填相邻地名反查方向 → outer", () => {
+    const r = resolveMoveTarget(mkState(), mkAction({ target: "喇嘛庙", text: "去喇嘛庙" }));
+    expect(r).toEqual({ type: "outer", dir: "n", dest: "喇嘛庙" });
+  });
+  it("direction 有效 → 直接外层解析", () => {
+    const r = resolveMoveTarget(mkState(), mkAction({ direction: "s" }));
+    expect(r).toEqual({ type: "outer", dir: "s", dest: "大草甸" });
+  });
+  it("原文提及据点名（target 无）也能提取", () => {
+    const r = resolveMoveTarget(mkState(), mkAction({ text: "我想去大草甸走走" }));
+    expect(r).toEqual({ type: "outer", dir: "s", dest: "大草甸" });
+  });
+  it("「回村」在鱼定周边映射鱼定村", () => {
+    const r = resolveMoveTarget(mkState({ room: { name: "大草甸", npcs: [], exits: [] } }), mkAction({ text: "回村" }));
+    expect(r).toEqual({ type: "outer", dir: "n", dest: "鱼定村" });
+  });
+  it("隔站不直通：天都镇在图但不相邻 → unreachable", () => {
+    const r = resolveMoveTarget(mkState(), mkAction({ target: "天都镇", text: "去天都镇" }));
+    expect(r.type).toBe("unreachable");
+    expect(r.target).toBe("天都镇");
+  });
+  it("未解锁拦截：天龙营相邻但无信物 → locked；持通行旗 → outer", () => {
+    const atMeadow = mkState({ room: { name: "大草甸", npcs: [], exits: [] } });
+    const locked = resolveMoveTarget(atMeadow, mkAction({ target: "天龙营", text: "去天龙营" }));
+    expect(locked.type).toBe("locked");
+    expect(locked.dest).toBe("天龙营");
+    const open = resolveMoveTarget(mkState({ room: { name: "大草甸", npcs: [], exits: [] }, flags: ["tianlong_pass_token"] }), mkAction({ target: "天龙营" }));
+    expect(open).toEqual({ type: "outer", dir: "w", dest: "天龙营" });
+  });
+  it("查无此地：不在图的名字 → unknown", () => {
+    const r = resolveMoveTarget(mkState(), mkAction({ target: "亚特兰蒂斯", text: "去亚特兰蒂斯" }));
+    expect(r.type).toBe("unknown");
+  });
+  it("无地名无方向 → unknown", () => {
+    const r = resolveMoveTarget(mkState(), mkAction({ text: "走走" }));
+    expect(r.type).toBe("unknown");
+  });
+
+  it("executeJudgeRoutes：外层相邻已解锁真实位移且剥 time/convo；隔站/未解锁/未知三类零位移", () => {
+    const prevRoom = gameStore.getState().room;
+    const prevCache = gameStore.getState().roomCache;
+    const prevInner = gameStore.getState().innerRoomName;
+    try {
+      gameActions.setRoom({ name: "鱼定村", npcs: [], items: [], exits: ["w", "n", "s", "e"] });
+      gameStore.setState({ roomCache: { 喇嘛庙: { npcs: [], items: [] } }, innerRoomName: null });
+      const timeBefore = gameStore.getState().time;
+
+      // 相邻已解锁 → 真位移到喇嘛庙
+      const ok = executeJudgeRoutes([mkAction({ target: "喇嘛庙", text: "去喇嘛庙" })]);
+      expect(ok.receipts[0].ok).toBe(true);
+      expect(ok.receipts[0].text).toContain("赶至「喇嘛庙」");
+      expect(gameStore.getState().room?.name).toBe("喇嘛庙");
+      // 剥 time/convo：路由不加时辰（commitRound 统一加）
+      expect(gameStore.getState().time).toBe(timeBefore);
+
+      // 复位后三类拦截零位移
+      gameActions.setRoom({ name: "鱼定村", npcs: [], items: [], exits: ["w", "n", "s", "e"] });
+      const far = executeJudgeRoutes([mkAction({ target: "天都镇", text: "去天都镇" })]);
+      expect(far.receipts[0].ok).toBe(false);
+      expect(far.receipts[0].text).toContain("没有直通「天都镇」的道路");
+      expect(gameStore.getState().room?.name).toBe("鱼定村");
+
+      const locked = executeJudgeRoutes([mkAction({ target: "天龙营", text: "去天龙营" })]);
+      expect(locked.receipts[0].ok).toBe(false);
+      expect(gameStore.getState().room?.name).toBe("鱼定村");
+
+      const unknown = executeJudgeRoutes([mkAction({ target: "亚特兰蒂斯", text: "去亚特兰蒂斯" })]);
+      expect(unknown.receipts[0].ok).toBe(false);
+      expect(unknown.receipts[0].text).toContain("并无此去处");
+      expect(gameStore.getState().room?.name).toBe("鱼定村");
+    } finally {
+      if (prevRoom) gameActions.setRoom(prevRoom);
+      gameStore.setState({ roomCache: prevCache, innerRoomName: prevInner });
     }
   });
 });
