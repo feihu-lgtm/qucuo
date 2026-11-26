@@ -520,6 +520,11 @@ describe("S7 送银桥 Review 加固：金额只认玩家原文", () => {
     expect(v2.facts.filter((f) => f.op === "CHANGE_VITALS_SILVER")).toHaveLength(0);
   });
 
+  it("「一万零五两」零字段拒签不半截错扣", () => {
+    const v = judgeTurn(env2("送一万零五两", 20000), act("送一万零五两"), { rng: seqRng([0.5]) });
+    expect(v.facts.filter((f) => f.op === "CHANGE_VITALS_SILVER")).toHaveLength(0);
+  });
+
   it("「千万收下」副词不误伤：5 两照签", () => {
     const v = judgeTurn(env2("温掌柜千万收下这5两银子"), act("温掌柜千万收下这5两银子"), { rng: seqRng([0.5]) });
     expect(v.facts.find((f) => f.op === "CHANGE_VITALS_SILVER")?.moneyDelta).toBe(-5);

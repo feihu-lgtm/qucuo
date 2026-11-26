@@ -55,16 +55,18 @@ export function extractSilverAmounts(text) {
   const amounts = [];
   const consumed = [];
   // 中文数字在前（字符集不重叠不会与阿拉伯混淆）
-  const cnRe = /([一二三四五六七八九十百千]{1,6})\s*两/g;
+  const cnRe = /([一二三四五六七八九十百千零]{1,6})\s*两/g;
   let m;
   while ((m = cnRe.exec(src))) {
+    // 含「零」整段拒签——零的占位语义（一千零五=1005）全解超最小口径，宁可不签不可错扣。
+    if (m[1].includes("零")) { consumed.push([m.index, m.index + m[0].length]); continue; }
     const v = parseCnNumeral(m[1]);
     if (v > 0) amounts.push(v);
     consumed.push([m.index, m.index + m[0].length]);
   }
   // 万级以上不猜：万作为数词紧邻数字/中文数字时整句拒收（宁可不签不可错扣）；
   // 「千万收下」「万万不可」等副词用法的万前后不是数字，不误伤。
-  if (/[一二三四五六七八九十百千\d]\s*万[一二三四五六七八九十百千\d]*\s*两/.test(src)) return [];
+  if (/[一二三四五六七八九十百千\d]\s*万[一二三四五六七八九十百千零\d]*\s*两/.test(src)) return [];
   // 阿拉伯数字：前后不得紧邻数字或小数点（1.5两/12.5整体拒收），且不在中文数字段内
   const digitRe = /(?<![\d.])(\d+)\s*两(?!\d)/g;
   while ((m = digitRe.exec(src))) {
