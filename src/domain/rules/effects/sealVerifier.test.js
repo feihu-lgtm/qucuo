@@ -98,6 +98,29 @@ describe("verifySealAndMaterialize 铁律三：编译与 pact", () => {
     expect(out2.warnings.join()).toContain("spontaneousPact");
   });
 
+  it("F7：模型 SEAL 未填时 fallbackPact 兜底并入；模型填了以模型为准", () => {
+    const empty = JSON.stringify({ fills: {}, respondedNpcs: [], spontaneousPact: null });
+    const fb = { npc: "才旦", promise: "去后山替你寻回那件旧物", deadlineHours: 72, rewardHint: "十两银子买酒喝" };
+    const out = verifySealAndMaterialize({
+      sealText: empty, screenText: "x", verdict: verdictWith(), anchorIds: ["F42_1"], state: STATE, turn: 42,
+      fallbackPact: fb,
+    });
+    expect(out.facts.some((f) => f.op === "BIND_OR_SETTLE_PACT" && f.npc === "才旦" && f.deadlineHours === 72)).toBe(true);
+    // 模型自填优先：fallback 存在但 SEAL 有值时按 SEAL
+    const filled = JSON.stringify({ fills: {}, spontaneousPact: { npc: "才旦", promise: "模型版承诺", deadlineHours: 24 } });
+    const out2 = verifySealAndMaterialize({
+      sealText: filled, screenText: "x", verdict: verdictWith(), anchorIds: ["F42_1"], state: STATE, turn: 42,
+      fallbackPact: fb,
+    });
+    expect(out2.facts.some((f) => f.op === "BIND_OR_SETTLE_PACT" && f.promise === "模型版承诺")).toBe(true);
+    expect(out2.facts.some((f) => f.op === "BIND_OR_SETTLE_PACT" && f.promise.includes("后山"))).toBe(false);
+    // 无 fallback 且模型未填 → 无 pact（回归旧行为）
+    const out3 = verifySealAndMaterialize({
+      sealText: empty, screenText: "x", verdict: verdictWith(), anchorIds: ["F42_1"], state: STATE, turn: 42,
+    });
+    expect(out3.facts.some((f) => f.op === "BIND_OR_SETTLE_PACT")).toBe(false);
+  });
+
   it("WO-22B 期限下限：1/2/3 小时不签、4 小时可签", () => {
     for (const hours of [1, 2, 3]) {
       const seal = JSON.stringify({ fills: {}, spontaneousPact: { npc: "才旦", promise: "x", deadlineHours: hours } });

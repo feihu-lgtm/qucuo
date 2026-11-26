@@ -67,6 +67,9 @@ function validPact(pact, { npcNames = [] } = {}) {
 // verdict: judgeTurn 输出；screenText: 锚点已剥的正文；anchorIds: 正文里实际出现过的锚点 id 列表。
 export function verifySealAndMaterialize({
   sealText, screenText, verdict, anchorIds = [], state = {}, luck = 0, turn = 0,
+  // F7：系统侧兜底 pact（玩家原话关键词解析产物）——模型 SEAL 自填仍是唯一增强通道，
+  // 但不再是没有就永漏的唯一通道。模型填了以模型为准，没填走兜底。
+  fallbackPact = null,
 } = {}) {
   const facts = [...(verdict?.facts || [])];
   const warrants = [...(verdict?.warrants || [])];
@@ -148,10 +151,16 @@ export function verifySealAndMaterialize({
     }
   }
 
-  // spontaneousPact 校验并入 facts
-  if (verdict?.allowSpontaneousPact && sealData?.spontaneousPact) {
-    let pact = validPact(sealData.spontaneousPact, {
-      npcNames: (verdict.reactionGuides || []).map((g) => g.npc),
+  // spontaneousPact 校验并入 facts（F7：模型未填时系统兜底 pact 补位）
+  const pactSource = sealData?.spontaneousPact || fallbackPact;
+  if (verdict?.allowSpontaneousPact && pactSource) {
+    const pactNpcNames = (verdict.reactionGuides || []).map((g) => g.npc);
+    // 兜底 pact 的 npc 来自 intake/谈锋系统推导（不是模型自证），豁免在场名册核验
+    if (!sealData?.spontaneousPact && fallbackPact?.npc && !pactNpcNames.includes(fallbackPact.npc)) {
+      pactNpcNames.push(fallbackPact.npc);
+    }
+    let pact = validPact(pactSource, {
+      npcNames: pactNpcNames,
     });
     if (pact) {
       // WO-22B-P3 立诺锁奖（初审裁决）：rewardHint 是模型自由文本，绝不许履约时

@@ -1,5 +1,6 @@
 // ── 判官尾章/开庭前仲裁（S4 纯搬家：原 runTurn.js 两段原样移入，零行为变化）──
 import { verifySealAndMaterialize } from "../../domain/rules/effects/sealVerifier.js";
+import { parsePactOffer } from "../../domain/rules/pact/pactOfferParse.js";
 import { validateEmergenceSeal } from "../../domain/rules/npc/npcEmergence.js";
 import { recordSealMetric } from "../ports/releaseMetrics.js";
 import { withAI } from "../ports/withAI.js";
@@ -28,7 +29,16 @@ export function verifyJudgeTail({ ctx, deps, judgeVerdict, sealParts, narrativeT
     // 涌现校验必须以模型原始正文为准——系统补锚短句（patchedScreen）不能替模型
     // 完成「正文真实出现」的登场证据，所以在补写发生前先存一份原文。
     const rawNarrative = narrativeText || rawFull;
+    // F7：口头契约系统兜底——玩家原话三重门槛（要约+期限+酬谢）全齐且锁定谈锋对象时，
+    // 解析产物作为 fallbackPact 进尾章校验；模型 SEAL 填了仍以模型为准。
+    let fallbackPact = null;
+    try {
+      const offer = parsePactOffer(deps.cmd || "");
+      const pactNpc = (deps.derivedRespondedNpcs || [])[0] || deps.talkTarget || ctx.talkTarget || "";
+      if (offer && pactNpc) fallbackPact = { npc: pactNpc, ...offer };
+    } catch { /* 解析器绝不阻塞主链 */ }
     const verified = verifySealAndMaterialize({
+      fallbackPact,
       sealText: sealParts?.sealText || "",
       screenText: rawNarrative,
       verdict: judgeVerdict,

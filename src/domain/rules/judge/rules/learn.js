@@ -60,6 +60,12 @@ export function handleLearn(J, action, npc, aff, stanceMod) {
     }
   } else {
     notes.push(`${npc.name}不肯传授`);
+    // F5 真机验收修：拒传也得给潜能保底——求教本身是修习历练，
+    // potDelta 1 取 freeAct 既有最低档（不新造数值），否则玩家恭敬求学一无所获。
+    facts.push({
+      id: nextFactId(), op: "PROGRESS_CULTIVATION", npc: npc.name,
+      potDelta: 1, reason: "求教虽拒、揣摩有得", witnesses: ["主角", npc.name],
+    });
     if (J.lastActionOutcome) { J.lastActionOutcome.rejected = true; J.lastActionOutcome.kind = "learn"; J.lastActionOutcome.target = npc.name; }
   }
 }
