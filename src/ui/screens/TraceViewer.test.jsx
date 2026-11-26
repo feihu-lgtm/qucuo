@@ -119,7 +119,7 @@ describe("放行指标观测与 Markdown 复制报告", () => {
     const text = extractText(tree).join(" ");
     expect(text).toContain("放行指标观测");
     expect(text).toContain("intake[openai/gpt-4o-mini]");
-    expect(text).toContain("SEAL[openai/gpt-4o]");
+    expect(text).toContain("SEAL[openai/gpt-4o/judge]");
 
     const copyReportBtn = flatten(tree).find((n) => n.type === "button"
       && flatten(n.props?.children).concat([n.props?.children]).flat().includes("复制报告"));

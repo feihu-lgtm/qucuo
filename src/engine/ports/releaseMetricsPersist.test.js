@@ -139,3 +139,54 @@ describe("复审返修：写入失败增量不丢", () => {
     expect(releaseMetricsExport().cumulative.intake[0].calls).toBe(2);
   });
 });
+
+describe("B0：chain 维度与旧样本归并", () => {
+  beforeEach(() => {
+    _resetReleaseMetrics();
+    _setReleaseMetricsEnabledForTest(true);
+  });
+
+  it("judge/group 分桶互不稀释，持久化带 chain", () => {
+    const data = new Map();
+    const storage = {
+      getItem: (k) => (data.has(k) ? data.get(k) : null),
+      setItem: (k, v) => data.set(k, String(v)),
+      removeItem: (k) => data.delete(k),
+    };
+    _setReleaseMetricsStorageForTest(storage);
+    recordSealMetric({ epoch: "e1", cfg, chain: "judge", sealText: "{}", sealData: {}, warnings: [] });
+    recordSealMetric({ epoch: "e1", cfg, chain: "group", sealText: "", sealData: null, warnings: [] });
+    const exported = releaseMetricsExport();
+    const rows = exported.cumulative.seal;
+    expect(rows).toHaveLength(2);
+    const judge = rows.find((r) => r.chain === "judge");
+    const group = rows.find((r) => r.chain === "group");
+    expect(judge.passed).toBe(1);
+    expect(group.missingSeal).toBe(1);
+    expect(group.failed).toBe(1);
+    // 持久化 shape 带 chain
+    const persisted = JSON.parse(data.get(RELEASE_METRICS_STORAGE_KEY));
+    expect(Object.keys(persisted.cumulative.seal).some((k) => k.endsWith("::group"))).toBe(true);
+  });
+
+  it("旧 v2 无 chain 行读取归并 judge 不丢样本", async () => {
+    const data = new Map();
+    // 预植旧 shape：键无 chain 后缀、行无 chain 字段
+    data.set(RELEASE_METRICS_STORAGE_KEY, JSON.stringify({
+      version: 2,
+      cumulative: { intake: {}, seal: { "openai::gpt-x": { provider: "openai", model: "gpt-x", total: 50, withSeal: 50, missingSeal: 0, jsonOk: 50, jsonFailed: 0, passed: 49, failed: 1 } } },
+    }));
+    const storage = {
+      getItem: (k) => (data.has(k) ? data.get(k) : null),
+      setItem: (k, v) => data.set(k, String(v)),
+      removeItem: (k) => data.delete(k),
+    };
+    _setReleaseMetricsStorageForTest(storage);
+    const exported = releaseMetricsExport();
+    const rows = exported.cumulative.seal;
+    expect(rows).toHaveLength(1);
+    expect(rows[0].chain).toBe("judge");
+    expect(rows[0].total).toBe(50);
+    expect(rows[0].passed).toBe(49);
+  });
+});

@@ -41,13 +41,13 @@ describe("releaseMetrics 放行指标观测", () => {
       { provider: "gemini", model: "gemini-2.5-flash", calls: 1, schemaOk: 0, parseFailed: 0, validateFailed: 0, otherFailed: 1 },
     ]);
     expect(e1.seal).toEqual([
-      { provider: "gemini", model: "gemini-2.5-flash", total: 2, withSeal: 1, missingSeal: 1, jsonOk: 1, jsonFailed: 0, passed: 1, failed: 1 },
+      { provider: "gemini", model: "gemini-2.5-flash", chain: "judge", total: 2, withSeal: 1, missingSeal: 1, jsonOk: 1, jsonFailed: 0, passed: 1, failed: 1 },
     ]);
 
     const e2 = releaseMetricAggregates("2");
     expect(e2.intake).toEqual([]);
     expect(e2.seal).toEqual([
-      { provider: "gemini", model: "gemini-2.5-flash", total: 1, withSeal: 1, missingSeal: 0, jsonOk: 0, jsonFailed: 1, passed: 0, failed: 1 },
+      { provider: "gemini", model: "gemini-2.5-flash", chain: "judge", total: 1, withSeal: 1, missingSeal: 0, jsonOk: 0, jsonFailed: 1, passed: 0, failed: 1 },
     ]);
 
     const md = formatReleaseGateMarkdown({ epoch: "1", shadowAgg: { turns: 4, match: 3, gaps: 1, judgeExtra: 0, byCategory: { inv: { single_only: 1 } } }, metricsAgg: e1 });
@@ -117,7 +117,7 @@ describe("releaseMetrics 放行指标观测", () => {
     recordSealMetric({ epoch: "1", cfg, sealText: "{}", sealData: { fills: {} }, emergenceRejections: ["登场申报「甲」未在正文登场，丢弃"] });
     const agg = releaseMetricAggregates("1");
     expect(agg.seal).toEqual([
-      { provider: "openai", model: "gpt-4o-mini", total: 3, withSeal: 3, missingSeal: 0, jsonOk: 3, jsonFailed: 0, passed: 1, failed: 2 },
+      { provider: "openai", model: "gpt-4o-mini", chain: "judge", total: 3, withSeal: 3, missingSeal: 0, jsonOk: 3, jsonFailed: 0, passed: 1, failed: 2 },
     ]);
   });
 
