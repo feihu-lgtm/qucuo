@@ -7,6 +7,8 @@
 // WO-16D-M1 补四类目：vitals 气血/银两（char.hp[0]/char.money 数值增减）、skills 技能增删、
 // cultivation 修为（exp/pot 数值增量）、quest 任务推进语义投影。money 不复活大类——
 // 银两作为 vitals.money 子项随气血同列（char.money 可精确 diff，见 shadowDiff）。
+import { CATALOG_INDEX } from "../../../domain/data/items/catalog.js";
+
 export const SHADOW_CATEGORIES = ["inv", "flags", "affection", "npcs", "vitals", "skills", "cultivation", "quest", "world"];
 
 export function emptyCategories() {
@@ -51,7 +53,15 @@ export const FEATURE_ROUTED_KIND_CATS = {
   duel: ["vitals", "cultivation"],
 };
 
-export function featureRoutedCats(actions = [], { npcs = [] } = {}) {
+// D1：use_item 分流后非耗材（兵刃衣饰演练/凭帖出示）零状态改动——
+// 系统路由并未动 inv/vitals，此时不得豁免，否则判官真漏签被洗成盲区。
+// consumable 口径与 consumeItem/judgeRoutes 同源（item.consumable 或未盾图鉴药效）。
+function isConsumableItem(item) {
+  if (!item || typeof item !== "object") return false;
+  return !!(item.consumable || (!item.noCatalog && item.name && CATALOG_INDEX[item.name]?.consumable));
+}
+
+export function featureRoutedCats(actions = [], { npcs = [], inv = [] } = {}) {
   const out = new Set();
   // 在场名单兼容对象/字符串两形——visibleNpcsForAI/room.npcs 上游形状不保证，
   // 只认 n?.name 会把字符串名全滤空、trade/duel 在场受理豁免永不生效（Review 修）。
@@ -75,6 +85,17 @@ export function featureRoutedCats(actions = [], { npcs = [] } = {}) {
         deferredSlotTaken = true;
       }
       // duel 无豁免类目（战斗自成子系统），trade 未受理不豁免
+      continue;
+    }
+    if (a?.kind === "use_item") {
+      // D1：只豁免真耗材——itemId/名字在快照背包命中且具 consumable 才加豁免；
+      // 演练/出示不消耗，inv/vitals 照常参与对账。
+      const item = (inv || []).find((it) => typeof it === "object" && it && (
+        (a.itemId && it.id === a.itemId) || (!a.itemId && a.item && a.item !== "无" && it.name === a.item)
+      ));
+      if (isConsumableItem(item)) {
+        for (const cat of FEATURE_ROUTED_KIND_CATS.use_item) out.add(cat);
+      }
       continue;
     }
     for (const cat of FEATURE_ROUTED_KIND_CATS[a?.kind] || []) out.add(cat);

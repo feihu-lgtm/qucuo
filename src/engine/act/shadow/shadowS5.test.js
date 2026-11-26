@@ -46,7 +46,10 @@ describe("S5 world 类目（varTree.世界 数值 leaf）", () => {
 describe("S5 feature 路由类目豁免", () => {
   it("equip/use_item/take/invite 映射对应类目", () => {
     expect(featureRoutedCats([{ kind: "equip" }])).toEqual(["inv"]);
-    expect(featureRoutedCats([{ kind: "use_item" }])).toEqual(["inv", "vitals"]);
+    // D1：use_item 豁免仅真耗材——背包快照命中 consumable 才豁免，演练/出示不豁免
+    const invConsumable = [{ id: "it_1", name: "青稞酒", consumable: { hpDelta: 5 } }];
+    expect(featureRoutedCats([{ kind: "use_item", itemId: "it_1", item: "青稞酒" }], { inv: invConsumable })).toEqual(["inv", "vitals"]);
+    expect(featureRoutedCats([{ kind: "use_item", itemId: "it_2", item: "鱼定枪" }], { inv: [{ id: "it_2", name: "鱼定枪", category: "weapon" }] })).toEqual([]);
     expect(featureRoutedCats([{ kind: "take" }])).toEqual(["inv"]);
     expect(featureRoutedCats([{ kind: "invite" }])).toEqual(["affection"]);
     expect(featureRoutedCats([{ kind: "talk" }])).toEqual([]);
@@ -97,9 +100,10 @@ describe("S5 修为 single_only 根因复现（结论：签发侧）", () => {
 
 describe("S5 Review 三修", () => {
   it("带前提的条件动作不按 feature 路由豁免（live router 跳过不执行）", () => {
-    expect(featureRoutedCats([{ kind: "use_item", condition: "遇敌" }])).toEqual([]);
-    expect(featureRoutedCats([{ kind: "use_item", condition: "无" }])).toEqual(["inv", "vitals"]);
-    expect(featureRoutedCats([{ kind: "use_item" }])).toEqual(["inv", "vitals"]);
+    const invWine = [{ id: "it_w", name: "青稞酒", consumable: { hpDelta: 5 } }];
+    expect(featureRoutedCats([{ kind: "use_item", itemId: "it_w", item: "青稞酒", condition: "遇敌" }], { inv: invWine })).toEqual([]);
+    expect(featureRoutedCats([{ kind: "use_item", itemId: "it_w", item: "青稞酒", condition: "无" }], { inv: invWine })).toEqual(["inv", "vitals"]);
+    expect(featureRoutedCats([{ kind: "use_item", itemId: "it_w", item: "青稞酒" }], { inv: invWine })).toEqual(["inv", "vitals"]);
   });
   it("契约违约系统扣威望按 breachTurn 归因剔除，不算判官漏判", () => {
     const pre = { inv: [], flags: [], varTree: { 世界: { 威望: 10, 契约: { 掌柜: { p1: { promise: "x" } } } } }, room: { npcs: [] } };

@@ -166,7 +166,7 @@ describe("trade/duel 在场受理豁免（Review 修：npcs 字符串形状）",
   it("接线断言：shadowJudge compareCategories 处 featureRoutedCats 带 { npcs }", async () => {
     const { readFileSync } = await import("node:fs");
     const src = readFileSync(new URL("./shadowJudge.js", import.meta.url), "utf8");
-    expect(src).toMatch(/featureRoutedCats\(intakeResult\?\.actions, \{ npcs \}\)/);
+    expect(src).toMatch(/featureRoutedCats\(intakeResult\?\.actions, \{ npcs, inv: preState\?\.inv \|\| \[\] \}\)/);
   });
   it("duel 在场受理同样豁免 vitals/cultivation（延期交互进 feature 战斗链）", async () => {
     const { featureRoutedCats } = await import("./shadowTaxonomy.js");
