@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { DEFAULT_VERTEX_MODEL } from "../../content/apiModel.js";
 import { THEME_VARS, chromeBtn } from "../../utils/theme.js";
+import { FieldLabel } from "../primitives/index.js";
 
 const VERTEX_MODELS = [
   [DEFAULT_VERTEX_MODEL],
@@ -64,37 +65,37 @@ export default function ApiProviderSettings({
   return (
     <>
       <label style={fieldLabel} htmlFor="api-provider">服务商</label>
-      <select id="api-provider" style={inputStyle} value={provider.id} onChange={e => selectProvider(e.target.value)}>
+      <select id="api-provider" className="ui-input" value={provider.id} onChange={e => selectProvider(e.target.value)}>
         {Object.values(providers).map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
       </select>
       {vertex ? (
         <>
           <label htmlFor="vertex-adc" style={fieldLabel}>导入 ADC JSON</label>
-          <input id="vertex-adc" type="file" accept=".json,application/json" onChange={importFile} style={inputStyle} />
+          <input id="vertex-adc" type="file" accept=".json,application/json" onChange={importFile} className="ui-input" />
           {(status || hasCredential) && <div role="status">{status || "已导入 ADC 凭证"}</div>}
           <label htmlFor="vertex-project" style={fieldLabel}>项目 ID</label>
-          <input id="vertex-project" style={inputStyle} value={cfg.vertexProject || ""} onChange={e => patch({ vertexProject: e.target.value })} />
+          <input id="vertex-project" className="ui-input" value={cfg.vertexProject || ""} onChange={e => patch({ vertexProject: e.target.value })} />
           <label htmlFor="vertex-location" style={fieldLabel}>位置</label>
-          <input id="vertex-location" style={inputStyle} value={cfg.vertexLocation ?? "global"} onChange={e => patch({ vertexLocation: e.target.value })} placeholder="global" />
+          <input id="vertex-location" className="ui-input" value={cfg.vertexLocation ?? "global"} onChange={e => patch({ vertexLocation: e.target.value })} placeholder="global" />
           <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginTop: 4 }}>
             每个浏览器只保存一份 ADC，导入新文件会替换旧的
             <br />
             凭证不会随配置、存档或报告导出。仅在信任的设备上使用。
           </div>
           <label htmlFor="vertex-model-preset" style={fieldLabel}>Vertex 预设模型</label>
-          <select id="vertex-model-preset" style={inputStyle} value={preset} onChange={e => patch({ vertexModel: e.target.value })}>
+          <select id="vertex-model-preset" className="ui-input" value={preset} onChange={e => patch({ vertexModel: e.target.value })}>
             {!preset && <option value="" disabled hidden>自定义模型</option>}
             {VERTEX_MODELS.map(([id, note]) => <option key={id} value={id}>{note ? `${id}（${note}）` : id}</option>)}
           </select>
           <label htmlFor="api-model" style={fieldLabel}>模型名称</label>
-          <input id="api-model" style={inputStyle} value={vertexModel} onChange={e => patch({ vertexModel: e.target.value })} placeholder={DEFAULT_VERTEX_MODEL} />
+          <input id="api-model" className="ui-input" value={vertexModel} onChange={e => patch({ vertexModel: e.target.value })} placeholder={DEFAULT_VERTEX_MODEL} />
         </>
       ) : (
         <>
           {provider.id === "custom" && (
             <>
               <label style={fieldLabel} htmlFor="api-endpoint">API 地址（Endpoint）</label>
-              <input id="api-endpoint" style={inputStyle} value={cfg.endpoint || ""} onChange={e => patch({ endpoint: e.target.value })} placeholder="留空使用默认地址" />
+              <input id="api-endpoint" className="ui-input" value={cfg.endpoint || ""} onChange={e => patch({ endpoint: e.target.value })} placeholder="留空使用默认地址" />
             </>
           )}
           <button
@@ -108,7 +109,7 @@ export default function ApiProviderSettings({
               {provider.id !== "custom" && (
                 <>
                   <label style={fieldLabel} htmlFor="api-endpoint">API 地址（Endpoint）</label>
-                  <input id="api-endpoint" style={inputStyle} value={cfg.endpoint || ""} onChange={e => patch({ endpoint: e.target.value })} placeholder="留空使用默认地址" />
+                  <input id="api-endpoint" className="ui-input" value={cfg.endpoint || ""} onChange={e => patch({ endpoint: e.target.value })} placeholder="留空使用默认地址" />
                 </>
               )}
               {provider.altEndpoints.length > 0 && (
@@ -140,14 +141,14 @@ export default function ApiProviderSettings({
             </>
               )}
               <label style={fieldLabel}>CORS 代理地址（可选）</label>
-              <input id="api-cors-proxy" style={inputStyle} value={cfg.corsProxy || ""} onChange={e => patch({ corsProxy: e.target.value })} placeholder="例如 https://your-proxy.com/?url=" />
+              <input id="api-cors-proxy" className="ui-input" value={cfg.corsProxy || ""} onChange={e => patch({ corsProxy: e.target.value })} placeholder="例如 https://your-proxy.com/?url=" />
               <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginTop: 3 }}>
                 如果目标 API 不支持浏览器直连（CORS 报错），可以填一个中转代理服务的地址前缀。
               </div>
             </div>
           )}
-          <div style={labelStyle}>API Key</div>
-          <input id="api-key" style={inputStyle} type="password" value={cfg.apiKey || ""} onChange={e => patch({ apiKey: e.target.value })} placeholder="sk-..." />
+          <FieldLabel>API Key</FieldLabel>
+          <input id="api-key" className="ui-input" type="password" value={cfg.apiKey || ""} onChange={e => patch({ apiKey: e.target.value })} placeholder="sk-..." />
           {provider.corsProxyRequired && !String(cfg.corsProxy || "").trim() && (
             <div role="status" style={{ color: "var(--accent)", fontSize: "var(--fs-xs)", marginTop: 5 }}>
               此厂商不允许浏览器直连，请在下方填 CORS 代理

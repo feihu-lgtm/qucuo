@@ -2,15 +2,15 @@ import React from "react";
 import {
   API_TYPES, wordCountToMaxTokens, DEFAULT_INTENT_BUDGETS, DEFAULT_CALL_TOKEN_LIMITS, CALL_TOKEN_LIMIT_MAX,
 } from "../../../infra/apiConfig.js";
-import { inputStyle, labelStyle, btnStyle } from "./styles.js";
+import { Button, FieldLabel } from "../../primitives/index.js";
 
 // API 配置 ·「篇幅与超时」组：超时、叙事字数、各意图篇幅、各类调用 token 上限、上下文窗口。
 export default function ApiLengthFields({ cfg, patch }) {
   return (
     <>
     <div>
-        <div style={labelStyle}>接口超时（秒）</div>
-        <input style={inputStyle} type="number" min="10" max="300" step="10"
+        <FieldLabel>接口超时（秒）</FieldLabel>
+        <input className="ui-input" type="number" min="10" max="300" step="10"
           value={Math.round((cfg.timeoutMs ?? 60000) / 1000)}
           onChange={e => patch({ timeoutMs: Math.max(10, Math.min(300, parseInt(e.target.value) || 60)) * 1000 })} />
         <div style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", marginTop: 2 }}>
@@ -18,20 +18,17 @@ export default function ApiLengthFields({ cfg, patch }) {
         </div>
     </div>
 
-    <div style={{ ...labelStyle, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <FieldLabel style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
       <span>每次叙事输出字数 <span style={{ color: "var(--ink-dim-deep)", fontSize: "var(--fs-2xs)" }}>（这是游戏体验的核心，直接按汉字数设定，不是 token 数）</span></span>
-    </div>
+    </FieldLabel>
     <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
       {[["简短", 300], ["适中", 600], ["详细", 900], ["长篇", 1500]].map(([label, val]) => (
-        <span
+        <Button variant="settings"
           key={label}
-          onClick={() => patch({ targetWordCount: val, maxTokens: wordCountToMaxTokens(val) })}
-          style={{
-            ...btnStyle, flex: 1, textAlign: "center",
+          onClick={() => patch({ targetWordCount: val, maxTokens: wordCountToMaxTokens(val) })} style={{ flex: 1, textAlign: "center",
             color: cfg.targetWordCount === val ? "var(--bg-panel)" : "var(--accent)",
-            background: cfg.targetWordCount === val ? "var(--accent)" : "var(--bg-panel)",
-          }}
-        >{label}</span>
+            background: cfg.targetWordCount === val ? "var(--accent)" : "var(--bg-panel)" }}
+        >{label}</Button>
       ))}
     </div>
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -42,8 +39,7 @@ export default function ApiLengthFields({ cfg, patch }) {
       />
       <input
         type="number" min="50" step="50" value={cfg.targetWordCount}
-        onChange={e => { const v = parseInt(e.target.value) || 900; patch({ targetWordCount: v, maxTokens: wordCountToMaxTokens(v) }); }}
-        style={{ ...inputStyle, width: 80 }}
+        onChange={e => { const v = parseInt(e.target.value) || 900; patch({ targetWordCount: v, maxTokens: wordCountToMaxTokens(v) }); }} className="ui-input" style={{ width: 80 }}
       />
       <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)" }}>字</span>
     </div>
@@ -57,8 +53,7 @@ export default function ApiLengthFields({ cfg, patch }) {
         <div style={{ fontSize: "var(--fs-xs)", color: "var(--info)", marginBottom: 4 }}>千问 max_tokens 上限</div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <input
-            type="number" min="256" max="65536" step="1024"
-            style={{ ...inputStyle, width: 110, marginBottom: 0 }}
+            type="number" min="256" max="65536" step="1024" className="ui-input" style={{ width: 110, marginBottom: 0 }}
             value={cfg.qwenMaxTokens ?? 32768}
             onChange={e => patch({ qwenMaxTokens: Math.max(256, Math.min(65536, parseInt(e.target.value) || 32768)) })}
           />
@@ -72,7 +67,7 @@ export default function ApiLengthFields({ cfg, patch }) {
       </div>
     )}
 
-    <div style={{ ...labelStyle, marginTop: 10 }}>各动作类型篇幅上限（字数）</div>
+    <FieldLabel style={{ marginTop: 10 }}>各动作类型篇幅上限（字数）</FieldLabel>
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 16px", marginBottom: 6 }}>
       {[
         ["LOOK",           "查看 / 环顾"],
@@ -92,8 +87,7 @@ export default function ApiLengthFields({ cfg, patch }) {
               onChange={e => {
                 const v = parseInt(e.target.value) || DEFAULT_INTENT_BUDGETS[key];
                 patch({ intentBudgets: { ...(cfg.intentBudgets || DEFAULT_INTENT_BUDGETS), [key]: v } });
-              }}
-              style={{ ...inputStyle, width: 70 }}
+              }} className="ui-input" style={{ width: 70 }}
             />
             <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)" }}>字</span>
           </div>
@@ -105,7 +99,7 @@ export default function ApiLengthFields({ cfg, patch }) {
     </div>
 
     {/* ── 各类调用的 token 输出上限（原来写死在代码里，现全部可调，上限 100000） ── */}
-    <div style={{ ...labelStyle, marginTop: 10 }}>各类调用 · token 输出上限</div>
+    <FieldLabel style={{ marginTop: 10 }}>各类调用 · token 输出上限</FieldLabel>
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 16px", marginBottom: 6 }}>
       {[
         ["narratorWhisper", "私聊旁白"],
@@ -129,8 +123,7 @@ export default function ApiLengthFields({ cfg, patch }) {
                 if (v > CALL_TOKEN_LIMIT_MAX) v = CALL_TOKEN_LIMIT_MAX;
                 if (v < 1) v = 1;
                 patch({ callTokenLimits: { ...(cfg.callTokenLimits || DEFAULT_CALL_TOKEN_LIMITS), [key]: v } });
-              }}
-              style={{ ...inputStyle, width: 84 }}
+              }} className="ui-input" style={{ width: 84 }}
             />
             <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)" }}>tok</span>
           </div>
@@ -140,8 +133,8 @@ export default function ApiLengthFields({ cfg, patch }) {
     <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 6 }}>
       这些是各类 LLM 调用的输出 token 上限（不是字数）。默认已调大，避免带思考的模型（如 gemini-3）思考 token 吃穿正文导致半句截断。每项可调到 {CALL_TOKEN_LIMIT_MAX}。主叙事不在此列（它的上限已由上面的目标字数换算、且地板极高）。
     </div>
-    <div style={labelStyle}>上下文窗口（保留最近 N 轮对话）</div>
-    <input style={inputStyle} type="number" min="2" step="2" value={cfg.contextWindow} onChange={e => patch({ contextWindow: parseInt(e.target.value) || 16 })} />
+    <FieldLabel>上下文窗口（保留最近 N 轮对话）</FieldLabel>
+    <input className="ui-input" type="number" min="2" step="2" value={cfg.contextWindow} onChange={e => patch({ contextWindow: parseInt(e.target.value) || 16 })} />
     </>
   );
 }

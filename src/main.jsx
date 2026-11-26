@@ -1,5 +1,6 @@
 import { loadDefaultContent } from "./domain/rules/content/loadDefaultContent.js";
 import "./ui/tokens.css";
+import "./ui/primitives/primitives.css";
 import "./ui/mobile.css";
 import React, { lazy, Suspense, useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
