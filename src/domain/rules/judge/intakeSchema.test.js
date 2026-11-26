@@ -9,7 +9,7 @@ describe("INTAKE_JSON_SCHEMA（契约 B 冻结形状）", () => {
     actions: [{
       kind: "give", target: "才旦", item: "霜牙短刀", itemId: "it_8f3a", direction: "none",
       condition: "无", condition_text: "", stance: "sincere",
-      outcome: "无", risk: "无", confidence: 0.9, text: "把酒送给才旦",
+      outcome: "无", risk: "无", confidence: 0.9, text: "把酒送给才旦", useKind: "",
     }],
     proposals: [{ claim: "桌上有本剑谱", kind: "find_item", fit: "stretch", questId: "", flag: "" }],
   };
@@ -54,9 +54,9 @@ describe("INTAKE_JSON_SCHEMA（契约 B 冻结形状）", () => {
     expect(actionProps.condition.enum).toEqual(["无", "遇敌", "到达", "被拒", "其他"]);
   });
 
-  it("WO-16G：actions 12 字段全 required，禁联合类型", () => {
+  it("WO-16G/D7：actions 13 字段全 required（D7 增 useKind），禁联合类型", () => {
     const item = INTAKE_JSON_SCHEMA.schema.properties.actions.items;
-    expect(item.required).toEqual(["kind", "target", "item", "itemId", "direction", "condition", "condition_text", "stance", "outcome", "risk", "confidence", "text"]);
+    expect(item.required).toEqual(["kind", "target", "item", "itemId", "direction", "condition", "condition_text", "stance", "outcome", "risk", "confidence", "text", "useKind"]);
     for (const key of item.required) expect(key in item.properties).toBe(true);
     for (const sub of Object.values(item.properties)) expect(Array.isArray(sub.type)).toBe(false);
     expect(item.properties.confidence.type).toBe("number");

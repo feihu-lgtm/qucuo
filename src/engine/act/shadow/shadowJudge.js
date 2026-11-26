@@ -205,7 +205,9 @@ export async function runShadowJudge({
       if (epochGuard?.()) { recordShadowStage(epoch, "droppedEpoch"); return null; }
       if (intakeRes?.data) recordShadowStage(epoch, "intakeDone");
       else { recordShadowStage(epoch, "intakeFailed"); recordShadowError(epoch, "intake", intakeRes?.error || null); }
-      intakeResult = normalizeIntakeResult(intakeRes?.data);
+      let intakeRaw = intakeRes?.data;
+      if (!intakeRaw && intakeRes?.text) { try { intakeRaw = JSON.parse(intakeRes.text); } catch { /* 落 degraded */ } }
+      intakeResult = normalizeIntakeResult(intakeRaw);
       const soleTalkTarget = talkTarget || (npcs.length === 1 ? npcs[0]?.name || "" : "");
       applyTalkTargetFallback(intakeResult, talkTarget, soleTalkTarget);
     }

@@ -48,7 +48,7 @@ describe("normalizeIntakeResult 本地复核", () => {
   const fullAction = {
     kind: "give", target: "才旦", item: "霜牙短刀", itemId: "it_8f3a", direction: "none",
     condition: "无", condition_text: "", stance: "casual",
-    outcome: "无", risk: "无", confidence: 0.9, text: "送刀",
+    outcome: "无", risk: "无", confidence: 0.9, text: "送刀", useKind: "",
   };
   const valid = {
     read: "送刀", refIds: [],
@@ -285,5 +285,16 @@ describe("F6-T17 复数称呼脱绑", () => {
     const trade = { ...act("老孙", "掌柜的，给大伙儿来几碗面"), kind: "trade" };
     const r = normalizeIntakeResult({ ...base, actions: [trade] });
     expect(r.actions[0].target).toBe("老孙");
+  });
+});
+
+describe("D7 Review 二轮：condition 缺省补正", () => {
+  it("condition 漏填但 condition_text 有前提 → 补正「其他」不按无条件执行", () => {
+    const raw = { read: "x", refIds: [], proposals: [], actions: [{
+      kind: "use_item", target: "无", item: "干粮", itemId: "", direction: "none",
+      condition_text: "到了地方就", stance: "casual", outcome: "无", risk: "无", confidence: 0.8, text: "到了地方就吃干粮",
+    }] };
+    const r = normalizeIntakeResult(raw);
+    expect(r.actions[0]?.condition).toBe("其他");
   });
 });

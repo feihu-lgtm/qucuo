@@ -273,7 +273,25 @@ function runUseItem(action, itemLabel) {
   if (found.mismatch) return failText("名/号矛盾，未动他物");
   if (!found.item) return failText("背包里没有对应物件");
   const itemName = itemNameOf(found.item);
-  const cls = classifyUseItem(state, found.item, action?.text || "");
+  // D7：intake useKind 子类优先——前哨已判意（consume/present/practice），
+  // 系统正则降级为 useKind 缺失/不可信时的兜底。前哨判 consume 但物件实非
+  // 耗材（玩家想吃不能吃的）按实情失败回执，不假充成功。
+  const useKind = ["consume", "present", "practice"].includes(action?.useKind) ? action.useKind : "";
+  if (useKind === "present") {
+    return { kind: action.kind, ok: true, text: `玩家取出了「${itemName}」当场出示或查验，物件未消耗、未易主，判官未签发任何额外得失事实，正文只写出示查验与在场者反应。` };
+  }
+  if (useKind === "practice") {
+    return {
+      kind: action.kind, ok: true,
+      text: found.item.equipped
+        ? `玩家正在端详或演练随身已佩的「${itemName}」，并非吞服消耗，物件不损耗、属性无增减，正文只写演练或端详之态。`
+        : `玩家正在端详手中的「${itemName}」（当前尚未穿戴佩挂，可在叙事末顺带提一句随时可佩挂上身），并非吞服消耗，物件不损耗、属性无增减。`,
+    };
+  }
+  if (useKind === "consume" && !consumableOfItem(found.item)) {
+    return failText("此物并非可服用之物");
+  }
+  const cls = useKind === "consume" ? "consumable" : classifyUseItem(state, found.item, action?.text || "");
   if (cls === "consumable") {
     const result = consumeItem(state, found.item);
     const hasChanges = !!(result && result.changes && Object.keys(result.changes).length > 0);

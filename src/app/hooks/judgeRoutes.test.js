@@ -24,7 +24,7 @@ describe("WO-16F-F2a 判官路由集成", () => {
   it("WO-16F-F2a：判官链下打字装备/用物/拾取状态真实变化且叙事输入含回执；单调用零变化", async () => {
     const mkAction = (kind, item, text) => ({
       kind, target: "无", item, itemId: "", direction: "none", condition: "无",
-      condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text,
+      condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text, useKind: "",
     });
     const runOnce = async (action, apiExtra = {}) => {
       const intakeJson = JSON.stringify({ read: "x", refIds: [], actions: [action], proposals: [] });
@@ -97,7 +97,7 @@ describe("WO-16F-F2a 判官路由集成", () => {
     const calls = [];
     const intakeJson = JSON.stringify({
       read: "x", refIds: [],
-      actions: [{ kind: "equip", target: "无", item: "屠龙宝刀", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "戴上屠龙宝刀" }],
+      actions: [{ kind: "equip", target: "无", item: "屠龙宝刀", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "戴上屠龙宝刀", useKind: "" }],
       proposals: [],
     });
     const ai = {
@@ -168,7 +168,7 @@ describe("WO-16F-F2a 判官路由集成", () => {
     };
     const mk = (patch) => ({
       kind: "take", target: "无", item: "遗落的皮靴", itemId: "", direction: "none",
-      condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "捡起遗落的皮靴",
+      condition: "无", condition_text: "", useKind: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "捡起遗落的皮靴", useKind: "",
       ...patch,
     });
     const prevInv = gameStore.getState().inv;
@@ -319,6 +319,38 @@ describe("WO-16F-F2a 判官路由集成", () => {
     expect(consumableOfItem("不存在的物件")).toBeNull();
   });
 
+  it("D7：intake useKind 子类优先于系统正则（涂红漆/送入口中/举起vs下肚反例）", async () => {
+    gameActions.setInv([
+      { id: "it_d7a", name: "极品金创香膏", category: "misc", consumable: { hpRestore: 0.05 } },
+      { id: "it_d7b", name: "青稞酒", category: "misc", consumable: { hpRestore: 0.05 } },
+    ]);
+    // present：涂红漆反例——正则会把涂误判 eat，intake 判 present 为准不消耗
+    let out = executeJudgeRoutes([{ kind: "use_item", item: "极品金创香膏", itemId: "it_d7a", target: "无", useKind: "present", text: "举起极品金创香膏给掌柜看瓶身上涂的红漆" }]);
+    expect(out.receipts[0].ok).toBe(true);
+    expect(gameStore.getState().inv.some((it) => it?.id === "it_d7a")).toBe(true);
+    // consume：送入口中——正则无 eat 动词也照吃（前哨判意为准）
+    out = executeJudgeRoutes([{ kind: "use_item", item: "青稞酒", itemId: "it_d7b", target: "无", useKind: "consume", text: "举起青稞酒一口送入口中" }]);
+    expect(out.receipts[0].ok).toBe(true);
+    expect(gameStore.getState().inv.some((it) => it?.id === "it_d7b")).toBe(false);
+    // consume 但物件实非耗材——失败回执不假充成功
+    gameActions.setInv([{ id: "it_d7c", name: "溪边小屋钥匙", category: "misc" }]);
+    out = executeJudgeRoutes([{ kind: "use_item", item: "溪边小屋钥匙", itemId: "it_d7c", target: "无", useKind: "consume", text: "把钥匙吞下去" }]);
+    expect(out.receipts[0].ok).toBe(false);
+    expect(gameStore.getState().inv.some((it) => it?.id === "it_d7c")).toBe(true);
+    // useKind 缺失 → 正则兜底照旧（T1 原案）
+    gameActions.setInv([{ id: "it_d7d", name: "干粮", category: "food" }]);
+    gameActions.setChar({ ...(gameStore.getState().char || {}), hp: [80, 100] });
+    out = executeJudgeRoutes([{ kind: "use_item", item: "干粮", itemId: "it_d7d", target: "无", text: "拿出一块干粮吃掉垫垫肚子" }]);
+    expect(out.receipts[0].ok).toBe(true);
+    expect(gameStore.getState().inv).toHaveLength(0);
+    // practice：演练兵刃零消耗
+    gameActions.setInv([{ id: "it_d7e", name: "霜牙短刀", category: "weapon" }]);
+    out = executeJudgeRoutes([{ kind: "use_item", item: "霜牙短刀", itemId: "it_d7e", target: "无", useKind: "practice", text: "拔出霜牙短刀演练几式" }]);
+    expect(out.receipts[0].ok).toBe(true);
+    expect(gameStore.getState().inv.some((it) => it?.id === "it_d7e")).toBe(true);
+    gameActions.setInv([]);
+  });
+
   it("D1 classifyUseItem 纯函数三分流", async () => {
     const { classifyUseItem } = await import("./judgeRoutes.js");
     const state = { inv: [] };
@@ -411,7 +443,7 @@ describe("WO-16F-F2a 判官路由集成", () => {
     };
     const mk = (patch) => ({
       kind: "invite", target: "阿岚", item: "无", itemId: "", direction: "none",
-      condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "邀阿岚同行",
+      condition: "无", condition_text: "", useKind: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "邀阿岚同行", useKind: "",
       ...patch,
     });
     const prevComp = gameStore.getState().companionState;
@@ -502,7 +534,7 @@ describe("WO-16F-F2a 判官路由集成", () => {
 describe("S7 move 路由：内层移动确定性结算", () => {
   const mkMove = (direction, text) => ({
     kind: "move", target: "无", item: "无", itemId: "", direction, condition: "无",
-    condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text,
+    condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text, useKind: "",
   });
   function setupInnerRoom() {
     const prev = gameStore.getState();
@@ -591,7 +623,7 @@ describe("D4 外层自然语言移动确定性路由", () => {
   });
   const mkAction = (over = {}) => ({
     kind: "move", target: "无", item: "无", itemId: "", direction: "none", condition: "无",
-    condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "",
+    condition_text: "", useKind: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "", useKind: "",
     ...over,
   });
 

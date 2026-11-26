@@ -18,7 +18,7 @@ export const INTAKE_JSON_SCHEMA = {
           // WO-16G PR-G1：12 字段全 required（OpenAI strict 口径，禁联合类型），
           // 缺省语义 空串/none/无/0——outcome/risk 只进 schema 与喂料，
           // 判官消费在 WO-16F 接，risk 已被 budgetInput 兼容读取。
-          required: ["kind", "target", "item", "itemId", "direction", "condition", "condition_text", "stance", "outcome", "risk", "confidence", "text"],
+          required: ["kind", "target", "item", "itemId", "direction", "condition", "condition_text", "stance", "outcome", "risk", "confidence", "text", "useKind"],
           properties: {
             kind: { type: "string", enum: ["talk", "move", "inspect_container", "take", "give", "trade", "steal", "duel", "appease", "learn", "invite", "use_item", "equip", "free_act"] },
             target: { type: "string", description: "动作对象名：move 填目的地名（没说填「无」），其余动作为在场角色或容器的准确名字，不在场填「无」" },
@@ -32,6 +32,10 @@ export const INTAKE_JSON_SCHEMA = {
             risk: { type: "string", enum: ["无", "低", "中", "高"], description: "动作本身有多险；闲谈赶路选「无」" },
             confidence: { type: "number", minimum: 0, maximum: 1, description: "0 到 1；十拿九稳才给 0.95 以上" },
             text: { type: "string", description: "抄玩家原话对应那段，一字不改；只有一个动作抄整句" },
+            // D7：use_item 意图子类——前哨直接判意，系统正则降级为缺失兜底。
+            // consume 吃下/喝下/服用/外敷；present 出示/亮出/给人看/查验；
+            // practice 把玩/演练/端详（不损耗）。非 use_item 一律填空串。
+            useKind: { type: "string", enum: ["", "consume", "present", "practice"], description: "仅 use_item 用：consume 服用或外敷消耗，present 出示查验不消耗，practice 把玩演练端详不消耗；其余动作填空串" },
           },
         },
       },
