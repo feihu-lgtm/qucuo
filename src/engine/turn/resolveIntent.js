@@ -13,7 +13,7 @@ import { intimacyGate, intimacyRefusal, intimacyPromptNote, intimateTicketNote }
 import { INTIMATE_TICKET_NAME } from "../../domain/rules/npc/goldenEgg.js";
 import { add, set, applyWrite } from "../../domain/rules/state/applyWrite.js";
 import { findTargetedRumor } from "../../domain/rules/npc/npcEmergence.js";
-import { parseDir } from "../../utils/mudHelpers.js";
+import { isPureDirectionCmd, parseDir } from "../../utils/mudHelpers.js";
 import { QUCUO_MAP } from "../../domain/data/map/qucuoMap.js";
 import { serializeSquares } from "../../domain/rules/map/mapSquares.js";
 import { isRoomLookCommand, parseLocalCommand } from "../localCommands.js";
@@ -187,7 +187,15 @@ export async function resolveIntent(cmd, env) {
   setCmdHistory(p => [cmd, ...p].slice(0, 50));
   setHistIdx(-1);
 
-  let movingDir = isTalk ? null : parseDir(cmd);
+  // W-FIX1：非纯方向短令不走 parseDir 秒结——长句/复合句置 movingDir=null 完整放行
+  // 进 runTurn 交前哨拆句与 judgeRoutes 裁决（否则「往东走进铺子里，要是到了就把
+  // 柜子翻开」后半截被 50ms 秒结吞掉，验收第 7/13 式）。按钮/罗盘 fromButton 直通。
+  // 协调裁决（过渡性安排，随单调用清退删除）：闸门只在双调用判官链生效——单调用
+  // 模式没有前哨/judgeRoutes 裁决链可接，完全维持旧行为（parseDir 裸调截胡照旧，
+  // 吞句 bug 随单模式清退一起入土，不为将死之链投新码）。
+  const dualCallEnabled = !!(apiCfg?.judgePipelineEnabled && apiCfg?.extractionEnabled);
+  const directionGateOn = dualCallEnabled && !isPureDirectionCmd(cmd, { fromButton: !!opts.fromButton });
+  let movingDir = isTalk || directionGateOn ? null : parseDir(cmd);
   pendDir = movingDir;
 
   // ── 内层箱庭移动：优先于外层大地图判定（判定在 act/innerMove.js，副作用在此执行）──
