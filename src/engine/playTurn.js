@@ -75,7 +75,7 @@ export async function playTurn(ctx, cmd, opts = {}) {
     // 无 turn 载荷不进 finalize/commit（否则 commitRound 缺载荷炸回合）。
     if (narrated.intimacyRefused) {
       turnMonitor.finish(trace, "亲密门槛拒决");
-      return { done: true, intimacyRefused: true };
+      return { ok: true, done: true, intimacyRefused: true };
     }
     // WO-16D 影子对账：回合前快照切片在 commit 前捕获（store 值不可变，引用即快照）。
     const shadowPre = resolveShadowJudgeEnabled(turnCtx.apiCfg) && !turnCtx.apiCfg?.extractionEnabled && snapshot

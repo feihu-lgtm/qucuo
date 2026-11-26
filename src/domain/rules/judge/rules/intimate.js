@@ -24,9 +24,10 @@ export function handleIntimate(J) {
   if (!ictx?.npc) return; // 非亲密回合/门禁未放行——判官不补闸
   const npc = (J.npcs || []).find((n) => n?.name === ictx.npc);
   if (!npc) return;
-  // 无好感轨道对象（兽类/intimacy.forbidden）不产社交事实——与 handleTalk 第一道
-  // 防线同口径。凭卡可撬开 forbidden 门槛，但不通人情的对象依旧不涨不跌。
-  if (npc.intimacy?.forbidden || npc.beast) return;
+  // 夜班双修虫①：与门禁同口径——intimacyGate 本身不因 beast 拦阻（雪豹是人形化
+  // 可亲密同伴，门禁既放行叙事也已发生，账就必须落）；只有 intimacy.forbidden
+  // （不受人情）保持零事实。凭卡可撬开 forbidden 门槛，但不通人情依旧不涨不跌。
+  if (npc.intimacy?.forbidden) return;
   const margin = (Number(ictx.affection) || 0) - (Number(ictx.threshold) || 0);
   const tier = intimateTier({ ticket: !!ictx.ticket, margin });
   if (!tier.delta) return;
