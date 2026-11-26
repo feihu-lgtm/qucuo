@@ -56,7 +56,7 @@ export default function JadeShopScreen({ building, char, inv = [], time, onClose
         const cap = j.jadeSpec?.qualityCap || j.quality || "白";
         const on = j.id === jadeId;
         return (
-          <div key={j.id} onClick={() => setJadeId(j.id)} style={{ cursor: "pointer", padding: "6px 10px", marginBottom: 4, borderRadius: 0, border: `1px solid ${on ? "var(--accent)" : "var(--border)"}`, background: on ? "rgba(255,255,255,0.05)" : "transparent", display: "flex", justifyContent: "space-between" }}>
+          <div key={j.id} onClick={() => setJadeId(j.id)} className="jade-item-card" data-on={Boolean(on)}>
             <span style={{ color: "var(--ink-text)", fontSize: "var(--fs-sm)" }}>{j.jadeSpec?.tierLabel || j.name}</span>
             <span style={{ color: QUAL_COLOR[cap], fontSize: "var(--fs-xs)" }}>天花板 {cap}</span>
           </div>

@@ -199,9 +199,7 @@ export function BidderCarousel({ bidders, carouselIdx, setCarouselIdx, touchRef,
       {bidders.length > 1 && (
         <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
           {bidders.map((_, i) => (
-            <div key={i} onClick={() => setCarouselIdx(i)}
-              style={{ width: 8, height: 8, borderRadius: "50%", cursor: "pointer",
-                background: i === carouselIdx ? "var(--gold-light)" : "rgba(255,255,255,.25)" }} />
+            <div key={i} onClick={() => setCarouselIdx(i)} className="gamble-pick-card" data-on={Boolean(i === carouselIdx)} />
           ))}
         </div>
       )}

@@ -71,13 +71,8 @@ export default function NpcActionMenu({ npc, inv, onClose, onTalk, onGift, onDue
         {ACTIONS.map((a) => (
           <div
             key={a.key}
-            className="mobile-action-choice"
-            onClick={a.onClick}
-            style={{
-              cursor: "pointer", padding: "12px 10px", borderRadius: 0, textAlign: "center",
-              background: "var(--bg)", border: `1px solid var(--border)`,
-              opacity: a.available ? 1 : 0.4,
-            }}
+            className="mobile-action-choice npc-action-card"
+            onClick={a.onClick} data-on={Boolean(a.available)}
           >
             <div style={{ color: "var(--accent)", fontSize: "var(--fs-md)", marginBottom: 3 }}>{a.label}</div>
             <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)" }}>{a.desc}</div>
@@ -121,9 +116,8 @@ function GiftPickerList({ onPick, inv }) {
         return (
           <div
             key={isObj ? it.id : i}
-            className="mobile-action-choice"
+            className="mobile-action-choice npc-gift-item"
             onClick={() => onPick(it)}
-            style={{ cursor: "pointer", padding: "6px 8px", borderRadius: 0, color: "var(--text)", fontSize: "var(--fs-sm)", background: "var(--bg)" }}
           >
             {name}{isObj ? ` (${it.quality})` : ""}
           </div>

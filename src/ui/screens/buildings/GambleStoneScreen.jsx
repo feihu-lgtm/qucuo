@@ -155,10 +155,7 @@ export default function GambleStoneScreen({ building, char, time, onClose, roomN
   if (minimized) {
     // 角标定位与层级在 tokens.css 的 .gamble-minimized-chip（screen 档，原 z 200）。
     return (
-      <div className="mobile-gamble-minimized gamble-minimized-chip" onClick={restoreTable}
-        style={{ cursor: "pointer",
-          background: "var(--gamble-toast-bg)", border: "1px solid var(--ink-brass)", borderRadius: 0, padding: "8px 14px",
-          color: "var(--gold-light)", fontSize: "var(--fs-md)", boxShadow: "0 4px 16px rgba(0,0,0,.5)" }}>
+      <div className="mobile-gamble-minimized gamble-minimized-chip gamble-minimized-label" onClick={restoreTable}>
         ⬒ 赌桌（{SKINS[stone.skin].label}）· 点击展开
       </div>
     );

@@ -51,9 +51,8 @@ export default function ItemActionMenu({
           <div className="mobile-action-grid mobile-action-list" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {list.map((n) => (
               <div key={n.name}
-                className="mobile-action-choice"
-                onClick={() => { act(n, item); onClose(); }}
-                style={{ cursor: "pointer", padding: "9px 10px", borderRadius: 0, background: "var(--bg)", border: `1px solid var(--border)` }}>
+                className="mobile-action-choice item-target-row"
+                onClick={() => { act(n, item); onClose(); }}>
                 <span style={{ color: "var(--accent)", fontSize: "var(--fs-md)" }}>{n.name}</span>
                 <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)", marginLeft: 6 }}>{n.brief}</span>
               </div>

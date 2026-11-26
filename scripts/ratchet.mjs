@@ -409,7 +409,7 @@ export const KNOWN_EXTERNAL_INFRA_CAP = {
 // 下一次回涨一处也能被抓到。
 export const KNOWN_UI_STRUCTURE_CAP = {
   overlayFiles: 1,
-  inlineStyles: 2381,
+  inlineStyles: 2373,
   rulesImporters: 82,
   portsImporters: 1,
   zoneThemeFiles: 0,

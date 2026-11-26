@@ -44,8 +44,7 @@ export default function HomesteadPanel({ roomName, inv, setInv, char, setChar, o
           <div style={{ fontSize: "var(--fs-xs)", color: "var(--ink-text-dim)", marginBottom: 12, lineHeight: 1.6, fontStyle: "italic" }}>{home.flavor}</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             {home.features.map(f => (
-              <div key={f.id} onClick={() => setActiveFeature(f.id)}
-                style={{ cursor: "pointer", padding: "12px 10px", borderRadius: 0, background: "var(--bg-ink)", border: "1px solid var(--ink-border)", transition: "all 0.15s" }}
+              <div key={f.id} onClick={() => setActiveFeature(f.id)} className="homestead-feature-card"
                 onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--ink-accent)"; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--ink-border)"; }}
               >

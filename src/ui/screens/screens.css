@@ -1,0 +1,67 @@
+/* screens 目录里可点击元素的样式（路线图 U2）。原先写在内联 style 里，原样搬到这里；
+   选中/可用等状态由 data-on="true|false" 切换。main.jsx 里排在 mobile.css 之后，
+   保住原内联样式压过 mobile.css 非 !important 规则的先后。快照见 src/ui/extractedCss.snapshots.json。 */
+/* ui/screens/buildings/TransportScreen.jsx */
+.transport-mode-tab {
+  cursor: pointer;
+  padding: 4px 12px;
+  font-size: var(--fs-sm);
+  border-radius: 0;
+  border: 1px solid var(--border);
+  color: var(--bg);
+  background: var(--accent);
+}
+.transport-mode-tab[data-on="false"] {
+  color: var(--accent);
+  background: var(--bg-panel);
+}
+
+/* ui/screens/buildings/JadeShopScreen.jsx */
+.jade-item-card {
+  cursor: pointer;
+  padding: 6px 10px;
+  margin-bottom: 4px;
+  border-radius: 0;
+  display: flex;
+  justify-content: space-between;
+  border: 1px solid var(--accent);
+  background: rgba(255,255,255,0.05);
+}
+.jade-item-card[data-on="false"] {
+  border: 1px solid var(--border);
+  background: transparent;
+}
+
+/* ui/screens/buildings/HomesteadPanel.jsx */
+.homestead-feature-card {
+  cursor: pointer;
+  padding: 12px 10px;
+  border-radius: 0;
+  background: var(--bg-ink);
+  border: 1px solid var(--ink-border);
+  transition: all 0.15s;
+}
+
+/* ui/screens/buildings/GambleStoneScreen.jsx */
+.gamble-minimized-label {
+  cursor: pointer;
+  background: var(--gamble-toast-bg);
+  border: 1px solid var(--ink-brass);
+  border-radius: 0;
+  padding: 8px 14px;
+  color: var(--gold-light);
+  font-size: var(--fs-md);
+  box-shadow: 0 4px 16px rgba(0,0,0,.5);
+}
+
+/* ui/screens/buildings/GambleStoneParts.jsx */
+.gamble-pick-card {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  background: var(--gold-light);
+}
+.gamble-pick-card[data-on="false"] {
+  background: rgba(255,255,255,.25);
+}

@@ -38,12 +38,7 @@ export default function TransportScreen({
   };
 
   const tabBtn = (id, label) => (
-    <span onClick={() => setTab(id)} style={{
-      cursor: "pointer", padding: "4px 12px", fontSize: "var(--fs-sm)", borderRadius: 0,
-      color: tab === id ? "var(--bg)" : "var(--accent)",
-      background: tab === id ? "var(--accent)" : "var(--bg-panel)",
-      border: `1px solid var(--border)`,
-    }}>{label}</span>
+    <span onClick={() => setTab(id)} className="transport-mode-tab" data-on={Boolean(tab === id)}>{label}</span>
   );
 
   return (

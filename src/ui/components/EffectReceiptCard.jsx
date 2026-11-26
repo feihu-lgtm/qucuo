@@ -149,18 +149,7 @@ export default function EffectReceiptCard({ receipt, onAction }) {
                 key={b.op}
                 type="button"
                 disabled={used}
-                onClick={() => fire(b.op)}
-                style={{
-                  fontSize: "var(--fs-xs)",
-                  padding: "2px 12px",
-                  cursor: used ? "default" : "pointer",
-                  color: used ? "var(--text)" : qc,
-                  background: "rgba(0,0,0,0.3)",
-                  border: `1px solid ${qc}`,
-                  borderRadius: 2,
-                  opacity: used ? 0.45 : 1,
-                  letterSpacing: "0.1em",
-                }}
+                onClick={() => fire(b.op)} className="receipt-action-btn" data-on={Boolean(used)} style={{ color: used ? "var(--text)" : qc, border: `1px solid ${qc}` }}
               >
                 {used ? `${b.label}✓` : b.label}
               </button>
