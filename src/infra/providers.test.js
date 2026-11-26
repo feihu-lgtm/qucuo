@@ -397,3 +397,54 @@ describe("schema response_format 分支选择（WO-03）", () => {
     expect(body.response_format).toEqual({ type: "json_object" });
   });
 });
+
+describe("A1 Gemini 3 OpenAI 兼容通道显式思考档", () => {
+  it("custom+openai 协议 gemini-3.8-flash：思考关=minimal、下发 reasoning_effort、无双参数", async () => {
+    const { applyThinkingOpenAI, PROVIDERS } = await import("./providers.js");
+    for (const pid of ["custom", "openai"]) {
+      const provider = { ...PROVIDERS[pid], id: pid, thinking: "openai-effort" };
+      // 思考关 → minimal
+      const body = { model: "gemini-3.8-flash" };
+      applyThinkingOpenAI(body, { model: "gemini-3.8-flash", thinkingMode: "off" }, provider, null, {});
+      expect(body.reasoning_effort).toBe("minimal");
+      expect(body.extra_body).toBeUndefined();
+      // 档位透传 low/medium/high
+      for (const [mode, want] of [["low", "low"], ["medium", "medium"], ["high", "high"]]) {
+        const b2 = { model: "gemini-3-pro" };
+        applyThinkingOpenAI(b2, { model: "gemini-3-pro", thinkingMode: mode }, provider, null, {});
+        expect(b2.reasoning_effort).toBe(want);
+      }
+      // google/ 前缀归一
+      const b3 = { model: "google/gemini-3.8-flash" };
+      applyThinkingOpenAI(b3, { model: "google/gemini-3.8-flash", thinkingMode: "off" }, provider, null, {});
+      expect(b3.reasoning_effort).toBe("minimal");
+    }
+  });
+  it("disableThinking 短调用：Gemini 3 下发 minimal；非 Gemini 模型请求体不变", async () => {
+    const { applyThinkingOpenAI, applyShortCallOpenAI, PROVIDERS } = await import("./providers.js");
+    const provider = { ...PROVIDERS.custom, id: "custom", thinking: "openai-effort" };
+    const b = { model: "gemini-3.8-flash" };
+    applyShortCallOpenAI(b, provider, { disableThinking: true });
+    expect(b.reasoning_effort).toBe("minimal");
+    expect(b.extra_body?.google?.thinking_config).toBeUndefined();
+    // 非 gemini-3 不下发
+    const b2 = { model: "gpt-4o-mini" };
+    applyShortCallOpenAI(b2, provider, { disableThinking: true });
+    expect(b2.reasoning_effort).toBeUndefined();
+    // 非 Gemini 主链不变：gpt 系无 gemini 逻辑侵入
+    const b3 = { model: "deepseek-chat" };
+    applyThinkingOpenAI(b3, { model: "deepseek-chat", thinkingMode: "off" }, provider, null, {});
+    expect(b3.reasoning_effort).toBeUndefined();
+    expect(b3.extra_body).toBeUndefined();
+  });
+  it("请求体快照：custom gemini-3 关思考 vs 开 medium", async () => {
+    const { applyThinkingOpenAI, PROVIDERS } = await import("./providers.js");
+    const provider = { ...PROVIDERS.custom, id: "custom", thinking: "openai-effort" };
+    const off = { model: "gemini-3.8-flash", messages: [] };
+    applyThinkingOpenAI(off, { model: "gemini-3.8-flash", thinkingMode: "off" }, provider, null, { disableThinking: true });
+    expect(off).toMatchSnapshot();
+    const on = { model: "gemini-3.8-flash", messages: [] };
+    applyThinkingOpenAI(on, { model: "gemini-3.8-flash", thinkingMode: "medium" }, provider, null, {});
+    expect(on).toMatchSnapshot();
+  });
+});

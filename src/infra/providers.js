@@ -192,6 +192,12 @@ function thinkingEffort(cfg) {
 
 const THINKING_BUDGET_BY_MODE = { low: 512, medium: 2048, high: 8192 };
 
+// A1：Gemini 3 判定（去 google/ 前缀后 gemini-3 开头）——OpenAI 兼容通道
+// 显式思考档的唯一识别口径，custom/openai 中转与官方通道同吃。
+export function isGemini3Model(model) {
+  return /^gemini-3/i.test(String(model || "").replace(/^google\//, ""));
+}
+
 function supportsOpenAIReasoning(model) {
   return /^(?:o1|o3(?:-[\w.-]+)?|o4-mini(?:-[\w.-]+)?|gpt-5(?:[.-][\w.-]+)?|gpt-6-astra(?:-[\w.-]+)?)$/i.test(model || "");
 }
@@ -215,7 +221,13 @@ export function applyThinkingOpenAI(body, cfg, provider, vertex, opts = {}) {
       body.thinking = { type: enabled ? "enabled" : "disabled" };
       break;
     case "openai-effort":
-      if (provider.id === "openrouter") {
+      // A1：Gemini 3 走 OpenAI 兼容协议必须显式下发 reasoning_effort——
+      // 不识别的中转默认档会狂烧思考 token（前哨中位 217）。思考关=minimal，
+      // 其余按设置 low/medium/high；绝不同时下 extra_body.google.thinking_config。
+      if (isGemini3Model(cfg.model)) {
+        body.reasoning_effort = enabled ? effort : "minimal";
+        delete body.extra_body;
+      } else if (provider.id === "openrouter") {
         body.reasoning = enabled ? { exclude: false, effort } : { exclude: true };
       } else if (enabled && (
         supportsOpenAIReasoning(cfg.model) ||
@@ -237,6 +249,11 @@ const JSON_MODE_PROVIDERS = new Set(["vertex", "openai", "deepseek"]);
 
 export function applyShortCallOpenAI(body, provider, opts = {}) {
   const model = String(body.model || "").replace(/^google\//, "");
+  // A1：短调用关思考——Gemini 3 在 OpenAI 兼容通道下发 reasoning_effort minimal，
+  // 与 thinking 主链互不叠加（主链 delete extra_body，此处不下 extra_body）。
+  if (opts.disableThinking && provider.thinking === "openai-effort" && isGemini3Model(model)) {
+    body.reasoning_effort = "minimal";
+  }
   if (opts.disableThinking && provider.thinking === "vertex" && /^gemini-2\.5/i.test(model)) {
     delete body.reasoning_effort;
     body.extra_body = { google: { thinking_config: { thinking_budget: /pro/i.test(model) ? 128 : 0, include_thoughts: false } } };

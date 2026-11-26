@@ -1,0 +1,17 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`A1 Gemini 3 OpenAI 兼容通道显式思考档 > 请求体快照：custom gemini-3 关思考 vs 开 medium 1`] = `
+{
+  "messages": [],
+  "model": "gemini-3.8-flash",
+  "reasoning_effort": "minimal",
+}
+`;
+
+exports[`A1 Gemini 3 OpenAI 兼容通道显式思考档 > 请求体快照：custom gemini-3 关思考 vs 开 medium 2`] = `
+{
+  "messages": [],
+  "model": "gemini-3.8-flash",
+  "reasoning_effort": "medium",
+}
+`;
