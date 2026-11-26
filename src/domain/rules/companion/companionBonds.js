@@ -53,7 +53,7 @@ export function applyBondDelta(companionState, a, b, delta, lastBeat = "") {
 // - transfer 严格校验：itemName 必须真实存在于 from 槽位 carriedItems 且非绑定装备，
 //   缺一条即整笔拒执——绝不允许模型凭空造物。
 // 返回 { companionState, varTree, transferApplied|null, transferRejected|null }
-export function applyDuoOutcome(companionState, varTree, a, b, outcome = {}, { time = 0, place = "" } = {}) {
+export function applyDuoOutcome(companionState, varTree, a, b, outcome = {}, { time = 0, place = "", aKey = "", bKey = "" } = {}) {
   let cs = companionState || {};
   let vt = varTree || {};
   let transferApplied = null;
@@ -78,9 +78,19 @@ export function applyDuoOutcome(companionState, varTree, a, b, outcome = {}, { t
 
   if (outcome.transfer && typeof outcome.transfer === "object") {
     const { from, to, itemName } = outcome.transfer;
-    const slots = { [a]: a, [b]: b };
-    const fromSlot = Object.entries(cs).find(([key, c]) => key === from || c?.label === from || c?.data?.name === from)?.[0];
-    const toSlot = Object.entries(cs).find(([key, c]) => key === to || c?.label === to || c?.data?.name === to)?.[0];
+    // Review 修：槽位解析只许在当拍两位参与者里匹配（钥匙优先）——全场按名找槽，
+    // 碰上同名进口同伴（如导入的"珍珠"）会把 from/to 解析进同一槽，收件方写覆盖
+    // 移除方写，礼物凭空复制。同名到两人都分不清时也硬拦截，宁可不转不可造物。
+    const matchSlot = (name) => {
+      const keys = [aKey, bKey].filter(Boolean);
+      const pool = keys.length
+        ? keys.map((k) => [k, cs[k]]).filter(([, c]) => c)
+        : Object.entries(cs);
+      const hits = pool.filter(([key, c]) => key === name || c?.label === name || c?.data?.name === name).map(([k]) => k);
+      return hits.length === 1 ? hits[0] : null;
+    };
+    const fromSlot = matchSlot(from);
+    const toSlot = matchSlot(to);
     const itemNameText = String(itemName || "");
     // Review 修：玩家赠礼的正本在 data.carriedItems（materializeFacts 落此处），
     // 槽位级 carriedItems 是另一本账——读写都必须走 data 正本，否则真实持有的礼被误判不存在。
@@ -88,8 +98,10 @@ export function applyDuoOutcome(companionState, varTree, a, b, outcome = {}, { t
     const idx = carried.findIndex((it) => (typeof it === "string" ? it : it?.name) === itemNameText);
     const item = idx >= 0 ? carried[idx] : null;
     const bound = item && typeof item === "object" && (item.bound || item.equipped || item.已绑定);
-    if (!slots || !fromSlot || !toSlot || idx < 0) {
+    if (!fromSlot || !toSlot || idx < 0) {
       transferRejected = `硬拦截：${from} 身上没有「${itemNameText}」——不许凭空造物`;
+    } else if (fromSlot === toSlot) {
+      transferRejected = `硬拦截：「${itemNameText}」来去同一人，不予转交`;
     } else if (bound) {
       transferRejected = `硬拦截：「${itemNameText}」是绑定装备，不可转交`;
     } else {

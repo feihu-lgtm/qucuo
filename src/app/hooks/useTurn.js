@@ -287,7 +287,7 @@ export function useTurn({
           for (const l of c.lines) jotNote({ text: `${l.speaker}见状说道：“${l.text}”`, owner: [l.speaker] });
           if (c.outcome && (c.outcome.bondDelta || c.outcome.ledgerNote || c.outcome.transfer)) {
             const live = gameStore.getState();
-            const res = applyDuoOutcome(live.companionState, live.varTree || {}, c.speakers[0], c.speakers[1], c.outcome, { time: live.time, place: cur.room?.name });
+            const res = applyDuoOutcome(live.companionState, live.varTree || {}, c.speakers[0], c.speakers[1], c.outcome, { time: live.time, place: cur.room?.name, aKey: c.keys?.[0] || "", bKey: c.keys?.[1] || "" });
             commitCompanionDuoOutcome({ companionState: res.companionState, varTree: res.varTree });
             if (res.transferRejected) addLog([{ t: "sys", text: `  ${res.transferRejected}` }]);
             if (res.transferApplied) addLog([{ t: "desc", text: `  ${res.transferApplied.from}把「${res.transferApplied.itemName}」塞给了${res.transferApplied.to}。` }]);

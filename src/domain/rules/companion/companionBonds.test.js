@@ -80,4 +80,29 @@ describe("companionBonds 配对账（V7c 验收）", () => {
     const { companionState } = applyDuoOutcome(cs, {}, "珍珠", "雪豹", { bondDelta: 99 });
     expect(companionState.bonds[pairKey("珍珠", "雪豹")].score).toBe(5);
   });
+
+  it("Review：同名进口同伴不把 from/to 解析进同一槽——钥匙域内匹配，撞名硬拦截", () => {
+    // 进口同伴恰好也叫「珍珠」：aKey/bKey 域内两人钥匙不同，transfer 正常走
+    const cs = {
+      pearl: { label: "珍珠", data: { carriedItems: [{ name: "一袋青稞精料" }] } },
+      imported1: { label: "珍珠", data: { carriedItems: [] } },
+    };
+    const out = applyDuoOutcome(cs, {}, "珍珠", "珍珠",
+      { transfer: { from: "珍珠", to: "珍珠", itemName: "一袋青稞精料" } },
+      { aKey: "pearl", bKey: "imported1" });
+    // 同名分不清谁给谁——硬拦截，珠子还在原处不复制
+    expect(out.transferApplied).toBeNull();
+    expect(out.transferRejected).toBeTruthy();
+    expect(out.companionState.pearl.data.carriedItems).toHaveLength(1);
+    expect(out.companionState.imported1.data.carriedItems).toHaveLength(0);
+    // from/to 解析进同一槽时也不许自我转交复制
+    const cs2 = {
+      pearl: { label: "珍珠", data: { carriedItems: [{ name: "一袋青稞精料" }] } },
+    };
+    const out2 = applyDuoOutcome(cs2, {}, "珍珠", "雪豹",
+      { transfer: { from: "pearl", to: "pearl", itemName: "一袋青稞精料" } },
+      { aKey: "pearl", bKey: "snowLeopard" });
+    expect(out2.transferApplied).toBeNull();
+    expect(out2.companionState.pearl.data.carriedItems).toHaveLength(1);
+  });
 });
