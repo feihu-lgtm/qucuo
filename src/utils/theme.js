@@ -75,6 +75,21 @@ export const ZONE_THEMES_DAY = {
   bamboo: { name: "雨城竹海·昼", ...DAY_INK },
 };
 
+// 取值全是 CSS 变量的主题对象（路线图 U3）。字段与 ZONE_THEMES 一一对应，颜色由
+// tokens.css 的 :root 与 :root[data-theme="day"] 决定，日夜切换不必再传 isDayMode。
+// 只给需要"整个主题对象"的地方用（chromeBtn、子组件的 theme 参数）；单个颜色直接写
+// "var(--accent)" 这类字面量。themeTokens.test.js 保证这里的每个变量与上面两套色值逐字段相等。
+// 固定暗夜的界面（开始页、开场、创角、酒馆经营、开始页的卡牌导入）不能用它，见《前端结构说明》。
+export const THEME_VARS = Object.freeze({
+  accent: "var(--accent)",
+  accentDim: "var(--accent-dim)",
+  bg: "var(--bg)",
+  bgPanel: "var(--bg-panel)",
+  border: "var(--border)",
+  text: "var(--text)",
+  textDim: "var(--text-dim)",
+});
+
 // 根据房间名推断当前分区，返回对应主题；找不到时回退到 village。
 // isDayMode=true 时从 ZONE_THEMES_DAY 取（六套浅色版本），默认 false 走原暗夜版，
 // 两套主题字段一一对应，调用方不需要额外分支处理。
