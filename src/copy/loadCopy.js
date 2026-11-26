@@ -12,6 +12,7 @@ export function loadCopy(name) {
     if (hit === undefined) throw new Error(`copy 文案缺失: ${name}`);
     return hit;
   }
-  const fs = process.getBuiltinModule("node:fs");
+  const fs = globalThis.process?.getBuiltinModule?.("node:fs");
+  if (!fs) throw new Error("loadCopy: 非 vite 且非 node 环境，无法读取 " + name);
   return fs.readFileSync(new URL(`./${name}`, import.meta.url), "utf8");
 }
