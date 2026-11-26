@@ -36,7 +36,8 @@ describe("ModalShell", () => {
 
   it("关闭按钮是真按钮并带可读名字；showClose=false 时不渲染", () => {
     const html = render({ title: "x", closeLabel: "关闭上报窗口" });
-    expect(html).toContain('<button type="button" class="ui-modal-close mobile-overlay-close" aria-label="关闭上报窗口">✕</button>');
+    expect(html).toContain('<button type="button" class="ui-modal-close mobile-overlay-close" aria-label="关闭上报窗口">× 关闭</button>');
+    expect(render({ title: "x", closeText: "✕" })).toContain(">✕</button>");
     expect(render({ title: "x", showClose: false })).not.toContain("ui-modal-close");
   });
 

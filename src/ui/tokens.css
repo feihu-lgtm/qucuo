@@ -656,7 +656,6 @@ div[style*="position: fixed"][style*="z-index"],
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--sp-4);
   box-sizing: border-box;
   background: var(--ink-overlay);
 }
@@ -671,17 +670,22 @@ div[style*="position: fixed"][style*="z-index"],
 
 .ui-modal-panel {
   position: relative;
-  max-width: 94vw;
-  max-height: 88vh;
+  max-width: 90vw;
+  max-height: 85vh;
   overflow-y: auto;
   box-sizing: border-box;
-  padding: var(--sp-5);
+  padding: 20px;
   border: 1px solid var(--border);
   border-radius: var(--radius-none);
   background: var(--bg-panel);
   color: var(--text);
   font-family: inherit;
+  font-size: var(--fs-md);
   outline: none;
+}
+
+.ui-modal-panel.version-history-panel {
+  font-size: var(--fs-sm);
 }
 
 .ui-modal-header {
@@ -701,12 +705,12 @@ div[style*="position: fixed"][style*="z-index"],
 
 .ui-modal-close {
   flex: 0 0 auto;
-  padding: 0 var(--sp-1);
+  padding: 0;
   border: 0;
   background: transparent;
   color: var(--text-dim);
   font: inherit;
-  font-size: var(--fs-md);
+  font-size: var(--fs-xs);
   cursor: pointer;
 }
 

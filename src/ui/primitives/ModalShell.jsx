@@ -9,7 +9,7 @@
 // useOverlayCloseGuard，避免"从弹窗里拖选文字拖到遮罩上松手就被关掉"。
 //
 // 用法：
-//   <ModalShell title="🐞 上报 Bug" onClose={onClose} layer="dialog" panelStyle={{ width: 440 }}>
+//   <ModalShell title="版本历史" onClose={onClose} layer="top" panelStyle={{ width: 420 }}>
 //     ……正文……
 //   </ModalShell>
 
@@ -20,6 +20,8 @@ import {
 } from "./modalStack.js";
 
 const NOOP = () => {};
+// 面板内的点击不再往外冒泡，与迁移前各弹窗内层的 stopPropagation 保持一致。
+const stopPropagation = (event) => event.stopPropagation();
 
 export default function ModalShell({
   title = null,
@@ -30,7 +32,7 @@ export default function ModalShell({
   closeOnEsc = true,
   showClose = true,
   closeLabel = "关闭",
-  closeText = "✕",
+  closeText = "× 关闭",
   headerExtra = null,
   mobileFullscreen = true,
   className = "",
@@ -100,6 +102,7 @@ export default function ModalShell({
         aria-label={titleId ? undefined : ariaLabel}
         tabIndex={-1}
         style={panelStyle}
+        onClick={stopPropagation}
       >
         {hasHeader && (
           <div className="ui-modal-header mobile-overlay-header">

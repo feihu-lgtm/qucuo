@@ -14,10 +14,9 @@
 // ============================================================================
 import React, { useEffect, useState } from "react";
 import { loadVersionHistory } from "../../utils/version.js";
-import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
+import ModalShell from "../primitives/ModalShell.jsx";
 
 export default function VersionHistoryPanel({ onClose, accentDim = "var(--accent)" }) {
-  const closeGuard = useOverlayCloseGuard(onClose);
   // 485KB 的完整历史不进主包：弹窗点开才动态 import。
   const [history, setHistory] = useState(null);
   useEffect(() => {
@@ -27,39 +26,40 @@ export default function VersionHistoryPanel({ onClose, accentDim = "var(--accent
   }, []);
   const VERSION_HISTORY = history || [];
   return (
-    <div className="mobile-overlay-root" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
-      <div className="mobile-overlay-panel version-history-panel" style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: 20, width: 420, maxWidth: "90vw", maxHeight: "80vh", overflowY: "auto", fontSize: "var(--fs-sm)", color: "var(--text)" }} onClick={e => e.stopPropagation()}>
-        <div className="mobile-overlay-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <span style={{ color: "var(--accent)", fontSize: "var(--fs-base)" }}>版本历史</span>
-          <span className="mobile-overlay-close" style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
+    <ModalShell
+      title="版本历史"
+      onClose={onClose}
+      closeLabel="关闭版本历史"
+      layer="top"
+      panelClassName="version-history-panel"
+      panelStyle={{ width: 420, maxHeight: "80vh" }}
+    >
+      {VERSION_HISTORY.map((v, i) => (
+        <div key={i} style={{ marginBottom: 12, paddingBottom: 12, borderBottom: i < VERSION_HISTORY.length - 1 ? "1px solid var(--bg-slate)" : "none" }}>
+          <div style={{ color: i === 0 ? "var(--pink)" : "var(--ink-text)", fontSize: "var(--fs-md)" }}>{v.version ? `${v.version} ` : ""}「{v.codename}」{i === 0 && <span style={{ color: accentDim, fontSize: "var(--fs-2xs)" }}> · 当前版本</span>}</div>
+          <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", marginBottom: 4 }}>{v.time}</div>
+          {/* notes 两种写法都认：数组=一行一条逐行列出（长条目请写数组）；
+              字符串=老写法，整段显示。数组里以 ①②③ 或 一、二、开头的行
+              悬挂缩进一下，看起来才像个更新日志而不是一堵墙。 */}
+          {Array.isArray(v.notes) ? (
+            <div style={{ display: "grid", gap: 3 }}>
+              {v.notes.map((line, j) => {
+                const isItem = /^[①-⑳【]|^[一二三四五六七八九十]、/.test(String(line).trim());
+                return (
+                  <div key={j} style={{
+                    color: isItem ? "var(--text-dim)" : "var(--tavern-steam)",
+                    fontSize: "var(--fs-xs)", lineHeight: 1.65,
+                    paddingLeft: isItem ? 12 : 0,
+                    textIndent: isItem ? -12 : 0,
+                  }}>{line}</div>
+                );
+              })}
+            </div>
+          ) : (
+            <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", lineHeight: 1.6 }}>{v.notes}</div>
+          )}
         </div>
-        {VERSION_HISTORY.map((v, i) => (
-          <div key={i} style={{ marginBottom: 12, paddingBottom: 12, borderBottom: i < VERSION_HISTORY.length - 1 ? "1px solid var(--bg-slate)" : "none" }}>
-            <div style={{ color: i === 0 ? "var(--pink)" : "var(--ink-text)", fontSize: "var(--fs-md)" }}>{v.version ? `${v.version} ` : ""}「{v.codename}」{i === 0 && <span style={{ color: accentDim, fontSize: "var(--fs-2xs)" }}> · 当前版本</span>}</div>
-            <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", marginBottom: 4 }}>{v.time}</div>
-            {/* notes 两种写法都认：数组=一行一条逐行列出（长条目请写数组）；
-                字符串=老写法，整段显示。数组里以 ①②③ 或 一、二、开头的行
-                悬挂缩进一下，看起来才像个更新日志而不是一堵墙。 */}
-            {Array.isArray(v.notes) ? (
-              <div style={{ display: "grid", gap: 3 }}>
-                {v.notes.map((line, j) => {
-                  const isItem = /^[①-⑳【]|^[一二三四五六七八九十]、/.test(String(line).trim());
-                  return (
-                    <div key={j} style={{
-                      color: isItem ? "var(--text-dim)" : "var(--tavern-steam)",
-                      fontSize: "var(--fs-xs)", lineHeight: 1.65,
-                      paddingLeft: isItem ? 12 : 0,
-                      textIndent: isItem ? -12 : 0,
-                    }}>{line}</div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", lineHeight: 1.6 }}>{v.notes}</div>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
+      ))}
+    </ModalShell>
   );
 }
