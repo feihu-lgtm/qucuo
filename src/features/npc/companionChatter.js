@@ -19,11 +19,32 @@
 import { random } from "../../utils/rng.js";
 import { buildNpcContext } from "../../domain/rules/npc/npcContext.js";
 import { isHumanFormCompanion } from "../../domain/rules/companion/companionSlots.js";
+import { readBond, pairKey } from "../../domain/rules/companion/companionBonds.js";
 
 export const COMPANION_CHATTER_CHANCE = 0.2;
 export const CHATTER_COOLDOWN_TURNS = 8;
 export const CHATTER_GAP_TURNS = 3;
-export const CHATTER_MAX_TOKENS = 60;
+export const CHATTER_MAX_TOKENS = 120;
+// V7b 事件加权：强事件（切磋胜负/破费/偷盗/受挫/踏入新据点/赠送）开口概率抬到
+// 0.55~0.75，普通走路维持 0.2；强事件开口冷却减半、队间隙缩到 1 回合。
+export const STRONG_EVENT_WEIGHTS = {
+  DUEL: 0.75,   // 切磋胜负
+  GIFT: 0.7,    // 赠送
+  STEAL: 0.65,  // 偷盗
+  TRADE: 0.6,   // 破费
+  COMBAT: 0.55, // 动武
+};
+export const NEW_PLACE_WEIGHT = 0.65;  // 踏入新据点
+export const SETBACK_WEIGHT = 0.6;     // 受挫（行动落空/被拒）
+export const DUO_CHATTER_CHANCE = 0.35; // 随行满 2 人时双人互怼/接茬概率
+
+// 本轮开口权重：activity.intent 命中强事件表、或调用方标了 newPlace/setback。
+export function eventChatterWeight(activity) {
+  let w = STRONG_EVENT_WEIGHTS[activity?.intent] ?? COMPANION_CHATTER_CHANCE;
+  if (activity?.newPlace) w = Math.max(w, NEW_PLACE_WEIGHT);
+  if (activity?.setback) w = Math.max(w, SETBACK_WEIGHT);
+  return w;
+}
 export const REUNION_MAX_TOKENS = 60;
 
 // 真兽（墨团这类没化形的）只出声
@@ -122,11 +143,11 @@ const sharedMemory = createChatterMemory();
 
 // 概率触发 + 从"冷却已过"的随行同伴里抽一位；rng 可注入便于测试/seeded。
 // 传 memory 才查冷却（不传=只看概率，旧调用方式）。
-export function pickChatter(companionState, { rng = random, chance = COMPANION_CHATTER_CHANCE, memory } = {}) {
+export function pickChatter(companionState, { rng = random, chance = COMPANION_CHATTER_CHANCE, memory, cooldownTurns = CHATTER_COOLDOWN_TURNS, gapTurns = CHATTER_GAP_TURNS } = {}) {
   let pool = eligibleChatters(companionState);
   if (memory) {
-    if (memory.turn - memory.lastAny < CHATTER_GAP_TURNS) return null;
-    pool = pool.filter((w) => memory.turn - (memory.last[w.key] ?? -Infinity) >= CHATTER_COOLDOWN_TURNS);
+    if (memory.turn - memory.lastAny < gapTurns) return null;
+    pool = pool.filter((w) => memory.turn - (memory.last[w.key] ?? -Infinity) >= cooldownTurns);
   }
   if (!pool.length) return null;
   if (rng() >= chance) return null;
@@ -148,13 +169,107 @@ export function chatterFallback(who, rng = random, activityCode) {
   return pick(PLAIN_FALLBACK);
 }
 
-// 回合尾触发一次：计回合→抽中人→（兽/机关只出声）→AI 按"玩家刚干了什么"现写一句→兜底。
-// activity={text,intent} 是玩家本轮输入和识别出的意图码。ask 缺省=离线兜底。
+// V7b 上下文补入：说书正文末尾 120 字、关键数值变化、当前场景对象。
+function activityContextBlock(activity) {
+  const parts = [];
+  if (activity?.narrative) parts.push(`说书正文末尾：……${String(activity.narrative).slice(-120)}`);
+  if (activity?.deltas) parts.push(`关键数值变化：${activity.deltas}`);
+  if (activity?.scene) parts.push(`当前场景对象：${activity.scene}`);
+  return parts.length ? `\n${parts.join("\n")}` : "";
+}
+
+// 双人互怼/接茬：从在场池抽两人，装配彼此关系档位与近 2 条互涉心账，
+// AI 输出极简结构化结果 {lines,bondDelta,ledgerNote?,transfer?}；离线走兜底对口词。
+function mutualLedgerLines(state, aName, bName) {
+  const out = [];
+  for (const [name, other] of [[aName, bName], [bName, aName]]) {
+    const entries = state?.varTree?.角色?.[name]?.心账 || [];
+    const mutual = entries.filter((e) => String(e?.summary || e?.摘要 || "").includes(other)).slice(-2);
+    for (const e of mutual) out.push(`${name}记着：${e.summary || e.摘要}`);
+  }
+  return out.slice(-4);
+}
+
+function parseDuoOutcome(raw, aName, bName) {
+  if (!raw) return null;
+  let text = String(raw).trim().replace(/^```(?:json)?\s*|```\s*$/g, "");
+  const brace = text.indexOf("{");
+  if (brace > 0) text = text.slice(brace);
+  try {
+    const obj = JSON.parse(text);
+    const linesObj = obj?.lines;
+    if (!linesObj || typeof linesObj !== "object") return null;
+    const lines = [];
+    for (const speaker of [aName, bName]) {
+      const t = String(linesObj[speaker] || "").trim();
+      if (t) lines.push({ speaker, text: t.slice(0, 60) });
+    }
+    if (!lines.length) return null;
+    const outcome = {};
+    if (Number.isFinite(obj.bondDelta)) outcome.bondDelta = obj.bondDelta;
+    if (typeof obj.ledgerNote === "string" && obj.ledgerNote.trim()) outcome.ledgerNote = obj.ledgerNote.trim().slice(0, 40);
+    if (obj.transfer && typeof obj.transfer === "object") {
+      const { from, to, itemName } = obj.transfer;
+      if ([from, to].every((n) => [aName, bName].includes(n)) && from !== to && typeof itemName === "string" && itemName.trim()) {
+        outcome.transfer = { from, to, itemName: itemName.trim() };
+      }
+    }
+    return { lines, outcome };
+  } catch { return null; }
+}
+
+function duoFallback(a, b, rng, activityCode) {
+  const first = chatterFallback(a, rng, activityCode) || "瞥了同伴一眼，没说话。";
+  const second = chatterFallback(b, rng, activityCode) || "哼了一声，别过脸去。";
+  return {
+    lines: [
+      { speaker: a.name, text: first.replace(/^[（(]|[）)]$/g, "").slice(0, 60) },
+      { speaker: b.name, text: second.replace(/^[（(]|[）)]$/g, "").slice(0, 60) },
+    ],
+    outcome: {},
+  };
+}
+
+async function duoChatter({ pool, companionState, roomName, activity, state, rng, ask }) {
+  const a = pool[Math.floor(rng() * pool.length) % pool.length];
+  const rest = pool.filter((w) => w.key !== a.key);
+  const b = rest[Math.floor(rng() * rest.length) % rest.length];
+  const bond = readBond(companionState, a.name, b.name);
+  const ledgerLines = mutualLedgerLines(state, a.name, b.name);
+  let parsed = null;
+  if (typeof ask === "function") {
+    const raw = await ask(
+      `你是武侠MUD的编剧。写两位随行同伴之间的一来一往短交锋（互怼或接茬）：${a.name}一句、${b.name}一句，各不超 30 字，贴合各自性子与两人关系，围绕玩家刚做的事或眼前景；不推进事件、不描述玩家动作。只回 JSON：{"lines":{"${a.name}":"…","${b.name}":"…"},"bondDelta":-5到5的整数（这趟往来让两人更近还是更疏）,"ledgerNote":"可选，一句不超过20字的心账由头","transfer":{"from":"${a.name}或${b.name}","to":"另一位","itemName":"必须是 from 真实持有的东西，不确定就别给"}可选}`,
+      `同伴甲：${a.name}（${a.personality || a.brief || "江湖中人"}）\n同伴乙：${b.name}（${b.personality || b.brief || "江湖中人"}）\n两人关系：${bond.tier}（${bond.score}）\n近互涉心账：${ledgerLines.join("；") || "无"}\n当前所在：${roomName || "赶路途中"}\n玩家刚做的事：${activity?.text || "赶路"}${activityContextBlock(activity)}`,
+      { callLabel: "companion-chatter-duo", maxTokens: CHATTER_MAX_TOKENS * 2 },
+    );
+    parsed = parseDuoOutcome(raw, a.name, b.name);
+  }
+  const duo = parsed || duoFallback(a, b, rng, activity?.intent);
+  return { duo: true, speakers: [a.name, b.name], keys: [a.key, b.key], lines: duo.lines, outcome: duo.outcome || {} };
+}
+
+// 回合尾触发一次：计回合→事件加权抽人（强事件抬权重+缩冷却）→满 2 人 35% 双人互怼→
+// AI 按"玩家刚干了什么+说书末尾+数值变化+场景对象"现写→兜底。
+// activity={text,intent,narrative?,deltas?,scene?,newPlace?,setback?}。ask 缺省=离线兜底。
 export async function companionChatterTick({ companionState, roomName, activity, state, rng = random, ask, memory = sharedMemory } = {}) {
   memory.turn += 1;
-  const who = pickChatter(companionState, { rng, memory });
+  const weight = eventChatterWeight(activity);
+  const strong = weight > COMPANION_CHATTER_CHANCE;
+  const cooldownTurns = strong ? Math.ceil(CHATTER_COOLDOWN_TURNS / 2) : CHATTER_COOLDOWN_TURNS;
+  const gapTurns = strong ? 1 : CHATTER_GAP_TURNS;
+  const who = pickChatter(companionState, { rng, chance: weight, memory, cooldownTurns, gapTurns });
   if (!who) return null;
   memory.lastAny = memory.turn;
+  // 双人互怼/接茬：满 2 人在场池时 35% 触发，两人同记冷却
+  const pool = eligibleChatters(companionState)
+    .filter((w) => memory.turn - (memory.last[w.key] ?? -Infinity) >= cooldownTurns);
+  if (pool.length >= 2 && rng() < DUO_CHATTER_CHANCE) {
+    const duo = await duoChatter({ pool, companionState, roomName, activity, state, rng, ask });
+    memory.last[duo.keys[0]] = memory.turn;
+    memory.last[duo.keys[1]] = memory.turn;
+    return duo;
+  }
   memory.last[who.key] = memory.turn;
   let line = null;
   if (typeof ask === "function") {
@@ -163,7 +278,7 @@ export async function companionChatterTick({ companionState, roomName, activity,
     const exposureLine = npcCtx.exposure ? `\n当下衣着状态：${npcCtx.exposure}` : "";
     line = await ask(
       `你是武侠MUD里玩家的随行同伴。玩家刚做了一件事（或只是在赶路），${VOICE_RULE[who.voice] || VOICE_RULE.human}——可以赞、嗔、调侃、讨赏、提醒，或随口感叹周遭，照你的性子来；不推进事件、不描述玩家动作。`,
-      `同伴：${who.name}（${npcCtx.chatterPersona}）\n当前所在：${roomName || "赶路途中"}${favorLine}${exposureLine}\n玩家刚做的事：${activity?.text || "赶路"}`,
+      `同伴：${who.name}（${npcCtx.chatterPersona}）\n当前所在：${roomName || "赶路途中"}${favorLine}${exposureLine}\n玩家刚做的事：${activity?.text || "赶路"}${activityContextBlock(activity)}`,
       { callLabel: "companion-chatter", maxTokens: CHATTER_MAX_TOKENS },
     );
   }
