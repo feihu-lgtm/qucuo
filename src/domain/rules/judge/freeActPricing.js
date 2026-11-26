@@ -75,7 +75,7 @@ export function parseStatedExpense(text) {
     // 余额/欠账语境不是价——身上有/余额/囊中/身带/存有 近旁是财力声明；
     // 「还有」已从名单剔除：「房钱还有五两没付」是待付账单不是余额（Review 五修）。
     const beforeWide = src.slice(Math.max(0, m.index - 6), m.index);
-    if (/身上有|身上还有|余额|囊中|身带|存有/.test(beforeWide)) continue;
+    if (/身上有|身上还有|余额|囊中|身带|存有|我还有|俺还有|咱还有/.test(beforeWide)) continue;
     if (unit !== "两" && firstDefinite == null) firstDefinite = n;
   }
   // 动词候选唯一才取——零个回落钱文，多个不同额歧义保守 null，多个同额取同额。
