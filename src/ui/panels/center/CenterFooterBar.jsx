@@ -1,10 +1,12 @@
-import CenterControlRows from "../CenterControlRows.jsx";
+import { useEffect, useRef, useState } from "react";
+import GroundItemStrip from "../../components/GroundItemStrip.jsx";
 import { useGameStore } from "../../../store/gameStore.js";
 import {
-  useSessionUi, setInteractMode, setActiveTarget, setTalkTarget,
-  setActiveGroundItem, setPigeonTarget, setInput, setNsfwOn,
+  useSessionUi, setInput, setInputCapsule,
 } from "../../../store/sessionUiStore.js";
 import { isQuestChoiceOpen } from "../../../domain/rules/quests/questEngine.js";
+import { partitionPeople } from "../left/peopleRoster.js";
+import { getGroundItems } from "../../../domain/rules/map/groundScope.js";
 
 export default function CenterFooterBar({ ui, turn, handlers }) {
   const room = useGameStore(s => s.room);
@@ -18,19 +20,55 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
     availableQuestsHere,
     inputRef, composingRef,
   } = ui;
-  const isMobile = useSessionUi(s => s.isMobile);
-  const mobileColumn = useSessionUi(s => s.mobileColumn);
-  const nsfwOn = useSessionUi(s => s.nsfwOn);
   const loading = useSessionUi(s => s.loading);
   const pendingTalks = useSessionUi(s => s.pendingTalks);
   const waitSecs = useSessionUi(s => s.waitSecs);
-  const interactMode = useSessionUi(s => s.interactMode);
-  const activeTarget = useSessionUi(s => s.activeTarget);
-  const activeGroundItem = useSessionUi(s => s.activeGroundItem);
-  const pigeonTarget = useSessionUi(s => s.pigeonTarget);
   const input = useSessionUi(s => s.input);
-  const justMeditated = useSessionUi(s => s.justMeditated);
-  const { questPanel, screenHandlers, progressionHandlers, pigeonHandlers } = handlers;
+  const capsule = useSessionUi(s => s.inputCapsule);
+  const companionState = useGameStore(s => s.companionState);
+  const narratorName = useGameStore(s => s.narrator?.name) || "旁白";
+  const { questPanel, screenHandlers } = handlers;
+
+  // W-INPUT 单框合一：@ 浮层（点 @ 钮或框首敲 @ 唤起）+ 一次性胶囊。
+  // visibleNpcs 用 D6 同源口径（partitionPeople.present：内层过滤+随行+留守在此）。
+  const [atMenuOpen, setAtMenuOpen] = useState(false);
+  const atMenuRef = useRef(null);
+  const visibleNpcs = partitionPeople({ room, innerRoomName, companionState }).present;
+  const groundItems = getGroundItems({ room, innerRoomName });
+  useEffect(() => {
+    if (!atMenuOpen) return undefined;
+    const closeOutside = (event) => {
+      if (!atMenuRef.current?.contains(event.target)) setAtMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    return () => document.removeEventListener("pointerdown", closeOutside);
+  }, [atMenuOpen]);
+  const pickCapsule = (cap) => {
+    setInputCapsule(cap);
+    setAtMenuOpen(false);
+    // 框首敲 @ 唤起的，选人后顺手把那个 @ 吃掉
+    if (input === "@") setInput("");
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+  const capsuleLabel = capsule?.kind === "whisper" ? `私语·${capsule.name || narratorName}`
+    : capsule?.kind === "pigeon" ? `飞鸽·${capsule.name}`
+    : capsule?.kind === "target" ? `@${capsule.name}` : "";
+  const onInputKeyDown = (e) => {
+    // 空框 Backspace 剥胶囊（与点 × 同效）
+    if (e.key === "Backspace" && !input && capsule) {
+      e.preventDefault();
+      setInputCapsule(null);
+      return;
+    }
+    turn.onKey(e);
+  };
+  const onInputChange = (e) => {
+    const value = e.target.value;
+    setInput(value);
+    // 框首敲入 @ 唤起浮层；删掉了就收起
+    if (value === "@") setAtMenuOpen(true);
+    else if (atMenuOpen && !value.startsWith("@")) setAtMenuOpen(false);
+  };
 
   return (
     <>
@@ -120,47 +158,95 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
         </div>
       )}
 
-      <CenterControlRows
-        isMobile={isMobile} mobileColumn={mobileColumn} zoneTheme={zoneTheme}
-        room={room} innerRoomName={innerRoomName}
-        handleCollectGround={screenHandlers.handleCollectGround}
-        setInteractMode={setInteractMode} interactMode={interactMode} activeTarget={activeTarget}
-        setActiveTarget={setActiveTarget} setTalkTarget={setTalkTarget} setPigeonTarget={setPigeonTarget}
-        activeGroundItem={activeGroundItem} setActiveGroundItem={setActiveGroundItem}
-        nsfwOn={nsfwOn} setNsfwOn={setNsfwOn} meditate={progressionHandlers.meditate} justMeditated={justMeditated}
-      >
-        {interactMode === "pigeon" && pigeonTarget && (() => {
-          const { delay, loc } = pigeonHandlers.pigeonDelayShichen(pigeonTarget);
-          return (
-            <div style={{ padding: "6px 16px 0", display: "flex", alignItems: "center", gap: 8, flexShrink: 0, fontSize: "var(--fs-xs)" }}>
-              <span style={{ color: "var(--gold)" }}>🕊 飞鸽传书 · 致「{pigeonTarget}」</span>
-              <span style={{ color: zoneTheme.textDim, fontSize: "var(--fs-2xs)" }}>信往{loc}，约 {delay} 时辰后有回音</span>
-              <span style={{ flex: 1 }} />
-              <span className="mobile-touch-target" onClick={() => { setPigeonTarget(null); setInteractMode("action"); }} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "var(--fs-2xs)" }}>× 取消</span>
-            </div>
-          );
-        })()}
-      </CenterControlRows>
+      <GroundItemStrip items={groundItems} theme={zoneTheme} onPickUp={screenHandlers.handleCollectGround} />
 
       <div className="mobile-input-bar" style={{
-        borderTop: interactMode === "whisper" ? "1px solid var(--footer-whisper-edge)" : interactMode === "pigeon" ? "1px solid var(--gold-deep)" : `1px solid ${zoneTheme.border}`,
-        background: interactMode === "whisper" ? "rgba(224,160,208,0.06)" : interactMode === "pigeon" ? "rgba(196,160,64,0.06)" : "transparent",
+        borderTop: `1px solid ${zoneTheme.border}`,
         padding: "10px 16px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0,
+        position: "relative",
       }}>
-        <span style={{
-          color: interactMode === "whisper" ? "var(--pink)" : interactMode === "pigeon" ? "var(--gold)" : zoneTheme.accent,
-          flexShrink: 0, fontSize: "var(--fs-md)",
-        }}>{interactMode === "pigeon" ? "🕊" : "▸"}</span>
+        {/* W-INPUT @ 触发点：与输入框融为一体，点按或框首敲 @ 唤起浮层 */}
+        <span
+          role="button"
+          aria-label="指定对象或私聊旁白"
+          aria-expanded={atMenuOpen}
+          data-at-trigger="true"
+          onClick={() => setAtMenuOpen(v => !v)}
+          style={{
+            color: atMenuOpen || capsule ? zoneTheme.accent : zoneTheme.textDim,
+            flexShrink: 0, fontSize: "var(--fs-md)", cursor: "pointer", userSelect: "none",
+          }}
+        >@</span>
+        {atMenuOpen && (
+          <div
+            ref={atMenuRef}
+            role="menu"
+            data-at-menu="true"
+            style={{
+              position: "absolute", bottom: "100%", left: 10, zIndex: 30, marginBottom: 4,
+              display: "flex", flexDirection: "column", gap: 2, padding: 4,
+              minWidth: 168, maxWidth: "calc(100vw - 28px)", maxHeight: "min(60vh, 315px)",
+              overflowY: "auto", boxSizing: "border-box",
+              background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, color: zoneTheme.text,
+            }}
+          >
+            <button
+              type="button"
+              role="menuitem"
+              data-at-option="whisper"
+              onClick={() => pickCapsule({ kind: "whisper", name: narratorName })}
+              style={{
+                background: "transparent", border: "none", color: zoneTheme.text,
+                textAlign: "left", padding: "6px 10px", fontSize: "var(--fs-sm)",
+                fontFamily: "inherit", cursor: "pointer",
+              }}
+            >◆ {narratorName}（旁白私语 · 不耗回合）</button>
+            {visibleNpcs.map(npc => (
+              <button
+                key={npc.name}
+                type="button"
+                role="menuitem"
+                data-at-option={`npc-${npc.name}`}
+                onClick={() => pickCapsule({ kind: "target", name: npc.name })}
+                style={{
+                  background: "transparent", border: "none", color: zoneTheme.text,
+                  textAlign: "left", padding: "6px 10px", fontSize: "var(--fs-sm)",
+                  fontFamily: "inherit", cursor: "pointer",
+                }}
+              >{npc.name}</button>
+            ))}
+          </div>
+        )}
+        {capsule && (
+          <span
+            data-input-capsule={capsule.kind}
+            style={{
+              flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 4,
+              padding: "1px 8px", fontSize: "var(--fs-xs)", whiteSpace: "nowrap",
+              color: zoneTheme.accent, border: `1px solid ${zoneTheme.accent}`,
+              background: "transparent",
+            }}
+          >
+            {capsuleLabel}
+            <span
+              role="button"
+              aria-label="取消指定"
+              data-capsule-clear="true"
+              onClick={() => setInputCapsule(null)}
+              style={{ cursor: "pointer", color: zoneTheme.textDim }}
+            >×</span>
+          </span>
+        )}
         <input
           className="game-input"
-          ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={turn.onKey}
+          ref={inputRef} value={input} onChange={onInputChange} onKeyDown={onInputKeyDown}
           onCompositionStart={() => { composingRef.current = true; }}
           onCompositionEnd={() => { composingRef.current = false; }}
           placeholder={
-            interactMode === "pigeon" ? `提笔给「${pigeonTarget || "…"}」写信，写罢按回车放飞信鸽…` :
-            interactMode === "whisper" ? (pendingTalks > 0 ? "旁白回话中…可先打字，待她说完再发" : "对旁白说些什么…（不消耗回合）") :
-            (interactMode === "action" || interactMode === "talk") && loading ? "..." :
-            (pendingTalks > 0 ? `说话、做事都行，括号能分着写…（${pendingTalks}条回话处理中）` : "说话、做事都行——纯搭话、纯看不耗回合，括号可分段")
+            capsule?.kind === "pigeon" ? `提笔给「${capsule.name}」写信，写罢按回车放飞信鸽…` :
+            capsule?.kind === "whisper" ? (pendingTalks > 0 ? "旁白回话中…可先打字，待她说完再发" : `对${capsule.name || narratorName}说些什么…（不消耗回合）`) :
+            loading ? "..." :
+            "说话做事直接写，敲 @ 或 // 可私聊旁白与指定对象"
           }
           style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: zoneTheme.text, fontFamily: "inherit", fontSize: "var(--fs-md)" }}
         />
@@ -172,7 +258,7 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
           disabled={!input.trim()}
           onPointerDown={(e) => e.preventDefault()}
           onClick={() => turn.onKey.submit?.()}
-          aria-label={interactMode === "pigeon" ? "放飞信鸽" : "发送"}
+          aria-label={capsule?.kind === "pigeon" ? "放飞信鸽" : "发送"}
           style={{
             flexShrink: 0, minWidth: 52, minHeight: 32, padding: "4px 12px",
             border: `1px solid ${input.trim() ? zoneTheme.accent : zoneTheme.border}`, borderRadius: 0,
@@ -180,7 +266,7 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
             fontFamily: "inherit", fontSize: "var(--fs-md)", letterSpacing: "2px",
             cursor: input.trim() ? "pointer" : "default", opacity: input.trim() ? 1 : 0.5,
           }}
-        >{interactMode === "pigeon" ? "放飞" : "发送"}</button>
+        >{capsule?.kind === "pigeon" ? "放飞" : "发送"}</button>
       </div>
     </>
   );

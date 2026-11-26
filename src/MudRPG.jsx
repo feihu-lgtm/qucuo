@@ -3,6 +3,7 @@ import {
   OVERLAY, openOverlay, useOverlay,
 } from "./store/uiStore.js";
 import { gameActions, gameStore, useGameStore } from "./store/gameStore.js";
+import { useSessionUi, setInputCapsule } from "./store/sessionUiStore.js";
 import OverlayHost from "./ui/OverlayHost.jsx";
 import GameLayout from "./ui/GameLayout.jsx";
 import { useAutosave } from "./app/hooks/useAutosave.js";
@@ -76,6 +77,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const questProgress = useGameStore(s => s.questProgress);
   const time = useGameStore(s => s.time);
   const narrator = useGameStore(s => s.narrator);
+  const inputCapsule = useSessionUi(s => s.inputCapsule);
   const varTree = useGameStore(s => s.varTree);
   const convo = useGameStore(s => s.convo);
   const persuasionProgress = useGameStore(s => s.persuasionProgress);
@@ -354,6 +356,10 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const onKey = createInputKeyHandler({
     composingRef, interactMode, sendPigeonLetter, pigeonTarget, input, act,
     cmdHistory, histIdx, setHistIdx, setInput,
+    // W-INPUT 一次性胶囊分流：私语/飞鸽直通、@人名仅限本条、发完即焚
+    inputCapsule, clearCapsule: () => setInputCapsule(null),
+    narratorName: narrator?.name || "旁白",
+    clearTargets: () => { setActiveTarget(null); setTalkTarget(null); },
   });
 
   const actions = {

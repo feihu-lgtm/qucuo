@@ -49,6 +49,7 @@ export default function GameLayout({ layout }) {
 
   const interactMode = useSessionUi(s => s.interactMode);
   const pigeonTarget = useSessionUi(s => s.pigeonTarget);
+  const inputCapsule = useSessionUi(s => s.inputCapsule);
   const talkTarget = useSessionUi(s => s.talkTarget);
   const loading = useSessionUi(s => s.loading);
   const activeBuilding = useSessionUi(s => s.activeBuilding);
@@ -59,14 +60,15 @@ export default function GameLayout({ layout }) {
   useEffect(() => {
     const content = {
       building: activeBuilding?.id, trade: tradingShop, duel: duelPending,
-      interaction: interactMode !== "action" ? `${interactMode}:${pigeonTarget || talkTarget || ""}` : null,
+      interaction: interactMode !== "action" ? `${interactMode}:${pigeonTarget || talkTarget || ""}`
+        : inputCapsule ? `capsule:${inputCapsule.kind}:${inputCapsule.name || ""}` : null,
       trauma: derived.seaTraumaActive, debug: showDebug, basement: showBasement,
     };
     const opened = didOpenCenterContent(previousCenterContent.current, content);
     previousCenterContent.current = content;
     if (isMobile && opened) setMobileColumn("center");
   }, [isMobile, activeBuilding?.id, tradingShop, duelPending, interactMode, pigeonTarget,
-    talkTarget, derived.seaTraumaActive, showDebug, showBasement, setMobileColumn]);
+    inputCapsule, talkTarget, derived.seaTraumaActive, showDebug, showBasement, setMobileColumn]);
 
   useEffect(() => {
     const previous = narrativeView.current;

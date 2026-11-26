@@ -24,6 +24,9 @@ export const sessionUiStore = createStore(() => ({
   activeTarget: null,
   activeGroundItem: null,
   pigeonTarget: null,
+  // W-INPUT 一次性胶囊：{kind:"whisper"|"target"|"pigeon", name}——单条发送完成即焚，
+  // 替代旧模式按钮/选人芯片的跨回合粘连态。
+  inputCapsule: null,
   cmdHistory: [],
   histIdx: -1,
   // 模态/战斗/建筑态（PR-2B）
@@ -98,6 +101,7 @@ export const setTalkTarget = fieldSetter("talkTarget");
 export const setActiveTarget = fieldSetter("activeTarget");
 export const setActiveGroundItem = fieldSetter("activeGroundItem");
 export const setPigeonTarget = fieldSetter("pigeonTarget");
+export const setInputCapsule = fieldSetter("inputCapsule");
 export const setCmdHistory = fieldSetter("cmdHistory");
 export const setHistIdx = fieldSetter("histIdx");
 export const setForcedDuelNpc = fieldSetter("forcedDuelNpc");

@@ -136,7 +136,8 @@ export function useTurn({
     // 发送前的 convo（历史一样），且流式占位用的 logIdx.current 是共享 ref，两条
     // 回调互相踩踏，表现为"日志一下出两条/重复"。用 talkBusyRef（同步 ref，不等
     // re-render）挡住极快连点；输入框允许预打字，只拦实际发送。
-    if (interactMode === "whisper") {
+    // W-INPUT：opts.whisper 是胶囊/前缀直通的单条私语，与旧 interactMode 同路。
+    if (interactMode === "whisper" || opts.whisper) {
       if (talkBusyRef.current || pendingTalks > 0) {
         addLog([{ t: "sys", text: "  旁白还在回话，稍候再说下一句。" }]);
         return;
@@ -165,7 +166,11 @@ export function useTurn({
       pending: snapshotIntentPending(),
       state: {
         ...gameStore.getState(),
-        pendingQuestBranch, activeTarget, activeGroundItem, talkTarget,
+        pendingQuestBranch,
+        // W-INPUT：@人名胶囊——仅限本条有效的 targetHint，提交即焚不粘连
+        activeTarget: opts.targetHint || activeTarget,
+        activeGroundItem,
+        talkTarget: opts.targetHint || talkTarget,
         nsfwOn, effectiveSpecialNow,
       },
       // WO-06：12 个跨层 ref 已清退，只剩调度/路由类 hook 私有 ref
