@@ -31,7 +31,12 @@ beforeAll(async () => {
       const body = JSON.parse(Buffer.concat(chunks).toString() || "{}");
       if (body.stream) {
         res.writeHead(200, { "content-type": "text/event-stream" });
-        res.end(sseBody());
+        if (body.truncateTest) {
+          // 截断流：只发正文不发 [DONE] 就结束——模拟上游中途断流
+          res.end('data: {"choices":[{"delta":{"content":"半截正文"}}]}\n');
+        } else {
+          res.end(sseBody());
+        }
       } else {
         res.writeHead(200, { "content-type": "application/json" });
         res.end(JSON.stringify({ id: "x1", choices: [{ message: { content: "ok" } }], usage: { prompt_tokens: 1, completion_tokens_details: { reasoning_tokens: 0 } } }));
@@ -107,6 +112,18 @@ describe("A4 proxy SSE/归属/验签集成桩", () => {
     const rec = readLog().find((r) => r.trace === "plain-t1");
     expect(rec).toMatchObject({ lane: "3", turn: "7", trace: "plain-t1", status: 200 });
     expect(rec.response?.id).toBe("x1");
+  });
+
+  it("缺 [DONE] 的截断流不干净收尾：客户端见网络错误+留底记 sseTruncated", async () => {
+    let fetchErr = null;
+    try {
+      const res = await post({ model: "m", stream: true, truncateTest: true, messages: [] }, { "x-qucuo-trace": "trunc-t1" });
+      await res.text();
+    } catch (e) { fetchErr = e; }
+    expect(fetchErr, "截断流应表现为网络错误而非干净 EOF").toBeTruthy();
+    await new Promise((r) => setTimeout(r, 300));
+    const rec = readLog().find((r) => r.trace === "trunc-t1");
+    expect(rec?.sseTruncated).toBe(true);
   });
 
   it("无令牌/错令牌一律 403 不转发", async () => {

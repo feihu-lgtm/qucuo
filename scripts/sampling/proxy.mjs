@@ -93,8 +93,18 @@ const server = http.createServer((req, res) => {
           bufs.push(Buffer.from(value));
           res.write(Buffer.from(value));
         }
-        res.end();
         rec.sseRaw = Buffer.concat(bufs).toString("utf8");
+        // 截断判定：OpenAI 兼容 SSE 正常收尾必有 data: [DONE]；缺 [DONE] 即上游
+        // 中途断流——此时若干净 end，readSSE 会把残篇当完整响应收下（游戏不重试、
+        // 采样吃进截断叙事）。改为销毁 socket 让客户端看到网络错误走重试链，
+        // 同时在留底记 sseTruncated 供后处理核对。
+        const sawDone = rec.sseRaw.includes("data: [DONE]");
+        if (!sawDone) {
+          rec.sseTruncated = true;
+          res.socket.destroy();
+        } else {
+          res.end();
+        }
         // SSE 末包常带 usage（stream_options.include_usage）
         for (const line of rec.sseRaw.split("\n")) {
           if (!line.startsWith("data:") || line.includes("[DONE]")) continue;
