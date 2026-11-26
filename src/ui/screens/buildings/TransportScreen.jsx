@@ -47,8 +47,8 @@ export default function TransportScreen({
   );
 
   return (
-    <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
+    <Overlay onClose={onClose} inline={inline}>
+      <Header name={building.name} onClose={onClose} />
       <div style={{ padding: 16 }}>
         <div style={{ color: "var(--ink-text-dim)", marginBottom: 10, fontSize: "var(--fs-xs)" }}>
           银两 {money} 两 · 信鸽 {pigeons} 只 · 当前位置：{currentRoom}
@@ -69,7 +69,7 @@ export default function TransportScreen({
                   <span style={{ color: "var(--ink-text)", fontSize: "var(--fs-sm)" }}>{dest}</span>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ color: "var(--gold-bright)", fontSize: "var(--fs-xs)" }}>{price} 两</span>
-                    <Btn label="前往" disabled={money < price} zoneTheme={zoneTheme} onClick={() => onTravel(dest, price)} />
+                    <Btn label="前往" disabled={money < price} onClick={() => onTravel(dest, price)} />
                   </div>
                 </div>
               );
@@ -87,8 +87,8 @@ export default function TransportScreen({
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ color: "var(--gold-bright)", fontSize: "var(--fs-xs)" }}>{PIGEON_PRICE} 两/只</span>
-                <Btn label="买1只" disabled={money < PIGEON_PRICE} zoneTheme={zoneTheme} onClick={() => onBuyPigeon && onBuyPigeon(1, PIGEON_PRICE)} />
-                <Btn label="买5只" disabled={money < PIGEON_PRICE * 5} zoneTheme={zoneTheme} onClick={() => onBuyPigeon && onBuyPigeon(5, PIGEON_PRICE)} />
+                <Btn label="买1只" disabled={money < PIGEON_PRICE} onClick={() => onBuyPigeon && onBuyPigeon(1, PIGEON_PRICE)} />
+                <Btn label="买5只" disabled={money < PIGEON_PRICE * 5} onClick={() => onBuyPigeon && onBuyPigeon(5, PIGEON_PRICE)} />
               </div>
             </div>
 
@@ -120,7 +120,7 @@ export default function TransportScreen({
                   rows={4}
                   style={{ width: "100%", boxSizing: "border-box", background: "var(--bg-ink)", color: "var(--ink-text)", border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: 8, fontSize: "var(--fs-sm)", fontFamily: "inherit", resize: "vertical", marginBottom: 8 }} />
                 <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                  <Btn label={gift ? "送礼 + 寄信" : "寄信"} disabled={!recipient || !letter.trim()} zoneTheme={zoneTheme} onClick={doSend} />
+                  <Btn label={gift ? "送礼 + 寄信" : "寄信"} disabled={!recipient || !letter.trim()} onClick={doSend} />
                 </div>
               </>
             )}

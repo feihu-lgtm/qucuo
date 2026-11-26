@@ -18,8 +18,8 @@ export default function EscortScreen({ building, char, flags, questProgress, cur
   const active = ESCORT_QUESTS.filter(q => questProgress[q.id]?.active);
 
   return (
-    <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
+    <Overlay onClose={onClose} inline={inline}>
+      <Header name={building.name} onClose={onClose} />
       <div style={{ padding: 16 }}>
         <div style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)", marginBottom: 12 }}>
           {building.desc}
@@ -65,7 +65,7 @@ export default function EscortScreen({ building, char, flags, questProgress, cur
             <div style={{ color: "var(--escort-hint)", fontSize: "var(--fs-2xs)", marginBottom: 8 }}>
               → 前往 {q.targetLocation} · 找 {q.targetNpc} 完成交货
             </div>
-            <Btn label="接受任务" zoneTheme={zoneTheme} onClick={() => onAcceptEscort(q)} />
+            <Btn label="接受任务" onClick={() => onAcceptEscort(q)} />
           </div>
         ))}
       </div>

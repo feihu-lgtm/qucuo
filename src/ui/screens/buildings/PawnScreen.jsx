@@ -10,8 +10,8 @@ export default function PawnScreen({ building, char, inv, pledgedItems, zoneThem
   const pawnable = inv.filter(i => typeof i === "object" && !i.equipped && i.sellPrice);
 
   return (
-    <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name="聚宝当铺" zoneTheme={zoneTheme} onClose={onClose} />
+    <Overlay onClose={onClose} inline={inline}>
+      <Header name="聚宝当铺" onClose={onClose} />
       <div style={{ display: "flex", gap: 0, borderBottom: `1px solid ${zoneTheme.border}` }}>
         {[["pledge", "质押物品"], ["redeem", `赎回（${pledgedItems.length}件）`]].map(([id, label]) => (
           <span key={id} onClick={() => setTab(id)}
@@ -39,7 +39,7 @@ export default function PawnScreen({ building, char, inv, pledgedItems, zoneThem
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ color: "var(--gold-bright)", fontSize: "var(--fs-xs)" }}>+{pledgeValue} 两</span>
-                    <Btn label="质押" zoneTheme={zoneTheme} onClick={() => onPledge(item, pledgeValue)} />
+                    <Btn label="质押" onClick={() => onPledge(item, pledgeValue)} />
                   </div>
                 </div>
               );
@@ -59,7 +59,7 @@ export default function PawnScreen({ building, char, inv, pledgedItems, zoneThem
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ color: "var(--qb-versus)", fontSize: "var(--fs-xs)" }}>-{redeemCost} 两</span>
-                    <Btn label="赎回" disabled={money < redeemCost} zoneTheme={zoneTheme} onClick={() => onRedeem(i, redeemCost)} />
+                    <Btn label="赎回" disabled={money < redeemCost} onClick={() => onRedeem(i, redeemCost)} />
                   </div>
                 </div>
               );

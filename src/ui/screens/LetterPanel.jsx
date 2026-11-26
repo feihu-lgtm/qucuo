@@ -22,8 +22,8 @@ export default function LetterPanel({ zoneTheme, onClose, inline }) {
   };
 
   return (
-    <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name={`信件${letters.length ? `（${letters.length}）` : ""} · 信鸽 ${pigeons} 只`} zoneTheme={zoneTheme} onClose={onClose} />
+    <Overlay onClose={onClose} inline={inline}>
+      <Header name={`信件${letters.length ? `（${letters.length}）` : ""} · 信鸽 ${pigeons} 只`} onClose={onClose} />
       <div className="mobile-overlay-content" style={{ padding: 16 }}>
         {!letters.length && (
           <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)" }}>
@@ -58,7 +58,6 @@ export default function LetterPanel({ zoneTheme, onClose, inline }) {
                   <span style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-sm)" }}>「{open.npcName} 来信」</span>
                   <Btn
                     label={pigeons > 0 ? "回信" : "回信（缺信鸽）"}
-                    zoneTheme={zoneTheme}
                     disabled={pigeons <= 0}
                     onClick={() => reply(open.npcName)}
                   />
@@ -72,7 +71,7 @@ export default function LetterPanel({ zoneTheme, onClose, inline }) {
           </div>
         )}
         <div style={{ marginTop: 14, textAlign: "right" }}>
-          <Btn label="关闭" zoneTheme={zoneTheme} onClick={onClose} secondary />
+          <Btn label="关闭" onClick={onClose} secondary />
         </div>
       </div>
     </Overlay>

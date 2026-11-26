@@ -12,7 +12,7 @@ function ChaojingPanel({ char, flags, time, zoneTheme, onChaojing }) {
       <div style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-xs)", marginBottom: 6 }}>男弟子入门礼 · 静心抄经三日（{Math.min(status.count, CHAOJING.days)}/{CHAOJING.days}）</div>
       {status.done
         ? <div style={{ color: "var(--clay)", fontSize: "var(--fs-sm)" }}>三日经已抄足，可去听竹轩拜师。</div>
-        : <Btn label={status.today ? "今日已抄过" : "静心抄经（两个时辰）"} disabled={status.today} zoneTheme={zoneTheme} onClick={onChaojing} />}
+        : <Btn label={status.today ? "今日已抄过" : "静心抄经（两个时辰）"} disabled={status.today} onClick={onChaojing} />}
     </div>
   );
 }
@@ -24,8 +24,8 @@ export default function LibraryScreen({ building, char, skills, flags, time, zon
   const paidBooks = LIBRARY_BOOKS_JINGGUAN;
 
   return (
-    <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
+    <Overlay onClose={onClose} inline={inline}>
+      <Header name={building.name} onClose={onClose} />
       <div style={{ display: "flex", gap: 0, borderBottom: `1px solid ${zoneTheme.border}` }}>
         {[["free", "免费阅读"], ["paid", "秘籍购买"]].map(([id, label]) => (
           <span key={id} onClick={() => setTab(id)}
@@ -45,7 +45,7 @@ export default function LibraryScreen({ building, char, skills, flags, time, zon
           <div key={book.id} style={{ marginBottom: 10, padding: "10px 12px", background: "var(--bg-ink)", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
             <div style={{ color: "var(--ink-text)", fontSize: "var(--fs-md)", marginBottom: 4 }}>{book.name}</div>
             <div style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)", marginBottom: 6 }}>{book.desc}</div>
-            <Btn label="阅读" zoneTheme={zoneTheme} onClick={() => onReadBook(book)} />
+            <Btn label="阅读" onClick={() => onReadBook(book)} />
           </div>
         ))}
 
@@ -60,7 +60,7 @@ export default function LibraryScreen({ building, char, skills, flags, time, zon
               <div style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)", marginBottom: 6 }}>{book.desc}</div>
               {owned
                 ? <span style={{ color: "var(--skill-learned)", fontSize: "var(--fs-xs)" }}>✓ 已习得</span>
-                : <Btn label="购买" disabled={money < book.price} zoneTheme={zoneTheme} onClick={() => onBuyBook(book)} />
+                : <Btn label="购买" disabled={money < book.price} onClick={() => onBuyBook(book)} />
               }
             </div>
           );

@@ -12,7 +12,7 @@ const btnStyle = {
 };
 const dimBtn = { ...btnStyle, color: "var(--ink-text-dim)", borderColor: "var(--homestead-dim-edge)" };
 
-export default function HomesteadPanel({ roomName, inv, setInv, char, setChar, zoneTheme, onClose, addLog, dispatchCommand }) {
+export default function HomesteadPanel({ roomName, inv, setInv, char, setChar, onClose, addLog, dispatchCommand }) {
   const home = getHomestead(roomName);
   const [activeFeature, setActiveFeature] = useState(null);
   const runCommand = (id, fn) => dispatchCommand ? dispatchCommand(id, fn) : fn();

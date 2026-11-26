@@ -13,7 +13,7 @@ import {
   StoneVisual, BidderFan, BidderCarousel, SkinModal, SelCardModal, PanelBtn,
 } from "./GambleStoneParts.jsx";
 
-export default function GambleStoneScreen({ building, char, time, zoneTheme, onClose, roomNpcs = [], onTalk, onSettle, onInspect, onMinimizeChange, negotiation = {} }) {
+export default function GambleStoneScreen({ building, char, time, onClose, roomNpcs = [], onTalk, onSettle, onInspect, onMinimizeChange, negotiation = {} }) {
   const luck = (char.special?.气运) ?? 5;
   const money = char.money || 0;
   const hourNow = ((time % 24) + 24) % 24;

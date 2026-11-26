@@ -73,12 +73,12 @@ export function QuestList({ questProgress, flags = [], zoneTheme }) {
 
 export default function QuestLogScreen({ questProgress, flags = [], zoneTheme, onClose, inline }) {
   return (
-    <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name="任务" zoneTheme={zoneTheme} onClose={onClose} />
+    <Overlay onClose={onClose} inline={inline}>
+      <Header name="任务" onClose={onClose} />
       <div className="mobile-overlay-content" style={{ padding: 16 }}>
         <QuestList questProgress={questProgress} flags={flags} zoneTheme={zoneTheme} />
         <div style={{ marginTop: 14, textAlign: "right" }}>
-          <Btn label="关闭" zoneTheme={zoneTheme} onClick={onClose} secondary />
+          <Btn label="关闭" onClick={onClose} secondary />
         </div>
       </div>
     </Overlay>

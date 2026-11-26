@@ -28,7 +28,7 @@ export default function JianghuModule({ zoneTheme, isMobile }) {
           ))}
         </div>
       ) : (
-        <JianghuDials zoneTheme={zoneTheme} />
+        <JianghuDials />
       )}
       <div aria-label="声誉" title="威望是全江湖的总名声；势力声誉到「友善」起，在该势力据点买东西打折"
         style={{ width: "100%", fontSize: "var(--fs-xs)", color: zoneTheme?.textDim, lineHeight: 1.7 }}>

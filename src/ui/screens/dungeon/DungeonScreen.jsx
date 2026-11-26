@@ -163,8 +163,8 @@ export default function DungeonScreen({
   };
 
   return (
-    <Overlay onClose={handleHeaderClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name={building?.name || run.dungeonName} zoneTheme={zoneTheme} onClose={handleHeaderClose} />
+    <Overlay onClose={handleHeaderClose} inline={inline}>
+      <Header name={building?.name || run.dungeonName} onClose={handleHeaderClose} />
       <div style={{ padding: 14 }}>
         <div style={{
           display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8,

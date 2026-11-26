@@ -66,8 +66,8 @@ export default function JadeShopScreen({ building, char, inv = [], time, zoneThe
   );
 
   return (
-    <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name={building.name || "金玉行"} zoneTheme={zoneTheme} onClose={onClose} />
+    <Overlay onClose={onClose} inline={inline}>
+      <Header name={building.name || "金玉行"} onClose={onClose} />
       <div style={{ padding: 16 }}>
         <div style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)", marginBottom: 10 }}>{building.desc}</div>
         <div style={{ color: "var(--ink-text-dim)", marginBottom: 12, fontSize: "var(--fs-xs)" }}>气运 {luck}/10 · 玉器品质＝料的天花板与手气取其低</div>
@@ -109,7 +109,7 @@ export default function JadeShopScreen({ building, char, inv = [], time, zoneThe
                         </div>
                         {eff && <div style={{ color: "var(--ink-sky-soft)", fontSize: "var(--fs-2xs)", margin: "3px 0" }}>词条：{eff}</div>}
                         <div style={{ color: "var(--ink-stone-dim)", fontSize: "var(--fs-xs)", marginBottom: 6, lineHeight: 1.5 }}>{w.desc}</div>
-                        <Btn label={chosenJade ? "用这块料雕它" : "先选玉料"} disabled={!chosenJade} zoneTheme={zoneTheme} onClick={() => craft(w)} />
+                        <Btn label={chosenJade ? "用这块料雕它" : "先选玉料"} disabled={!chosenJade} onClick={() => craft(w)} />
                       </div>
                     );
                   })}
@@ -125,7 +125,7 @@ export default function JadeShopScreen({ building, char, inv = [], time, zoneThe
                 <input value={category} onChange={e => setCategory(e.target.value)} placeholder="饰品·玉佩 / 护甲·玉牌…" style={inputStyle} />
                 <label style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)" }}>要求（想要的脾性，如 幸运、护身、静心…）</label>
                 <input value={requirement} onChange={e => setRequirement(e.target.value)} placeholder="幸运、养气…" style={inputStyle} />
-                <Btn label={designing ? "玉匠正琢磨样式……" : (chosenJade ? "请玉匠出方案" : "先选玉料")} disabled={designing || !chosenJade} zoneTheme={zoneTheme} onClick={doDesign} />
+                <Btn label={designing ? "玉匠正琢磨样式……" : (chosenJade ? "请玉匠出方案" : "先选玉料")} disabled={designing || !chosenJade} onClick={doDesign} />
                 {designErr && <div style={{ color: "var(--ink-rose)", fontSize: "var(--fs-xs)", marginTop: 8 }}>{designErr}</div>}
               </>
             )}
@@ -143,11 +143,11 @@ export default function JadeShopScreen({ building, char, inv = [], time, zoneThe
                       </div>
                       {eff && <div style={{ color: "var(--ink-sky-soft)", fontSize: "var(--fs-xs)", marginBottom: 4 }}>词条：{eff}</div>}
                       {c.desc && <div style={{ color: "var(--ink-stone-dim)", fontSize: "var(--fs-xs)", marginBottom: 8, lineHeight: 1.5 }}>{c.desc}</div>}
-                      <Btn label="选这件雕" zoneTheme={zoneTheme} onClick={() => craft(c)} />
+                      <Btn label="选这件雕" onClick={() => craft(c)} />
                     </div>
                   );
                 })}
-                <Btn label="都不满意，重说要求" zoneTheme={zoneTheme} onClick={() => setCandidates(null)} />
+                <Btn label="都不满意，重说要求" onClick={() => setCandidates(null)} />
               </>
             )}
           </>

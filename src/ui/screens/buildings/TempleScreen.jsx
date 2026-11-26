@@ -16,8 +16,8 @@ export default function TempleScreen({ building, char, dao, varTree, flags, time
   const offeringDone = offering && (clinicDoneToday(building.id, { flags, time }) || clinicWeekFull(building.id, { flags, time }));
 
   return (
-    <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
+    <Overlay onClose={onClose} inline={inline}>
+      <Header name={building.name} onClose={onClose} />
       <div style={{ padding: 16 }}>
         <div style={{ color: "var(--ink-text-dim)", marginBottom: 12, fontSize: "var(--fs-xs)" }}>
           功德 {karma} · 每次拜佛消耗 {karmaPerPray} 功德
@@ -39,7 +39,6 @@ export default function TempleScreen({ building, char, dao, varTree, flags, time
           : <Btn
             label={`拜佛（消耗 ${karmaPerPray} 功德）`}
             disabled={karma < karmaPerPray}
-            zoneTheme={zoneTheme}
             onClick={onPray}
           />
         }
@@ -51,8 +50,7 @@ export default function TempleScreen({ building, char, dao, varTree, flags, time
             {offeringRefused
               ? <div style={{ color: "var(--temple-hint)", fontSize: "var(--fs-xs)" }}>{offering.refuse}</div>
               : <Btn label={offeringDone ? offering.done : offering.label}
-                disabled={offeringDone || (char.money ?? 0) < offering.cost}
-                zoneTheme={zoneTheme} onClick={onClinic} />}
+                disabled={offeringDone || (char.money ?? 0) < offering.cost} onClick={onClinic} />}
           </div>
         )}
       </div>

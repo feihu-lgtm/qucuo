@@ -10,8 +10,8 @@ export default function PigeonCoopScreen({ building, char, flags, time, zoneThem
   const alreadyCollected = flags.includes(`pigeon_collected_day_${dayIdx}`);
 
   return (
-    <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
+    <Overlay onClose={onClose} inline={inline}>
+      <Header name={building.name} onClose={onClose} />
       <div style={{ padding: 16 }}>
         <p style={{ color: zoneTheme.text, marginBottom: 12, fontSize: "var(--fs-md)" }}>{building.desc}</p>
         <div style={{ color: "var(--ink-text-dim)", marginBottom: 12, fontSize: "var(--fs-xs)" }}>
@@ -26,10 +26,9 @@ export default function PigeonCoopScreen({ building, char, flags, time, zoneThem
           <Btn
             label={`领${dailyQty}只信鸽`}
             disabled={alreadyCollected}
-            zoneTheme={zoneTheme}
             onClick={() => onCollect({ qty: dailyQty, dayIdx })}
           />
-          <Btn label="关闭" zoneTheme={zoneTheme} secondary onClick={onClose} />
+          <Btn label="关闭" secondary onClick={onClose} />
         </div>
       </div>
     </Overlay>

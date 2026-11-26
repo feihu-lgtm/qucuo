@@ -39,8 +39,8 @@ export default function AuctionScreen({ building, char, inv, zoneTheme, onClose,
   const next = nextBidAmount(st);
 
   return (
-    <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name={building?.name || "宝丰拍卖行"} zoneTheme={zoneTheme} onClose={onClose} />
+    <Overlay onClose={onClose} inline={inline}>
+      <Header name={building?.name || "宝丰拍卖行"} onClose={onClose} />
       <div style={{ padding: "14px 16px", fontSize: "var(--fs-md)", lineHeight: 1.85, color: zoneTheme.text }}>
 
         {owned ? (
@@ -99,17 +99,17 @@ export default function AuctionScreen({ building, char, inv, zoneTheme, onClose,
             {/* 操作 */}
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {st.phase === AUCTION_PHASE.IDLE && (
-                <Btn label="入座，等开槌" onClick={() => setSt(openAuction(st))} zoneTheme={zoneTheme} />
+                <Btn label="入座，等开槌" onClick={() => setSt(openAuction(st))} />
               )}
               {st.phase === AUCTION_PHASE.BIDDING && (
                 <>
                   <Btn label={`加价到 ${next} 两`} onClick={() => doBid()}
-                    disabled={money < next} zoneTheme={zoneTheme} />
+                    disabled={money < next} />
                   {st.currentBid < AUCTION_CONFIG.buyoutPrice && (
                     <Btn label={`一口价 ${AUCTION_CONFIG.buyoutPrice} 两`} onClick={() => doBid(AUCTION_CONFIG.buyoutPrice)}
-                      disabled={money < AUCTION_CONFIG.buyoutPrice} zoneTheme={zoneTheme} secondary />
+                      disabled={money < AUCTION_CONFIG.buyoutPrice} secondary />
                   )}
-                  <Btn label="算了，不要了" onClick={() => setSt(abandonAuction(st))} zoneTheme={zoneTheme} secondary />
+                  <Btn label="算了，不要了" onClick={() => setSt(abandonAuction(st))} secondary />
                 </>
               )}
               {st.phase === AUCTION_PHASE.WON && (
@@ -122,7 +122,7 @@ export default function AuctionScreen({ building, char, inv, zoneTheme, onClose,
                   <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-sm)", width: "100%" }}>
                     流拍了。掌槌的说过些日子还会再上一次。
                   </div>
-                  <Btn label="再看一次" onClick={() => { setSt(initAuction()); setErr(null); }} zoneTheme={zoneTheme} secondary />
+                  <Btn label="再看一次" onClick={() => { setSt(initAuction()); setErr(null); }} secondary />
                 </>
               )}
             </div>

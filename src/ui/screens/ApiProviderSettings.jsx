@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { DEFAULT_VERTEX_MODEL } from "../../content/apiModel.js";
-import { chromeBtn } from "../../utils/theme.js";
+import { THEME_VARS, chromeBtn } from "../../utils/theme.js";
 
 const VERTEX_MODELS = [
   [DEFAULT_VERTEX_MODEL],
@@ -14,11 +14,11 @@ const VERTEX_MODELS = [
   ["google/gemini-4-hydrogen", "需开通 Gemini 4 额度"],
 ];
 
-export function ApiSettingsGroup({ title, expanded, onToggle, children, zoneTheme }) {
+export function ApiSettingsGroup({ title, expanded, onToggle, children }) {
   return (
     <section>
       <button type="button" aria-expanded={expanded} onClick={onToggle}
-        style={{ ...chromeBtn(zoneTheme, { active: expanded }), width: "100%", justifyContent: "flex-start", marginTop: 8 }}>
+        style={{ ...chromeBtn(THEME_VARS, { active: expanded }), width: "100%", justifyContent: "flex-start", marginTop: 8 }}>
         {expanded ? "▾" : "▸"} {title}
       </button>
       {expanded && <div style={{ paddingTop: 6 }}>{children}</div>}
@@ -28,7 +28,7 @@ export function ApiSettingsGroup({ title, expanded, onToggle, children, zoneThem
 
 export default function ApiProviderSettings({
   cfg, patch, providers, isDefaultEndpoint, migrateProvider, providerApiType,
-  importCredential, hasCredential, labelStyle, inputStyle, zoneTheme,
+  importCredential, hasCredential, labelStyle, inputStyle,
 }) {
   const [status, setStatus] = useState("");
   const [endpointExpanded, setEndpointExpanded] = useState(false);
@@ -101,7 +101,7 @@ export default function ApiProviderSettings({
             type="button"
             aria-expanded={endpointExpanded}
             onClick={() => setEndpointExpanded(value => !value)}
-            style={{ ...chromeBtn(zoneTheme, { active: endpointExpanded }), width: "100%", justifyContent: "flex-start", marginTop: 6 }}
+            style={{ ...chromeBtn(THEME_VARS, { active: endpointExpanded }), width: "100%", justifyContent: "flex-start", marginTop: 6 }}
           >{endpointExpanded ? "▾" : "▸"} 接口地址</button>
           {endpointExpanded && (
             <div>
@@ -119,7 +119,7 @@ export default function ApiProviderSettings({
                       type="button"
                       onClick={() => patch({ endpoint: alt.url })}
                       aria-pressed={cfg.endpoint === alt.url}
-                      style={{ ...chromeBtn(zoneTheme, { active: cfg.endpoint === alt.url }), padding: "3px 8px", fontSize: "var(--fs-xs)" }}
+                      style={{ ...chromeBtn(THEME_VARS, { active: cfg.endpoint === alt.url }), padding: "3px 8px", fontSize: "var(--fs-xs)" }}
                     >{alt.label}</button>
                   ))}
                 </div>

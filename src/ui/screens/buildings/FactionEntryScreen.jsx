@@ -19,7 +19,7 @@ export function LeaveSectButton({ sect, onLeaveSect, zoneTheme }) {
   return (
     <div style={{ marginTop: 14 }}>
       <Btn label={armed ? `确认叛出${sect}（声誉重置 -40，门墙永闭）` : `叛出${sect}`}
-        onClick={() => (armed ? onLeaveSect(sect) : setArmed(true))} zoneTheme={zoneTheme} />
+        onClick={() => (armed ? onLeaveSect(sect) : setArmed(true))} />
       {armed && <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-xs)", marginTop: 6 }}>交还信物，已学招式保留，本门高阶武学从此不再突破。</div>}
     </div>
   );
@@ -31,8 +31,8 @@ export default function FactionEntryScreen({ entry, building, char, flags, varTr
   const skills = useGameStore((s) => s.skills);
   const status = checkFactionEntry(entry, { varTree, flags, char, questProgress, inv, skills });
   return (
-    <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name={building?.name || entry.sect} zoneTheme={zoneTheme} onClose={onClose} />
+    <Overlay onClose={onClose} inline={inline}>
+      <Header name={building?.name || entry.sect} onClose={onClose} />
       <div style={{ padding: "14px 16px", fontSize: "var(--fs-md)", lineHeight: 1.9, color: zoneTheme.text }}>
         {status.already ? (
           <>
@@ -53,10 +53,10 @@ export default function FactionEntryScreen({ entry, building, char, flags, varTr
               ))}
             </div>
             {status.eligible ? (
-              <Btn label={entry.joinLabel} onClick={onJoinSect} zoneTheme={zoneTheme} />
+              <Btn label={entry.joinLabel} onClick={onJoinSect} />
             ) : (
               <>
-                <Btn label="尚不够格" disabled zoneTheme={zoneTheme} />
+                <Btn label="尚不够格" disabled />
                 <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-xs)", marginTop: 8 }}>
                   {status.missing.map((key) => <div key={key}>{hintOf(entry, key)}</div>)}
                 </div>

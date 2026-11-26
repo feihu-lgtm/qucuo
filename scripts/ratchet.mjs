@@ -412,7 +412,7 @@ export const KNOWN_UI_STRUCTURE_CAP = {
   inlineStyles: 2420,
   rulesImporters: 82,
   portsImporters: 7,
-  zoneThemeFiles: 67,
+  zoneThemeFiles: 59,
 };
 
 const UI_STRUCTURE_LABELS = {

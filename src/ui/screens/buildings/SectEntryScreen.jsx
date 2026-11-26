@@ -25,8 +25,8 @@ export default function SectEntryScreen({ building, char, narratorAffection, fla
   });
 
   return (
-    <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name={building?.name || "拜师堂"} zoneTheme={zoneTheme} onClose={onClose} />
+    <Overlay onClose={onClose} inline={inline}>
+      <Header name={building?.name || "拜师堂"} onClose={onClose} />
       <div style={{ padding: "14px 16px", fontSize: "var(--fs-md)", lineHeight: 1.9, color: zoneTheme.text }}>
 
         {status.already ? (
@@ -62,10 +62,10 @@ export default function SectEntryScreen({ building, char, narratorAffection, fla
 
             {status.eligible ? (
               <Btn label={`奉上束脩，拜入${SECT_ENTRY.sect}（-${SECT_ENTRY.tuition}两）`}
-                onClick={onJoinSect} zoneTheme={zoneTheme} />
+                onClick={onJoinSect} />
             ) : (
               <>
-                <Btn label="尚不够格" disabled zoneTheme={zoneTheme} />
+                <Btn label="尚不够格" disabled />
                 <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-xs)", marginTop: 8 }}>
                   {status.missing.includes("affection") && <div>· 她还不够信你。多来往走动，让她看见你是什么样的人。</div>}
                   {status.missing.includes("neigong") && <div>· 底子还太薄。打坐运功，把内功练上去再来。</div>}

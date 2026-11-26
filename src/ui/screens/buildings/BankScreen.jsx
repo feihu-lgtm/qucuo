@@ -11,8 +11,8 @@ export default function BankScreen({ building, char, time, deposit, depositedAt,
   const { elapsed, interest, total: totalWithdraw } = withdrawalSummary({ time, deposit, depositedAt });
 
   return (
-    <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name="永盛钱庄" zoneTheme={zoneTheme} onClose={onClose} />
+    <Overlay onClose={onClose} inline={inline}>
+      <Header name="永盛钱庄" onClose={onClose} />
       <div style={{ padding: 16 }}>
         <div style={{ color: "var(--ink-text-dim)", marginBottom: 12, fontSize: "var(--fs-xs)" }}>
           银两 {money} 两 · 存款 {deposit} 两 · 利息 +{interest} 两（存入以来过了 {elapsed} 天，利率2%/天）
@@ -38,7 +38,7 @@ export default function BankScreen({ building, char, time, deposit, depositedAt,
               />
               <span style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)" }}>两</span>
             </div>
-            <Btn label={`存入 ${amount} 两`} disabled={amount <= 0 || money < amount} zoneTheme={zoneTheme}
+            <Btn label={`存入 ${amount} 两`} disabled={amount <= 0 || money < amount}
               onClick={() => onDeposit(amount)} />
           </>
         )}
@@ -48,7 +48,7 @@ export default function BankScreen({ building, char, time, deposit, depositedAt,
             <div style={{ color: "var(--ink-text)", fontSize: "var(--fs-sm)", marginBottom: 10 }}>
               可取出：{totalWithdraw} 两（含利息 {interest} 两）
             </div>
-            <Btn label={`取出全部（${totalWithdraw}两）`} disabled={deposit <= 0} zoneTheme={zoneTheme}
+            <Btn label={`取出全部（${totalWithdraw}两）`} disabled={deposit <= 0}
               onClick={() => onWithdraw()} />
           </div>
         )}

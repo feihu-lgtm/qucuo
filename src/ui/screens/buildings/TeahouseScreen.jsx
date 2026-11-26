@@ -28,8 +28,8 @@ export default function TeahouseScreen({ building, char, flags, time, zoneTheme,
   const pool = [...dynamicTexts, ...dynamicTexts, ...RUMORS];
 
   return (
-    <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
+    <Overlay onClose={onClose} inline={inline}>
+      <Header name={building.name} onClose={onClose} />
       <div style={{ padding: 16 }}>
         <div style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)", marginBottom: 12 }}>
           {building.desc}
@@ -40,7 +40,6 @@ export default function TeahouseScreen({ building, char, flags, time, zoneTheme,
         <Btn
           label={`听掌柜说几句（${COST}两）`}
           disabled={money < COST}
-          zoneTheme={zoneTheme}
           onClick={() => {
             const idx = Math.floor(random() * pool.length);
             onListenRumor(pool[idx], COST);

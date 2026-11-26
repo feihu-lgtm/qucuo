@@ -56,7 +56,7 @@ const CK_CSS = `
   .ck-chip:hover{ transform:translateY(-2px); filter:brightness(1.15); }
 `;
 
-export default function CookingScreen({ building, char, inv, zoneTheme, inline, onClose, onCook }) {
+export default function CookingScreen({ building, char, inv, inline, onClose, onCook }) {
   const closeGuard = useOverlayCloseGuard(onClose);
   const [slots, setSlots] = useState([null, null, null, null]); // 料①~④，调味料/食材混装
   const [techniqueId, setTechniqueId] = useState("炖");

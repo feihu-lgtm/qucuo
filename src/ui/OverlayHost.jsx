@@ -80,7 +80,6 @@ export default function OverlayHost({ ctx, apiReady, onCloseInitialSettings }) {
           setInv={ctx.setInv}
           char={ctx.char}
           setChar={ctx.setChar}
-          zoneTheme={ctx.zoneTheme}
           onClose={() => closeOverlay(OVERLAY.HOMESTEAD)}
           addLog={ctx.addLog}
           dispatchCommand={ctx.dispatchCommand}

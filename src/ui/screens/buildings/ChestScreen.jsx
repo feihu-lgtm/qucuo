@@ -11,7 +11,7 @@ const UI = (f) => `${BASE}stones/ui/${f}`;
 
 const QUAL_COLOR = { 白: "var(--ink-text)", 绿: "var(--ink-leaf)", 蓝: "var(--ink-sky)", 紫: "var(--violet)", 橙: "var(--ink-amber)", 红: "var(--ink-rose)" };
 
-export default function ChestScreen({ building, inv, setInv, zoneTheme, inline, onClose }) {
+export default function ChestScreen({ building, inv, setInv, inline, onClose }) {
   const closeGuard = useOverlayCloseGuard(onClose);
   const house = building?.house || building?.name || "库房";
   const [chest, setChest] = useState(() => loadChest(house, { prefill: !building?.emptyStock }));

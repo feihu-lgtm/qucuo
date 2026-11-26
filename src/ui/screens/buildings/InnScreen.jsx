@@ -24,8 +24,8 @@ export default function InnScreen({ building, char, skills, time, varTree, flags
     const clinic = clinicOf(building.id);
     const clinicDone = clinicDoneToday(building.id, { flags, time });
     return (
-      <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-        <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
+      <Overlay onClose={onClose} inline={inline}>
+        <Header name={building.name} onClose={onClose} />
         <div style={{ padding: 16 }}>
           <p style={{ color: zoneTheme.text, marginBottom: 12, fontSize: "var(--fs-md)" }}>{building.desc}</p>
           <div style={{ color: "var(--ink-text-dim)", marginBottom: 12 }}>
@@ -37,14 +37,12 @@ export default function InnScreen({ building, char, skills, time, varTree, flags
           </div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             {care !== "refuse" && (
-              <Btn label={care === "free" ? "免费诊治" : `回满（${cost}两）`} disabled={money < price || missing <= 0}
-                zoneTheme={zoneTheme} onClick={() => onHeal(price, missing, "解毒治疗")} />
+              <Btn label={care === "free" ? "免费诊治" : `回满（${cost}两）`} disabled={money < price || missing <= 0} onClick={() => onHeal(price, missing, "解毒治疗")} />
             )}
             {clinic && care !== "refuse" && (
-              <Btn label={clinicDone ? clinic.done : clinic.label} disabled={clinicDone || money < clinic.cost}
-                zoneTheme={zoneTheme} onClick={onClinic} />
+              <Btn label={clinicDone ? clinic.done : clinic.label} disabled={clinicDone || money < clinic.cost} onClick={onClinic} />
             )}
-            <Btn label="关闭" zoneTheme={zoneTheme} secondary onClick={onClose} />
+            <Btn label="关闭" secondary onClick={onClose} />
           </div>
         </div>
       </Overlay>
@@ -54,8 +52,8 @@ export default function InnScreen({ building, char, skills, time, varTree, flags
   const innDeed = clinicOf(building.id);
   const innDeedDone = innDeed && clinicDoneToday(building.id, { flags, time });
   return (
-    <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
+    <Overlay onClose={onClose} inline={inline}>
+      <Header name={building.name} onClose={onClose} />
       <div style={{ padding: 16 }}>
         <p style={{ color: zoneTheme.text, marginBottom: 12, fontSize: "var(--fs-md)" }}>{building.desc}</p>
         <div style={{ color: "var(--ink-text-dim)", marginBottom: 16 }}>
@@ -65,20 +63,17 @@ export default function InnScreen({ building, char, skills, time, varTree, flags
           <Btn
             label={`普通客房（${innPrice}两）`}
             disabled={money < innPrice}
-            zoneTheme={zoneTheme}
             onClick={() => onRest(innPrice, "普通客房")}
           />
           <Btn
             label={`上等厢房（${superPrice}两）`}
             disabled={money < superPrice}
-            zoneTheme={zoneTheme}
             onClick={() => onRest(superPrice, "上等厢房")}
           />
           {innDeed && clinicCare(varTree, building.id) !== "refuse" && (
-            <Btn label={innDeedDone ? innDeed.done : innDeed.label} disabled={innDeedDone || money < innDeed.cost}
-              zoneTheme={zoneTheme} onClick={onClinic} />
+            <Btn label={innDeedDone ? innDeed.done : innDeed.label} disabled={innDeedDone || money < innDeed.cost} onClick={onClinic} />
           )}
-          <Btn label="关闭" zoneTheme={zoneTheme} secondary onClick={onClose} />
+          <Btn label="关闭" secondary onClick={onClose} />
         </div>
         <div style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)", marginTop: 12 }}>
           住宿后气血回满，时间推进一天（24单位）

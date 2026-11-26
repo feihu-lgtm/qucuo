@@ -51,8 +51,8 @@ export default function FestivalScreen({
   const nightDone = invitedToday && (flags || []).includes(nightDoneFlag(invitedToday, dayIdx));
 
   return (
-    <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
+    <Overlay onClose={onClose} inline={inline}>
+      <Header name={building.name} onClose={onClose} />
       <div style={{ padding: 16 }}>
         <div style={dim}>银两 {money} 两 · 现在 {hour} 时 · {building.desc}</div>
 
@@ -70,11 +70,11 @@ export default function FestivalScreen({
               </div>
               <div style={{ ...dim, marginBottom: 4 }}>{contest.desc}</div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                <Btn zoneTheme={zoneTheme}
+                <Btn
                   label={entered ? "今日已比过" : isFight ? "上擂台" : "报名参加"}
                   disabled={entered || !open}
                   onClick={() => (isFight ? onWubi?.() : onEnter?.(contest.id))} />
-                <Btn zoneTheme={zoneTheme} secondary
+                <Btn secondary
                   label={betted ? "今日已下注" : `下注${bet}两`}
                   disabled={betted || !open}
                   onClick={() => setBetFor(betFor === contest.id ? "" : contest.id)} />
@@ -90,7 +90,7 @@ export default function FestivalScreen({
                   </div>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {contest.bettors.map((b) => (
-                      <Btn key={b.name} zoneTheme={zoneTheme} secondary
+                      <Btn key={b.name} secondary
                         label={`${b.name} ×${b.odds}`}
                         disabled={money < bet}
                         onClick={() => { onBet?.(contest.id, b.name, bet); setBetFor(""); }} />
@@ -108,7 +108,7 @@ export default function FestivalScreen({
         ) : (
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {companions.map((c) => (
-              <Btn key={c.name} zoneTheme={zoneTheme}
+              <Btn key={c.name}
                 label={`${c.name}${c.masked ? "（蒙面）" : ""} ${c.favor}`}
                 disabled={!c.ok}
                 onClick={() => onInvite?.(c.name)} />
@@ -118,7 +118,7 @@ export default function FestivalScreen({
 
         <div style={sectionTitle(zoneTheme)}>三、夜晚剧情（戌亥之交 19–22 时）</div>
         {invitedCompanion && isNightTalkHour(hour) && !nightDone ? (
-          <Btn zoneTheme={zoneTheme} label={`与${invitedCompanion.name}夜话`}
+          <Btn label={`与${invitedCompanion.name}夜话`}
             onClick={() => onNight?.(invitedCompanion.name)} />
         ) : (
           <div style={dim}>
@@ -132,7 +132,7 @@ export default function FestivalScreen({
             <div style={{ ...dim, marginBottom: 8 }}>{midnight.intro}</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {midnight.choices.map((choice) => (
-                <Btn key={choice.flag} zoneTheme={zoneTheme} secondary={choice.kind === "yield"}
+                <Btn key={choice.flag} secondary={choice.kind === "yield"}
                   label={choice.label}
                   onClick={() => onMidnight?.(midnight, choice)} />
               ))}

@@ -87,8 +87,8 @@ export default function PactPanel({ zoneTheme, onClose, inline, onRecruitNemesis
   for (const e of nemeses) (nemesisByFaction[e.faction] ||= []).push(e);
 
   return (
-    <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name={`契约与宿敌${open.length ? `（未了 ${open.length}）` : ""}`} zoneTheme={zoneTheme} onClose={onClose} />
+    <Overlay onClose={onClose} inline={inline}>
+      <Header name={`契约与宿敌${open.length ? `（未了 ${open.length}）` : ""}`} onClose={onClose} />
       <div className="mobile-overlay-content" style={{ padding: 16 }}>
         {!pacts.length && (
           <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)" }}>

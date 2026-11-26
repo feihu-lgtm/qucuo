@@ -73,7 +73,7 @@ export default function ApiTab({
       <ApiProviderSettings cfg={cfg} patch={patch} providers={PROVIDERS}
         isDefaultEndpoint={isDefaultEndpoint} migrateProvider={migrateProvider} providerApiType={providerApiType}
         importCredential={importVertexCredential} hasCredential={isVertex && hasApiCredentials(cfg)}
-        labelStyle={labelStyle} inputStyle={inputStyle} zoneTheme={zoneTheme} />
+        labelStyle={labelStyle} inputStyle={inputStyle} />
 
       {!isVertex && <><label htmlFor="api-model" style={{ ...labelStyle, display: "block" }}>模型名称</label>
       <div style={{ display: "flex", gap: 6 }}>
@@ -94,12 +94,12 @@ export default function ApiTab({
         <div style={{ fontSize: "var(--fs-xs)", color: "var(--gold)", marginTop: 3 }}>接口未返回任何模型，请手动填写模型名称</div>
       )}
 
-      <ApiSettingsGroup title="篇幅与超时" expanded={apiGroups.length} zoneTheme={zoneTheme}
+      <ApiSettingsGroup title="篇幅与超时" expanded={apiGroups.length}
         onToggle={() => setApiGroups(groups => ({ ...groups, length: !groups.length }))}>
         <ApiLengthFields cfg={cfg} patch={patch} />
       </ApiSettingsGroup>
 
-      <ApiSettingsGroup title="生成参数" expanded={apiGroups.generation} zoneTheme={zoneTheme}
+      <ApiSettingsGroup title="生成参数" expanded={apiGroups.generation}
         onToggle={() => setApiGroups(groups => ({ ...groups, generation: !groups.generation }))}>
         <ApiGenerationFields cfg={cfg} patch={patch} isVertex={isVertex}
           onDetectModels={handleDetectModels} onClearMemory={handleClearMemory}
@@ -107,7 +107,7 @@ export default function ApiTab({
           modelList={modelList} setModelList={setModelList} memCount={memCount} />
       </ApiSettingsGroup>
 
-      <ApiSettingsGroup title="配置管理" expanded={apiGroups.profiles} zoneTheme={zoneTheme}
+      <ApiSettingsGroup title="配置管理" expanded={apiGroups.profiles}
         onToggle={() => setApiGroups(groups => ({ ...groups, profiles: !groups.profiles }))}>
         <ApiProfilesFields cfg={cfg} setCfg={setCfg} cfgProfiles={cfgProfiles} setCfgProfiles={setCfgProfiles}
           cfgProfileName={cfgProfileName} setCfgProfileName={setCfgProfileName} />

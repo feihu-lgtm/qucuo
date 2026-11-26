@@ -67,8 +67,7 @@ function shopScreen(c) {
       playerInv={c.inv} playerMoney={isKarma ? (c.dao.karma || 0) : (c.char.money || 0)}
       currencyName={isKarma ? "功德" : "银两"} currencyUnit={isKarma ? "点" : "两"} canSell={!isKarma}
       headerContent={c.building.craft ? c.tabs("mobile-trading-tabs-header") : null}
-      playerWit={c.effectiveSpecialNow?.智谋 ?? 5} repCoef={factionShop ? factionShop.coef : isKarma ? 1 : factionShopCoef(c.varTree, c.building.district ?? c.room?.name)}
-      zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onInspect={c.inspectItem}
+      playerWit={c.effectiveSpecialNow?.智谋 ?? 5} repCoef={factionShop ? factionShop.coef : isKarma ? 1 : factionShopCoef(c.varTree, c.building.district ?? c.room?.name)} onClose={c.closeBuilding} onInspect={c.inspectItem}
       onBuy={factionShop
         ? (item) => c.handleBuyTangmenItem(item.name, c.building.shopKey)
         : (item) => c.runCommand("shopBuy", () => { if (isKarma) { if ((c.dao.karma||0)<item.buyPrice) return; c.captureUndo(); c.setDao(d=>({...d,karma:d.karma-item.buyPrice})); } else { if ((c.char.money||0)<item.buyPrice) return; c.captureUndo(); c.setChar(ch=>({...ch,money:ch.money-item.buyPrice})); if (shopData.karmaLoss) c.setDao(d=>({...d,karma:(d.karma||0)-shopData.karmaLoss})); } c.setInv(prev=>[...prev,{...item,id:`${item.name}_${Date.now()}`,equipped:false}]); c.addLog([{t:"item",text:`  购得「${item.name}」（${item.quality}），花费${item.buyPrice}${isKarma?"功德":"两"}。`}]); c.jotNote({ text:`购得「${item.name}」，花${item.buyPrice}${isKarma?"功德":"两"}。`, source: NOTE_SOURCE.DUMB }); })}
@@ -98,7 +97,7 @@ function escortScreen(c) {
   );
   return shopData ? (
     <TradingScreen inline queueCount={c.queueCount} shopName={shopData.shopName} shopItems={shopData.items} footer={escortBoard}
-      playerInv={c.inv} playerMoney={c.char.money||0} playerWit={c.effectiveSpecialNow?.智谋 ?? 5} repCoef={factionShopCoef(c.varTree, c.building.district ?? c.room?.name)} zoneTheme={c.zoneTheme} onInspect={c.inspectItem}
+      playerInv={c.inv} playerMoney={c.char.money||0} playerWit={c.effectiveSpecialNow?.智谋 ?? 5} repCoef={factionShopCoef(c.varTree, c.building.district ?? c.room?.name)} onInspect={c.inspectItem}
       onClose={c.closeBuilding}
       onBuy={(item)=>c.runCommand("shopBuy",()=>{if((c.char.money||0)<item.buyPrice)return;c.captureUndo();c.setChar(ch=>({...ch,money:ch.money-item.buyPrice}));c.setInv(prev=>[...prev,{...item,id:`${item.name}_${Date.now()}`,equipped:false}]);c.addLog([{t:"item",text:`  购得「${item.name}」，花费${item.buyPrice}两。`}]); c.jotNote({ text:`购得「${item.name}」，花${item.buyPrice}两。`, source: NOTE_SOURCE.DUMB });})}
       onSell={(item)=>c.runCommand("shopSell",()=>{if(item.equipped)return;c.captureUndo();c.setInv(prev=>prev.filter(i=>(typeof i==="object"?i.id:i)!==item.id));c.setChar(ch=>({...ch,money:(ch.money||0)+item.sellPrice}));c.addLog([{t:"item",text:`  卖出「${item.name}」，得${item.sellPrice}两。`}]); c.jotNote({ text:`卖出「${item.name}」，得银${item.sellPrice}两。`, source: NOTE_SOURCE.DUMB });})}
@@ -180,8 +179,7 @@ export const BUILDING_SCREENS = {
   ),
   [BUILDING_TYPE.GAMBLESTONE]: (c) => (
     <GambleStoneScreen building={c.building} char={c.char} time={c.time}
-      onMinimizeChange={c.setGambleStoneMinimized}
-      zoneTheme={c.zoneTheme} onClose={c.closeBuilding}
+      onMinimizeChange={c.setGambleStoneMinimized} onClose={c.closeBuilding}
       roomNpcs={(c.room.npcs || []).filter(n => (n.gambleBidder || n.name === "兰姐" || n.name === "温掌柜") && isNpcVisibleInInnerRoom(c.room.name, c.innerRoomName, n))}
       negotiation={c.gambleNegotiation}
       onTalk={c.handleGambleTalk} onSettle={c.handleGambleSettle} onInspect={c.handleGambleInspect} />
@@ -200,12 +198,10 @@ export const BUILDING_SCREENS = {
       zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onWin={c.handleAuctionWin} />
   ),
   [BUILDING_TYPE.KITCHEN]: (c) => (
-    <CookingScreen building={c.building} char={c.char} inv={c.inv} inline
-      zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onCook={c.handleCook} />
+    <CookingScreen building={c.building} char={c.char} inv={c.inv} inline onClose={c.closeBuilding} onCook={c.handleCook} />
   ),
   [BUILDING_TYPE.CHEST]: (c) => (
-    <ChestScreen building={c.building} inv={c.inv} setInv={c.setInv} inline
-      zoneTheme={c.zoneTheme} onClose={c.closeBuilding} />
+    <ChestScreen building={c.building} inv={c.inv} setInv={c.setInv} inline onClose={c.closeBuilding} />
   ),
   [BUILDING_TYPE.ESCORT]: escortScreen,
   [BUILDING_TYPE.DUNGEON]: (c) => (

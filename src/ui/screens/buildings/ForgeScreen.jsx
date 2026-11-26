@@ -51,8 +51,8 @@ export default function ForgeScreen({ building, char, time, flags, zoneTheme, on
   }
 
   return (
-    <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name={building.name || "铁匠铺"} zoneTheme={zoneTheme} onClose={onClose} />
+    <Overlay onClose={onClose} inline={inline}>
+      <Header name={building.name || "铁匠铺"} onClose={onClose} />
       <div style={{ padding: 16 }}>
         <div style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)", marginBottom: 12 }}>{building.desc}</div>
         <div style={{ color: "var(--ink-text-dim)", marginBottom: 12, fontSize: "var(--fs-xs)" }}>
@@ -86,7 +86,7 @@ export default function ForgeScreen({ building, char, time, flags, zoneTheme, on
             <input value={category} onChange={e => setCategory(e.target.value)} placeholder="武器·长枪 / 护甲·护腕 / 饰品·扳指…" style={inputStyle} />
             <label style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)" }}>要求（想要的脾性，如 锋利、幸运、护身、轻捷…）</label>
             <input value={requirement} onChange={e => setRequirement(e.target.value)} placeholder="锋利、破甲…" style={inputStyle} />
-            <Btn label={designing ? "铁匠正琢磨样式……" : "请铁匠出方案"} disabled={designing} zoneTheme={zoneTheme} onClick={doDesign} />
+            <Btn label={designing ? "铁匠正琢磨样式……" : "请铁匠出方案"} disabled={designing} onClick={doDesign} />
             {designErr && <div style={{ color: "var(--ink-rose)", fontSize: "var(--fs-xs)", marginTop: 8 }}>{designErr}</div>}
             <div style={{ color: "var(--forge-hint)", fontSize: "var(--fs-2xs)", marginTop: 10 }}>出方案不花钱，选定一件才付 {FORGE_COST} 两定金。约 24 时辰后打成、伙计送货上门。</div>
           </>
@@ -105,12 +105,12 @@ export default function ForgeScreen({ building, char, time, flags, zoneTheme, on
                   </div>
                   {eff && <div style={{ color: "var(--ink-sky-soft)", fontSize: "var(--fs-xs)", marginBottom: 4 }}>词条：{eff}</div>}
                   {c.desc && <div style={{ color: "var(--ink-stone-dim)", fontSize: "var(--fs-xs)", marginBottom: 8, lineHeight: 1.5 }}>{c.desc}</div>}
-                  <Btn label={money < FORGE_COST ? "银两不足" : `选这件（${FORGE_COST}两）`} disabled={money < FORGE_COST} zoneTheme={zoneTheme} onClick={() => chooseCandidate(c)} />
+                  <Btn label={money < FORGE_COST ? "银两不足" : `选这件（${FORGE_COST}两）`} disabled={money < FORGE_COST} onClick={() => chooseCandidate(c)} />
                 </div>
               );
             })}
             <div style={{ marginTop: 6 }}>
-              <Btn label="都不满意，重说要求" zoneTheme={zoneTheme} onClick={() => setCandidates(null)} />
+              <Btn label="都不满意，重说要求" onClick={() => setCandidates(null)} />
             </div>
           </>
         )}

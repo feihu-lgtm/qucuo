@@ -24,8 +24,8 @@ export default function GamblingScreen({ building, char, flags, time, zoneTheme,
   const odds = calcOdds();
 
   return (
-    <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
-      <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
+    <Overlay onClose={onClose} inline={inline}>
+      <Header name={building.name} onClose={onClose} />
       <div style={{ padding: 16 }}>
         <div style={{ color: "var(--ink-text-dim)", marginBottom: 10, fontSize: "var(--fs-xs)" }}>
           银两 {money} 两 · 气运 {luck}/10 · 每日一次
@@ -62,7 +62,6 @@ export default function GamblingScreen({ building, char, flags, time, zoneTheme,
             <Btn
               label={`押注 ${bet} 两`}
               disabled={alreadyGambled || money < bet || bet < 10}
-              zoneTheme={zoneTheme}
               onClick={() => onGamble({ mode: "money", bet, luck, dayIdx })}
             />
           </>
@@ -76,7 +75,6 @@ export default function GamblingScreen({ building, char, flags, time, zoneTheme,
             <Btn
               label="花100两抽物品"
               disabled={alreadyGambled || money < 100}
-              zoneTheme={zoneTheme}
               onClick={() => onGamble({ mode: "item", bet: 100, luck, dayIdx })}
             />
           </>
