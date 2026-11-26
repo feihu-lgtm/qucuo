@@ -17,6 +17,7 @@ import {
   Terminal, barFrame,
 } from "./cards/widgets.jsx";
 import { fillPlayer, buildFallbackResult } from "./cards/importDefaults.js";
+import { isTopModal, nextModalId, popModal, pushModal } from "../primitives/modalStack.js";
 import EmptyPane from "./cards/EmptyPane.jsx";
 import ParsedPane from "./cards/ParsedPane.jsx";
 import ReviewPane from "./cards/ReviewPane.jsx";
@@ -38,6 +39,26 @@ export default function CardImportScreen({
   onImportStarterCompanion,
 }) {
   const accent = zoneTheme?.accent || "var(--warn)";
+
+  // U1-2 Review 修：卡片导入器参与弹窗栈同一键盘仲裁——开在图鉴/头像选择器这类
+  // ModalShell 弹窗之上时，底层弹窗不再是栈顶：Tab 焦点锁与 Esc 都归导入器，
+  // 被遮住的隐藏弹窗不再劫持键盘。Esc 关导入器本身；关闭后底层弹窗回到栈顶。
+  const [stackId] = useState(nextModalId);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+  useEffect(() => {
+    pushModal(stackId);
+    const onKey = (event) => {
+      if (event.key !== "Escape" || !isTopModal(stackId)) return;
+      event.stopPropagation();
+      onCloseRef.current?.();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      popModal(stackId);
+    };
+  }, [stackId]);
 
   const [stage, setStage] = useState("empty");   // empty | parsed | scanning | review
   const [fileName, setFileName] = useState("");

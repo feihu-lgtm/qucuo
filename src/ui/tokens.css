@@ -753,5 +753,8 @@ div[style*="position: fixed"][style*="z-index"],
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: var(--z-screen-high);
+  /* U1-2 Review 修：dock 压图鉴——screen-high 与图鉴/人物页同档相叠，手机菜单开图鉴
+     后 dock 盖住下层滚动区吃触摸。降到 screen 档：仍在普通内容之上（既有次序），
+     明确在 screen-high 的图鉴/人物页之下。 */
+  z-index: var(--z-screen);
 }
