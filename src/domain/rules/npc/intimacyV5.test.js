@@ -116,3 +116,14 @@ describe("V5 Review 三轮修回归", () => {
     expect(iii("解开包袱绳结再吻她")).toBe(true); // 强词优先
   });
 });
+
+describe("V5 Review 四轮修回归", () => {
+  it("解开包袱的布带+亲她——物件掩码吞不掉吻", async () => {
+    const { isIntimateInput: iii } = await import("../prompt/inputIntent.js");
+    expect(iii("解开包袱的布带，亲她一下")).toBe(true);
+  });
+  it("解开她衣服上的绑带——绑带不算捆绑证据", async () => {
+    const { isIntimateInput: iii } = await import("../prompt/inputIntent.js");
+    expect(iii("解开她衣服上的绑带")).toBe(true);
+  });
+});
