@@ -185,6 +185,8 @@ export function useConsumable(consumable, char) {
 // 裸「干粮」连图鉴条目都没有——吃干粮走出示旁路零消耗，判官却照叙事签回血。
 // noCatalog 盾只挡图鉴名撞车，不挡 food 类固有声（食物可食是品类语义不是图鉴神力）。
 export function consumableOfItem(item) {
+  // 字符串名老调用（背包按钮服食等）按名查图鉴——与改造前 consumeItem 行为一致。
+  if (typeof item === "string") item = item ? { name: item } : null;
   if (!item || typeof item !== "object") return null;
   if (item.consumable) return item.consumable;
   if (!item.noCatalog && item.name && CATALOG_INDEX[item.name]?.consumable) {

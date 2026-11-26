@@ -17,7 +17,7 @@ export function consumeItem(state, item) {
   const shielded = typeof item === "object" && item?.noCatalog;
   // F1：consumable 判定走 catalogOps 单一来源（含 food 类默认可食）——
   // shielded 判断保留在 helper 内（noCatalog 只挡图鉴不挡食物本性）。
-  const consumable = (typeof item === "object" && item) ? consumableOfItem(item) : null;
+  const consumable = consumableOfItem(item);
   if (!consumable) return { logs: [{ t: "sys", text: `  ${itemName}并非可服用之物。` }] };
 
   const result = resolveConsumable(consumable, state.char);
