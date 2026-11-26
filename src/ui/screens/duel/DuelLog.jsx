@@ -12,7 +12,7 @@ export default function DuelLog({ battleLog, npc, zoneTheme }) {
     <div className="duel-log" style={styles.logSection} ref={logRef}>
       {battleLog.length === 0 && <div style={styles.logHint(zoneTheme)}>——两人拉开架势，静待第一招——</div>}
       {battleLog.map((e, i) => (
-        <MudRoundLog key={i} entry={e} npcName={npc.name} zoneTheme={zoneTheme} />
+        <MudRoundLog key={i} entry={e} npcName={npc.name} />
       ))}
     </div>
   );

@@ -129,19 +129,16 @@ export default function GlobalOverlays({
     { show: showQuestLog, render: () => (
       <QuestLogScreen
         questProgress={questProgress} flags={flags}
-        zoneTheme={zoneTheme}
         onClose={() => closeOverlay(OVERLAY.QUEST_LOG)}
       />
     )},
     { show: showLetters, render: () => (
       <LetterPanel
-        zoneTheme={zoneTheme}
         onClose={() => closeOverlay(OVERLAY.LETTERS)}
       />
     )},
     { show: showPacts, render: () => (
       <PactPanel
-        zoneTheme={zoneTheme}
         onClose={() => closeOverlay(OVERLAY.PACTS)}
         onRecruitNemesis={handleRecruitNemesis}
       />

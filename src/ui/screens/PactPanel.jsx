@@ -12,11 +12,11 @@ import { nemesisRecruitEligibility } from "../../domain/rules/nemesis/recruitChe
 const STATUS_LABEL = { open: "未了", settled: "已了", breached: "违约" };
 const STATUS_COLOR = { open: "var(--text)", settled: "var(--text-dim)", breached: "var(--red-soft)" };
 
-function PactRow({ pact, now, zoneTheme }) {
+function PactRow({ pact, now }) {
   const deadline = pactDeadlineLine(pact, now);
   return (
     <div style={{
-      padding: "8px 10px", border: `1px solid ${zoneTheme.border}`,
+      padding: "8px 10px", border: `1px solid var(--border)`,
       display: "flex", flexDirection: "column", gap: 3,
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -35,12 +35,12 @@ function PactRow({ pact, now, zoneTheme }) {
   );
 }
 
-function NemesisRow({ entry, zoneTheme, varTree, onRecruitNemesis }) {
+function NemesisRow({ entry, varTree, onRecruitNemesis }) {
   const scars = (entry.scars || []).slice(-3);
   const grudgeLine = nemesisGrudgeLine(entry.grudge);
   return (
     <div style={{
-      padding: "8px 10px", border: `1px solid ${zoneTheme.border}`,
+      padding: "8px 10px", border: `1px solid var(--border)`,
       display: "flex", flexDirection: "column", gap: 3,
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -66,7 +66,7 @@ function NemesisRow({ entry, zoneTheme, varTree, onRecruitNemesis }) {
           onClick={() => onRecruitNemesis({ faction: entry.faction, entryId: entry.id })}
           style={{
             alignSelf: "flex-start", marginTop: 2, padding: "2px 10px",
-            border: `1px solid ${zoneTheme.border}`, background: "transparent",
+            border: `1px solid var(--border)`, background: "transparent",
             color: "var(--text)", fontSize: "var(--fs-2xs)", cursor: "pointer",
           }}
         >招抚</button>
@@ -75,7 +75,7 @@ function NemesisRow({ entry, zoneTheme, varTree, onRecruitNemesis }) {
   );
 }
 
-export default function PactPanel({ zoneTheme, onClose, inline, onRecruitNemesis }) {
+export default function PactPanel({ onClose, inline, onRecruitNemesis }) {
   const varTree = useGameStore((s) => s.varTree);
   const now = useGameStore((s) => s.time);
   const pacts = flattenPacts(varTree).sort((a, b) => (a.bindTurn || 0) - (b.bindTurn || 0));
@@ -97,14 +97,14 @@ export default function PactPanel({ zoneTheme, onClose, inline, onRecruitNemesis
         )}
         {open.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {open.map((p) => <PactRow key={`${p.npcName}/${p.pactKey}`} pact={p} now={now} zoneTheme={zoneTheme} />)}
+            {open.map((p) => <PactRow key={`${p.npcName}/${p.pactKey}`} pact={p} now={now} />)}
           </div>
         )}
         {closed.length > 0 && (
           <div style={{ marginTop: 12 }}>
             <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)", marginBottom: 4 }}>已了</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, opacity: 0.6 }}>
-              {closed.map((p) => <PactRow key={`${p.npcName}/${p.pactKey}`} pact={p} now={now} zoneTheme={zoneTheme} />)}
+              {closed.map((p) => <PactRow key={`${p.npcName}/${p.pactKey}`} pact={p} now={now} />)}
             </div>
           </div>
         )}
@@ -119,7 +119,7 @@ export default function PactPanel({ zoneTheme, onClose, inline, onRecruitNemesis
             <div key={faction} style={{ marginBottom: 8 }}>
               <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)", marginBottom: 3 }}>{faction}</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {entries.map((e) => <NemesisRow key={e.entryKey} entry={e} zoneTheme={zoneTheme} varTree={varTree} onRecruitNemesis={onRecruitNemesis} />)}
+                {entries.map((e) => <NemesisRow key={e.entryKey} entry={e} varTree={varTree} onRecruitNemesis={onRecruitNemesis} />)}
               </div>
             </div>
           ))}

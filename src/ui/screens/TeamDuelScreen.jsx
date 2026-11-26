@@ -216,13 +216,13 @@ export default function TeamDuelScreen({ enemies, companions = [], playerChar, p
         <div style={styles.teamsRow}>
           <div style={styles.teamCol}>
             {allyUnits.map(u => (
-              <TeamUnitCard key={u.id} unit={u} color={u.id === "player" ? zoneTheme.accent : "var(--violet)"} zoneTheme={zoneTheme} />
+              <TeamUnitCard key={u.id} unit={u} color={u.id === "player" ? zoneTheme.accent : "var(--violet)"} />
             ))}
           </div>
           <div style={styles.vsCol(zoneTheme)}>第{round}回合</div>
           <div style={styles.teamCol}>
             {enemyUnits.map(u => (
-              <TeamUnitCard key={u.id} unit={u} color="var(--red-soft)" zoneTheme={zoneTheme} right />
+              <TeamUnitCard key={u.id} unit={u} color="var(--red-soft)" right />
             ))}
           </div>
         </div>

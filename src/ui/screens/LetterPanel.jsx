@@ -7,7 +7,7 @@ import { setInputCapsule } from "../../store/sessionUiStore.js";
 // 「信」面板——翻历史来信：列表 → 正文；回信沿用飞鸽路径（输入条进寄信模式）。
 const EMPTY_LETTERS = [];
 
-export default function LetterPanel({ zoneTheme, onClose, inline }) {
+export default function LetterPanel({ onClose, inline }) {
   // 空档要给稳定引用——每次新 [] 会让 zustand 选择器重渲染不止。
   const letters = useGameStore((s) => s.varTree?.世界?.来信箱 || EMPTY_LETTERS);
   const pigeons = useGameStore((s) => s.char?.pigeons || 0);
@@ -38,13 +38,13 @@ export default function LetterPanel({ zoneTheme, onClose, inline }) {
                   onClick={() => setOpenId(l.id)}
                   style={{
                     display: "flex", alignItems: "center", gap: 8, cursor: "pointer",
-                    padding: "6px 10px", border: `1px solid ${open?.id === l.id ? zoneTheme.accentDim : zoneTheme.border}`,
+                    padding: "6px 10px", border: `1px solid ${open?.id === l.id ? "var(--accent-dim)" : "var(--border)"}`,
                     background: open?.id === l.id ? "var(--bg-panel)" : "transparent",
                   }}>
                   <span style={{ color: open?.id === l.id ? "var(--text)" : "var(--text-dim)", fontSize: "var(--fs-sm)", flexShrink: 0 }}>
                     ✉ {l.npcName}
                   </span>
-                  {!l.read && <span style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-2xs)" }}>未读</span>}
+                  {!l.read && <span style={{ color: "var(--accent-dim)", fontSize: "var(--fs-2xs)" }}>未读</span>}
                   <span style={{
                     color: "var(--text-dim)", fontSize: "var(--fs-xs)", flex: 1,
                     overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
@@ -53,9 +53,9 @@ export default function LetterPanel({ zoneTheme, onClose, inline }) {
               ))}
             </div>
             {open && (
-              <div style={{ padding: "10px 12px", background: "var(--bg-panel)", border: `1px solid ${zoneTheme.border}` }}>
+              <div style={{ padding: "10px 12px", background: "var(--bg-panel)", border: `1px solid var(--border)` }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                  <span style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-sm)" }}>「{open.npcName} 来信」</span>
+                  <span style={{ color: "var(--accent-dim)", fontSize: "var(--fs-sm)" }}>「{open.npcName} 来信」</span>
                   <Btn
                     label={pigeons > 0 ? "回信" : "回信（缺信鸽）"}
                     disabled={pigeons <= 0}

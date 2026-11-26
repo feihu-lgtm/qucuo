@@ -39,8 +39,7 @@ export default function DuelOpPanel({
               const blockedByRepeat = move.type === MOVE_TYPE.DEFENSE && playerDefenseBroken;
               return (
                 <MoveButton key={move.id || i} move={move}
-                  disabled={move.energyCost > playerEnergy[0] || blockedByRepeat}
-                  zoneTheme={zoneTheme} onClick={() => onSelectMove(move)}
+                  disabled={move.energyCost > playerEnergy[0] || blockedByRepeat} onClick={() => onSelectMove(move)}
                   onInspect={() => onInspect({ ...move, side: "你" })} />
               );
             })}

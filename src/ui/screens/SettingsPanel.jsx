@@ -126,7 +126,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
       )}
 
       {tab === "other" && (
-        <OtherTab uiScale={uiScale} setUiScale={setUiScale} font={font} setFont={setFont} zoneTheme={zoneTheme} />
+        <OtherTab uiScale={uiScale} setUiScale={setUiScale} font={font} setFont={setFont} />
       )}
 
     </ModalShell>
