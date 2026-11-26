@@ -204,6 +204,8 @@ export async function runShadowJudge({
       place: preState?.room?.name || "",
       npcs, varTree: preState?.varTree || {},
       inv: preState?.inv || [], entries: [], talkOnly: isTalk,
+      // S7 送银桥：与真实判官同一可信源——金额只认玩家原文，影子不同源会对账失真。
+      playerInput: cmd,
       containers: containerView,
       prepItems: prepItemsForJudge,
       containerPlace,
