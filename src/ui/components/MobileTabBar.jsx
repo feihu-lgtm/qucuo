@@ -1,5 +1,4 @@
 import { chromeBtn } from "../../utils/theme.js";
-import "./mobileTabs.css";
 
 export default function MobileTabBar({ theme, column, onSelect, leftFaces, rightFaces }) {
   return (

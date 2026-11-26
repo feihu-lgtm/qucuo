@@ -4,13 +4,14 @@
 // 复用，业务屏不该兼当共享库。新建筑屏要用就直接从这里 import。
 import ModalShell from "../../primitives/ModalShell.jsx";
 import { Button } from "../../primitives/index.js";
+import { useViewport } from "../../hooks/useViewport.js";
 
 // ── 共用子组件 ──
 export function Overlay({ children, onClose, inline }) {
   // 这是全项目共享组件，13个建筑面板（当铺/武馆/钱庄/医馆/悬赏/镖局/寺庙/赌坊/
   // 藏书阁/铁匠铺/茶馆/运镖+任务日志）都复用它。浮出时套 ModalShell：遮罩、防拖选误关、
   // Esc、焦点锁定都由外壳负责，这一处接入等于 13 个面板一起接入。
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+  const { isMobile } = useViewport();
   if (inline) {
     return (
       <div className="mobile-building-content" style={{ borderTop: `1px solid var(--border)`, background: "var(--building-panel-bg)", height: "100%", overflowY: "auto" }}>

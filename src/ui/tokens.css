@@ -4,6 +4,19 @@
   font-display: swap;
 }
 
+/* ── 断点表（唯一来源，路线图 U5）────────────────────────────────
+   CSS 的 @media 不能读变量，下面的 --bp-* 只作登记；mobile.css 里每个 @media 用到的
+   宽高都必须出现在这张表里，JS 的设备判断（utils/viewport.js）取 --bp-phone-max。
+   viewport.test.js 核对这三件事。
+
+   --bp-phone-max    767px  手机：@media (max-width: 767px)；JS 的 isMobile 同此
+   --bp-tablet-min   768px  非手机：@media (min-width: 768px)
+   --bp-compact-max  768px  紧凑布局：@media (max-width: 768px)，常与 (max-height: 700px) 连用
+   --bp-short-max    700px  矮屏：@media (max-height: 700px)
+   --bp-landscape-max 500px 横屏手机：@media (orientation: landscape) and (max-height: 500px)
+
+   已知不一致（保持现状）：--bp-compact-max 是 768px，宽度恰好 768px 时紧凑布局的规则生效，
+   而 isMobile 为否。改动会改变该宽度下的显示，记作遗留项。 */
 :root {
   color-scheme: dark;
   /* GameLayout 按字号设置内联覆盖，CSS 里用来抵消 zoom。 */
@@ -474,6 +487,11 @@
   /* NPC 名与好感/私聊的语义色（原 theme.js 的 ink("green") / ink("pink")），随日夜切换。 */
   --npc-name: #c07050;
   --npc-affection: #d68a8a;
+  --bp-phone-max: 767px;
+  --bp-tablet-min: 768px;
+  --bp-compact-max: 768px;
+  --bp-short-max: 700px;
+  --bp-landscape-max: 500px;
 }
 
 :root[data-font="pixel"] {

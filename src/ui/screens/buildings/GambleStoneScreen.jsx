@@ -12,6 +12,7 @@ import {
 import {
   StoneVisual, BidderFan, BidderCarousel, SkinModal, SelCardModal, PanelBtn,
 } from "./GambleStoneParts.jsx";
+import { useViewport } from "../../hooks/useViewport.js";
 
 export default function GambleStoneScreen({ building, char, time, onClose, roomNpcs = [], onTalk, onSettle, onInspect, onMinimizeChange, negotiation = {} }) {
   const luck = (char.special?.气运) ?? 5;
@@ -50,14 +51,7 @@ export default function GambleStoneScreen({ building, char, time, onClose, roomN
 
   // 赌石是横向沉浸舞台(1672:941的横图大厅)，竖屏手机塞不下会又扁又小。
   // 检测到窄屏且竖持时盖一层温和的"建议横屏"提示，转横屏自动消失。
-  const [portraitPhone, setPortraitPhone] = useState(() =>
-    typeof window !== "undefined" && window.innerWidth < 768 && window.innerHeight > window.innerWidth);
-  useEffect(() => {
-    const onResize = () => setPortraitPhone(window.innerWidth < 768 && window.innerHeight > window.innerWidth);
-    window.addEventListener("resize", onResize);
-    window.addEventListener("orientationchange", onResize);
-    return () => { window.removeEventListener("resize", onResize); window.removeEventListener("orientationchange", onResize); };
-  }, []);
+  const { isPortraitPhone: portraitPhone } = useViewport();
   const [skinOpen, setSkinOpen] = useState(false);
   const [skinLoading, setSkinLoading] = useState(false);
   const [bought, setBought] = useState(false);  // 是否已花钱买下当前这块料（第一刀=买下）

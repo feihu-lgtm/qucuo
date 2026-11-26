@@ -2,6 +2,7 @@ import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
 import { loadConfig, saveConfig } from "../infra/apiConfig.js";
 import { readMobileColumn, writeMobileColumn } from "../utils/mobileColumn.js";
+import { isMobileViewport } from "../utils/viewport.js";
 
 const useSessionUiStore = (selector) => useStore(sessionUiStore, selector);
 
@@ -50,7 +51,7 @@ export const sessionUiStore = createStore(() => ({
   isDayMode: lsGet("wuxia_mud_day_mode") === "1",
   nsfwOn: true,
   gm: false,
-  isMobile: typeof window !== "undefined" && window.innerWidth < 768,
+  isMobile: isMobileViewport(),
   mobileColumn: readMobileColumn(),
   mobileTopMenu: false,
   settingsInitialTab: null,

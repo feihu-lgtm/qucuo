@@ -1272,3 +1272,16 @@
     }
   }
 }
+
+/* ── 手机端栏目标签条（原 components/mobileTabs.css，U5 合并进来）──
+   原文件随 MobileTabBar 引入、排在本文件之后；放在文末保持原有层叠先后。 */
+.mobile-tab-bar {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+  padding: 4px max(8px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+}
+
+html[data-keyboard-open] .mobile-tab-bar {
+  display: none;
+}

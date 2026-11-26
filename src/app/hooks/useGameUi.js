@@ -24,6 +24,7 @@ import { getGroundItems } from "../../domain/rules/map/groundScope.js";
 import { isAtQuestPlace } from "../../domain/rules/quests/questPlace.js";
 import { stampLogEntries } from "../../domain/rules/log/logTypes.js";
 import { gameStore } from "../../store/gameStore.js";
+import { isMobileViewport } from "../../utils/viewport.js";
 
 const AVATAR_GENDER_DEFAULT = "__gender_default__";
 
@@ -74,7 +75,7 @@ export function useGameUi({
   useEffect(() => {
     refreshApiCfg();
     setSettingsInitialTab(null);
-    setIsMobile(typeof window !== "undefined" && window.innerWidth < 768);
+    setIsMobile(isMobileViewport());
   }, []);
   const [outfitState, setOutfitState] = useState({ loading: false, picks: [], error: "" });
   const pigeonTarget = useSessionUi(s => s.pigeonTarget);
