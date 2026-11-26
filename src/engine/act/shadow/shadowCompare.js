@@ -80,9 +80,14 @@ export function compareCategories(diffOut, proj, { featureRoutedCats = [] } = {}
     // 单边非零 single_only/judge_only，都非零不等 both_diff。
     if (cat === "vitals" || cat === "cultivation") {
       const dNum = d[cat] || {}, pNum = proj[cat] || {};
-      const keys = cat === "vitals" ? ["hp", "money"] : ["exp", "pot"];
+      const allKeys = cat === "vitals" ? ["hp", "money"] : ["exp", "pot"];
+      // D5 子项豁免：「vitals.money」形状 entries 只遮单子项——被遮子项不参与
+      // 对账（记 subExempted 供审计），其余子项照常比较显形。
+      const keys = allKeys.filter((k) => !excluded.has(`${cat}.${k}`));
+      const subExempted = allKeys.filter((k) => excluded.has(`${cat}.${k}`));
+      const keys0 = keys;
       const sub = {}; let anySingle = false, anyJudge = false, anyDiff = false, anyActive = false, anyCaliber = false;
-      for (const k of keys) {
+      for (const k of keys0) {
         const dv = dNum[k] || 0, pv = pNum[k] || 0;
         if (dv === 0 && pv === 0) continue;
         anyActive = true;
@@ -115,6 +120,7 @@ export function compareCategories(diffOut, proj, { featureRoutedCats = [] } = {}
           // 整类目全是口径差时才标 caliber_diff（不计缺口，单独统计）。
           verdict: anySingle ? "single_only" : anyDiff ? "both_diff" : anyJudge ? "judge_only" : "caliber_diff",
           single: dNum, judge: pNum, sub,
+          ...(subExempted.length ? { subExempted } : {}),
         };
       continue;
     }
