@@ -399,7 +399,7 @@ async function runTurnSteps(ctx, cmd, opts) {
     recallBlock: recall.recallBlock,
     newConvo,
     judgeEffects,
-    intimateTicket: judgeVerdict?.intimateTicket || null,
+    intimateTicket: judgeVerdict?.intimateTicket || deps.intimateTicket || null,
     derivedRespondedNpcs: deps.derivedRespondedNpcs || null,
     intakeTargets: deps.intakeTargets || null,
     intakeRefIds: deps.intakeRefIds || null,

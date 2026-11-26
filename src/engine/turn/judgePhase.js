@@ -70,7 +70,7 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
   const isLearnSettle = !!isSettle && opts.settleKind === "learn_skill" && !!opts.settleNpc && !!opts.learnRequest;
 
   const intimacyGateInfoOut = { info: null };
-  const runIntimacyGate = (actsOrNull, aiVerdict) => {
+  const runIntimacyGate = (actsOrNull, aiVerdict, roster = null) => {
     // ══ D8 亲密门禁 runner：actsOrNull 为 null 表示 intake 未跑（单调用/管线外）→正则兜底。
       // 拦截逻辑与 V5 前相同只换判意来源——拒：固定性格化拒词+扣好感+中止管线；
       // 过：标已亲密+门槛行注入判官 notes 随定案单进主叙事；凭卡强开落 ticket 待焚。
@@ -85,7 +85,7 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
           const intimateAction = acts.find((a) => a?.intimate === true) || acts[0] || {};
           const rt = resolveIntimateTarget({
             targetName: intimateAction.target && intimateAction.target !== "无" ? intimateAction.target : (ctx.talkTarget || deps.talkTarget || ""),
-            cmd, npcs: visibleNpcsPre, convo, allNpcs: deps.room?.npcs || [],
+            cmd, npcs: roster || visibleNpcsPre, convo, allNpcs: deps.room?.npcs || [],
           });
           const npc = (deps.room?.npcs || []).find((n) => n?.name === rt.targetName) || rt.explicitHit;
           if (npc?.name) {
@@ -320,7 +320,7 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
       // D8：管线内 AI 判意门禁——intake 布尔为准（本地合成/降级时 __aiIntake 无标走正则兜底）。
       {
         const aiV = intakeResult?.__aiIntake === true;
-        if (runIntimacyGate(intakeResult?.actions || [], aiV) === "refused") return { intimacyRefused: true, stale: false };
+        if (runIntimacyGate(intakeResult?.actions || [], aiV, visibleNpcs) === "refused") return { intimacyRefused: true, stale: false };
       }
 
       judgeVerdict = judgeTurn({
@@ -331,7 +331,8 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
         // S7 送银桥：玩家原文是金额唯一可信来源（ground truth）——
         // action.text 是模型复述不可信（Review 实证可编数），判官绝不从模型输出取钱数。
         playerInput: cmd,
-        npcs: visibleNpcsPre, varTree: vtNow,
+        // Review修：前置路由刷新后的在场名单——复合指令移动后不对已离场者签账。
+        npcs: visibleNpcs, varTree: vtNow,
         inv: liveAfterRoutes.inv || deps.inv || [], entries: [],
         // WO-16F-F3：appease settle 听证不算纯搭话——否则 talkOnly 白名单会把
         // appease 动作整条拦掉，判官路空转、旧仲裁又已被跳过（零裁决穿帮）。
@@ -388,6 +389,11 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
       if (intimacyGateInfoOut.info && judgeVerdict) {
         judgeVerdict.notes = [...(judgeVerdict.notes || []), intimacyGateInfoOut.info.note];
         if (intimacyGateInfoOut.info.ticket) judgeVerdict.intimateTicket = intimacyGateInfoOut.info.ticket;
+      }
+      // D8 Review修：亲密信息双通道——verdict 之外挂 deps 兜底（单调用模式无 verdict）。
+      if (intimacyGateInfoOut.info) {
+        deps.intimatePromptNote = intimacyGateInfoOut.info.note;
+        if (intimacyGateInfoOut.info.ticket) deps.intimateTicket = intimacyGateInfoOut.info.ticket;
       }
       deps.judgeVerdict = judgeVerdict;
       deps.causalBudget = judgeVerdict.budget;
