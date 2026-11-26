@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TEMPLATES, fillTemplate, pickTemplate, validateSequence } from "./templates.mjs";
+import { TEMPLATES, fillTemplate, pickTemplate, validateSequence, buildLaneQueue, buildGlobalInstances } from "./templates.mjs";
 
 const presence = {
   npcs: ["老猎户", "杂货商人"],
@@ -70,6 +70,38 @@ describe("A4 模板填充与输入校验", () => {
     expect(validateSequence(["a", null]).ok).toBe(false);
     expect(validateSequence([]).ok).toBe(false);
     expect(validateSequence(["跟老猎户搭话"]).ok).toBe(true);
+  });
+
+  it("lane-aware 全局调度：8 lane 分片后每种 kind/outcome/settle/群聊/条件意图层达标", () => {
+    for (const lanes of [1, 4, 8]) {
+      const all = [];
+      for (let lane = 0; lane < lanes; lane++) all.push(...buildLaneQueue(lane, lanes));
+      // 全局并集恰好覆盖所有实例无重无漏
+      expect(all.length).toBe(buildGlobalInstances().length);
+      const perKind = {};
+      const perOutcome = {};
+      let settle = 0, group = 0, cond = 0;
+      for (const { tpl } of all) {
+        perKind[tpl.kind] = (perKind[tpl.kind] || 0) + 1;
+        if (tpl.outcome) perOutcome[tpl.outcome] = (perOutcome[tpl.outcome] || 0) + 1;
+        if (tpl.settle) settle++;
+        if (tpl.group) group++;
+        if (tpl.conditional) cond++;
+      }
+      for (const k of ["talk", "move", "inspect_container", "take", "give", "trade", "steal", "duel", "appease", "learn", "invite", "use_item", "equip"]) {
+        expect(perKind[k], `lanes=${lanes} kind ${k}=${perKind[k]}`).toBeGreaterThanOrEqual(10);
+      }
+      for (const o of ["无", "伤损", "得财", "破费", "调息", "修习", "服用", "受寒中毒", "醉酒", "其他"]) {
+        expect(perOutcome[o], `lanes=${lanes} outcome ${o}`).toBeGreaterThanOrEqual(5);
+      }
+      expect(settle).toBeGreaterThanOrEqual(15);
+      expect(group).toBeGreaterThanOrEqual(5);
+      expect(cond).toBeGreaterThanOrEqual(5);
+    }
+    // lane 间无重叠：同一实例只归一条 lane
+    const ids = [];
+    for (let lane = 0; lane < 8; lane++) ids.push(...buildLaneQueue(lane, 8).map((x) => x.instanceId));
+    expect(new Set(ids).size).toBe(ids.length);
   });
 
   it("配额用尽的模板不再选出", () => {

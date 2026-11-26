@@ -16,7 +16,7 @@
 import { chromium } from "playwright";
 import { readFileSync, writeFileSync, createWriteStream, mkdirSync } from "node:fs";
 import { startServer } from "../../e2e/harness/server.mjs";
-import { TEMPLATES, fillTemplate, validateSequence } from "./templates.mjs";
+import { fillTemplate, validateSequence, buildLaneQueue } from "./templates.mjs";
 
 const MODE = process.env.SAMPLING_MODE || "single"; // single=单调用+影子 / dual=双调用
 const SCENARIO = process.env.SAMPLING_SCENARIO || "fullhp"; // fullhp / injured
@@ -32,6 +32,12 @@ const FIXTURE = SCENARIO === "injured"
   ? "/home/ubuntu/repos/qucuo/e2e/fixtures/saves/village.json"
   : "/home/ubuntu/repos/qucuo/e2e/fixtures/saves/village_fullhp.json";
 const save = JSON.parse(readFileSync(FIXTURE, "utf8"));
+// 代理入站令牌：proxy 启动时写入 ~/.sampling/proxy.token（0600），
+// 游戏 config 的 apiKey 带它过代理验签——本机其他进程不能蹭配额/污染留底。
+const PROXY_TOKEN = process.env.SAMPLING_PROXY_TOKEN
+  || readFileSync(`${process.env.HOME}/.sampling/proxy.token`, "utf8").trim();
+// 批次唯一 runId：trace 全局唯一，重跑同目录不会与上一批串账。
+const RUN_ID = `r${Date.now().toString(36)}`;
 
 const server = await startServer();
 const browser = await chromium.launch({ headless: true, args: ["--disable-dev-shm-usage", "--disable-gpu", "--no-sandbox"] });
@@ -44,15 +50,30 @@ async function state(page) {
   return page.evaluate(async () => {
     const { gameStore } = await import("/src/store/gameStore.js");
     const { sessionUiStore } = await import("/src/store/sessionUiStore.js");
+    // A4 必修：在场名单按 buildPresence 同口径（内层房间过滤+随行同伴并入），
+    // 不再粗读 room.npcs——S7"人不在场"失真即源于此。
+    const { buildPresence } = await import("/src/engine/prompt/roundNotes.js");
     const cur = gameStore.getState();
     const ui = sessionUiStore.getState();
+    const presence = buildPresence({
+      isTalk: false, lockedDestName: null,
+      room: cur.room || { npcs: [] }, innerRoomName: cur.innerRoomName || "",
+      companionState: cur.companionState || null,
+    });
+    const presenceNames = (presence.visibleNpcsForAI || []).map((n) => n?.name || n).filter(Boolean);
+    // 地上物同口径：getPresentNpcs 按 innerRoomName 过滤在场者，room.items 也需
+    // 同滤——内层房间物品结构 items 带 room 字段时才收，无字段的按外层物收。
+    const inner = cur.innerRoomName || "";
+    const groundNames = (cur.room?.items || [])
+      .filter((it) => !inner || !it?.room || it.room === inner)
+      .map((i) => i?.name).filter(Boolean);
     return {
       room: cur.room?.name || "", inner: cur.innerRoomName || "",
       silver: cur.char?.money ?? 0, turn: cur.time ?? 0,
       inv: (cur.inv || []).map((i) => typeof i === "string" ? { name: i } : { name: i?.name, category: i?.category }).filter((i) => i.name),
-      npcs: (cur.room?.npcs || []).map((n) => n.name),
+      npcs: presenceNames,
       exits: cur.room?.exits || [],
-      ground: (cur.room?.items || []).map((i) => i?.name).filter(Boolean),
+      ground: groundNames,
       logLen: (cur.log || []).length,
       hp: cur.char?.hp,
       queueCount: ui.queueCount ?? 0,
@@ -70,11 +91,11 @@ async function logSlice(page, from) {
 }
 
 await page.goto(server.url);
-await page.evaluate(async ({ fixture, proxy, extractionEnabled }) => {
+await page.evaluate(async ({ fixture, proxy, extractionEnabled, token }) => {
   localStorage.setItem("wuxia_mud_api_config", JSON.stringify({
     apiType: "openai",
     endpoint: proxy,
-    apiKey: "via-local-proxy",
+    apiKey: token,
     model: "gemini-3.8-flash",
     extractionEnabled,
     shadowJudgeEnabled: true,
@@ -86,7 +107,7 @@ await page.evaluate(async ({ fixture, proxy, extractionEnabled }) => {
   const saves = await import("/src/infra/saves.js");
   await saves.init();
   saves.importSave(JSON.stringify(fixture));
-}, { fixture: save, proxy: PROXY, extractionEnabled: MODE === "dual" });
+}, { fixture: save, proxy: PROXY, extractionEnabled: MODE === "dual", token: PROXY_TOKEN });
 await page.waitForTimeout(400);
 await page.reload();
 await page.getByText("加载游戏", { exact: true }).click();
@@ -94,7 +115,7 @@ await page.getByText(`${save.label}（导入）`, { exact: true }).click();
 await page.locator(".game-input").waitFor({ state: "visible", timeout: 15000 });
 
 const meta = {
-  mode: MODE, scenario: SCENARIO, lane: LANE, lanes: LANES, turns: TURNS,
+  mode: MODE, scenario: SCENARIO, lane: LANE, lanes: LANES, turns: TURNS, runId: RUN_ID,
   startedAt: new Date().toISOString(), serverUrl: server.url,
   proxy: PROXY, model: "gemini-3.8-flash", extractionEnabled: MODE === "dual",
   shadowJudgeEnabled: true, browser: "playwright chromium headless", viewport: "1440x900",
@@ -103,31 +124,39 @@ const meta = {
 };
 writeFileSync(`${PREFIX}_run_meta.json`, JSON.stringify(meta, null, 2));
 
-// 配额选型：按模板 target 追踪；round-robin 过模板表，填满即跳过。
-// 顺序按 TEMPLATES 固定，保证可复现；lane 偏移错开各 lane 起跑点。
-const tracker = {};
+// lane-aware 全局配额调度：模板实例全局编号按 lane 分配，本 lane 只跑自己那份。
+// 槽位缺料的实例跳过记因并顺延同 lane 下一条——配额是全局账（见 templates.mjs）。
+const QUEUE = buildLaneQueue(LANE, LANES);
 const skippedLog = [];
-let cursor = (LANE * 7) % TEMPLATES.length;
 let done = 0, failed = 0, aborted = false;
+const targetTurns = Math.min(TURNS, QUEUE.length);
 
-for (let turnIdx = 0; turnIdx < TURNS && !aborted; turnIdx++) {
+for (let turnIdx = 0; turnIdx < targetTurns && !aborted; turnIdx++) {
   const before = await state(page);
   if (!before) { console.error("state unreadable, abort"); break; }
-  // 选模板：从 cursor 起扫一圈，找配额未满且槽位可填的
+  const inst = QUEUE[turnIdx];
+  const tpl = inst.tpl;
+  const filled = fillTemplate(tpl, { npcs: before.npcs, inv: before.inv, exits: before.exits, ground: before.ground });
   let picked = null;
-  for (let step = 0; step < TEMPLATES.length; step++) {
-    const i = (cursor + step) % TEMPLATES.length;
-    const tpl = TEMPLATES[i];
-    if ((tracker[tpl.id] || 0) >= tpl.target) continue;
-    const filled = fillTemplate(tpl, { npcs: before.npcs, inv: before.inv, exits: before.exits, ground: before.ground });
-    if (filled.ok) { picked = { tpl, text: filled.text, index: i }; break; }
-    skippedLog.push({ turn: turnIdx + 1, id: tpl.id, reason: filled.reason });
+  if (filled.ok) picked = { tpl, text: filled.text };
+  else {
+    skippedLog.push({ turn: turnIdx + 1, id: tpl.id, instance: inst.instanceId, reason: filled.reason });
+    // 换下一条（工单口径）：在队列后续找第一条可填实例与本位交换——
+    // 可填实例顶上来本回合跑，缺料实例后移，在场变化后仍有机会再试，不透支其他 lane。
+    for (let j = turnIdx + 1; j < QUEUE.length; j++) {
+      const af = fillTemplate(QUEUE[j].tpl, { npcs: before.npcs, inv: before.inv, exits: before.exits, ground: before.ground });
+      if (af.ok) {
+        [QUEUE[turnIdx], QUEUE[j]] = [QUEUE[j], QUEUE[turnIdx]];
+        picked = { tpl: QUEUE[turnIdx].tpl, text: af.text };
+        break;
+      }
+    }
   }
   if (!picked) {
-    console.log("all templates exhausted or unfillable, stop early");
-    break;
+    skippedLog.push({ turn: turnIdx + 1, id: tpl.id, reason: "无替补可填，本回合空转跳过" });
+    turnsLog.write(JSON.stringify({ turn: turnIdx + 1, skipped: true, tpl: tpl.id, trace: null }) + "\n");
+    continue;
   }
-  cursor = (picked.index + 1) % TEMPLATES.length;
 
   // 输入校验：非空字符串，否则中止（不进入付费采样）
   const check = validateSequence([picked.text]);
@@ -138,7 +167,7 @@ for (let turnIdx = 0; turnIdx < TURNS && !aborted; turnIdx++) {
     break;
   }
 
-  const trace = `${SCENARIO}-${MODE}-l${LANE}-t${turnIdx + 1}`;
+  const trace = `${SCENARIO}-${MODE}-${RUN_ID}-l${LANE}-t${turnIdx + 1}`;
   // 归属标签先行：本回合所有 AI 调用（含影子）都带这三个头
   await page.evaluate((tag) => { window.__qucuoSampling = tag; }, { lane: LANE, turn: turnIdx + 1, trace });
 
@@ -195,6 +224,12 @@ try {
     const out = {};
     try { out.releaseMetrics = JSON.parse(localStorage.getItem("qc_release_metrics_v1") || "null"); } catch { out.releaseMetrics = null; }
     try {
+      // A4 必修：导出前先 drain 在途影子（上限 60s，同 TraceViewer 口径），
+      // 聚合 JSON 内嵌 stageCounts 与 pendingAtExport——否则分不清影子是死了/丢了/在途。
+      const { drainShadowTasks, shadowStageCounts } = await import("/src/engine/act/shadow/shadowStages.js");
+      const { pending } = await drainShadowTasks(60000);
+      out.pendingAtExport = pending;
+      out.stageCounts = shadowStageCounts("default");
       const shadowMod = await import("/src/engine/act/shadow/shadowJudge.js");
       const aggs = {};
       for (const key of ["default", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]) {
@@ -207,7 +242,7 @@ try {
     return out;
   });
   writeFileSync(`${PREFIX}_exports.json`, JSON.stringify({
-    ...exports_, pageErrors, skippedLog, tracker,
+    ...exports_, pageErrors, skippedLog, queueLength: QUEUE.length,
     finishedAt: new Date().toISOString(), done, failed, laneId: LANE, aborted,
   }, null, 2));
   console.log(`[${SCENARIO}/${MODE}/lane${LANE}] exports written, done=${done} failed=${failed} aborted=${aborted}`);

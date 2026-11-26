@@ -55,7 +55,7 @@ export const TEMPLATES = [
   { id: "settle_learn", kind: "learn", settle: "learn_skill", target: 5, needs: ["npc"], text: "诚心拜{npc}为师，求他传授一门本事" },
   { id: "settle_invite", kind: "invite", settle: "companion_invite", target: 5, needs: ["npc"], text: "诚心邀{npc}入伙结伴，一同闯荡江湖" },
   // ---- 群聊 ×5（一句话对多名在场者）----
-  { id: "group_talk", kind: "talk", group: true, target: 5, needs: ["npc", "npc2"], text: "招呼{npc}和{npc2}一起过来，大伙坐下聊聊" },
+  { id: "group_talk", kind: "talk", group: true, target: 5, needs: ["npc", "npc2"], text: "对{npc}和{npc2}说：大伙儿近来可好，坐下一起聊聊家常" },
   // ---- 条件动作 ×5 ----
   { id: "cond_move", kind: "move", conditional: true, target: 5, needs: ["direction"], text: "往{direction}走，要是遇到人就停下来搭话" },
 ];
@@ -111,4 +111,23 @@ export function pickTemplate(presence, tracker = {}) {
     skipped.push({ id: tpl.id, reason: filled.reason });
   }
   return { index: -1, tpl: null, text: null, skipped };
+}
+
+// lane-aware 全局配额调度：把每条模板按 target 展开成实例，全局编号后
+// 按 instanceIndex % lanes 分配到各 lane——配额是全局账，多 lane 并发时
+// 每条 lane 只跑自己那份，十四 kind/十 outcome/settle/群聊/条件在全局意图层达标。
+// 返回 [{ tpl, instanceId }]，顺序确定性（模板表序×实例序交错）。
+export function buildGlobalInstances() {
+  const out = [];
+  const maxTarget = Math.max(...TEMPLATES.map((t) => t.target));
+  for (let n = 0; n < maxTarget; n++) {
+    for (const tpl of TEMPLATES) {
+      if (n < tpl.target) out.push({ tpl, instanceId: `${tpl.id}#${n + 1}` });
+    }
+  }
+  return out;
+}
+
+export function buildLaneQueue(lane, lanes) {
+  return buildGlobalInstances().filter((_, i) => i % lanes === lane);
 }
