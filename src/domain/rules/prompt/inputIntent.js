@@ -38,7 +38,7 @@ const MOVE_PATTERNS = [
   /^(去|往|走向|前往).{1,10}(村|山|寺|庙|镇|寨|海|土司|洞)/,
   // 口语方向：往/向/朝/去 + 东南西北上下（后面可跟"走/去/边/面/方向/面前"或直接结束），
   // 如"往北走""向东""朝南去""往上""去西边"。用方向字锚定，避免误伤"往事""向来"这类。
-  /^(往|向|朝|去|走向|前往)\s*(东|南|西|北|上|下)(边|面|方|方向|走|去|行|面前)?[，,。.！!？?]*$/,
+  /^(往|向|朝|去|走向|前往)\s*(东南|东北|西南|西北|东|南|西|北|上|下)(边|面|方|方向|走|去|行|面前)?[，,。.！!？?吧啊呢嘛]*$/,
 ];
 
 const BARE_LOOK_PATTERNS = [
@@ -119,6 +119,15 @@ export function isTradeInput(rawInput) {
   // 仅明确看货色、买、卖、询单价开铺才归 trade。
   if (/行市|行情|价(?:稳|如何|咋样|怎么样|贵贱|高低|涨|跌)/.test(input) && !/买|卖|交易|开价|多少钱|拿货看看|什么货|进货|出货/.test(input)) return false;
   return TRADE_RE.test(input.replace(TRADE_NOUN_RE, ""));
+}
+
+// 疑问句形：句末疑问语气词/问号/如何怎么样与否——问句里提到的动作是被打听的
+// 对象而非玩家的行动意图（「今晚吃什么」是问话不是吃）。
+// 注意：此处的「什么/谁/哪里」只服务于搭话闸豁免，不进 classifyIntent 的 TALK  patterns——
+// 裸「什么」进分类会把「随便敲点什么」这类 UNKNOWN 误归闲聊（V1 已踩过）。
+const QUESTION_SHAPE_RE = /[吗呢吧啊呀嘛][。？！？!?.]*$|[？?]$|如何|怎么样|咋样|是否|能否|可否|(什么|谁|哪里|哪儿|多少|几点|几时)[。？！？!?.]*$/;
+export function isQuestionShape(rawInput) {
+  return QUESTION_SHAPE_RE.test((rawInput || "").trim());
 }
 
 export function classifyIntent(rawInput) {

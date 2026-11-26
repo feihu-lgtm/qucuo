@@ -2,7 +2,7 @@
 // 整句纯「看X」走 lookNpcInBackground（免费）；整句纯搭话走 talk 路（不耗回合）；
 // 其他一切（行动意图/复合句/UNKNOWN）整句进 act() 扣 1 回合——括号/断句只做
 // 段标注透传给模型，不做物理分流、不按段多发调用。
-import { classifyIntent, isGiftInput, isTradeInput } from "../prompt/inputIntent.js";
+import { classifyIntent, isQuestionShape, isGiftInput, isTradeInput } from "../prompt/inputIntent.js";
 
 const PAREN_RE = /[（(]([^（）()]+)[）)]/g;
 const SEG_SPLIT_RE = /[，,。.！!？?；;、\n]+/;
@@ -84,9 +84,11 @@ export function routeAutoInput(raw, npcs = []) {
   // Review 修：呼语开头不代表整句是闲聊——「老孙，我喝一口酒」带硬行动动词，
   // 仍须进行动路扣回合（否则喝酒/翻找类动作被免费搭话吞掉永不发生）。
   const HARD_ACTION_RE = /喝|吃|拔|翻|搜|摸|掏|撬|掀|偷|服|练|睡|砍|杀|劈|刺|揍|挖|拆|砸|搬|扛|背|抱|掷|扔|追|骑|拜|跪|种|采|摘|钓|伐|修|装|卸|脱|穿|戴|点火烧|点燃|疗伤|打坐|运转|运功/;
+  // Review 修：疑问句形豁免硬行动排除——「今晚吃什么」「盐价稳当吗」是打听不是行动，
+  // 句中硬动词只是被问及的题材，不该因此扣回合。
   if (splitCompositeInput(s, { npcs }).length === 1
     && classifyIntent(s).code === "TALK_CASUAL" && !isGiftInput(s) && !isTradeInput(s)
-    && !HARD_ACTION_RE.test(s)) {
+    && (!HARD_ACTION_RE.test(s) || isQuestionShape(s))) {
     return { kind: "talk" };
   }
   return { kind: "action" };

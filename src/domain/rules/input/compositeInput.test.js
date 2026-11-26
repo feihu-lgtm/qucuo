@@ -4,6 +4,7 @@ import {
   buildCompositeNote, findLookTargetsInText, matchWholeLook,
   routeAutoInput, splitCompositeInput,
 } from "./compositeInput.js";
+import { classifyIntent } from "../prompt/inputIntent.js";
 
 const NPCS = [{ name: "铁伯" }, { name: "元朵朵" }, { name: "燕绾烟" }];
 
@@ -121,5 +122,19 @@ describe("V1 Review 修：呼语带硬行动不吃免费通道+疑问句形归�
   it("裸疑问句「盐价稳当吗」「最近行市如何」单段归免费 talk 不耗回合", () => {
     expect(routeAutoInput("盐价稳当吗").kind).toBe("talk");
     expect(routeAutoInput("最近行市如何").kind).toBe("talk");
+  });
+});
+
+describe("V1 Review 二轮：移动不被对话吞/问句不扣回合", () => {
+  it("「往北走吧」「往东北走？」判为 MOVE 不落 TALK", () => {
+    expect(classifyIntent("往北走吧").code).toBe("MOVE");
+    expect(classifyIntent("往东北走？").code).toBe("MOVE");
+  });
+  it("「老孙，今晚吃什么」问句豁免硬行动排除，归免费 talk", () => {
+    expect(routeAutoInput("老孙，今晚吃什么", [{ name: "老孙" }]).kind).toBe("talk");
+    expect(routeAutoInput("周掌柜，这种盐价稳当吗", [{ name: "周掌柜" }]).kind).toBe("talk");
+  });
+  it("陈述句硬行动仍归 action 不被误放", () => {
+    expect(routeAutoInput("老孙，我喝一口酒", [{ name: "老孙" }]).kind).toBe("action");
   });
 });
