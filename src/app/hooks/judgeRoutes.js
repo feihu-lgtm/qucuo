@@ -71,14 +71,19 @@ export function classifyUseItem(state, itemObjOrName) {
   // 真饰品（旧护身符/虎乳牙/红线等带 sixDim 或 effect）仍为 wield。
   if (item.category === "weapon" || item.category === "armor") return "wield";
   if (item.category === "accessory") {
-    const hasBonus = !!(item.sixDim && Object.keys(item.sixDim).length)
-      || !!(item.effect && Object.keys(item.effect).length)
-      || Number.isFinite(item.atk) || Number.isFinite(item.def)
-      || !!(item.sixDimTemp && Object.keys(item.sixDimTemp).length);
-    if (hasBonus) return "wield";
-    // Review 二轮修：商店买的饰品实例常不携带图鉴加成字段（如镀金钗），不能仅凭
-    // 无加成判凭帖——默认 accessory 是可佩挂装备（wield），只有名目明为凭帖/书信/
-    // 印章/钥匙/令牌类纸面信物的才走出示。
+    // Review 四轮修：加成判定实例与图鉴双源——buildShopInventory 会丢实例加成
+    // （离堆水则牌等），图鉴有词条即真饰品；无任何加成（含图鉴）的纸面名目
+    // （帖/牌/书信/印/钥/令等）才是凭帖信物走出示。黑风寨木牌图鉴带 sixDim，
+    // 是可佩挂装备（佩戴有魅力/气运），按 wield——出示意图属工单 escalate 的
+    // 意图识别范畴，不由物类分流承担。
+    const bonusOf = (x) => !!(x && typeof x === "object" && (
+      (x.sixDim && Object.keys(x.sixDim).length)
+      || (x.effect && Object.keys(x.effect).length)
+      || Number.isFinite(x.atk) || Number.isFinite(x.def)
+      || (x.sixDimTemp && Object.keys(x.sixDimTemp).length)
+    ));
+    const catEntry = shielded ? null : CATALOG_INDEX[itemNameOf(item)];
+    if (bonusOf(item) || bonusOf(catEntry)) return "wield";
     return /帖|牌|书信|信物|私印|印信|凭证|钥匙|令牌|路引|文书|残页/.test(itemNameOf(item)) ? "present" : "wield";
   }
   return "present";
