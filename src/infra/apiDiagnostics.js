@@ -37,7 +37,7 @@ async function requestStream(cfg, systemPrompt, messages, onChunk, opts) {
     let full = "";
     let finishReason, usage; // 捕获停止原因与 token 用量，供 Pipeline 判断"是正常收尾还是被 length 截断"
     // idle 超时与请求超时同值：流式期间每次等 chunk 也受约束，持续有字不误杀长正文。
-    const sse = (res, handler) => readSSE(res, handler, { idleTimeoutMs: getRequestTimeout() });
+    const sse = (res, handler) => readSSE(res, handler, { idleTimeoutMs: getRequestTimeout(), firstByteTimeoutMs: 18000 });
 
     if (cfg.apiType === API_TYPES.ANTHROPIC) {
       const provider = PROVIDERS[cfg.provider];

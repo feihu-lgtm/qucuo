@@ -1,24 +1,32 @@
 // SSE 通用读取器：解析 "data: {...}" 格式的流，遇到 [DONE] 停止。
 // 每解析出一个合法 JSON 事件就调用一次 onEvent(parsedObject)。
-export async function readSSE(res, onEvent, { idleTimeoutMs } = {}) {
+export async function readSSE(res, onEvent, { idleTimeoutMs, firstByteTimeoutMs } = {}) {
   const reader = res.body.getReader();
   const decoder = new TextDecoder("utf-8");
   let buf = "";
   // 流式 body 的 idle 超时：每次等下一个 chunk 都受 idleTimeoutMs 约束。
   // 持续有字到达不会误杀长正文；但 headers 拿到之后 body 卡住不再无限等——
   // 否则玩家配置的接口超时对流式路径形同虚设（fetchWithTimeout 只管首字节）。
+  // W-FIX3：首包看门狗独立于整包 idle 超时——上游中转假死（headers 到了 body 一字不出）
+  // 时 18 秒内即 abort 抛可重试超时错切下一次重试，不再傻等整包 60 秒×2（验收第 18 式
+  // 实测卡 138 秒）。收到首个 chunk 后首包定时器即销毁，后续仍按 idleTimeoutMs 约束。
+  let firstChunkSeen = false;
   const readChunk = () => {
-    if (!idleTimeoutMs) return reader.read();
+    const isFirst = !firstChunkSeen;
+    const limit = isFirst && firstByteTimeoutMs ? Math.min(firstByteTimeoutMs, idleTimeoutMs || firstByteTimeoutMs) : idleTimeoutMs;
+    if (!limit) return reader.read();
     let timer;
     return Promise.race([
       reader.read().finally(() => clearTimeout(timer)),
       new Promise((_, reject) => {
         timer = setTimeout(() => {
           reader.cancel().catch(() => {});
-          const err = new Error(`流式传输超过 ${Math.round(idleTimeoutMs / 1000)} 秒没有新内容`);
+          const err = isFirst && firstByteTimeoutMs
+            ? new Error(`流式首包 ${Math.round(firstByteTimeoutMs / 1000)} 秒未到达——上游中转假死，切重试`)
+            : new Error(`流式传输超过 ${Math.round((idleTimeoutMs || 0) / 1000)} 秒没有新内容`);
           err.code = "timeout";
           reject(err);
-        }, idleTimeoutMs);
+        }, limit);
       }),
     ]);
   };
@@ -40,6 +48,7 @@ export async function readSSE(res, onEvent, { idleTimeoutMs } = {}) {
       throw err;
     }
     const { done, value } = chunk;
+    firstChunkSeen = true;
     if (done) break;
     buf += decoder.decode(value, { stream: true });
     const lines = buf.split("\n");
