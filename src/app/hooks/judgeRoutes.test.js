@@ -220,6 +220,61 @@ describe("WO-16F-F2a 判官路由集成", () => {
     gameActions.setInv([]);
   });
 
+  it("D1：兵刃演练端详零状态改动且 ok（未装备带可佩挂提示）", async () => {
+    gameActions.setInv([{ id: "it_sw", name: "鱼定枪", category: "weapon", equipped: false }]);
+    const invBefore = JSON.stringify(gameStore.getState().inv);
+    const timeBefore = gameStore.getState().time;
+    const out = executeJudgeRoutes([{ kind: "use_item", item: "鱼定枪", itemId: "it_sw", target: "无", text: "拔出鱼定枪演练几式" }]);
+    expect(out.receipts[0].ok).toBe(true);
+    expect(out.receipts[0].text).toContain("端详");
+    expect(out.receipts[0].text).toContain("可佩挂");
+    expect(JSON.stringify(gameStore.getState().inv)).toBe(invBefore);
+    expect(gameStore.getState().time).toBe(timeBefore);
+    gameActions.setInv([]);
+  });
+
+  it("D1：已装备兵刃演练为「随身已佩」口径", async () => {
+    gameActions.setInv([{ id: "it_sw2", name: "鱼定枪", category: "weapon", equipped: true }]);
+    const out = executeJudgeRoutes([{ kind: "use_item", item: "鱼定枪", itemId: "it_sw2", target: "无", text: "演练鱼定枪" }]);
+    expect(out.receipts[0].ok).toBe(true);
+    expect(out.receipts[0].text).toContain("随身已佩");
+    expect(out.receipts[0].text).not.toContain("可佩挂");
+    gameActions.setInv([]);
+  });
+
+  it("D1：凭帖钥匙杂物出示零状态改动", async () => {
+    gameActions.setInv([{ id: "it_let", name: "赌石邀帖", category: "misc" }]);
+    const invBefore = JSON.stringify(gameStore.getState().inv);
+    const out = executeJudgeRoutes([{ kind: "use_item", item: "赌石邀帖", itemId: "it_let", target: "无", text: "亮出赌石邀帖" }]);
+    expect(out.receipts[0].ok).toBe(true);
+    expect(out.receipts[0].text).toContain("当场出示或查验");
+    expect(out.receipts[0].text).toContain("未签发任何额外得失事实");
+    expect(JSON.stringify(gameStore.getState().inv)).toBe(invBefore);
+    gameActions.setInv([]);
+  });
+
+  it("D1：耗材服用走消耗账（物件减少+回执服用生效）", async () => {
+    gameActions.setInv([{ id: "it_w3", name: "青稞酒", category: "misc", consumable: { sixDimTemp: { 体魄: 1 } } }]);
+    const out = executeJudgeRoutes([{ kind: "use_item", item: "青稞酒", itemId: "it_w3", target: "无", text: "喝一口青稞酒" }]);
+    expect(out.receipts[0].ok).toBe(true);
+    expect(out.receipts[0].text).toContain("已服用生效");
+    expect(gameStore.getState().inv).toHaveLength(0);
+    gameActions.setInv([]);
+  });
+
+  it("D1 classifyUseItem 纯函数三分流", async () => {
+    const { classifyUseItem } = await import("./judgeRoutes.js");
+    const state = { inv: [] };
+    expect(classifyUseItem(state, { name: "青稞酒", consumable: { hpDelta: 1 } })).toBe("consumable");
+    expect(classifyUseItem(state, { name: "鱼定枪", category: "weapon" })).toBe("wield");
+    expect(classifyUseItem(state, { name: "铁护甲", category: "armor" })).toBe("wield");
+    expect(classifyUseItem(state, { name: "玉佩", category: "accessory" })).toBe("wield");
+    expect(classifyUseItem(state, { name: "赌石邀帖", category: "misc" })).toBe("present");
+    expect(classifyUseItem(state, { name: "溪边小屋钥匙", category: "misc" })).toBe("present");
+    // noCatalog 盾：撞图鉴名也不吃图鉴药效
+    expect(classifyUseItem(state, { name: "青稞酒", category: "misc", noCatalog: true })).toBe("present");
+  });
+
   it("名/号矛盾不动错物（Review 修）", async () => {
     gameActions.setInv([
       { id: "it_sword", name: "铁剑", category: "weapon" },

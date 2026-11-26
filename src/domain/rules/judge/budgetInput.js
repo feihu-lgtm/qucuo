@@ -23,6 +23,7 @@
 //                   只有天机券实际编译入袋的新品计数（materializeFacts 写账），
 //                   预设物/备料物/悬空秘宝不占配额。账本不存在时按 0 读，不破坏旧档。
 import { factionTensionProxy } from "../conflict/tension.js";
+import { CATALOG_INDEX } from "../../data/items/catalog.js";
 
 const ACTION_RISK = {
   steal: 2, duel: 2,
@@ -45,6 +46,7 @@ export function buildCausalBudgetInput(state = {}, intakeResult = {}, opts = {})
   const actions = Array.isArray(intakeResult.actions) ? intakeResult.actions : [];
   const char = state.char || {};
   const varTree = state.varTree || {};
+  const inv = state.inv || [];
 
   // tension：路遇场景紧张度——factionTensionProxy 取该势力在势力冲突表
   // （动态覆盖+BASE_TENSION）里与任意势力的最强张力原值 0-100 直传
@@ -69,10 +71,19 @@ export function buildCausalBudgetInput(state = {}, intakeResult = {}, opts = {})
   const riskLevel = Math.max(ruleRisk, intakeRisk);
 
   // costPaid：给出物品/用消耗品是有形代价（v1 保守）
+  // D1：use_item 分流后只有背包里该物确为耗材（真被消耗）才计代价——
+  // 兵刃演练与凭帖出示零消耗，严禁白嫖因果额度。consumable 口径与 consumeItem 一致。
+  const consumableOf = (itemId, itemName) => {
+    const item = (inv || []).find((it) => typeof it === "object" && it && (
+      (itemId && it.id === itemId) || (!itemId && itemName && it.name === itemName)
+    ));
+    if (!item) return false;
+    return !!(item.consumable || (!item.noCatalog && item.name && CATALOG_INDEX[item.name]?.consumable));
+  };
   let costPaid = 0;
   for (const action of actions) {
     if ((action?.kind === "give" || action?.kind === "trade") && action?.itemId) costPaid += 5;
-    if (action?.kind === "use_item" && action?.itemId) costPaid += 3;
+    if (action?.kind === "use_item" && action?.itemId && consumableOf(action.itemId, action.item)) costPaid += 3;
   }
 
   // targetAffection：社交目标当前好感最大值
