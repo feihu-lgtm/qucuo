@@ -190,7 +190,9 @@ export function buildPresence({ isTalk, lockedDestName, room, innerRoomName, com
   // 【改成读通用出战位】此前这里写死只认雪豹，明日香入队后 AI 压根不知道她跟着，
   // 叙事里她就凭空消失了。现在读 activeCompanion（单槽互斥，同时只有一个）。
   const comp = activeCompanion(companionState);
-  const visibleNpcsForAI = comp?.data ? [...visibleNpcs, comp.data] : visibleNpcs;
+  // D2 修：并入同伴时打 companion:true——companionAnimals 裸 data 无旗标，
+  // 翻箱目击等「排除出战同伴」口径（inspectContainer/在场旁观筛选）才能人机灵兽同源。
+  const visibleNpcsForAI = comp?.data ? [...visibleNpcs, { ...comp.data, companion: true }] : visibleNpcs;
   return { visibleNpcs, visibleNpcsForAI };
 }
 
