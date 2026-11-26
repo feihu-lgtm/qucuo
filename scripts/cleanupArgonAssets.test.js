@@ -49,6 +49,25 @@ describe("cleanupArgonAssets 合并部署清理", () => {
     expect(removed).not.toContain("assets/in-new-manifest.js");
   });
 
+  it("嵌套目录资源：子目录内文件同样按引用/ age 裁决，空目录顺手收", () => {
+    put("assets/chunks/nested/deep-aaa.js", 8 * DAY);
+    put("assets/chunks/nested/deep-bbb.js", 8 * DAY);
+    manifest("20260101000000", ["assets/chunks/nested/deep-bbb.js"]);
+    const removed = sweepAssets(dir);
+    expect(removed).toContain("assets/chunks/nested/deep-aaa.js");
+    expect(existsSync(join(dir, "assets/chunks/nested/deep-bbb.js"))).toBe(true);
+  });
+
+  it("public 顶层静态目录（非哈希）不被清理波及——清理只扫 assets/", () => {
+    // 只增不删语义下 public 目录 stones/portraits/fonts 不在清理范围：
+    // 它们不是 vite 哈希资产、文件名不带内容指纹，删除会让旧页面缺立绘/字体。
+    put("portraits/old-portrait.png", 30 * DAY);
+    put("assets/hash-aaa123.js", 8 * DAY);
+    const removed = sweepAssets(dir);
+    expect(removed).toEqual(["assets/hash-aaa123.js"]);
+    expect(existsSync(join(dir, "portraits/old-portrait.png"))).toBe(true);
+  });
+
   it("无 manifest 记录：老资源全删新资源全保（不炸）", () => {
     put("assets/x.js", 8 * DAY);
     put("assets/y.js", 1 * DAY);

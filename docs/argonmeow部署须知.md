@@ -54,6 +54,11 @@ handle /qucuo/* {
 
 要点与 Nginx 版完全一致：assets 缺失必须 404（Caddy `file_server` 默认即如此，**不要**对它的 404 做错误页回退）；哈希资源长缓存；`index.html` no-cache。
 
+## assets 与 public 静态资源不是同类缓存语义
+
+- `/qucuo/assets/`：vite 产物，文件名带内容哈希——长缓存 immutable，清理按 manifest 引用裁决。
+- `/qucuo/` 根下的 `stones/`、`portraits/`、`fonts/`、`music/`、`bidders/` 等 public 静态目录：**不是**哈希资产，文件名不变内容会变——**不得设 immutable 长缓存**（用默认或短缓存，依赖浏览器重验证）；部署时同名覆盖合并但只增不删，清理脚本不碰它们。
+
 ## 发版语义速查
 
 - updater 每分钟轮询 `release` 分支（不再跟 main）。

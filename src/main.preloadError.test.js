@@ -45,6 +45,56 @@ describe("vite:preloadError 兜底", () => {
     expect(reload).toHaveBeenCalledTimes(2);
   });
 
+  it("setItem 抛错（隐私模式）：不 reload 且提示", async () => {
+    const { installPreloadErrorFallback } = await load();
+    const reload = vi.fn();
+    const appended = [];
+    const fakeDoc = {
+      getElementById: () => null,
+      createElement: () => ({ id: "", style: {}, textContent: "" }),
+      body: { appendChild: (el) => appended.push(el) },
+    };
+    const prevDoc = globalThis.document;
+    globalThis.document = fakeDoc;
+    try {
+      const throwing = {
+        getItem: () => null,
+        setItem: () => { throw new Error("QuotaExceeded"); },
+      };
+      const h = installPreloadErrorFallback({ saveSnapshot: () => {}, storage: throwing, reload });
+      h({ preventDefault: vi.fn() });
+      expect(reload).not.toHaveBeenCalled();
+      expect(appended[0]?.textContent).toContain("版本已更新，请手动刷新页面");
+    } finally {
+      if (prevDoc === undefined) delete globalThis.document; else globalThis.document = prevDoc;
+    }
+  });
+
+  it("getItem 抛错：不 reload 且提示", async () => {
+    const { installPreloadErrorFallback } = await load();
+    const reload = vi.fn();
+    const appended = [];
+    const fakeDoc = {
+      getElementById: () => null,
+      createElement: () => ({ id: "", style: {}, textContent: "" }),
+      body: { appendChild: (el) => appended.push(el) },
+    };
+    const prevDoc = globalThis.document;
+    globalThis.document = fakeDoc;
+    try {
+      const throwing = {
+        getItem: () => { throw new Error("SecurityError"); },
+        setItem: () => {},
+      };
+      const h = installPreloadErrorFallback({ saveSnapshot: () => {}, storage: throwing, reload });
+      h({ preventDefault: vi.fn() });
+      expect(reload).not.toHaveBeenCalled();
+      expect(appended[0]?.textContent).toContain("版本已更新，请手动刷新页面");
+    } finally {
+      if (prevDoc === undefined) delete globalThis.document; else globalThis.document = prevDoc;
+    }
+  });
+
   it("存储不可用：不自动刷新，提示手动刷新", async () => {
     const { installPreloadErrorFallback } = await load();
     const reload = vi.fn();

@@ -102,6 +102,9 @@ export function useAutosave({
     if (typeof window !== "undefined") {
       window.__qucuoAutosaveBridge = () => {
         try {
+          // Review 修：与正常存档路径同口径——本局未玩过绝不覆盖既有自动存档
+          // （角色创建器加载失败等边界下，bridge 存的就是未游玩新局，会顶掉上一局进度）。
+          if (!getPlayedThisSession()) return;
           const result = autoSave(snapshotFromStore({ squares: serializeSquares() }));
           if (result?.ok) noteAutosaveSaved();
         } catch { /* 尽力而为——刷新不该被存档失败拦住 */ }

@@ -9,24 +9,24 @@ export function installPreloadErrorFallback({
   const st = storage ?? (() => { try { return window.sessionStorage; } catch { return null; } })();
   const doReload = reload ?? (() => window.location.reload());
   const KEY = "qucuo_preload_reload_at";
+  // 存储不可用（对象缺失或 getItem/setItem 抛错——隐私模式常见表现是方法抛而不是
+  // 访问 sessionStorage 本身抛）统一走 manualNotice：不自动刷新，只提示手动刷新。
+  const manualNotice = () => {
+    if (typeof document !== "undefined" && !document.getElementById("qucuo-preload-notice")) {
+      const div = document.createElement("div");
+      div.id = "qucuo-preload-notice";
+      div.style.cssText = "position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.72);color:#f5f0e6;font-size:18px;z-index:99999;text-align:center;padding:2em;";
+      div.textContent = "版本已更新，请手动刷新页面";
+      document.body?.appendChild(div);
+    }
+  };
   const handler = (event) => {
     event.preventDefault();
-    if (!st) {
-      try { /* 存储不可用仅提示，不记错误缓冲避免循环依赖 */ } catch { /* 静默 */ }
-      // 存储不可用：不自动刷新，提示手动刷新。
-      if (typeof document !== "undefined" && !document.getElementById("qucuo-preload-notice")) {
-        const div = document.createElement("div");
-        div.id = "qucuo-preload-notice";
-        div.style.cssText = "position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.72);color:#f5f0e6;font-size:18px;z-index:99999;text-align:center;padding:2em;";
-        div.textContent = "版本已更新，请手动刷新页面";
-        document.body?.appendChild(div);
-      }
-      return;
-    }
+    if (!st) { manualNotice(); return; }
     let last = 0;
-    try { last = Number(st.getItem(KEY) || 0); } catch { last = 0; }
+    try { last = Number(st.getItem(KEY) || 0); } catch { manualNotice(); return; } // getItem 抛=不可用
     if (now() - last < 30_000) return; // 30 秒内只刷新一次——防刷新死循环
-    try { st.setItem(KEY, String(now())); } catch { /* 写不进也继续刷——下次仍会拦 */ }
+    try { st.setItem(KEY, String(now())); } catch { manualNotice(); return; } // setItem 抛=不可用
     try { saveSnapshot?.(); } catch { /* 存档失败不阻塞刷新 */ }
     doReload();
   };

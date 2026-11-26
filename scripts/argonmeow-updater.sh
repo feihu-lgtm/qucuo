@@ -25,10 +25,12 @@ fi
 
 if [ ! -d "$SRC/.git" ]; then
   rm -rf "$SRC"
-  git clone --depth 50 "$REPO_URL" "$SRC"
+  git clone --depth 50 --branch release "$REPO_URL" "$SRC"
 fi
 cd "$SRC"
-git fetch --depth 50 origin release
+# Review 修：shallow clone 只配默认分支 refspec——不显式写 refspec 时
+# `git fetch origin release` 只落 FETCH_HEAD，origin/release 不存在，rev-parse 直接失败。
+git fetch --depth 50 origin +release:refs/remotes/origin/release
 remote="$(git rev-parse origin/release)"
 local="$(git rev-parse HEAD 2>/dev/null || echo none)"
 
@@ -73,7 +75,13 @@ backup="/srv/argonmeow-qucuo.bak.$ts"
 manifest_archive="$TARGET/.deploy-manifests"
 if [ -d "$TARGET" ]; then
   sudo -n rm -rf "$backup" 2>/dev/null || true
-  sudo -n cp -a "$TARGET" "$backup" || echo "[qucuo-updater] backup copy failed (continuing)" >&2
+  # 初审修：备份失败必须 hard fail——磁盘满/权限异常时无备份照样改线上目录，
+  # 验证失败就回滚无门，比整目录替换时代更危险。cp 保留（旧页面全程在线），但失败即退。
+  if ! sudo -n cp -a "$TARGET" "$backup"; then
+    echo "[qucuo-updater] backup copy failed; aborting before touching TARGET" >&2
+    rm -rf "$stage"
+    exit 1
+  fi
 fi
 sudo -n mkdir -p "$TARGET/assets" "$manifest_archive"
 # 合并资产：只增不删。
@@ -84,7 +92,14 @@ for entry in "$stage"/*; do
   case "$base" in
     assets|index.html|deploy-manifest.json|argon-config.json) continue ;;
   esac
-  if [ -f "$entry" ]; then sudo -n cp -a "$entry" "$TARGET/$base"; fi
+  if [ -f "$entry" ]; then
+    sudo -n cp -a "$entry" "$TARGET/$base"
+  elif [ -d "$entry" ]; then
+    # Review 修：vite 产物还有 fonts/portraits/stones 等静态目录——
+    # -f 检查跳过它们会导致全新安装缺资源、既有安装永不更新。目录同样只增不删并入。
+    sudo -n mkdir -p "$TARGET/$base"
+    sudo -n cp -a "$entry/." "$TARGET/$base/"
+  fi
 done
 # 三个入口文件原子替换：同目录先写临时文件再 mv（rename 原子）。
 for f in index.html deploy-manifest.json argon-config.json; do
