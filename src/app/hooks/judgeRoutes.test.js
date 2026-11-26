@@ -625,6 +625,10 @@ describe("D4 外层自然语言移动确定性路由", () => {
     const r = resolveMoveTarget(mkState({ innerRoomName: "村口" }), mkAction({ target: "忘忧谷", text: "从村口出发去忘忧谷" }));
     expect(r.type).toBe("unknown");
   });
+  it("Review 二轮：更长的新名/虚构名不许别名——「大草甸营地」「山门施药棚」unknown", () => {
+    const r1 = resolveMoveTarget(mkState(), mkAction({ target: "大草甸营地", text: "去大草甸营地" }));
+    expect(r1.type).toBe("unknown");
+  });
   it("Review：短名唯一子串匹配——「饭馆」进老孙饭馆、「草甸」去大草甸；多义不猜", () => {
     const inner = resolveMoveTarget(mkState({ innerRoomName: "村口" }), mkAction({ target: "饭馆", text: "去北边的饭馆" }));
     expect(inner).toEqual({ type: "inner", dir: "n" });

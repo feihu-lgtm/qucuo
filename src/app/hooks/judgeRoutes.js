@@ -54,7 +54,9 @@ export function matchPlaceName(target, candidates) {
   const list = [...candidates].filter(Boolean);
   if (list.includes(target)) return target;
   if (target.length < 2) return "";
-  const hits = list.filter((name) => name !== target && (name.includes(target) || target.includes(name)));
+  // Review 二轮修：只认「短名含于全名」（饭馆⊂老孙饭馆、草甸⊂大草甸），
+  // 不认反向——「大草甸营地」「山门施药棚」是更长的新名/虚构名，含了真名也不许别名过去。
+  const hits = list.filter((name) => name !== target && name.includes(target));
   return hits.length === 1 ? hits[0] : "";
 }
 

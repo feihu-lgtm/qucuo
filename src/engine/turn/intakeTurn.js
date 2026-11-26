@@ -258,7 +258,8 @@ export function normalizeIntakeResult(data) {
   const PLURAL_RE = /众人|各位|大家|大伙儿|大家伙|诸位|列位|各位/;
   for (const a of clean.actions) {
     if (!a || typeof a !== "object") continue;
-    if (a.kind !== "talk" && a.kind !== "free_act") continue;
+    // appease 同属社交称呼类（Review 二轮）：「向大伙儿赔不是」不该落单人消怒加好感。
+    if (!["talk", "free_act", "appease"].includes(a.kind)) continue;
     const tgt = String(a.target || "");
     if (tgt && tgt !== "无" && PLURAL_RE.test(a.text || "") && !(a.text || "").includes(tgt)) {
       a.target = "无";

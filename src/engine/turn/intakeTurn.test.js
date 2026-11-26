@@ -276,6 +276,11 @@ describe("F6-T17 复数称呼脱绑", () => {
     const r = normalizeIntakeResult({ ...base, actions: [act("老孙", "老孙你近来可好")] });
     expect(r.actions[0].target).toBe("老孙");
   });
+  it("Review 二轮：appease 属社交称呼类——「向大伙儿赔不是」脱绑不落单人", () => {
+    const ap = { ...act("老孙", "向大伙儿赔不是"), kind: "appease" };
+    const r = normalizeIntakeResult({ ...base, actions: [ap] });
+    expect(r.actions[0].target).toBe("无");
+  });
   it("Review：交易/赠物动作不脱绑——「给大伙儿买」的掌柜 target 保留", () => {
     const trade = { ...act("老孙", "掌柜的，给大伙儿来几碗面"), kind: "trade" };
     const r = normalizeIntakeResult({ ...base, actions: [trade] });
