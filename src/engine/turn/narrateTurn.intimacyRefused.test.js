@@ -27,3 +27,12 @@ describe("夜班双修 Review 修②：拒决回合时间照走", () => {
     expect(block.indexOf("setTime")).toBeLessThan(block.indexOf("return { ok: true"));
   });
 });
+
+describe("夜班三单 Review 0003：门禁修正目标回写动作", () => {
+  it("judgePhase 门禁放行后回写无证据 intimate target——放行不签空账", () => {
+    const src = readFileSync("src/engine/turn/judgePhase.js", "utf8");
+    expect(src).toContain("a.target = gateName");
+    // 只回写无 cmd 字面证据的 target——有证据错配留原样（多对象边缘不错账）
+    expect(src).toMatch(/!String\(cmd\)\.includes\(a\.target\)/);
+  });
+});

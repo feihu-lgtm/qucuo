@@ -324,6 +324,19 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
       {
         const aiV = intakeResult?.__aiIntake === true;
         if (runIntimacyGate(intakeResult?.actions || [], aiV, visibleNpcs) === "refused") return { intimacyRefused: true, stale: false };
+        // Review 修：门禁解析修正目标后回写 intimate 动作 target——judgeTurn 按
+        // a.target===gateNpc 核执行信号，intake 无证据错猜（代词幻觉）不回写会
+        // 门禁放行却签空账。只回写无 cmd 字面证据的 target；有证据的错配留原样
+        // （多对象边缘，宁可不签也不错账）。
+        if (intimacyGateInfoOut.info) {
+          const gateName = intimacyGateInfoOut.info.npc;
+          for (const a of intakeResult?.actions || []) {
+            if (a?.intimate === true && a.target !== gateName
+              && (!a.target || a.target === "无" || !String(cmd).includes(a.target))) {
+              a.target = gateName;
+            }
+          }
+        }
       }
 
       judgeVerdict = judgeTurn({
