@@ -175,7 +175,11 @@ export function classifyUseItem(state, itemObjOrName, actionText = "") {
   if (!item || typeof item !== "object") return "present";
   const shielded = item.noCatalog;
   const consumable = consumableOfItem(item);
-  const text = String(actionText || "");
+  // Review 三轮修：动词匹配前先剥掉物件名——「极品金创香膏」的「品」
+  // 「蛇咬草」的「咬」都是名字用字不是动词，不剥干净必然误判 intent。
+  const itemNameStr = itemNameOf(item) || "";
+  const textRaw = String(actionText || "");
+  const text = itemNameStr ? textRaw.split(itemNameStr).join("") : textRaw;
   const showOnly = SHOW_VERB_RE.test(text) && !EAT_VERB_RE.test(text);
   if (consumable && !showOnly) return "consumable";
   // Review 修：accessory 里混着凭帖信物（赌石邀帖/私印等纸面物）——它们不带任何
