@@ -343,6 +343,25 @@ describe("F8：对象落空的破费重定向 free_act 链", () => {
     // 绝不按 5 两错扣——查价链无原话可认时走货架/兜底价（小额），总之不等于 -5
     if (silver) expect(silver.moneyDelta).not.toBe(-5);
   });
+  it("Review 二修：余额+小数付款——不按余额错扣；句读后整数价不误伤", () => {
+    // ①「身上有50两银子，付1.5两房钱」：小数不可解析→不签名原话价，绝不当 50 扣
+    const act1 = { kind: "give", target: "无", item: "银两", itemId: "", direction: "none", stance: "casual", outcome: "破费", risk: "无", text: "身上有50两银子，付1.5两房钱" };
+    const v1 = judgeTurn(baseEnvelope({
+      playerInput: "身上有50两银子，付1.5两房钱",
+      char: { money: 60, special: {} },
+    }), { read: "", refIds: [], actions: [act1], proposals: [] }, { rng: seqRng([0.5]) });
+    const s1 = v1.facts.find((f) => f.op === "CHANGE_VITALS_SILVER" && Number.isFinite(f.moneyDelta));
+    if (s1) expect(s1.moneyDelta).not.toBe(-50);
+    // ②「买茶.5两银子」ASCII 句读后的整数价仍认 5 两（不误伤为小数尾）
+    const act2 = { ...act1, text: "买了些碎茶.5两银子递过去" };
+    const v2 = judgeTurn(baseEnvelope({
+      playerInput: "买了些碎茶.5两银子递过去",
+      char: { money: 60, special: {} },
+    }), { read: "", refIds: [], actions: [act2], proposals: [] }, { rng: seqRng([0.5]) });
+    const s2 = v2.facts.find((f) => f.op === "CHANGE_VITALS_SILVER" && Number.isFinite(f.moneyDelta));
+    expect(s2).toBeTruthy();
+    expect(s2.moneyDelta).toBe(-5);
+  });
   it("give 对象在场时仍走赠礼链不重定向", () => {
     const act = { kind: "give", target: "才旦", item: "青稞酒", itemId: "", direction: "none", stance: "casual", outcome: "破费", risk: "无", text: "送酒" };
     const verdict = judgeTurn(baseEnvelope(), { read: "", refIds: [], actions: [act], proposals: [] }, { rng: seqRng([0.01]) });
