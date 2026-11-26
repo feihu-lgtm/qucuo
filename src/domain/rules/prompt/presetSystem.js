@@ -1,4 +1,6 @@
 import { upgradeLegacyDefaults } from "./presetLegacy.js";
+// W-STYLE：长文案单源——文体铁律全文逐字存 src/copy/wenfeng.txt（copy-gate 新规，禁止内联）
+import wenfengCopy from "../../../copy/wenfeng.txt?raw";
 // 酒馆式预设系统（结构沿用 SillyTavern 的 Chat Completion 预设；编辑器和导入导出已下线）
 // 核心概念：
 // - prompts：素材库，每条独立的 prompt 片段（id/name/role/content/isMarker）
@@ -78,16 +80,7 @@ export function defaultPreset() {
     }),
     makePromptEntry({
       id: "wenfeng", name: "文体铁律", role: "system",
-      content: `白话古文，章回说书人口吻，句句主谓宾齐全，句间逻辑过渡。禁冒号破折号。
-
-【文本区分】对话用「」，引语用""，心理用*斜体*，旁白无标记。例：「直娘贼！」他一掌拍在桌上，「这雪山上可没有后悔药卖。」
-
-【写作铁律】
-- 每句须推进剧情、塑造人物或营造氛围，废话全删；只写发生了什么，不解释含义
-- 段尾用具体动作或台词收束，禁抽象总结
-- 情绪靠行动或台词表现，禁五官特写（"眼底闪过""嘴角勾起""瞳孔一缩"）
-- 比喻须新颖具体，禁陈腐喻体（"涟漪""惊雷""潮水""投石入湖"等）
-- 禁"不是X，而是Y"，直接说Y；形容词副词不连用，单段成语≤2个`,
+      content: wenfengCopy,
     }),
     makePromptEntry({
       id: "chatHistory", name: "对话历史", role: "system", isMarker: true, content: "",
