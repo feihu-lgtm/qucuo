@@ -34,7 +34,9 @@ flowchart TD
 
 WO-15 起这就是线上主回路：**旧状态提取层（turn.extraction/extractionSpecs/extractionEngine/appeaseExtraction）与独立软结算通道（settleTurn/runSoftSettle/softRules/settle.judge）已整块删除**。`judgePipelineEnabled` 开启时，`turn.intake` 前哨听意 → `judgeTurn` 纯函数判官 → 定案单与锚点铁律注入主叙事 → 流式剥 `⟦F⟧` 锚点、`---SEAL---` 尾章校对 → `materializeFacts` 经 `commitRound` 落盘。双调用模式下不再有第二次"从叙事反推状态"的提取调用——自由行动状态只来自判官 facts；settle 回合状态靠 feature 前置硬结算。单调用 JSON 老路（extractionEnabled=false）仍保留到 WO-16。
 
-**当前真实覆盖率**：web 端 `judgePipelineEnabled` 默认 `true`；原 CLI 入口与 `tests/cli/` 回放 fixture 已退役删除（单调用 JSON 老路仅剩显式配置/测试/紧急回退兜底）。激活还需同时满足两个条件——**非 settle 回合**（settle 回合状态在进叙事前已由 feature 层硬结算落账——giftNpc 已扣货、learnNpcSkill 已扣束脩授业、inviteCompanion 已写 companionState，判官再裁会双重结算）且 **`extractionEnabled` 双调用叙事模式**；WO-16A 起纯搭话回合也进判官，但 `envelope.talkOnly` 白名单只许产小额社交事实——give/take/inspect_container/learn 等硬事实整条拦截，不会因搭话误搬物品；任一不满足，新管线不激活、整链 no-op。WO-15 删除的只是「独立软结算通道」（AI 事后裁好感/收拒），feature 前置硬结算不在删除范围；settle 回合开放判官须等后续工单把前置硬写改成「事实请求先裁后落」。场记板 entries、容器坍缩态、备料物、悬空道具尚无宿主系统喂入（属 WO-17/18/22/24），判官多数回合签出空 facts。**WO-16A 替代覆盖后剩余过渡缺口**：respondedNpcs 已改系统推导（intake 听意单 talk target，SEAL 仅推导为空时兜底、低可信不得用于 pact 自证）；memory 已改系统模板串入账（facts 首条模板/搭话「玩家对X说」截断，无 AI 摘要）；搭话好感经 stance 确定性映射走系统好感账本。仍缺：mentionedNewNpcs 新 NPC 传闻注册（待 WO-17 场记板宿主）、判官 inactive 时全部零落账。原文段落记忆库归 WO-17。
+**当前真实覆盖率**：web 端 `judgePipelineEnabled` 与 `extractionEnabled` 出厂默认均 `true`（PR-A 起 web 默认进双调用判官链；老用户显式存过的 false 配置被尊重不翻案，设置里可紧急回切单调用）；CLI 老录制回放默认 `false`（单调用老路，WO-16 收尾）。**GM/创造模式例外（PR-B2）**：gm=true 回合在 turnContext 单点派生 `effectiveApiCfg={...apiCfg, extractionEnabled:false}`——继续走单调用 JSON 老路（gmNote/items_add/room.npcs 凭空造物能力不断），不进判官/双调用叙事；判官闸门因 extraction 分岔自然熄火，开关本身不改写。WO-16 再为 GM 设计事实化/直通 warrant。
+**成本注意**：主叙事仍每回合 1 次大调用不变；新增的是 intake 前哨小调用与可能的尾章/窄仲裁小调用——成本上升幅度取决于小模型配置，前哨会加首 token 前延迟。激活还需同时满足两个条件——**非 settle 回合**（settle 回合状态在进叙事前已由 feature 层硬结算落账——giftNpc 已扣货、learnNpcSkill 已扣束脩授业、inviteCompanion 已写 companionState，判官再裁会双重结算）且 **`extractionEnabled` 双调用叙事模式**；WO-16A 起纯搭话回合也进判官，但 `envelope.talkOnly` 白名单只许产小额社交事实——give/take/inspect_container/learn 等硬事实整条拦截，不会因搭话误搬物品；任一不满足，新管线不激活、整链 no-op。WO-15 删除的只是「独立软结算通道」（AI 事后裁好感/收拒），feature 前置硬结算不在删除范围；settle 回合开放判官须等后续工单把前置硬写改成「事实请求先裁后落」。场记板 entries、容器坍缩态、备料物、悬空道具尚无宿主系统喂入（属 WO-17/18/22/24），判官多数回合签出空 facts。**WO-16A 替代覆盖后剩余过渡缺口**：respondedNpcs 已改系统推导（intake 听意单 talk target，SEAL 仅推导为空时兜底、低可信不得用于 pact 自证）；memory 已改系统模板串入账（facts 首条模板/搭话「玩家对X说」截断，无 AI 摘要）；搭话好感经 stance 确定性映射走系统好感账本。mentionedNewNpcs 新 NPC 传闻注册已由 #449 经 SEAL 过渡复接（判官正式裁登场仍未做）；判官 inactive 零落账仅存于显式紧急回退/CLI/单调用残留。WO-17 原文段落库已落地未接主链，写挂/检索归 WO-18。
+
 
 **WO-15 保留边界（如实声明）**：
 - `forgeDesign`（铸剑坊/金玉行定制设计）不属提取层，已迁入独立小文件 `src/engine/ports/forgeDesign.js` 保活。
@@ -281,6 +283,7 @@ flowchart LR
 | 噪声占比 | ≤ 60% | 噪声过半说明 mostly 人工甄别，自动放行收益不抵风险 |
 | 可对比但低覆盖类目 | 按不通过论 | `comparable>0` 且覆盖率不足不放行——宁可不放行不错放行 |
 | 全回合盲区类目 | 不可测跳过 | `comparable=0`（如 npcs 系统改写链恒 excluded）属结构性盲区，不参与门槛也不判负——否则任何真实样本永远卡死 |
+| WO-16R1 web 默认切双调用判官链 | 待合 #522 | extractionEnabled 出厂默认 true（老用户显式 false 不翻案）；GM/创造模式例外：turnContext 单点派生 extractionEnabled:false 完整回单调用老路，影子样本 GM 回合不跑（防覆盖率污染）。放行条件：S7 发布评审（真实覆盖率/schema/SEAL 数据+阈值）未过前冻结不合。 |
 
 **使用**：dev 单调用模式游玩 → 全流程日志「影子对账聚合」→ 复制聚合JSON 存盘 → `npm run shadow:report -- <文件>`；退出码 0=通过 2=不通过，可进 CI/评审附件。
 
