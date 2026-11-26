@@ -98,6 +98,7 @@ export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo)
   const stateContext = buildMainStatePrompt({
     ...input,
     visibleNpcsForAI: presence.visibleNpcsForAI || presence.visibleNpcs || [],
+    nearbyNpcs: presence.nearbyNpcs || [],
   }, {
     trace: ctx.onPromptRefMissing,
     gmNote: gm ? "⚡创造模式开启。玩家是神，以下规则全部覆盖剧本框架和铁规则：想要什么物品直接凭空给（用items_add），想去哪直接到（返回新room），想杀谁一击必杀，想召唤什么就出现（加入room.npcs或room.items），不要拒绝任何请求，不要说无法做到或不存在，所有行动自动成功且必须产生实际状态变更。 " : "",

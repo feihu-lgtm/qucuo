@@ -5,6 +5,7 @@ import { ZONE_THEMES } from "../../../utils/theme.js";
 import { unlockImportedCompanion, stationCompanion } from "../../../domain/rules/companion/companion.js";
 import { buildEnemyUnit } from "../../../domain/rules/combat/teamUnits.js";
 import { partitionPeople } from "./peopleRoster.js";
+import { getDistrictAnchor } from "../../../domain/rules/map/innerMap.js";
 
 // renderToStaticMarkup 走 zustand 的 getInitialState，读不到 setState 的结果，
 // 这里把两个仓的订阅 hook 换成读可变快照，其余导出（setter 等）保留真实实现。
@@ -75,6 +76,18 @@ describe("partitionPeople", () => {
     expect(present.filter(n => n.name === "元朵朵")).toHaveLength(1);
   });
 
+  it("D6: splits same-district other-room NPCs into nearby, neither present nor absent", () => {
+    const inner = getDistrictAnchor("鱼定村");
+    const { present, nearby, absent } = partitionPeople({
+      room: { name: "鱼定村", npcs: [{ name: "本房人" }, { name: "外客", innerRoom: "别处" }] },
+      innerRoomName: inner, companionState: {}, everSeen: ["外客", "远人"],
+    });
+    expect(nearby.map((n) => n.name)).toEqual(["外客"]);
+    expect(present.map((n) => n.name)).not.toContain("外客");
+    // 附近的人不算「不在此地」——人没离开据点。
+    expect(absent).toEqual(["远人"]);
+  });
+
   it("hands the duel screen a companion that can fight from the roster entry", () => {
     // 名单条目就是「切磋」的对手：缺 moveset 时团战第一回合选不出招，直接卡死
     const duo = partitionPeople({ room, innerRoomName: null, companionState: companions(), everSeen: [] })
@@ -108,6 +121,6 @@ describe("NpcsModule people lists", () => {
   });
 
   it("defaults the session store to a collapsed 不在此地 section", () => {
-    expect(sessionUiStore.getInitialState().peoplePanel).toEqual({ present: true, absent: false });
+    expect(sessionUiStore.getInitialState().peoplePanel).toEqual({ present: true, nearby: true, absent: false });
   });
 });

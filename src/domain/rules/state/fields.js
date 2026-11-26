@@ -23,12 +23,22 @@ function formatCarried(npc) {
 function formatNpcs(scope) {
   const npcs = scope.visibleNpcsForAI ?? scope.visibleNpcs ?? getPresentNpcs(scope);
   const { npcSeparator = ",", detailedNpcs } = scope.promptRefOptions || {};
-  return npcs.map((npc) => {
+  const present = npcs.map((npc) => {
     if (!detailedNpcs) return npc.name;
     const tier = typeof npc.levelCap === "number"
       ? `〔品阶:${scope.quality?.[Math.max(0, Math.min(5, npc.levelCap))]}档〕` : "";
     return npc.name + tier + formatCarried(npc);
   }).join(npcSeparator) || "无";
+  // D6：同据点但不在当前内层房间的本地人单独成组渲染——模型既不该当他们
+  // 不存在（人会从别房走过来、可被提及/寻找），也不该和本房在场者混写。
+  // 上游没显式传 nearbyNpcs 时本地兜底算一份（私聊等旁路 prompt 也保持一致）。
+  const nearbyRaw = scope.nearbyNpcs
+    ?? ((scope.room?.npcs || []).filter((n) => n?.name && !isNpcVisibleInInnerRoom(scope.room.name, scope.innerRoomName, n)));
+  const nearbyNames = new Set(npcs.map((n) => n?.name));
+  const nearby = nearbyRaw.map((n) => (typeof n === "string" ? n : n?.name))
+    .filter((name) => name && !nearbyNames.has(name));
+  if (!nearby.length) return present;
+  return `${present}；在附近（本据点别处）：${nearby.join("、")}`;
 }
 
 function formatInventory(scope) {

@@ -18,6 +18,7 @@ exports[`preserves the original round-note bytes 1`] = `
 - 故人：距上次与主角同框已约3天（300回合）",
   },
   "presence": {
+    "nearbyNpcs": [],
     "visibleNpcs": [
       {
         "name": "故人",

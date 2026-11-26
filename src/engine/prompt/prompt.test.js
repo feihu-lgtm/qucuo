@@ -97,11 +97,47 @@ describe("pure prompt builders", () => {
     const companionState = { snowLeopard: { unlocked: true, active: true, data: { name: "雪豹" } } };
     const input = { ...state, innerRoomName, companionState };
     const before = structuredClone(input);
-    expect(buildPresence(input)).toEqual({ visibleNpcs: [], visibleNpcsForAI: [{ name: "雪豹", companion: true }] });
-    expect(buildPresence({ ...input, lockedDestName: "远方" }).visibleNpcs).toEqual(state.room.npcs);
+    const presence = buildPresence(input);
+    expect(presence.visibleNpcs).toEqual([]);
+    // D2 旗标口径：并入同伴必带 companion:true；D6：条目走 companionNpcEntry 形状。
+    expect(presence.visibleNpcsForAI).toHaveLength(1);
+    expect(presence.visibleNpcsForAI[0]).toMatchObject({ name: "雪豹", companion: true, party: true });
+    // D6：同据点别房的人进附近组，不进在场名单。
+    expect(presence.nearbyNpcs).toEqual([{ name: "外客", innerRoom: "别处" }]);
+    const moving = buildPresence({ ...input, lockedDestName: "远方" });
+    expect(moving.visibleNpcs).toEqual(state.room.npcs);
+    // D6：移动轮不算附近组（目的地内层未定，arrivalNote 负责）。
+    expect(moving.nearbyNpcs).toEqual([]);
     expect(buildPresence({ ...input, isTalk: true, lockedDestName: "远方" }).visibleNpcs).toEqual([]);
     expect(input).toEqual(before);
     expect(() => buildPresence({})).toThrow();
+  });
+
+  it("D6: merges ALL following companions, skips stationed ones, dedupes same-name locals", () => {
+    const state = fixture();
+    state.room.name = "鱼定村";
+    const innerRoomName = getDistrictAnchor(state.room.name);
+    state.room.npcs = [{ name: "本地户" }];
+    const companionState = {
+      snowLeopard: { unlocked: true, active: true, data: { name: "雪豹" } },
+      pearl: { unlocked: true, active: false, data: { name: "珍珠" } },
+      asuka: { unlocked: true, active: false, data: { name: "明日香" }, stationed: { district: "鱼定村", roomName: "某处" } },
+    };
+    const presence = buildPresence({ ...state, innerRoomName, companionState });
+    const names = presence.visibleNpcsForAI.map((n) => n.name);
+    // 出战与非出战的跟随同伴都在场；留守的不在。
+    expect(names).toContain("雪豹");
+    expect(names).toContain("珍珠");
+    expect(names).not.toContain("明日香");
+    expect(names).toContain("本地户");
+    // 同伴条目都带 companion:true 旗标（D2 口径）。
+    for (const n of presence.visibleNpcsForAI.filter((x) => ["雪豹", "珍珠"].includes(x.name))) {
+      expect(n.companion).toBe(true);
+    }
+    // 同名本地条目被同伴条目顶掉，不重复出现。
+    state.room.npcs = [{ name: "雪豹" }];
+    const dup = buildPresence({ ...state, innerRoomName, companionState });
+    expect(dup.visibleNpcsForAI.filter((n) => n.name === "雪豹")).toHaveLength(1);
   });
 
   it("builds NPC lore, imported lore, quest relationships, reunion notes, and explicit companion forms", () => {
