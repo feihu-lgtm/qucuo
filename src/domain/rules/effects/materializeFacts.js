@@ -449,6 +449,25 @@ export function materializeFacts(state, facts, compiledWarrants) {
             factId: fact.id,
           });
         }
+        // D2 坑⑤：旁观者「见」等 ledgerKind 事实若目标尚未建档（好感度 undefined），
+        // 只写心账不写好感——CharacterPage 按好感度过滤会直接隐形，「见」永远看不见。
+        // 先补 INITIAL_FAVORABILITY 建档 patch 与已认识人物登记（markNpcAsKnown 同源）。
+        if (fact.ledgerKind) {
+          const cursorBefore = socialTreeCursor || state.varTree || {};
+          if (typeof cursorBefore?.角色?.[fact.npc]?.好感度 !== "number") {
+            socialTreeCursor = systemAffectionPin(cursorBefore, fact.npc, INITIAL_FAVORABILITY).tree;
+            patches.push({ op: "set", path: ["varTree", "角色", fact.npc, "好感度"], value: INITIAL_FAVORABILITY, factId: fact.id });
+            patches.push({
+              op: "merge",
+              path: ["varTree", "世界", "已认识人物"],
+              value: (prev) => {
+                const list = Array.isArray(prev) ? [...prev] : [];
+                return list.includes(fact.npc) ? list : [...list, fact.npc];
+              },
+              factId: fact.id,
+            });
+          }
+        }
         if (fact.ledgerKind) {
           // WO-21B 写侧收口：心账写径必须走 createHeartLedgerEntry——新写只允许
           // 恩/怨/欠/诺/见五类，旧类目（谊/隙/和）与未知类目拒写不静默（note 留痕）。

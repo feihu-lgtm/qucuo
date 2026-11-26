@@ -577,3 +577,27 @@ describe("WO-21B 心账写侧五类迁移", () => {
     expect(entries.at(-1).summary).toBe("第十七面");
   });
 });
+
+describe("D2 旁观者「见」补好感建档", () => {
+  it("未建档 npc 记见：补 INITIAL_FAVORABILITY 好感+已认识人物，心账可见", () => {
+    const state = baseState();
+    state.varTree = { 角色: {}, 世界: {} };
+    const out = materializeFacts(state, [
+      { id: "W1", op: "MUTATE_SOCIAL", npc: "卓嘎", affectionDelta: 0, ledgerKind: "见", reason: "撞见翻动才旦的木箱", witnesses: ["主角", "卓嘎"] },
+    ], {});
+    const patchPaths = (out.patches || []).map((pp) => pp.path.join("."));
+    expect(patchPaths.some((pp) => pp.includes("卓嘎") && pp.includes("好感度"))).toBe(true);
+    expect(patchPaths.some((pp) => pp.includes("已认识人物"))).toBe(true);
+    expect(patchPaths.some((pp) => pp.includes("心账"))).toBe(true);
+  });
+  it("已建档 npc 记见不重复 pin", () => {
+    const state = baseState();
+    state.varTree = { 角色: { 卓嘎: { 好感度: 42 } }, 世界: { 已认识人物: ["卓嘎"] } };
+    const out = materializeFacts(state, [
+      { id: "W2", op: "MUTATE_SOCIAL", npc: "卓嘎", affectionDelta: 0, ledgerKind: "见", reason: "撞见翻动木箱" },
+    ], {});
+    const pins = (out.patches || []).filter((pp) => pp.path.join(".").includes("好感度") && pp.value === 10);
+    expect(pins).toHaveLength(0);
+    expect((out.patches || []).some((pp) => pp.path.join(".").includes("心账"))).toBe(true);
+  });
+});

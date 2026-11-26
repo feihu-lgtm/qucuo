@@ -1,6 +1,8 @@
 // ── inspect_container 三关掷骰（S4 纯搬家：原 judgeTurn.js 第三步原样移入）──
 // 预设物 → 备料物 → 玩家 proposals（fit 档位 + 气运 + 悬空道具落点，不达标降级残页线索）。
 import { QUALITY_ORDER, FIT_GATE } from "./shared.js";
+import { computeNpcAlertness } from "../../world/containers.js";
+import { hasNoAffectionTrack } from "../../npc/npcTrack.js";
 import { resolveWarrantQuality, inferCategoryFromClaim } from "../warrantRules.js";
 import { allowedAffixesForBudget } from "../../effects/affixPointTable.js";
 
@@ -11,8 +13,11 @@ export function processInspectContainers(J, actions) {
   // WO-22B-P2：本 verdict 内已签出的悬空秘宝登记 id——同回合多容器/多行动命中时
   // 世间无第二件，第二条不得再签真品（materialize 唯一锁是落账后验，正文定案单必须先唯一）。
   const signedFloatingIds = new Set();
-  for (const action of actions) {
+  for (let action of actions) {
     if (action.kind !== "inspect_container" || talkOnly) continue;
+    // D2 坑⑥：前哨渲染带「(有主:X)」括注，小模型可能连括号抄进 target——入口先清洗
+    const targetName = String(action.target || "").replace(/[（(](?:户主|有主)[:：][^）)]+[）)]$/, "").trim();
+    action = { ...action, target: targetName };
     const container = envelope.containers?.[action.target];
     // WO-22B-P2 裁决：悬空秘宝是地域级落点事件而非容器普通内容物——容器坍缩只封锁
     // 普通内容（预设/备料/天机券/通用残页），不封锁未定秘宝：有秘宝在视野时
@@ -41,6 +46,40 @@ export function processInspectContainers(J, actions) {
     collapsingThisTurn.add(action.target);
     // 已坍缩进 relicOnly 的不再重复签 COLLAPSE 事实（本就是坍缩态）。
     if (!container?.collapsed) freshCollapseThisTurn.add(action.target);
+    // ── D2 翻箱目击检定（每只容器每回合只检一次）──
+    // owner 在场：玩家身法+智谋+roll(0-5) vs computeNpcAlertness——失败被撞破记怨扣好感；
+    // owner 不在场但有旁观者在场：记「见」不扣好感（materialize 补好感建档）。
+    if (!container?.collapsed) {
+      const owner = typeof container?.owner === "string" ? container.owner : "";
+      const present = Array.isArray(J.npcs) ? J.npcs : [];
+      const ownerNpc = owner ? present.find((n) => n?.name === owner) : null;
+      if (ownerNpc) {
+        const charSpecial = envelope?.char?.special || {};
+        const playerScore = (Number(charSpecial?.身法) || 5) + (Number(charSpecial?.智谋) || 5) + Math.floor(roll() * 6);
+        if (playerScore < computeNpcAlertness(ownerNpc)) {
+          facts.push({
+            id: nextFactId(), op: "MUTATE_SOCIAL", npc: owner,
+            affectionDelta: -3, ledgerKind: "怨", reason: "当面乱翻" + targetName,
+            witnesses: ["主角", owner],
+          });
+          notes.push(`翻动「${targetName}」时手法不够利落，被在场的${owner}当场撞见，对方神色不悦（好感 -3，记怨一笔）。`);
+        } else {
+          notes.push(`趁${owner}不备悄声翻看「${targetName}」，未被察觉，正文须写出暗中遮掩的分寸，不得写对方看见。`);
+        }
+      } else if (owner) {
+        // owner 不在场——旁观者记「见」：排除 owner 本人/灵兽无好感轨道者/出战同伴
+        const witness = present.find((n) => n && n.name && n.name !== owner
+          && !hasNoAffectionTrack(n) && n.companion !== true);
+        if (witness) {
+          facts.push({
+            id: nextFactId(), op: "MUTATE_SOCIAL", npc: witness.name,
+            affectionDelta: 0, ledgerKind: "见", reason: "撞见翻动" + owner + "的" + targetName,
+            witnesses: ["主角", witness.name],
+          });
+          notes.push(`原主${owner}不在，但一旁的${witness.name}将你翻动「${targetName}」看在眼里（不扣好感，记见一笔）。`);
+        }
+      }
+    }
     // 第一关：预设物（容器剧本里写死的东西，必中）——relicOnly 跳过
     const preset = !relicOnly && Array.isArray(container?.presetItems) ? container.presetItems.filter((it) => it && !it.taken) : [];
     if (preset.length) {
@@ -153,6 +192,33 @@ export function processInspectContainers(J, actions) {
         notes.push(`${action.target}差一截——只翻出残页，真品「${floatingInScope.name}」去向线头：${floatingInScope.hint || "别处"}`);
       } else if (floatingInScope && !claimedFind && relicOnly) {
         notes.push(`${action.target}里翻不出新东西——隐约有股气机未合，似有异物未定`);
+      } else if (container?.isTemplate) {
+        // D2 模板容器兜底三档：65% 空（只坍缩）、25% 白档寻常杂物空白天机券
+        // （受今日搜刮余量约束）、10% 环境琐碎线索。显式声明剧本房维持原残页行为。
+        const rollVal = roll();
+        if (rollVal < 0.65) {
+          notes.push(`「${targetName}」翻遍了也只有积灰与寻常杂碎，并无值得入囊之物，已记坍缩。`);
+        } else if (rollVal < 0.90 && (budget.remainingDailyQuota ?? 0) > 0) {
+          const factId = nextFactId();
+          facts.push({ id: factId, op: "GRANT_ITEM", from: action.target, to: "player", witnesses: ["主角"] });
+          warrants.push({
+            warrantId: nextWarrantId(), factId, op: "GRANT_ITEM",
+            category: "misc", quality: "白",
+            pointBudget: 0,
+            allowedAffixes: [],
+            origin: { turn, day, place, fromNpc: "" },
+          });
+          notes.push(`「${targetName}」里翻出一件寻常杂物（白档空白天机券，无词条点数）`);
+        } else {
+          const clue = `${action.target}里只翻出一角残页，字迹模糊，似乎指向别处`;
+          facts.push({
+            id: nextFactId(), op: "ALTER_WORLD_SCENE", place,
+            sceneKey: place, key: "clue", value: clue,
+            detail: clue,
+            witnesses: ["主角"],
+          });
+          notes.push(`${action.target}无所获，降级为残页线索`);
+        }
       } else {
         // 不达标降级：残页线索——不给实物，只给一条往后的线头
         const clue = `${action.target}里只翻出一角残页，字迹模糊，似乎指向别处`;

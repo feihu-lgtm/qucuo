@@ -49,8 +49,5 @@ export function systemAffectionPin(tree, npc, target) {
 }
 
 // 无好感轨道判定口径与 commitRound 搭话跳过一致：intimacy.forbidden 或兽类。
-export function hasNoAffectionTrack(npc) {
-  // 口径与 commitRound 搭话跳过一致：intimacy.forbidden 或兽类。
-  // 「不能说话」≠无好感轨道——哑人/人形缄默伙伴仍有情感关系。
-  return !!(npc?.intimacy?.forbidden || npc?.beast);
-}
+// 实现移入 npc/npcTrack.js（叶子无依赖）——此处 re-export 保持既有调用方不破。
+export { hasNoAffectionTrack } from "../npc/npcTrack.js";

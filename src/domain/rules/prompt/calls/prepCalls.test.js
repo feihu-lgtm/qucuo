@@ -119,7 +119,8 @@ describe("WO-24B buildWorldPrepInput 输入裁剪", () => {
     expect(() => buildWorldPrepInput({})).not.toThrow();
     expect(() => buildWorldPrepInput(null)).not.toThrow();
     const bare = buildWorldPrepInput({ varTree: { 世界: { 容器: "oops" }, 领域: { 事实: [1, 2] } }, room: {}, innerRoomName: null });
-    expect(bare.unlootedContainersText).toBe("");
+    // D2：未声明房间按模板出默认容器（五类性质兜底），不再可能为空——坏形状不炸即可
+    expect(typeof bare.unlootedContainersText).toBe("string");
     expect(bare.recentFactsText).toBe("");
   });
 });
