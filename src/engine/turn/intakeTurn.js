@@ -55,6 +55,17 @@ export function buildIntakeUserContent({
   const DIR_LABEL = { n: "北", s: "南", e: "东", w: "西" };
   const exitsText = Object.entries(exitMap).map(([dir, dest]) => `${dir}(${DIR_LABEL[dir] || dir}→${dest})`).join("、");
   lines.push(`[可用出口] ${exitsText || "无"}`);
+  // V2：身处内层子房时同屏拼入 [据点外出口]——出村路由不被内层出口覆写，
+  // 前哨看得见「离开本村去 X」的合法外层去向（解锁过滤与上行同口径）。
+  if (room?.name && innerRoomName && QUCUO_MAP[room.name]?.exits) {
+    const completedQuests2 = new Set(Object.entries(questProgress || {}).filter(([, p]) => p?.status === "completed" || p?.done).map(([id]) => id));
+    const outerBits = [];
+    for (const [dir, dest] of Object.entries(QUCUO_MAP[room.name].exits)) {
+      if (!isNodeUnlocked(dest, { completedQuests: completedQuests2, flags })) continue;
+      outerBits.push(`${dir}(${DIR_LABEL[dir] || dir}→${dest})`);
+    }
+    lines.push(`[据点外出口] ${outerBits.join("、") || "无"}`);
+  }
   const renderItems = (list) => (list || []).filter((it) => it && it.name)
     .map((it) => `${it.name}(${it.id || "无ID"})`).join("、");
   // 四张物件清单（同源口径）：

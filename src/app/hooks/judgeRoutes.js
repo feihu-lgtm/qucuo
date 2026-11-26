@@ -72,6 +72,20 @@ export function resolveMoveTarget(state, action) {
   const innerNow = state?.innerRoomName ?? null;
   const unlockCtx = { completedQuests: completedQuestIdSet(state?.questProgress), flags: state?.flags || [] };
 
+  // V2 出村防劫持：原话明确点名某个外层据点（非当前据点）时，外层据点第一优先——
+  // 即使 intake 把 target 填成同方向内层房（「离开鱼定村去大草甸」target 被写成
+  // 鱼定商号）也直接出村。内层小房间名不会撞外层据点名（两套命名空间），不误伤。
+  if (innerNow) {
+    const outerNamed = Object.keys(QUCUO_MAP).find((nm) => nm !== roomName && text.includes(nm));
+    if (outerNamed) {
+      const exits0 = QUCUO_MAP[roomName]?.exits || {};
+      const hitDir0 = Object.entries(exits0).find(([, d]) => d === outerNamed)?.[0] || "";
+      if (!hitDir0) return { type: "unreachable", target: outerNamed };
+      if (!isNodeUnlocked(outerNamed, unlockCtx)) return { type: "locked", dir: hitDir0, dest: outerNamed };
+      return { type: "outer", dir: hitDir0, dest: outerNamed };
+    }
+  }
+
   // 1. 内层：在据点内层房间时，target/口话命中同据点内层相邻房间 → 反查 visibleInnerExits
   if (innerNow && hasInnerMap(roomName)) {
     const visExits = visibleInnerExits(roomName, innerNow, {
@@ -94,11 +108,11 @@ export function resolveMoveTarget(state, action) {
         const d = Object.entries(visExits).find(([, destRoom]) => destRoom === hit)?.[0];
         if (d) return { type: "inner", dir: d };
       }
-    } else if (/回村|出去|去村口/.test(text)) {
+    } else if (/回村|出去|去村口|出门|往外走|向外走|外出/.test(text)) {
       for (const [d, destRoom] of Object.entries(visExits)) {
-        if ((/村口/.test(text) && /村口/.test(destRoom)) || (/出去|回村/.test(text) && destRoom)) {
+        if ((/村口/.test(text) && /村口/.test(destRoom)) || (/出去|回村|出门|往外走|向外走|外出/.test(text) && destRoom)) {
           // 「出去/回村」无具体名时取第一个可见出口（多为出门方向）
-          if (/村口/.test(destRoom) || /出去|回村/.test(text)) return { type: "inner", dir: d };
+          if (/村口/.test(destRoom) || /出去|回村|出门|往外走|向外走|外出/.test(text)) return { type: "inner", dir: d };
         }
       }
     }

@@ -274,7 +274,9 @@ JSON后若需维护角色/世界状态变量，另起一行独立输出 <mvu> �
   const messages = [
     makeBlock("main", `${ENGINE_IDENTITY}\n`),
     makeBlock("worldInfoBefore", presetContent),
-    makeBlock("charDescription", `玩家角色：${playerName}。气血、内外功、物品等状态由系统维护，你只叙事，不擅自改状态。`),
+    // V2：第二人称叙事禁泄存档名——存档栏位名（如 Cultivation QA）是元数据不是
+    // 角色名，正文称玩家只用「你」，严禁把存档名当第三人称写进叙事。
+    makeBlock("charDescription", `玩家角色：${playerName}。气血、内外功、物品等状态由系统维护，你只叙事，不擅自改状态。正文以第二人称「你」称玩家，严禁把存档栏位名或元数据名当作角色名写入正文。`),
     makeBlock("charPersonality", `旁白语气由给定的说书人声线控制，保持统一。`),
     makeBlock("scenario", scenarioIceberg.blue.join("\n\n")),
     makeBlock("worldInfoAfter", `${wantIsolation ? `${ISOLATION}\n` : ""}\n\n${MAP_LAW}`),

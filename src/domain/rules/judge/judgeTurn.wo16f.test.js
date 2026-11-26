@@ -2,14 +2,14 @@ import { describe, expect, it } from "vitest";
 import { judgeTurn } from "./judgeTurn.js";
 
 const base = (over = {}) => ({
-  turn: 5, day: 1, place: "鱼定村",
+  turn: 5, day: 1, place: "鱼定村", roomName: "鱼定村", innerRoomName: "老孙饭馆",
   npcs: [{ name: "才旦", personality: "精明", carriedItems: [{ id: "i1", name: "钱袋" }] }],
   varTree: { 角色: {} }, inv: [], entries: [],
   char: { hp: [80, 100], money: 50, special: { 身法: 6, 智谋: 6, 体魄: 5 } },
   ...over,
 });
 const act = (a) => ({ read: "", refIds: [], actions: [a], proposals: [] });
-const fa = (outcome, risk = "无", text = "") => ({ kind: "free_act", target: "无", outcome, risk, text, stance: "casual" });
+const fa = (outcome, risk = "无", text = "", target = "无") => ({ kind: "free_act", target, outcome, risk, text, stance: "casual" });
 
 describe("WO-16F-F1 free_act 按表签发", () => {
   it("伤损：高风险 -25%maxHp，检定成功减半", () => {
@@ -22,6 +22,19 @@ describe("WO-16F-F1 free_act 按表签发", () => {
     expect(v2.facts.find((f) => f.op === "CHANGE_VITALS_SILVER").hpDelta).toBe(-25);
     const v3 = judgeTurn(weak, act(fa("伤损", "低")), { rng: () => 0 });
     expect(v3.facts[0].hpDelta).toBe(-5);
+  });
+  it("V2 无消费对象拒决：村口喊不在场老孙买茶/无商铺处买茶买酒 → silverDelta 0", () => {
+    // target 指名不在场的 NPC，且场所非商铺 → 拒决扣银
+    const v = judgeTurn(base({ innerRoomName: "" }), act(fa("破费", "无", "喊老孙来壶茶", "老孙")), { rng: () => 0.5 });
+    expect(v.facts.find((x) => x.op === "CHANGE_VITALS_SILVER")).toBeUndefined();
+    expect(v.notes.some((n) => n.includes("拒决扣银"))).toBe(true);
+    // target 空、野外/村口无商铺 → 拒决
+    const v2 = judgeTurn(base({ innerRoomName: "" }), act(fa("破费", "无", "买茶买酒各来一份")), { rng: () => 0.5 });
+    expect(v2.facts.find((x) => x.op === "CHANGE_VITALS_SILVER")).toBeUndefined();
+    // 消费场所（饭馆）内即使 target 空也照签——innerRoomName 喂进 envelope
+    const inShop = base({ roomName: "鱼定村", innerRoomName: "老孙饭馆" });
+    const v3 = judgeTurn(inShop, act(fa("破费", "无", "来壶热茶")), { rng: () => 0.5 });
+    expect(v3.facts.find((x) => x.op === "CHANGE_VITALS_SILVER")).toBeTruthy();
   });
   it("S3 得财：无 proposal 也签 tier 区间；natural 上半；absurd 不签；同时辰第二次不签", () => {
     // 无 proposal 也签（S3 放宽——不再要求 fit 合格 proposal）
@@ -46,28 +59,28 @@ describe("WO-16F-F1 free_act 按表签发", () => {
     expect(f0.gainKey).toBe("freeActGain_2");
   });
   it("S3 破费：原话数额照扣；没写查货架/物件志/白档；超囊中扣到零写囊中不足", () => {
-    const v = judgeTurn(base(), act(fa("破费", "无", "掏出 30 两请客")), { rng: () => 0.5 });
+    const v = judgeTurn(base(), act(fa("破费", "无", "掏出 30 两请才旦喝酒", "才旦")), { rng: () => 0.5 });
     expect(v.facts.find((x) => x.op === "CHANGE_VITALS_SILVER").moneyDelta).toBe(-30);
     // 超囊中只扣到零+notes 囊中不足
-    const over = judgeTurn(base(), act(fa("破费", "无", "豪掷 999 两")), { rng: () => 0.5 });
+    const over = judgeTurn(base(), act(fa("破费", "无", "豪掷 999 两孝敬才旦", "才旦")), { rng: () => 0.5 });
     expect(over.facts.find((x) => x.op === "CHANGE_VITALS_SILVER").moneyDelta).toBe(-50);
     expect(over.notes.some((n) => n.includes("囊中不足"))).toBe(true);
     // 没写数额：在场商户货架同名价（跑马集市 烤羊腿 10 两）
     const shop = base({ npcs: [{ name: "跑马集市", personality: "", carriedItems: [] }] });
-    const buy = judgeTurn(shop, act(fa("破费", "无", "要了一只烤羊腿")), { rng: () => 0.5 });
+    const buy = judgeTurn(shop, act(fa("破费", "无", "要了一只烤羊腿", "跑马集市")), { rng: () => 0.5 });
     const bf = buy.facts.find((x) => x.op === "CHANGE_VITALS_SILVER");
     expect(bf.moneyDelta).toBe(-10);
     expect(buy.notes.some((n) => n.includes("货架同名"))).toBe(true);
     // 无目标物（服务/请客/打点）：不套 misc 白档，直落 risk 默认（初审口径：无=2/中=10）
-    const noAmt = judgeTurn(base(), act(fa("破费", "无", "随便花点")), { rng: () => 0.5 });
+    const noAmt = judgeTurn(base(), act(fa("破费", "无", "随便花点打赏才旦", "才旦")), { rng: () => 0.5 });
     expect(noAmt.facts.find((x) => x.op === "CHANGE_VITALS_SILVER").moneyDelta).toBe(-2);
     expect(noAmt.notes.some((n) => n.includes("risk默认"))).toBe(true);
-    const midRisk = judgeTurn(base(), act(fa("破费", "中", "夜间悄悄打点")), { rng: () => 0.5 });
+    const midRisk = judgeTurn(base(), act(fa("破费", "中", "夜间悄悄打点才旦", "才旦")), { rng: () => 0.5 });
     const mf = midRisk.facts.find((x) => x.op === "CHANGE_VITALS_SILVER");
     expect(mf.moneyDelta).toBe(-10);
     // 囊中原已空：不签
     const broke = base(); broke.char.money = 0;
-    expect(judgeTurn(broke, act(fa("破费", "无", "掏出 5 两")), { rng: () => 0.5 }).facts.find((x) => x.op === "CHANGE_VITALS_SILVER")).toBeUndefined();
+    expect(judgeTurn(broke, act(fa("破费", "无", "掏出 5 两给才旦", "才旦")), { rng: () => 0.5 }).facts.find((x) => x.op === "CHANGE_VITALS_SILVER")).toBeUndefined();
   });
   it("调息：hp+10%maxHp 且 pot+1；同时辰幂等", () => {
     const v = judgeTurn(base(), act(fa("调息")), { rng: () => 0.5 });
@@ -203,7 +216,7 @@ describe("S3 调度初审口径回归", () => {
     }
   });
   it("item 为无（服务类）不套 misc 白档：打点中risk=10", () => {
-    const v = judgeTurn(base(), act(fa("破费", "中", "夜间悄悄打点")), { rng: () => 0.5 });
+    const v = judgeTurn(base(), act(fa("破费", "中", "夜间悄悄打点才旦", "才旦")), { rng: () => 0.5 });
     expect(v.notes.some((n) => n.includes("risk默认(中)"))).toBe(true);
   });
 });

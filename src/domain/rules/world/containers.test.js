@@ -164,3 +164,12 @@ describe("WO-22A 修包：同回合重复翻去重 + 坍缩顺序", () => {
     expect(v.facts[v.facts.length - 1].op).toBe("COLLAPSE_CONTAINER");
   });
 });
+
+describe("V2 私宅归属补全", () => {
+  it("村长府判定为私宅且默认容器归属泽仁", async () => {
+    const { classifyRoomNature, deriveContainerOwner } = await import("./containers.js");
+    expect(classifyRoomNature({ districtName: "鱼定村", innerRoomName: "村长府" })).toBe("home");
+    const owner = deriveContainerOwner({ districtName: "鱼定村", innerRoomName: "村长府", innerDef: { residentNpcName: "泽仁" }, nature: "home" });
+    expect(owner).toBe("泽仁");
+  });
+});
