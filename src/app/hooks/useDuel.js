@@ -93,9 +93,13 @@ export function useDuel({
   const { maybeGrantEpithets } = useNemesisEpithet({ apiCfg });
   // WO-16F-F2c：skipCaptureUndo 可选——判官链叙事后接续的交互是同一玩家回合的
   // 后续，不是新动作，绝不能覆盖本回合开头的撤销检查点；按钮老路默认照旧捕获。
-  const handleNpcDuel = useCallback((npc, { skipCaptureUndo = false, lethal = false } = {}) => applyResult(featureCtx(), async () => {
+  // V3：autoProceedAfterLook——队列/判官链接续路径下未端详目标只做纯状态落账+
+  // 简短系统提示，不再 act("look ...") 跑一整轮说书（多扣 1-2 时辰且中断流程），
+  // 随后直接 recognize+拉起切磋确认。skipCaptureUndo=true 即队列接续路径默认开启。
+  const handleNpcDuel = useCallback((npc, { skipCaptureUndo = false, lethal = false, autoProceedAfterLook = false } = {}) => applyResult(featureCtx(), async () => {
     const isStale = createTurnStaleCheck(turnGenerationRef);
     if (!skipCaptureUndo) captureUndo();
+    const autoProceed = autoProceedAfterLook || skipCaptureUndo;
     // 没端详过的人不能上来就打——先替他做「细看」这一步，看清楚了
     // 再点一次切磋才真的邀战。
     if (!isNpcLooked(gameStore.getState().varTree, npc.name)) {
@@ -103,14 +107,19 @@ export function useDuel({
       applyResult(featureCtx(), look);
       setActiveTarget(npc.name);
       addLog([{ t: "sys", text: `  动手前，你先端详了${npc.name}——掂量清楚再决定动不动手。` }]);
-      // 正在私聊/耳语里时 act 会把 look 当成对那个人说的话——端详已经记账了，
-      // 描写就免了，直接把细看结果落日志。
-      if (interactMode === "talk" || interactMode === "whisper") {
+      if (autoProceed) {
+        // V3：队列接续路径静默端详后直接邀战——端详结果落日志，不跑说书回合不中断。
         addLog(look.extraReplies || []);
+      } else {
+        // 正在私聊/耳语里时 act 会把 look 当成对那个人说的话——端详已经记账了，
+        // 描写就免了，直接把细看结果落日志。
+        if (interactMode === "talk" || interactMode === "whisper") {
+          addLog(look.extraReplies || []);
+          return;
+        }
+        await act("look " + npc.id, look.extraReplies || [], { keepUndo: true, inspect: true });
         return;
       }
-      await act("look " + npc.id, look.extraReplies || [], { keepUndo: true, inspect: true });
-      return;
     }
     applyResult(featureCtx(), recognizeNpc(gameStore.getState(), npc));
     setActiveTarget(npc.name);

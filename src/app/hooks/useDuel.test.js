@@ -263,4 +263,33 @@ describe("端详门槛", () => {
       restoreStore();
     }
   });
+
+  it("V3 队列接续路径（skipCaptureUndo）未端详不跑说书回合、直拉切磋确认、时辰不双跳", async () => {
+    const { npc, handlers, act, setDuelPending, restoreStore } = setupGate();
+    try {
+      const timeBefore = gameStore.getState().time;
+      await handlers.handleNpcDuel(npc, { skipCaptureUndo: true });
+      // 不触发二次 act("look ...") 整轮说书
+      expect(act).not.toHaveBeenCalled();
+      // 端详纯状态落账照记
+      expect(gameStore.getState().varTree.世界.端详过人物).toContain("才旦");
+      // 直接拉起切磋确认，不中断不等二次点击
+      expect(setDuelPending).toHaveBeenCalledWith(npc);
+      // 时辰不双跳（lookNpc 特征本身不加时辰，确认无 +1/+2）
+      expect(gameStore.getState().time).toBe(timeBefore);
+    } finally {
+      restoreStore();
+    }
+  });
+
+  it("V3 按钮老路（无 skipCaptureUndo）保留二次确认习惯不变", async () => {
+    const { npc, handlers, act, setDuelPending, restoreStore } = setupGate();
+    try {
+      await handlers.handleNpcDuel(npc);
+      expect(act).toHaveBeenCalledWith("look caidan", expect.any(Array), expect.objectContaining({ inspect: true }));
+      expect(setDuelPending).not.toHaveBeenCalled();
+    } finally {
+      restoreStore();
+    }
+  });
 });
