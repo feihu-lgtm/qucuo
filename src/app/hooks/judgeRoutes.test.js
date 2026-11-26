@@ -304,6 +304,8 @@ describe("WO-16F-F2a 判官路由集成", () => {
     expect(classifyUseItem(state, food, "拿出干粮出示给店家看")).toBe("present");
     expect(classifyUseItem(state, food, "拿出一块干粮吃掉垫垫肚子")).toBe("consumable");
     expect(classifyUseItem(state, food, "")).toBe("consumable");
+    // Review 二轮：「举起青稞酒一口下肚」——下肚/入喉等吞服俗语压倒举起
+    expect(classifyUseItem(state, { name: "青稞酒", category: "misc", consumable: { hpRestore: 0.05 } }, "举起青稞酒一口下肚")).toBe("consumable");
   });
 
   it("Review 修：字符串名耗材按图鉴仍可服食（背包按钮老调用）", async () => {
