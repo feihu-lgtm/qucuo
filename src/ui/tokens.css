@@ -53,6 +53,7 @@
      < 错误兜底。 */
   --z-hud: 50;
   --z-float: 60;
+  --z-float-high: 70;
   --z-map: 100;
   --z-building: 120;
   --z-screen: 200;
@@ -521,7 +522,8 @@ div[style*="position: fixed"][style*="z-index"],
 .turn-status-float,
 .debug-panel-dock,
 .gamble-stage,
-.gamble-minimized-chip {
+.gamble-minimized-chip,
+.tutorial-overlay {
   animation: ink-overlay-in var(--dur) ease-out both;
   transform-origin: center;
 }
@@ -670,6 +672,7 @@ div[style*="position: fixed"][style*="z-index"],
 
 .ui-modal-root[data-layer="hud"] { z-index: var(--z-hud); }
 .ui-modal-root[data-layer="float"] { z-index: var(--z-float); }
+.ui-modal-root[data-layer="float-high"] { z-index: var(--z-float-high); }
 .ui-modal-root[data-layer="map"] { z-index: var(--z-map); }
 .ui-modal-root[data-layer="building"] { z-index: var(--z-building); }
 .ui-modal-root[data-layer="screen"] { z-index: var(--z-screen); }
@@ -708,7 +711,8 @@ div[style*="position: fixed"][style*="z-index"],
 }
 
 .ui-modal-panel.settings-panel,
-.ui-modal-panel.music-panel {
+.ui-modal-panel.music-panel,
+.ui-modal-panel.portrait-manager-panel {
   font-size: var(--fs-md);
 }
 
@@ -804,4 +808,11 @@ div[style*="position: fixed"][style*="z-index"],
 .character-create-root {
   position: fixed;
   inset: 0;
+}
+
+/* 新手教程：点任意处收起的整屏导览，不是带面板的弹窗。 */
+.tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-top);
 }

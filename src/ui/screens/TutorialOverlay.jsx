@@ -13,7 +13,8 @@ export default function TutorialOverlay({ onClose }) {
     <div
       className="tutorial-overlay"
       onClick={onClose}
-      style={{ position: "fixed", inset: 0, zIndex: 500, background: "rgba(6,6,12,0.72)", cursor: "pointer",
+      // 整屏定位与层级在 tokens.css 的 .tutorial-overlay（top 档，原 z 500）。
+      style={{ background: "rgba(6,6,12,0.72)", cursor: "pointer",
         display: "flex", flexDirection: "column", fontFamily: "'Songti SC','STSong','SimSun',serif" }}
     >
       {/* 顶部提示条 */}
