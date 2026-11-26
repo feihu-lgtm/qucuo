@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import NpcAngerLine from "./NpcAngerLine.jsx";
 import LeftPanel from "./LeftPanel.jsx";
-import { ZONE_THEMES } from "../../utils/theme.js";
+import { THEME_VARS } from "../../utils/theme.js";
 import { LEFT_FACE_DEFAULTS, LEFT_FACE_PREF_KEY, LEFT_MODULES } from "./left/leftFaces.js";
 import useFaces, { readFacePreferences } from "../components/faces/useFaces.js";
 
@@ -15,7 +15,7 @@ function Demo(props) {
 }
 
 const props = {
-  zoneTheme: ZONE_THEMES.village, S: {},
+  zoneTheme: THEME_VARS, S: {},
   room: { name: "鱼定村", desc: "三水交汇", exits: ["n"], npcs: [{ name: "才旦", brief: "村长之女" }] },
   time: 6, varTree: {}, char: {}, peoplePanel: { present: true, absent: true },
   mapView: "outer", mapData: {}, questProgress: {}, flags: [], inv: [],

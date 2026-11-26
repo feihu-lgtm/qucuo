@@ -1,25 +1,17 @@
-// 主题色系统
+// 主题系统
 // 参考《长刀》(Long Knives) 的美学方向：黑白水墨+朱红孤色。
 // 不靠七个分区七种色相讲故事，而是靠"几乎无色"本身——大片留白/墨黑打底，
 // 线条不做圆角，唯一一点红（朱印/警示/交互）就是全部的色彩语言。
 // 玩家走到哪个分区，界面骨架都长一个样：这正是《长刀》的克制，不是疏漏。
 //
-// ── 日间模式 ──
-// 暗夜=墨拓（黑纸白字+朱红），日间=宣纸（白纸黑字+朱红）。两套字段一一对应，
-// 下游 117 处 zoneTheme.xxx 引用不需要感知日间/夜间，只要 getZoneTheme 传对
-// isDayMode 即可。
+// ── 颜色只有 CSS 变量一套（路线图 U3）──
+// 全部色值写在 src/ui/tokens.css：暗夜=墨拓（黑纸白字+朱红）在 :root，
+// 日间=宣纸（白纸黑字+朱红）在 :root[data-theme="day"]，由 sessionUiStore 随日夜
+// 写根节点的 data-theme。本文件不再定义任何色值，只留分区名映射和两个指向
+// CSS 变量的主题对象。迁移前的色值快照冻结在 themeTokens.test.js，逐字段锁住。
 
-// 七个地理分区，对应 qucuoMap.js 里的据点分组（仅供 zoneTheme.name 取分区
-// 名做氛围文字用；视觉本身七区统一，不再靠色相分区）：
-// 视觉本身七区统一，不再靠色相区分冷暖，仅 name 保留分区flavor文字。
-const INK = {
-  turquoise: { night: "#c8323a", day: "#a8202a" },
-  gold:      { night: "#c8663a", day: "#96431a" },
-  crimson:   { night: "#d63c3c", day: "#b01f24" },
-  pink:      { night: "#d68a8a", day: "#a8524a" },
-  green:     { night: "#c07050", day: "#8a4a2a" },
-};
-
+// 七个地理分区，对应 qucuoMap.js 里的据点分组。视觉七区统一，分区只用来取
+// 氛围文字（左栏「天地」标题旁的那行小字）。
 const ZONE_MAP = {
   鱼定村: "village", 鱼定土司: "village", 天都镇: "village", 玉泉寨: "village",
   喇嘛庙: "temple", 白塔: "temple",
@@ -32,54 +24,25 @@ const ZONE_MAP = {
   天龙营: "wild",
 };
 
-// 暗夜（墨拓）：黑纸白字，朱红孤色。七区共用同一套值——《长刀》式的克制，
-// 不靠色相分区讲故事；name 字段仍保留分区flavor文字。
-const NIGHT_INK = {
-  accent: "#c8323a",      // 朱红：唯一强调色
-  accentDim: "#8a4a48",   // 朱红压暗：次强调/弱高亮
-  bg: "#0a0a09",          // 墨黑底
-  bgPanel: "#111110",     // 面板略提亮，制造"浮在底色上"的层次
-  border: "#4a453c",      // 墨线：暗底上勾一道浅灰线
-  text: "#e8e4d6",        // 骨白正文（白墨拓字）
-  textDim: "#8f8a7c",     // 中灰次要文字
-};
+export const ZONE_NAMES = Object.freeze({
+  village: "人间烟火",
+  temple: "梵音低回",
+  snow: "孤峰积雪",
+  wild: "莽野无涯",
+  water: "静水深流",
+  outland: "他乡异客",
+  bamboo: "雨城竹海",
+});
 
-export const ZONE_THEMES = {
-  village: { name: "人间烟火", ...NIGHT_INK },
-  temple: { name: "梵音低回", ...NIGHT_INK },
-  snow: { name: "孤峰积雪", ...NIGHT_INK },
-  wild: { name: "莽野无涯", ...NIGHT_INK },
-  water: { name: "静水深流", ...NIGHT_INK },
-  outland: { name: "他乡异客", ...NIGHT_INK },
-  bamboo: { name: "雨城竹海", ...NIGHT_INK },
-};
+// 根据房间名推断分区，返回氛围文字；找不到时回退到 village。日间加「·昼」。
+export function getZoneName(roomName, isDayMode = false) {
+  const name = ZONE_NAMES[ZONE_MAP[roomName] || "village"];
+  return isDayMode ? `${name}·昼` : name;
+}
 
-// 日间模式：宣纸白底黑字，朱红孤色。字段一一对应上面的暗夜版。
-const DAY_INK = {
-  accent: "#a8202a",      // 朱红（深化，白纸上仍要够沉）
-  accentDim: "#8a4a42",   // 朱红压暗
-  bg: "#eae7dd",          // 宣纸灰白
-  bgPanel: "#f4f2e9",     // 面板更白，制造层次
-  border: "#2a2620",      // 墨线：近黑描边
-  text: "#201d18",        // 墨黑正文
-  textDim: "#6d6759",     // 中灰次要文字，满足宣纸背景上的 WCAG AA
-};
-
-export const ZONE_THEMES_DAY = {
-  village: { name: "人间烟火·昼", ...DAY_INK },
-  temple: { name: "梵音低回·昼", ...DAY_INK },
-  snow: { name: "孤峰积雪·昼", ...DAY_INK },
-  wild: { name: "莽野无涯·昼", ...DAY_INK },
-  water: { name: "静水深流·昼", ...DAY_INK },
-  outland: { name: "他乡异客·昼", ...DAY_INK },
-  bamboo: { name: "雨城竹海·昼", ...DAY_INK },
-};
-
-// 取值全是 CSS 变量的主题对象（路线图 U3）。字段与 ZONE_THEMES 一一对应，颜色由
-// tokens.css 的 :root 与 :root[data-theme="day"] 决定，日夜切换不必再传 isDayMode。
-// 只给需要"整个主题对象"的地方用（chromeBtn、子组件的 theme 参数）；单个颜色直接写
-// "var(--accent)" 这类字面量。themeTokens.test.js 保证这里的每个变量与上面两套色值逐字段相等。
-// 固定暗夜的界面（开始页、开场、创角、酒馆经营、开始页的卡牌导入）不能用它，见《前端结构说明》。
+// 取值全是 CSS 变量的主题对象。颜色由 tokens.css 的 :root 与 :root[data-theme="day"]
+// 决定，日夜切换不必再传 isDayMode。只给需要"整个主题对象"的地方用（chromeBtn、
+// 子组件的 theme 参数）；单个颜色直接写 "var(--accent)" 这类字面量。
 export const THEME_VARS = Object.freeze({
   accent: "var(--accent)",
   accentDim: "var(--accent-dim)",
@@ -104,22 +67,6 @@ export const NIGHT_VARS = Object.freeze({
   textDim: "var(--ink-text-dim)",
 });
 
-// 根据房间名推断当前分区，返回对应主题；找不到时回退到 village。
-// isDayMode=true 时从 ZONE_THEMES_DAY 取（六套浅色版本），默认 false 走原暗夜版，
-// 两套主题字段一一对应，调用方不需要额外分支处理。
-export function getZoneTheme(roomName, isDayMode = false) {
-  const zone = ZONE_MAP[roomName] || "village";
-  return (isDayMode ? ZONE_THEMES_DAY : ZONE_THEMES)[zone];
-}
-
-// ── 设计基元：孤色语义体系（原"藏地三色"，现收拢进单一朱红家族）────────
-// 《长刀》的角色名/警示/交互提示统一用朱红，靠字重深浅而非色相分深浅——
-// 案卷里的"已结案"绿灯用的也是朱红徽章，不是绿色。这里 5 个 key 仍保留
-// （避免动全部调用方），但取值全部收拢进朱红家族，只用饱和度/色温区分：
-// turquoise=交互确认（即主强调色本身）；gold=重要入口，偏暖橙红；
-// crimson=警示/危险，最亮最正的朱红；pink=好感/私聊，柔和绛粉；
-// green=NPC名/对话，偏赭红棕。
-export const ink = (name, isDayMode) => INK[name][isDayMode ? "day" : "night"];
 // 圆角阶：《长刀》线装书式的硬直角——全部归零，不再有 3/4/6/8 的圆角层级。
 export const RADIUS = { btn: 0, card: 0, modal: 0 };
 

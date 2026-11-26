@@ -471,6 +471,9 @@
   --log-choice: #6aaa8a;
   --log-affection: #f0a0c0;
   --log-dialogue: #e8a0d8;
+  /* NPC 名与好感/私聊的语义色（原 theme.js 的 ink("green") / ink("pink")），随日夜切换。 */
+  --npc-name: #c07050;
+  --npc-affection: #d68a8a;
 }
 
 :root[data-font="pixel"] {
@@ -503,6 +506,8 @@
   --log-confess: #8a5a0a;
   --log-quest: #8a5a0a;
   --log-dialogue: #8a1e6a;
+  --npc-name: #8a4a2a;
+  --npc-affection: #a8524a;
 }
 /* 固定暗夜的子树（开始页、开场、创角、酒馆经营、开始页的卡牌导入）：根节点写
    data-theme="night"，这里把日间块覆盖过的变量按 :root 的暗夜值重新声明一遍，
@@ -532,6 +537,8 @@
   --log-confess: initial; /* 暗夜下本无此变量（只给日间日志配色用），子树里同样置空 */
   --log-quest: initial; /* 暗夜下本无此变量（只给日间日志配色用），子树里同样置空 */
   --log-dialogue: #e8a0d8;
+  --npc-name: #c07050;
+  --npc-affection: #d68a8a;
 }
 
 

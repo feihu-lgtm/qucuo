@@ -1,10 +1,14 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { NIGHT_VARS, THEME_VARS, ZONE_THEMES, ZONE_THEMES_DAY } from "./theme.js";
+import { NIGHT_VARS, THEME_VARS, getZoneName } from "./theme.js";
 
-// 路线图 U3 的前提：theme.js 的两套色值与 tokens.css 的变量逐字段相等，
-// 所以把 zoneTheme 的字段换成对应的 CSS 变量不会改变任何颜色。这条测试锁住这一点。
+// 路线图 U3：颜色只有 tokens.css 一套。迁移前 theme.js 的两套主题色（七个分区共用）
+// 与 ink() 的两个语义色冻结在下面，tokens.css 的变量必须与它们逐字段相等，
+// 保证把 zoneTheme.xxx / ink() 换成 CSS 变量没有改变任何颜色。测试文件不计入棘轮的色值计数。
+const FORMER_NIGHT = { accent: "#c8323a", accentDim: "#8a4a48", bg: "#0a0a09", bgPanel: "#111110", border: "#4a453c", text: "#e8e4d6", textDim: "#8f8a7c" };
+const FORMER_DAY = { accent: "#a8202a", accentDim: "#8a4a42", bg: "#eae7dd", bgPanel: "#f4f2e9", border: "#2a2620", text: "#201d18", textDim: "#6d6759" };
+const FORMER_INK = { "--npc-name": { night: "#c07050", day: "#8a4a2a" }, "--npc-affection": { night: "#d68a8a", day: "#a8524a" } };
 const TOKENS = readFileSync("src/ui/tokens.css", "utf-8");
 
 function block(selector) {
@@ -20,29 +24,42 @@ function valueOf(css, name) {
 
 const varName = (value) => value.match(/^var\((--[\w-]+)\)$/)[1];
 
-describe("theme.js 色值与 tokens.css 变量一一相等", () => {
+describe("tokens.css 与迁移前的主题色逐字段相等", () => {
   const night = block(":root");
   const day = block(':root[data-theme="day"]');
 
-  it("THEME_VARS 覆盖主题对象里全部颜色字段", () => {
-    const colorFields = Object.keys(ZONE_THEMES.village).filter((key) => key !== "name").sort();
-    expect(Object.keys(THEME_VARS).sort()).toEqual(colorFields);
+  it("THEME_VARS 覆盖迁移前主题对象的全部颜色字段", () => {
+    expect(Object.keys(THEME_VARS).sort()).toEqual(Object.keys(FORMER_NIGHT).sort());
   });
 
-  it("七个分区暗夜色值都等于 :root 的对应变量", () => {
-    for (const [zone, theme] of Object.entries(ZONE_THEMES)) {
-      for (const [field, cssVar] of Object.entries(THEME_VARS)) {
-        expect(theme[field].toLowerCase(), `${zone}.${field}`).toBe(valueOf(night, varName(cssVar)));
-      }
+  it("暗夜：每个变量等于迁移前的暗夜色", () => {
+    for (const [field, cssVar] of Object.entries(THEME_VARS)) {
+      expect(valueOf(night, varName(cssVar)), field).toBe(FORMER_NIGHT[field]);
     }
   });
 
-  it("七个分区日间色值都等于 :root[data-theme=\"day\"] 的对应变量", () => {
-    for (const [zone, theme] of Object.entries(ZONE_THEMES_DAY)) {
-      for (const [field, cssVar] of Object.entries(THEME_VARS)) {
-        expect(theme[field].toLowerCase(), `${zone}.${field}`).toBe(valueOf(day, varName(cssVar)));
-      }
+  it("日间：每个变量等于迁移前的日间色", () => {
+    for (const [field, cssVar] of Object.entries(THEME_VARS)) {
+      expect(valueOf(day, varName(cssVar)), field).toBe(FORMER_DAY[field]);
     }
+  });
+
+  it("NPC 名与好感两个语义色等于迁移前 ink() 的取值", () => {
+    for (const [name, { night: n, day: d }] of Object.entries(FORMER_INK)) {
+      expect(valueOf(night, name), name).toBe(n);
+      expect(valueOf(day, name), name).toBe(d);
+    }
+  });
+
+  it("分区名：七区氛围文字不变，日间加「·昼」，未知房间回落「人间烟火」", () => {
+    expect(getZoneName("喇嘛庙")).toBe("梵音低回");
+    expect(getZoneName("雅江", true)).toBe("雨城竹海·昼");
+    expect(getZoneName("不存在的房间")).toBe("人间烟火");
+  });
+
+  it("theme.js 不再定义任何色值", () => {
+    const source = readFileSync("src/utils/theme.js", "utf-8").replace(/\/\/.*$/gm, "");
+    expect(source).not.toMatch(/#[0-9a-f]{3,8}\b/i);
   });
 });
 
@@ -101,7 +118,7 @@ describe("NIGHT_VARS：逐元素固定暗夜", () => {
   it("字段与 THEME_VARS 一致，每个定色变量的值都等于暗夜主题色", () => {
     expect(Object.keys(NIGHT_VARS).sort()).toEqual(Object.keys(THEME_VARS).sort());
     for (const [field, cssVar] of Object.entries(NIGHT_VARS)) {
-      expect(valueOf(root, varName(cssVar)), field).toBe(ZONE_THEMES.village[field].toLowerCase());
+      expect(valueOf(root, varName(cssVar)), field).toBe(FORMER_NIGHT[field]);
     }
   });
 

@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import FacePanel from "../FacePanel.jsx";
 import useFaces from "./useFaces.js";
-import { ZONE_THEMES } from "../../../utils/theme.js";
+import { THEME_VARS } from "../../../utils/theme.js";
 import { addFace, removeFace, validateFacePreferences } from "./facePreferences.js";
 
 const defaults = { faces: [
@@ -15,7 +15,7 @@ const availableModules = [{ id: "alpha", label: "Alpha" }, { id: "beta", label: 
 function Demo({ editable = true, empty = false, hidden = false, swipe = true }) {
   const faces = useFaces("generic_test", { ...defaults, currentIndex: empty ? 1 : 0 }, { availableModules, editable });
   return createElement("div", null, createElement("output", null, `Example ${faces.index + 1}/${faces.count}`),
-    createElement(FacePanel, { faces, theme: ZONE_THEMES.village, label: "Example", swipe,
+    createElement(FacePanel, { faces, theme: THEME_VARS, label: "Example", swipe,
       renderModule: id => createElement("p", null, `Rendered ${id}`), isModuleVisible: () => !hidden }));
 }
 
@@ -58,7 +58,7 @@ describe("generic FacePanel", () => {
       })), currentIndex: 0 };
       const faces = { preferences, face: preferences.faces[0], direction: 1, editable: false, rotate: () => {} };
       const html = renderToStaticMarkup(createElement(FacePanel, {
-        faces, theme: ZONE_THEMES.village, renderModule: () => null,
+        faces, theme: THEME_VARS, renderModule: () => null,
       }));
       const bar = html.match(/<nav[\s\S]*?<\/nav>/)[0];
       expect(bar).toContain('<span aria-current="true">Face 0</span>');

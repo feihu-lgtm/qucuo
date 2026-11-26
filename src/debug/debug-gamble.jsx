@@ -24,7 +24,6 @@ function Bench() {
       building={{ name: "赌石坊" }}
       char={{ name: "调试客", money: 5000, special: { 气运: 5, 悟性: 7 } }}
       time={10}
-      zoneTheme={{}}
       roomNpcs={mockNpcs}
       negotiation={nego}
       onClose={() => console.log("[debug] onClose")}

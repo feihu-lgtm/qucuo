@@ -7,7 +7,7 @@ import { THEME_VARS } from "../../utils/theme.js";
 // ① 事实账本（knowledge.js，varTree.世界.知识域）：什么时候·什么事·谁知道·怎么知道的·能记多少·传闻怎么演变
 // ② 记忆碎片（小纸条，IndexedDB 向量库）：AI 记下的≤50字往事，公共/私有
 //
-// props: varTree（读账本）、time（当前回合，算淡忘倒计时）、turnToStr（回合→"第X日·时辰"）、zoneTheme、onClose
+// props: varTree（读账本）、time（当前回合，算淡忘倒计时）、turnToStr（回合→"第X日·时辰"）、onClose；颜色取 CSS 变量
 
 const 途径色 = { 亲历: "var(--clay)", 目击: "var(--ink-accent)", 告知: "var(--lore-gold)", 传闻: "var(--lore-amber)", 剧本: "var(--lore-script)" };
 const 途径说明 = { 亲历: "亲身经历", 目击: "当场看见", 告知: "有人明说", 传闻: "道听途说", 剧本: "夙来知晓" };

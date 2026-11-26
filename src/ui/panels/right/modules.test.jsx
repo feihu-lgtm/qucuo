@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { ZONE_THEMES } from "../../../utils/theme.js";
+import { THEME_VARS } from "../../../utils/theme.js";
 import { NNPC_STAGE } from "../../../domain/rules/narrator/narrator.js";
 import ProfileModule from "./ProfileModule.jsx";
 import EquipmentBonusModule from "./EquipmentBonusModule.jsx";
@@ -21,7 +21,6 @@ import { OVERLAY } from "../../../store/uiStore.js";
 import { validateFacePreferences } from "../../components/faces/facePreferences.js";
 
 const base = {
-  zoneTheme: ZONE_THEMES.village,
   char: { name: "测试少侠", hp: [100, 100], special: { 根骨: 5 }, pigeons: 5 },
   inv: [], skills: [], activeBuffs: [], exp: 0, pot: 0,
   trainCost: () => 4, companionState: {}, varTree: {}, narrator: { affection: 0 },
@@ -86,7 +85,7 @@ describe("extracted right-panel modules", () => {
   it("offers all eleven modules in the current-face editor, including unchecked conditional modules", () => {
     const html = renderToStaticMarkup(createElement(FaceEditor, {
       faces: { preferences: RIGHT_FACE_DEFAULTS, face: RIGHT_FACE_DEFAULTS.faces[0],
-        availableModules: RIGHT_MODULES, minFaces: 1, maxFaces: 6 }, theme: ZONE_THEMES.village,
+        availableModules: RIGHT_MODULES, minFaces: 1, maxFaces: 6 }, theme: THEME_VARS,
     }));
     expect(html.match(/type="checkbox"/g)).toHaveLength(11);
     expect(html).toContain("恢复默认");

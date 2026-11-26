@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { ZONE_THEMES } from "../../utils/theme.js";
+import { THEME_VARS } from "../../utils/theme.js";
 
 const mockState = vi.hoisted(() => ({ log: [] }));
 
@@ -16,7 +16,6 @@ import NarrativeLogFeed from "./center/NarrativeLogFeed.jsx";
 describe("局内时间合并与叙事日志回合显示", () => {
   it("LocationModule 并排展示游戏时间回合与现实时间组件", () => {
     const html = renderToStaticMarkup(createElement(LocationModule, {
-      zoneTheme: ZONE_THEMES.village,
       room: { name: "鱼定村", desc: "雪山脚下。" },
       innerRoomName: null,
       time: 30,
@@ -35,7 +34,6 @@ describe("局内时间合并与叙事日志回合显示", () => {
     ];
     const html = renderToStaticMarkup(createElement(NarrativeLogFeed, {
       hidden: false,
-      zoneTheme: ZONE_THEMES.village,
       clr: { sys: "var(--text)", cmd: "var(--accent)", desc: "var(--text)", room: "var(--accent)" },
       isDayMode: false,
       act: () => {},
