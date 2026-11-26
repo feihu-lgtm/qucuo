@@ -24,7 +24,10 @@ export function processInspectContainers(J, actions) {
     // 多容器命中取最长名（「柜台角落」优先于「柜台」），并列长则按声明序取先——确定性。
     const keys = Object.keys(envelope.containers || {});
     const text = String(action.text || "");
-    const hits = keys.filter((k) => k && text.includes(k));
+    // Review 修：target 本身出现在原话（「翻翻货架旁边的柜台」target=柜台）时
+    // 信任 intake 语法解析——玩家确实指名的是它，多容器名同句不覆盖。
+    // 只有 target 不在原话（intake 因坍缩不可见而抄了别的容器）才用 text 扫描纠偏。
+    const hits = targetName && text.includes(targetName) ? [] : keys.filter((k) => k && text.includes(k));
     if (hits.length) {
       hits.sort((a, b) => b.length - a.length || keys.indexOf(a) - keys.indexOf(b));
       if (hits[0] !== targetName) targetName = hits[0];
