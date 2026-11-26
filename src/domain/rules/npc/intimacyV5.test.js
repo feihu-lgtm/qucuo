@@ -107,3 +107,12 @@ describe("V5 Review 二轮两修回归", () => {
     expect(iii("解开包袱的绳结")).toBe(false);
   });
 });
+
+describe("V5 Review 三轮修回归", () => {
+  it("解开捆住包袱的布带不算亲密；解开衣带仍算", async () => {
+    const { isIntimateInput: iii } = await import("../prompt/inputIntent.js");
+    expect(iii("帮我解开捆住包袱的布带")).toBe(false);
+    expect(iii("解开她腰间衣带")).toBe(true);
+    expect(iii("解开包袱绳结再吻她")).toBe(true); // 强词优先
+  });
+});

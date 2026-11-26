@@ -185,9 +185,14 @@ export const INTIMATE_RE = new RegExp(
 );
 const INTIMATE_TOUCH_RE = /揉按/;
 const HEALING_GUARD_RE = /敷药|涂药|抹药|上药|疗伤|包扎|伤口|膏药|药酒/;
+// Review修：解开+捆绑物（捆/绑/包袱/行李/绳/箱/货/篓/袋/链/锁）是解物不是解衣——
+// 「帮我解开捆住包袱的布带」不误判。含明确调情强词（吻/搂/摩挲/锁骨等）的不救。
+const UNTIE_OBJECT_RE = /解开[^，。]{0,10}(?:捆|绑|包袱|行李|绳|箱|货|篓|袋|链|锁)/;
+const STRONG_FLIRT_RE = /搂|抱一?下|(?<!口)吻(?!合)|摩挲|锁骨|胸前|颈窝|酥胸|香肩|柳腰|柔荑|温存|宽衣|解衣|求欢|肌肤之亲/;
 export const isIntimateInput = (cmd = "") => {
   const s = String(cmd);
   if (!INTIMATE_RE.test(s) && !INTIMATE_TOUCH_RE.test(s)) return false;
+  if (UNTIE_OBJECT_RE.test(s) && !STRONG_FLIRT_RE.test(s)) return false;
   // 疗伤护栏：只有「揉按」孤零零命中且满篇疗伤语境时放行；含明确部位/调情词的不救。
   if (!INTIMATE_RE.test(s) && INTIMATE_TOUCH_RE.test(s) && HEALING_GUARD_RE.test(s)) return false;
   return true;
