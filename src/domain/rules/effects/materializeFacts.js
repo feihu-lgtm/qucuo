@@ -26,6 +26,7 @@ import { STAGES } from "../../../utils/mudHelpers.js";
 import { systemAffectionDelta, systemAffectionPin, hasNoAffectionTrack } from "../state/affection.js";
 import { createHeartLedgerEntry, capHeartLedgerEntries, dedupeHeartLedgerId } from "../memory/npcLedger.js";
 import { INITIAL_FAVORABILITY } from "../npc/npcAwareness.js";
+import { followingCompanionKey } from "../companion/companion.js";
 import { readDailyLootUsed } from "../judge/budgetInput.js";
 import { relicById } from "../judge/floatingRelics.js";
 import { CATALOG_INDEX } from "../../data/items/catalog.js";
@@ -188,7 +189,19 @@ export function materializeFacts(state, facts, compiledWarrants) {
         } else if (fact.to) {
           const target = room.npcs.find((n) => n.name === fact.to);
           if (target) target.carriedItems.push({ ...moving, dropped: undefined, equipped: false });
-          else room.items.push({ ...moving, dropped: undefined, equipped: false }); // 目标不在场：落地上，不丢事实
+          else {
+            // D6 Review 修：目标是跟随同伴时进 companionState carrier——同伴形影不离在场
+            // （判官名单可见），但不挂 room.npcs；之前一律落地上，玩家「送出」的礼躺原地。
+            const ckey = followingCompanionKey(state.companionState, fact.to);
+            if (ckey) {
+              const entry = { ...moving, dropped: undefined, equipped: false };
+              patches.push({
+                op: "merge", path: ["companionState", ckey, "data", "carriedItems"],
+                value: (prev) => [...(Array.isArray(prev) ? prev : []), entry],
+                factId: fact.id,
+              });
+            } else room.items.push({ ...moving, dropped: undefined, equipped: false }); // 目标不在场：落地上，不丢事实
+          }
         }
         const fromLabel = loc.pool === "inv" ? "你" : loc.pool === "ground" ? "地上" : room.npcs[loc.npcIndex]?.name || "某人";
         const toLabel = fact.to === PLAYER ? "你" : fact.to === "ground" || fact.to === "room" ? "地上" : fact.to;
