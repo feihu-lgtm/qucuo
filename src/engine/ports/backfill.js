@@ -2,6 +2,7 @@
 // 写完按 key 插回。不占回合、不进排队；AI 没配、失败、解析不出、或期间回滚，都只留事实行。
 
 import { insertBackfill } from "../../domain/rules/log/backfill.js";
+import { stampLogEntries } from "../../domain/rules/log/logTypes.js";
 import { timeoutFallbackLine } from "../../domain/rules/clapboard/timeoutFallback.js";
 
 // ── WO-08 短答档首字超时本地兜底 + 流式原位替换器 ──
@@ -13,11 +14,27 @@ import { timeoutFallbackLine } from "../../domain/rules/clapboard/timeoutFallbac
 // 不动 invoke 内部任何超时语义。
 export const FIRST_TOKEN_BUDGET_MS = 3500;
 
-function upsertByKey(log, key, entry) {
-  const index = (Array.isArray(log) ? log : []).findIndex((e) => e?.fillKey === key);
-  if (index < 0) return [...log, entry];
-  const copy = [...log];
-  copy[index] = entry;
+function resolveGameTime(gameTime) {
+  const value = typeof gameTime === "function" ? gameTime() : gameTime;
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function preserveOrStampEntry(entry, existing, gameTime) {
+  const stamped = stampLogEntries([entry], resolveGameTime(gameTime))[0];
+  if (!existing) return stamped;
+  const next = { ...stamped };
+  if (typeof existing.turn === "number") next.turn = existing.turn;
+  if (typeof existing.day === "number") next.day = existing.day;
+  if (existing.realTs != null) next.realTs = existing.realTs;
+  return next;
+}
+
+function upsertByKey(log, key, entry, gameTime) {
+  const list = Array.isArray(log) ? log : [];
+  const index = list.findIndex((e) => e?.fillKey === key);
+  if (index < 0) return [...list, preserveOrStampEntry(entry, null, gameTime)];
+  const copy = [...list];
+  copy[index] = preserveOrStampEntry(entry, copy[index], gameTime);
   return copy;
 }
 
@@ -29,11 +46,14 @@ export async function streamWithFirstTokenFallback({
   fallbackLine,
   fallback, // { kind, npc, place }——没给成品句时由 timeoutFallbackLine 现场生成
   firstTokenBudgetMs = FIRST_TOKEN_BUDGET_MS,
+  gameTime,
+  placeholderImmediately = false,
 } = {}) {
   if (typeof invoke !== "function" || typeof setLog !== "function") {
     throw new Error("streamWithFirstTokenFallback 需要 invoke 与 setLog");
   }
   const line = fallbackLine || timeoutFallbackLine(fallback || {});
+  const placeholderEntry = () => ({ t: "desc", text: "  ▌", fillKey: key, streaming: true, placeholder: true });
   const fallbackEntry = () => ({ t: "desc", text: `  ${line}`, fillKey: key, timeoutFallback: true });
   const streamEntry = (full, done) => ({
     t: "desc",
@@ -42,6 +62,14 @@ export async function streamWithFirstTokenFallback({
     streaming: !done,
     ...(done ? { streamed: true } : {}),
   });
+
+  if (placeholderImmediately) {
+    setLog((log) => {
+      if (isStale?.()) return log;
+      if ((log || []).some((e) => e?.fillKey === key)) return log;
+      return upsertByKey(log, key, placeholderEntry(), gameTime);
+    });
+  }
 
   let firstChunkSeen = false;
   let settled = false;
@@ -52,9 +80,10 @@ export async function streamWithFirstTokenFallback({
     fallbackInserted = true;
     setLog((log) => {
       if (isStale?.() || firstChunkSeen || settled) return log;
-      // 已存在同 key 行（重入/竞态）就不重复插
-      if ((log || []).some((e) => e?.fillKey === key)) return log;
-      return [...log, fallbackEntry()];
+      const existing = (log || []).find((e) => e?.fillKey === key);
+      // 非占位且已存在同 key 行（重入/竞态）就不重复插；若是刚预占位的骨架行则原位替换为过渡句
+      if (existing && !existing.placeholder) return log;
+      return upsertByKey(log, key, fallbackEntry(), gameTime);
     });
   }, firstTokenBudgetMs);
 
@@ -64,7 +93,7 @@ export async function streamWithFirstTokenFallback({
     setLog((log) => {
       if (isStale?.() || settled) return log;
       // 原位替换：过渡行/流式行都在 fillKey 位置原地改写，不打乱日志顺序
-      return upsertByKey(log, key, streamEntry(full, false));
+      return upsertByKey(log, key, streamEntry(full, false), gameTime);
     });
   };
 
@@ -79,14 +108,14 @@ export async function streamWithFirstTokenFallback({
       if (!hasKey) return log;
       if (finalText) {
         // 正常完赛：流式行转永久日志项
-        return upsertByKey(log, key, streamEntry(finalText, true));
+        return upsertByKey(log, key, streamEntry(finalText, true), gameTime);
       }
       if (firstChunkSeen) {
         // 有 chunk 但总文本为空：保留现有流式内容、只摘光标
-        return upsertByKey(log, key, streamEntry("", true));
+        return upsertByKey(log, key, streamEntry("", true), gameTime);
       }
       // 空响应且从未见首字：保留过渡行静默降级
-      return upsertByKey(log, key, { ...fallbackEntry() });
+      return upsertByKey(log, key, { ...fallbackEntry() }, gameTime);
     });
     return {
       ok: true,
@@ -103,7 +132,7 @@ export async function streamWithFirstTokenFallback({
       if (!(log || []).some((e) => e?.fillKey === key)) return log;
       if (fallbackInserted || !firstChunkSeen) {
         // 超时/报错且没见过首字：保留（或复位）过渡行，静默降级
-        return upsertByKey(log, key, fallbackEntry());
+        return upsertByKey(log, key, fallbackEntry(), gameTime);
       }
       // 已见首字的半截流式：内容保留，但请求已终结——摘掉 streaming 旗与光标，
       // 否则这行永远挂着「▌」假装还在写。

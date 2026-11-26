@@ -172,7 +172,6 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   } = autosave;
   const importPreset = usePresetImport({ loadPreset, setPresets, setLog });
 
-  useEffect(() => { logEnd.current?.scrollIntoView({ behavior: "smooth" }); }, [log]);
   useEffect(() => { if (!loading) inputRef.current?.focus(); }, [loading]);
   useEffect(() => {
     // 读档还原后 effect 会因 room 引用变化重跑——内容与快照缓存一致时跳过写入，

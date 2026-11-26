@@ -8,13 +8,14 @@ import { deriveMovesetFromSkills, hpFromNeigong } from "../../domain/rules/npc/n
 import { STARTER_SKILLS } from "../../domain/data/kungfu/starterKungfu.js";
 import { unlockImportedCompanion } from "../../domain/rules/companion/companion.js";
 import { OVERLAY, closeOverlay } from "../../store/uiStore.js";
+import { stampLogEntries } from "../../domain/rules/log/logTypes.js";
 
 export function useCardImportHandlers({
   setVarTree, schedulerRef,
 }) {
   // Store 直读（路线一）：char/skills/inv/companionState/log 的写全走 gameActions。
   const { setChar, setSkills, setInv, setCompanionState, setLog } = gameActions;
-  const addLog = (lines) => setLog((p) => [...p, ...lines]);
+  const addLog = (lines) => setLog((p) => [...p, ...stampLogEntries(lines, gameStore.getState().time)]);
   const handleImportNpcs = useCallback((npcs) => applyResult(featureCtx(), () => {
     const n = importedRegistry.registerImported(npcs, {});
     const withAff = npcs.filter(x => (x.affection || 0) !== 0);

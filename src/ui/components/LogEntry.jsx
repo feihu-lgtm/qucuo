@@ -55,35 +55,116 @@ function ReceiptStrip({ receipts, onAction }) {
   );
 }
 
+export function isNarrativePlaceholder(entry) {
+  if (!entry?.streaming) return false;
+  const text = (entry.text || "").trim();
+  return text === "▌" || text === "「旁白」▌";
+}
+
+export function NarrativeSkeleton({ narratorPrefix = false }) {
+  return (
+    <div className="narrative-skeleton" role="status" aria-label="叙事生成中">
+      {narratorPrefix && <span className="narrative-skeleton-tag">「旁白」</span>}
+      <span className="narrative-skeleton-bar" />
+      <span className="narrative-skeleton-bar" />
+      <span className="narrative-skeleton-bar" />
+    </div>
+  );
+}
+
+// 渲染层剥除系统/结算行前导参差空白（保留 store 原文不变，兼容所有单测快照），
+// 让所有系统行、奖励行、气血品阶行都严丝合缝对齐同一条左边线。
+function stripLeadingSpace(text) {
+  return String(text || "").replace(/^[\s\u3000]+/, "");
+}
+
+const DUEL_BANNER_RE = /^[\s\u3000]*──\s*(.+?)\s*──[\s\u3000]*$/;
+const SETTLE_BANNER_RE = /^[\s\u3000]*◈\s*.+?·\s*战斗结算[\s\u3000]*$/;
+
 export default function LogEntry({ entry, color, onAction, isDayMode = false }) {
   // 得物卡（切磋掉落/偷窃成功/偷师得手）：整条换成像素卡渲染，不走纯文本。
   // 偷招传的是 entry.skill（无 item），偷物传 entry.item——两者都要放行，
   // 否则偷师得手会漏卡、退化成一行纯文本（此前正是这个 bug）。
   if (entry.t === LOG_T.LOOT && (entry.item || entry.skill)) {
     return (
-      <div className="log-entry">
+      <div className="log-entry log-entry--loot">
         <LootCard entry={entry} />
         <ReceiptStrip receipts={entry.receipts} onAction={onAction} />
       </div>
     );
   }
-  const text = entry.text || "";
+  const rawText = entry.text || "";
   const isDesc = entry.t === LOG_T.DESC;
+  const isRoom = entry.t === LOG_T.ROOM;
+  const isCmd = entry.t === LOG_T.CMD;
+  const cls = entry.streaming
+    ? "log-entry log-streaming"
+    : entry.streamed
+      ? "log-entry log-entry-streamed"
+      : "log-entry";
+
+  // 流式占位（▌ / 「旁白」▌）：原地在同一节点里渲染成水墨骨架屏，
+  // 首字抵达时无需卸载/重建节点，彻底避免行错位跳动。
+  if (isNarrativePlaceholder(entry)) {
+    return (
+      <div className={cls} style={{ color }}>
+        <NarrativeSkeleton narratorPrefix={rawText.trim().startsWith("「旁白」")} />
+      </div>
+    );
+  }
+
+  // 切磋分割条「── 与XX切磋 ──」居中配两侧细线
+  const duelMatch = entry.t === LOG_T.SYS ? rawText.match(DUEL_BANNER_RE) : null;
+  if (duelMatch) {
+    return (
+      <div className={`${cls} log-duel-banner`} style={{ color }}>
+        <span className="log-duel-rule" />
+        <span className="log-duel-label">{duelMatch[1]}</span>
+        <span className="log-duel-rule" />
+      </div>
+    );
+  }
+
+  // 战斗结算小标题「◈ XX 切磋 YY · 战斗结算」做成整齐底线小标
+  if (entry.t === LOG_T.AFF && SETTLE_BANNER_RE.test(rawText)) {
+    return (
+      <div className={`${cls} log-settle-banner`} style={{ color }}>
+        <span>{stripLeadingSpace(rawText)}</span>
+        <ReceiptStrip receipts={entry.receipts} onAction={onAction} />
+      </div>
+    );
+  }
+
+  const trimmedForDisplay = (isDesc || isRoom || isCmd)
+    ? rawText
+    : stripLeadingSpace(rawText);
+  const displayText = entry.streaming
+    ? trimmedForDisplay.replace(/\s*▌\s*$/, "")
+    : trimmedForDisplay;
+  const renderedContent = isDesc
+    ? renderMixed(displayText, color, isDayMode)
+    : isRoom && displayText.trim()
+      ? `— ${displayText.trim()} —`
+      : displayText;
 
   return (
     <div
-      className={entry.streaming ? "log-entry log-streaming" : entry.streamed ? "log-entry log-entry-streamed" : "log-entry"}
+      className={cls}
       style={{
-        whiteSpace: "pre-wrap", wordBreak: "break-all", color,
+        whiteSpace: "pre-wrap",
+        overflowWrap: "anywhere",
+        wordBreak: "normal",
+        color,
         lineHeight: "var(--lh-narrative)",
-        marginBottom: entry.t === LOG_T.ROOM ? 8 : 4,
-        fontWeight: entry.t === LOG_T.ROOM ? "bold" : "normal",
+        marginBottom: isRoom ? 4 : 4,
+        fontWeight: isRoom ? "bold" : "normal",
         textIndent: isDesc ? "2em" : "0",
-        ...(entry.t === LOG_T.ROOM ? { textAlign: "center", fontSize: "0.9em", letterSpacing: "0.2em", opacity: 0.85 } : {}),
+        ...(isRoom ? { textAlign: "center", fontSize: "0.9em", letterSpacing: "0.2em", opacity: 0.9 } : {}),
       }}
     >
       <span style={{ cursor: entry.action ? "pointer" : undefined }} onClick={entry.action ? () => onAction(entry.action) : undefined}>
-        {isDesc ? renderMixed(text, color, isDayMode) : entry.t === LOG_T.ROOM && text.trim() ? `— ${text.trim()} —` : text}
+        {renderedContent}
+        {entry.streaming && <span className="log-stream-caret" aria-hidden="true" />}
       </span>
       <ReceiptStrip receipts={entry.receipts} onAction={onAction} />
     </div>

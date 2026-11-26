@@ -239,20 +239,17 @@ export function usePrivateTalk({
       // 再加一次，于是前缀逐轮累积成「（旁白私聊回应）（旁白私聊回应）…」。存之前先剥干净：
       // 前缀由系统负责加，模型自己写的一律不算数。
       const stripEchoPrefix = (s) => s.replace(/^(?:\s*[（(]\s*旁白私聊回应\s*[）)])+\s*/, "");
-      let logIdx = null;
+      const streamKey = whisperStream ? `whisper-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` : null;
       let onChunk;
       if (whisperStream) {
-        addLog([{ t: "narrator", text: "  「旁白」▌", streaming: true }]);
-        setLog(l => {
-          if (isStale()) return l;
-          logIdx = l.length - 1;
-          return l;
-        });
+        addLog([{ t: "narrator", text: "  「旁白」▌", streaming: true, fillKey: streamKey }]);
         onChunk = (_delta, fullSoFar) => {
           setLog(l => {
-            if (isStale() || logIdx == null) return l;
+            if (isStale()) return l;
+            const idx = (l || []).findIndex((e) => e?.fillKey === streamKey);
+            if (idx < 0) return l;
             const copy = [...l];
-            copy[logIdx] = { ...copy[logIdx], t: LOG_T.NARRATOR, text: `  「旁白」${fullSoFar} ▌`, streaming: true };
+            copy[idx] = { ...copy[idx], t: LOG_T.NARRATOR, text: `  「旁白」${fullSoFar} ▌`, streaming: true };
             return copy;
           });
         };
@@ -277,9 +274,11 @@ export function usePrivateTalk({
       text = stripEchoPrefix((aiRes.text || "").trim()) || "……";
       if (whisperStream) {
         setLog(l => {
-          if (isStale() || logIdx == null) return l;
+          if (isStale()) return l;
+          const idx = (l || []).findIndex((e) => e?.fillKey === streamKey);
+          if (idx < 0) return l;
           const copy = [...l];
-          copy[logIdx] = { ...copy[logIdx], t: LOG_T.NARRATOR, text: `  「旁白」${text}`, streaming: false, streamed: true };
+          copy[idx] = { ...copy[idx], t: LOG_T.NARRATOR, text: `  「旁白」${text}`, streaming: false, streamed: true };
           return copy;
         });
         traceStep(_wt, "AI调用", "pass", "流式一次成功");

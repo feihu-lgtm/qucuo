@@ -399,6 +399,8 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
       key: newBackfillKey("ftm"),
       fallback: fallbackFeed(d),
       firstTokenBudgetMs: Number.isFinite(d._firstTokenBudgetMs) ? d._firstTokenBudgetMs : firstTokenBudgetFor(effectiveCfg),
+      gameTime: () => d.getGameState?.()?.time ?? d.time,
+      placeholderImmediately: true,
     });
     if (!fb.ok && fb.error) throw fb.error;
     if (d.isStale?.() || fb.finishReason === "stale") return { rawFull: "", finishReason: "stale" };
@@ -411,31 +413,27 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
     return { rawFull: rawText, finishReason: fb.finishReason };
   }
 
-  let streamLogIndex = null;
+  const streamKey = stream ? newBackfillKey("stream") : null;
   let onChunk;
   let judgeStream = null;
   let firstChunkSeen = false;
   let fbTimer = null;
   if (stream) {
-    d.addLog([{ t: "desc", text: "  ▌", streaming: true }]);
-    d.setLog(l => {
-      if (d.isStale?.()) return l;
-      streamLogIndex = l.length - 1;
-      return l;
-    });
+    d.addLog([{ t: "desc", text: "  ▌", streaming: true, fillKey: streamKey }]);
     if ((d.judgePipelineActive || d.groupTalkRuleBlock) && narrativeOnly) {
       // WO-13：判官管线的流式——⟦F⟧ 锚点实时剥除，\n---SEAL--- 后冻结屏幕。
       // WO-16H-H1：群聊尾章同走剥离（无锚点，只切 ---SEAL--- 尾章），否则尾章漏上屏。
       judgeStream = createStorytellerStream();
     }
-    // 遗留 JSON 单调用流式：同一首字超时口径，inline 过渡句写进占位行位，
-    // 首字抵达后 onChunk 按下标覆盖同位——与 fillKey 抹换同效。
+    // 遗留 JSON 单调用流式：按 fillKey 原位改写，避免并发 insertLogs/addLog 移动数组下标踩错行。
     fbTimer = setTimeout(() => {
       if (firstChunkSeen) return;
       d.setLog(l => {
-        if (d.isStale?.() || streamLogIndex == null || firstChunkSeen) return l;
+        if (d.isStale?.() || firstChunkSeen) return l;
+        const idx = (l || []).findIndex((e) => e?.fillKey === streamKey);
+        if (idx < 0) return l;
         const copy = [...l];
-        copy[streamLogIndex] = { ...copy[streamLogIndex], t: "desc", text: "  " + timeoutFallbackLine(fallbackFeed(d)) + " ▌", streaming: true, timeoutFallback: true };
+        copy[idx] = { ...copy[idx], t: "desc", text: "  " + timeoutFallbackLine(fallbackFeed(d)) + " ▌", streaming: true, timeoutFallback: true };
         return copy;
       });
     }, Number.isFinite(d._firstTokenBudgetMs) ? d._firstTokenBudgetMs : firstTokenBudgetFor(effectiveCfg));
@@ -447,10 +445,12 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
         judgeStream.push(fullSoFar);
       }
       d.setLog(l => {
-        if (d.isStale?.() || streamLogIndex == null) return l;
+        if (d.isStale?.()) return l;
+        const idx = (l || []).findIndex((e) => e?.fillKey === streamKey);
+        if (idx < 0) return l;
         const copy = [...l];
         const shown = judgeStream ? judgeStream.screenText : (narrativeOnly ? fullSoFar : fullSoFar.slice(-200));
-        copy[streamLogIndex] = { ...copy[streamLogIndex], t: "desc", text: "  " + shown + (judgeStream?.sealed ? "" : " ▌"), streaming: !judgeStream?.sealed };
+        copy[idx] = { ...copy[idx], t: "desc", text: "  " + shown + (judgeStream?.sealed ? "" : " ▌"), streaming: !judgeStream?.sealed };
         return copy;
       });
     };
@@ -480,14 +480,16 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
       // 叙事模式：把流式条目转为永久日志项（而不是移除它）。谈价 <deal> 标签仅供系统，显示时剥掉。
       const shown = text.replace(/<deal>[\s\S]*?<\/deal>/gi, "").replace(/<deal>[\s\S]*$/i, "").trim();
       d.setLog(l => {
-        if (d.isStale?.() || streamLogIndex == null) return l;
+        if (d.isStale?.()) return l;
+        const idx = (l || []).findIndex((e) => e?.fillKey === streamKey);
+        if (idx < 0) return l;
         const copy = [...l];
-        copy[streamLogIndex] = { ...copy[streamLogIndex], t: "desc", text: "  " + shown, streaming: false, streamed: true };
+        copy[idx] = { ...copy[idx], t: "desc", text: "  " + shown, streaming: false, streamed: true };
         return copy;
       });
     } else {
       // JSON 模式：移除占位条目（正式 output 会在解析后追加）
-      d.setLog(l => (d.isStale?.() || streamLogIndex == null ? l : l.filter((_, i) => i !== streamLogIndex)));
+      d.setLog(l => (d.isStale?.() ? l : (l || []).filter((e) => e?.fillKey !== streamKey)));
     }
   }
   // WO-13：判官管线下剥锚点/切尾章——rawFull 只留屏幕正文，
@@ -496,9 +498,11 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
     const split = splitStorytellerText(text);
     if (stream && narrativeOnly) {
       d.setLog(l => {
-        if (d.isStale?.() || streamLogIndex == null) return l;
+        if (d.isStale?.()) return l;
+        const idx = (l || []).findIndex((e) => e?.fillKey === streamKey);
+        if (idx < 0) return l;
         const copy = [...l];
-        copy[streamLogIndex] = { ...copy[streamLogIndex], t: "desc", text: "  " + split.screenText.trim(), streaming: false, streamed: true };
+        copy[idx] = { ...copy[idx], t: "desc", text: "  " + split.screenText.trim(), streaming: false, streamed: true };
         return copy;
       });
     }

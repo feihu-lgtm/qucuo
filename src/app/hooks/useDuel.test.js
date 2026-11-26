@@ -114,14 +114,21 @@ describe("duel battle report", () => {
     return { handlers, act, addLog, restoreStore, aiSummarizeFact };
   }
 
-  it("logs the system fact lines at once and never starts an AI turn", () => {
+    it("logs the system fact lines before settlement rewards and never starts an AI turn", () => {
     const { handlers, act, addLog, restoreStore } = setup({ canAsk: () => false });
     try {
       handlers.duelFinishHandler("win", null, [{ round: 1, teamText: "一招既定" }], null, [], null, []);
       expect(act).not.toHaveBeenCalled();
       const logs = addLog.mock.calls.flatMap(([entries]) => entries || []);
-      expect(logs).toContainEqual(expect.objectContaining({ t: "sys", text: expect.stringContaining("第1回合") }));
-      expect(logs).toContainEqual(expect.objectContaining({ t: "sys", fillSlot: "end" }));
+      const texts = logs.map((entry) => entry.text);
+      const rIdx = texts.findIndex((text) => text.includes("第1回合"));
+      const endIdx = logs.findIndex((entry) => entry.fillSlot === "end");
+      const potIdx = texts.findIndex((text) => text.includes("潜能"));
+      const settleIdx = texts.findIndex((text) => text.includes("战斗结算"));
+      expect(rIdx).toBeGreaterThan(-1);
+      expect(endIdx).toBeGreaterThan(rIdx);
+      expect(potIdx).toBeGreaterThan(endIdx);
+      expect(settleIdx).toBeGreaterThan(potIdx);
     } finally {
       restoreStore();
     }

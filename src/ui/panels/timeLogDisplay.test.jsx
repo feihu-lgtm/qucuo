@@ -49,4 +49,32 @@ describe("局内时间合并与叙事日志回合显示", () => {
     expect(html).not.toContain("undefined");
     expect(html).not.toContain("NaN");
   });
+
+  it("组内回合推进、独立消息、切磋分割条与流式骨架都保留稳定时间戳与对齐类", () => {
+    mockState.log = [
+      { t: "sys", text: "  自动赶路出发", standalone: true, turn: 25, day: 2, realTs: 1700000000000 },
+      { t: "cmd", text: "> 看 元朵朵", turn: 25, day: 2, realTs: 1700000000000 },
+      { t: "sys", text: "  元朵朵 气血 167/167", turn: 25, day: 2 },
+      { t: "sys", text: "　── 与元朵朵切磋 ──", turn: 27, day: 2 },
+      { t: "desc", text: "  ▌", streaming: true, placeholder: true, fillKey: "ftm-1", turn: 27, day: 2 },
+    ];
+    const html = renderToStaticMarkup(createElement(NarrativeLogFeed, {
+      hidden: false,
+      clr: { sys: "var(--text)", cmd: "var(--accent)", desc: "var(--text)", room: "var(--accent)" },
+      isDayMode: false,
+      act: () => {},
+      collapsedGroups: new Set(),
+      setCollapsedGroups: () => {},
+      loading: true,
+      queueCount: 0,
+      pendingTalks: 0,
+      inspecting: null,
+      logEnd: { current: null },
+    }));
+    expect(html).toContain("第2日·第25回合 · 子正 24:00");
+    expect(html).toContain("第2日·第27回合 · 丑正 02:00");
+    expect(html).toContain("narrative-time-divider");
+    expect(html).toContain("log-duel-banner");
+    expect(html).toContain("narrative-skeleton");
+  });
 });

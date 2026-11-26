@@ -165,16 +165,22 @@ export function useDuel({
     // WO-23C1：结算前后宿敌谱快照——首次入谱/tier 晋升且 epithet 空者
     // 后台排一次 AI 赐号（系统定何时赐，AI 只起名；失败静默不阻塞）。
     const rosterBefore = gameStore.getState().varTree?.世界?.宿敌谱 || {};
-    applyResult(featureCtx(), result);
-    try {
-      const rosterAfter = gameStore.getState().varTree?.世界?.宿敌谱 || {};
-      maybeGrantEpithets(rosterBefore, rosterAfter);
-    } catch { /* 赐号链路异常绝不阻塞结算 */ }
-    if (result.factId && !finishedNpc) aiSummarizeFact(result.factId, result.cue);
     if (finishedNpc) {
-      // 系统事实行立刻落日志；描写在后台补，不走 act，玩家不用等。
+      // 时序对齐：切磋开场 → 逐回合战报/结局 → 战斗结算/掉落卡。
+      // 之前先 applyResult 整包落结算再追加 duelFactLogs，导致战报飞到奖励和 LootCard 下方。
       const key = newBackfillKey("duel");
-      addLog(duelFactLogs(result.reportRounds, key, result.outcomeText));
+      const factLines = duelFactLogs(result.reportRounds, key, result.outcomeText);
+      const settleLogs = Array.isArray(result.logs) ? result.logs : [];
+      const hasDuelHeader = settleLogs.length > 0 && /── 与.+切磋 ──/.test(settleLogs[0]?.text || "");
+      const orderedLogs = hasDuelHeader
+        ? [settleLogs[0], ...factLines, ...settleLogs.slice(1)]
+        : [...factLines, ...settleLogs];
+      applyResult(featureCtx(), { ...result, logs: [] });
+      try {
+        const rosterAfter = gameStore.getState().varTree?.世界?.宿敌谱 || {};
+        maybeGrantEpithets(rosterBefore, rosterAfter);
+      } catch { /* 赐号链路异常绝不阻塞结算 */ }
+      addLog(orderedLogs);
       // 任务分支战斗打赢后，aftermath（任务数据登记的收尾梗概）交给叙事段写成
       // 结局段——玩家不只看到战况，还看到这件事怎么作结、怎么回归
       //（小牧童：牦牛认人、牵牛回寨、阿索分糌粑）。
@@ -195,7 +201,14 @@ export function useDuel({
         owner: [{ name: finishedNpc.name, via: VIA.FIRSTHAND }],
         source: NOTE_SOURCE.DUMB,
       });
+      return;
     }
+    applyResult(featureCtx(), result);
+    try {
+      const rosterAfter = gameStore.getState().varTree?.世界?.宿敌谱 || {};
+      maybeGrantEpithets(rosterBefore, rosterAfter);
+    } catch { /* 赐号链路异常绝不阻塞结算 */ }
+    if (result.factId) aiSummarizeFact(result.factId, result.cue);
   }, { feature: "duel.finish" }), [duelingNpc, pendingQuestBranch, noteAction, addLog, jotNote, aiSummarizeFact, setDuelingNpc, setPendingQuestBranch, narrator]);
 
   const resetDuel = useCallback(() => applyResult(featureCtx(), () => {
