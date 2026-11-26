@@ -1,6 +1,6 @@
 // ── 判官尾章/开庭前仲裁（S4 纯搬家：原 runTurn.js 两段原样移入，零行为变化）──
 import { verifySealAndMaterialize } from "../../domain/rules/effects/sealVerifier.js";
-import { parsePactOffer } from "../../domain/rules/pact/pactOfferParse.js";
+import { parsePactOffer, PACT_REFUSAL_RE } from "../../domain/rules/pact/pactOfferParse.js";
 import { validateEmergenceSeal } from "../../domain/rules/npc/npcEmergence.js";
 import { recordSealMetric } from "../ports/releaseMetrics.js";
 import { withAI } from "../ports/withAI.js";
@@ -34,7 +34,6 @@ export function verifyJudgeTail({ ctx, deps, judgeVerdict, sealParts, narrativeT
     // 派工裁决①：offer 不即绑——本回合正文有明确拒绝信号（休想/不行/免谈/做梦/
     // 凭什么/拒绝）则不立约；无明确拒绝（含沉默含糊讨价还价）则绑为未了之约。
     // 宁可漏绑不可虚绑：被拒还挂倒计时契约比漏一单更穿帮。
-    const PACT_REFUSAL_RE = /休想|不行|免谈|做梦|凭什么|拒绝/;
     let fallbackPact = null;
     try {
       const offer = parsePactOffer(deps.cmd || "");

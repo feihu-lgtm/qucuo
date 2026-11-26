@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parsePactOffer } from "./pactOfferParse.js";
+import { parsePactOffer, PACT_REFUSAL_RE } from "./pactOfferParse.js";
 
 describe("F7 parsePactOffer 口头契约系统兜底解析", () => {
   it("T16 原句：三天+替你寻回旧物+赏十两银子 → 72h/承诺/酬谢全齐", () => {
@@ -30,5 +30,14 @@ describe("F7 parsePactOffer 口头契约系统兜底解析", () => {
 
   it("中文数字：十日=240h", () => {
     expect(parsePactOffer("十日之内我定会寻回那物件，你谢我五两银子")?.deadlineHours).toBe(240);
+  });
+});
+
+describe("派工裁决①拒信关键词", () => {
+  it("明确拒绝信号命中；沉默含糊讨价还价不命中", () => {
+    expect(PACT_REFUSAL_RE.test("才旦摆手：休想！我凭什么帮你")).toBe(true);
+    expect(PACT_REFUSAL_RE.test("他一口拒绝")).toBe(true);
+    expect(PACT_REFUSAL_RE.test("才旦沉吟片刻，没有作声")).toBe(false);
+    expect(PACT_REFUSAL_RE.test("「十两太多，五两如何？」他讨价还价")).toBe(false);
   });
 });

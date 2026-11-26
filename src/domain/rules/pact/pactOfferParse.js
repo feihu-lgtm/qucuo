@@ -48,3 +48,6 @@ export function parsePactOffer(text) {
   if (!rewardHint) return null;
   return { promise, deadlineHours: hours, rewardHint };
 }
+
+// 派工裁决①：本回合正文拒信关键词——扫到即不立约（静默/含糊/讨价还价不算拒）。
+export const PACT_REFUSAL_RE = /休想|不行|免谈|做梦|凭什么|拒绝/;
