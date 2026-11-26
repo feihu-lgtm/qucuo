@@ -35,5 +35,6 @@ if (arg === "--demo" || !arg) {
 }
 const summary = summarizeShadowCoverage(agg);
 const evaluation = evaluateShadowThresholds(summary);
-console.log(formatCoverageReport(summary, evaluation).join("\n"));
+// A3：聚合 JSON 内嵌 stageCounts/pendingAtExport 透传给报告；老导出没有时报告内显式标注。
+console.log(formatCoverageReport(summary, evaluation, { stageCounts: agg?.stageCounts || null, pendingAtExport: agg?.pendingAtExport || 0 }).join("\n"));
 process.exit(evaluation.pass ? 0 : 2);

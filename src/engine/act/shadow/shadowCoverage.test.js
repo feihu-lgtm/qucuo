@@ -140,4 +140,38 @@ describe("formatCoverageReport", () => {
     expect(joined).toContain("采样 2 句");
     expect(joined).toContain("放行阈值评估");
   });
+  it("A3：有 stageCounts 时表头列开始/完成/丢弃/出错/在途并恒等对账", () => {
+    const s = summarizeShadowCoverage(mkAgg({ turns: 300 }));
+    const stageCounts = {
+      shadowStarted: 10, intakeStarted: 9, intakeDone: 8, intakeFailed: 1,
+      judgeDone: 8, compareDone: 7, droppedStale: 1, droppedEpoch: 1, errorTurns: 1,
+      errorByStage: { intake: { TypeError: 1 } },
+    };
+    const lines = formatCoverageReport(s, null, { stageCounts, pendingAtExport: 0 });
+    const joined = lines.join("\n");
+    expect(joined).toContain("开始 10");
+    expect(joined).toContain("完成 7");
+    expect(joined).toContain("丢弃 2");
+    expect(joined).toContain("出错 1");
+    expect(joined).toContain("导出时在途 0");
+    // 7+2+1+0=10 对账平
+    expect(joined).toContain("对账平");
+    expect(joined).toContain("intake: TypeError×1");
+    // 计数行在覆盖率行之前（表头位置）
+    expect(joined.indexOf("A3 阶段计数")).toBeLessThan(joined.indexOf("回合 300"));
+  });
+  it("A3：恒等不平时报计量有洞", () => {
+    const s = summarizeShadowCoverage(mkAgg({ turns: 300 }));
+    const stageCounts = { shadowStarted: 10, compareDone: 5, droppedStale: 0, droppedEpoch: 0, errorTurns: 0 };
+    const joined = formatCoverageReport(s, null, { stageCounts, pendingAtExport: 0 }).join("\n");
+    expect(joined).toContain("不平");
+  });
+  it("A3：老导出无 stageCounts 时显式降级行，不报错", () => {
+    const s = summarizeShadowCoverage(mkAgg({ turns: 300 }));
+    const lines = formatCoverageReport(s, evaluateShadowThresholds(s));
+    expect(lines[0]).toContain("阶段计数：无");
+    expect(lines[0]).not.toContain("undefined");
+    // 显式传 null 同样降级
+    expect(formatCoverageReport(s, null, { stageCounts: null })[0]).toContain("阶段计数：无");
+  });
 });
