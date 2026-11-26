@@ -7,7 +7,7 @@
 // WO-16D-M1 补四类目：vitals 气血/银两（char.hp[0]/char.money 数值增减）、skills 技能增删、
 // cultivation 修为（exp/pot 数值增量）、quest 任务推进语义投影。money 不复活大类——
 // 银两作为 vitals.money 子项随气血同列（char.money 可精确 diff，见 shadowDiff）。
-import { CATALOG_INDEX } from "../../../domain/data/items/catalog.js";
+import { consumableOfItem } from "../../../domain/data/items/catalogOps.js";
 
 export const SHADOW_CATEGORIES = ["inv", "flags", "affection", "npcs", "vitals", "skills", "cultivation", "quest", "world"];
 
@@ -63,9 +63,9 @@ export const FEATURE_ROUTED_KIND_CATS = {
 // D1：use_item 分流后非耗材（兵刃衣饰演练/凭帖出示）零状态改动——
 // 系统路由并未动 inv/vitals，此时不得豁免，否则判官真漏签被洗成盲区。
 // consumable 口径与 consumeItem/judgeRoutes 同源（item.consumable 或未盾图鉴药效）。
+// F1：判定走 catalogOps 单一来源（含 food 类默认可食），与 consumeItem 完全同口径。
 function isConsumableItem(item) {
-  if (!item || typeof item !== "object") return false;
-  return !!(item.consumable || (!item.noCatalog && item.name && CATALOG_INDEX[item.name]?.consumable));
+  return !!consumableOfItem(item);
 }
 
 export function featureRoutedCats(actions = [], { npcs = [], inv = [] } = {}) {

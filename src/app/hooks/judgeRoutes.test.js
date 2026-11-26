@@ -276,6 +276,49 @@ describe("WO-16F-F2a 判官路由集成", () => {
     gameActions.setInv([]);
   });
 
+  it("F1：food 类干粮无 consumable 字段也走服用消耗账（背包-1）", async () => {
+    gameActions.setInv([{ id: "it_f1", name: "干粮", category: "food", quality: "白", equipped: false }]);
+    gameActions.setChar({ ...(gameStore.getState().char || {}), hp: [80, 100] });
+    const hpBefore = gameStore.getState().char?.hp?.[0];
+    const out = executeJudgeRoutes([{ kind: "use_item", item: "干粮", itemId: "it_f1", target: "无", text: "拿出一块干粮吃掉垫垫肚子" }]);
+    expect(out.receipts[0].ok).toBe(true);
+    expect(out.receipts[0].text).toContain("已服用生效");
+    expect(gameStore.getState().inv).toHaveLength(0);
+    const hpAfter = gameStore.getState().char?.hp?.[0];
+    expect(hpAfter).toBeGreaterThanOrEqual(hpBefore); // 回血生效且只经一路
+    gameActions.setInv([]);
+  });
+
+  it("F1 classifyUseItem：food 归 consumable、noCatalog 不挡食物本性、misc 钥匙仍出示", async () => {
+    const { classifyUseItem } = await import("./judgeRoutes.js");
+    const state = { inv: [] };
+    expect(classifyUseItem(state, { name: "干粮", category: "food" })).toBe("consumable");
+    expect(classifyUseItem(state, { name: "干粮", category: "food", noCatalog: true })).toBe("consumable");
+    expect(classifyUseItem(state, { name: "溪边小屋钥匙", category: "misc" })).toBe("present");
+  });
+
+  it("Review 修：明示出示意图的食物不走吞服（出示干粮仍在背包）", async () => {
+    const { classifyUseItem } = await import("./judgeRoutes.js");
+    const state = { inv: [] };
+    const food = { name: "干粮", category: "food" };
+    expect(classifyUseItem(state, food, "拿出干粮出示给店家看")).toBe("present");
+    expect(classifyUseItem(state, food, "拿出一块干粮吃掉垫垫肚子")).toBe("consumable");
+    expect(classifyUseItem(state, food, "")).toBe("consumable");
+    // Review 二轮：「举起青稞酒一口下肚」——下肚/入喉等吞服俗语压倒举起
+    expect(classifyUseItem(state, { name: "青稞酒", category: "misc", consumable: { hpRestore: 0.05 } }, "举起青稞酒一口下肚")).toBe("consumable");
+    // Review 三轮：物件名含动词用字（极品金创香膏的品）不算吞服意图
+    expect(classifyUseItem(state, { name: "极品金创香膏", category: "misc", consumable: { hpRestore: 0.05 } }, "出示极品金创香膏给掌柜看")).toBe("present");
+    // Review 四轮：外敷=消耗（抹）；剥名 artifact「塞入口袋」不误判
+    expect(classifyUseItem(state, { name: "极品金创香膏", category: "misc", consumable: { hpRestore: 0.05 } }, "举起极品金创香膏往伤口上一抹")).toBe("consumable");
+    expect(classifyUseItem(state, { name: "干粮", category: "food" }, "把干粮塞入干粮口袋给掌柜看")).toBe("present");
+  });
+
+  it("Review 修：字符串名耗材按图鉴仍可服食（背包按钮老调用）", async () => {
+    const { consumableOfItem } = await import("../../domain/data/items/catalogOps.js");
+    expect(consumableOfItem("广汉干粮")).toBeTruthy();
+    expect(consumableOfItem("不存在的物件")).toBeNull();
+  });
+
   it("D1 classifyUseItem 纯函数三分流", async () => {
     const { classifyUseItem } = await import("./judgeRoutes.js");
     const state = { inv: [] };

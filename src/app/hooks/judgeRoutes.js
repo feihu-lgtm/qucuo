@@ -12,6 +12,7 @@ import { consumeItem } from "../../features/items/logic.js";
 import { findInvItem } from "../../features/intent/logic.js";
 import { itemNameOf } from "../../domain/rules/intent/actionKinds.js";
 import { CATALOG_INDEX } from "../../domain/data/items/catalog.js";
+import { consumableOfItem } from "../../domain/data/items/catalogOps.js";
 import { QUCUO_MAP, resolveExit, isNodeUnlocked } from "../../domain/data/map/qucuoMap.js";
 import { visibleInnerExits, getDistrictAnchor, hasInnerMap, resolveInnerExit } from "../../domain/rules/map/innerMap.js";
 import { serializeSquares } from "../../domain/rules/map/mapSquares.js";
@@ -163,14 +164,27 @@ function runMove(action) {
 // consumable 口径与 consumeItem 完全一致：item.consumable 或未带 noCatalog 盾
 // 且命中 CATALOG_INDEX 药效——判官条件券新铸物撞图鉴名也不吃图鉴药效。
 // 返回 "consumable" | "wield" | "present"。
-export function classifyUseItem(state, itemObjOrName) {
+// Review 修：use_item 同时承载「吃」与「出示」两种意图（intake 不细分）——
+// 文本明示出示/亮出/展示且无吞服动词时，食物也不进 consumable 旁路。
+// 动词表权衡（Review 四轮）：入口/下咽 在剥名 artifact（塞入[干粮]口袋）与
+// 日常语境碰撞率高而真服用场景几乎不用——删；抹/敷/涂/擦 是外敷药真消耗——补。
+// 单字动词只留吃/喝/服/吞/嚼/饮/啃/咬/咽/尝/品这些物件名剥除后歧义可控的。
+const EAT_VERB_RE = /吃|喝|服|吞|嚼|饮|啃|咬|下肚|入喉|咽|尝|品|干杯|抹|敷|涂|擦/;
+const SHOW_VERB_RE = /出示|亮出|展示|举起|过目|验看|给.{0,4}看/;
+export function classifyUseItem(state, itemObjOrName, actionText = "") {
   const item = typeof itemObjOrName === "string"
     ? (state?.inv || []).find((entry) => itemNameOf(entry) === itemObjOrName) || null
     : itemObjOrName;
   if (!item || typeof item !== "object") return "present";
   const shielded = item.noCatalog;
-  const consumable = item.consumable || (shielded ? null : CATALOG_INDEX[itemNameOf(item)]?.consumable);
-  if (consumable) return "consumable";
+  const consumable = consumableOfItem(item);
+  // Review 三轮修：动词匹配前先剥掉物件名——「极品金创香膏」的「品」
+  // 「蛇咬草」的「咬」都是名字用字不是动词，不剥干净必然误判 intent。
+  const itemNameStr = itemNameOf(item) || "";
+  const textRaw = String(actionText || "");
+  const text = itemNameStr ? textRaw.split(itemNameStr).join("") : textRaw;
+  const showOnly = SHOW_VERB_RE.test(text) && !EAT_VERB_RE.test(text);
+  if (consumable && !showOnly) return "consumable";
   // Review 修：accessory 里混着凭帖信物（赌石邀帖/私印等纸面物）——它们不带任何
   // 数值加持（sixDim/effect/atk/def 皆无），不是拿来穿戴佩挂的装备，走出示而非演练。
   // 真饰品（旧护身符/虎乳牙/红线等带 sixDim 或 effect）仍为 wield。
@@ -203,7 +217,7 @@ function runUseItem(action, itemLabel) {
   if (found.mismatch) return failText("名/号矛盾，未动他物");
   if (!found.item) return failText("背包里没有对应物件");
   const itemName = itemNameOf(found.item);
-  const cls = classifyUseItem(state, found.item);
+  const cls = classifyUseItem(state, found.item, action?.text || "");
   if (cls === "consumable") {
     const result = consumeItem(state, found.item);
     const hasChanges = !!(result && result.changes && Object.keys(result.changes).length > 0);

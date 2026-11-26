@@ -8,6 +8,7 @@ import { validateJsonSchema } from "../../utils/schemaValidate.js";
 import { splitCompositeInput } from "../../domain/rules/input/compositeInput.js";
 import { visibleInnerExits } from "../../domain/rules/map/innerMap.js";
 import { QUCUO_MAP, isNodeUnlocked } from "../../domain/data/map/qucuoMap.js";
+import { consumableOfItem } from "../../domain/data/items/catalogOps.js";
 
 // 组装喂给小模型的现场材料（纯函数）：
 //   最近两轮对话 + 在场角色与随身物 ID + 可引用场记板条目头。
@@ -58,8 +59,8 @@ export function buildIntakeUserContent({
   const giftItems = invList.filter((it) => !it.equipped);
   // D1：用物路由已按物类分流（服用/演练端详/出示）——前哨喂料必须给全背包，
   // 否则玩家打字「亮出凭帖」「拔剑演练」时小模型抄不到 itemId。拆两行帮模型分语义。
-  const useItems = invList.filter((it) => it.consumable);
-  const showItems = invList.filter((it) => !it.consumable);
+  const useItems = invList.filter((it) => typeof it === "object" && it && consumableOfItem(it));
+  const showItems = invList.filter((it) => !(typeof it === "object" && it && consumableOfItem(it)));
   const equipItems = invList.filter((it) => ["weapon", "armor", "accessory"].includes(it.category));
   const groundItems = (room?.items || []).filter((it) => it && it.name);
   lines.push("[可用物件]");
