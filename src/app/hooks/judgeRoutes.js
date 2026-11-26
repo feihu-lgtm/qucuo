@@ -14,6 +14,7 @@ import { itemNameOf } from "../../domain/rules/intent/actionKinds.js";
 import { CATALOG_INDEX } from "../../domain/data/items/catalog.js";
 import { QUCUO_MAP, resolveExit, isNodeUnlocked } from "../../domain/data/map/qucuoMap.js";
 import { visibleInnerExits, getDistrictAnchor, hasInnerMap, resolveInnerExit } from "../../domain/rules/map/innerMap.js";
+import { serializeSquares } from "../../domain/rules/map/mapSquares.js";
 
 // S7 move 路由：intake.direction（n/s/e/w）直接消费，不从长文本重猜。
 const VALID_DIRS = new Set(["n", "s", "e", "w"]);
@@ -127,7 +128,9 @@ function runMove(action) {
   if (res.type === "outer") {
     const arrival = outerArrival(state, {
       direction: res.dir, destName: res.dest,
-      roomMap: state.roomCache || {}, squares: {},
+      // 必传真实格子（Review 修）：否则格子预埋拾取/路遇永不发放，
+      // squareOps 却照消耗——重访玩家永远错失当批奖励。
+      roomMap: state.roomCache || {}, squares: serializeSquares(),
       command: action.text || res.dest,
     });
     if (arrival?.cached && arrival.changes) {
