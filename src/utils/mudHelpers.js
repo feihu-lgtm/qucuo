@@ -49,6 +49,24 @@ const DIR_PATTERNS = [
   ["u", new RegExp(`^(?:${DIR_PREFIX}(?:up|u)|${DIR_PREFIX}上)`)],
   ["d", new RegExp(`^(?:${DIR_PREFIX}(?:down|d)|${DIR_PREFIX}下)`)],
 ];
+// W-FIX1：纯方向短令闸门——只有「真是一个移动指令」的玩家输入才允许走 parseDir
+// 纯前端秒结。自然语言长句（复合条件、地名后缀、多动作）必须完整放行进 runTurn
+// 交前哨拆句+judgeRoutes 裁决，否则后半截动作被 50ms 秒结吞掉（验收第 7/13 式）。
+// fromButton 为真（按钮点击/罗盘快捷键）直接放行——按钮语义本来就是纯方向。
+export const isPureDirectionCmd = (cmd, { fromButton = false } = {}) => {
+  if (fromButton) return true;
+  const c = String(cmd || "").trim().replace(/[。！？!?.]+$/, "").trim();
+  if (!c) return false;
+  // 长度不超过 6 个汉字（按字符计，英文方向短令 n/ne/east 也一并很短）
+  if ([...c].length > 6) return false;
+  // 不含分句符（逗号/分号/空格分句）
+  if (/[，,；;、\s]/.test(c)) return false;
+  // 不含复合动作词或地名后缀——「要是到了就翻柜」「往忘忧谷走」都不是纯方向
+  if (/要是|如果|万一|到了|顺便|看看|找|翻|若/.test(c)) return false;
+  if (/去.+谷|去.+堡|去.+山/.test(c)) return false;
+  return true;
+};
+
 export const parseDir = (cmd) => {
   const c = (cmd || "").trim().toLowerCase();
   // 【删掉了"去锦官城→sw"这条地名别名】它是在鱼定村与锦官城直接接壤的年代写的。
