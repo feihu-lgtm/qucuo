@@ -24,4 +24,19 @@ describe("resolveFreeActExpense 服务菜单进查价链（夜班银两单 Revie
   it("服务/请客类无目标物仍返回 null（走 risk 默认）", () => {
     expect(resolveFreeActExpense({ text: "打赏伙计几个钱" })).toBeNull();
   });
+
+  it("二轮 Review：份量乘算——三份辣子炒肉 36 两、两碗牦牛骨汤 16 两", () => {
+    expect(resolveFreeActExpense({ text: "来三份辣子炒肉" })?.price).toBe(36);
+    expect(resolveFreeActExpense({ text: "来两碗牦牛骨汤" })?.price).toBe(16);
+  });
+
+  it("二轮 Review：谢绝不算点单——不要辣子炒肉只来汤，按汤价 8 两不歧义", () => {
+    const hit = resolveFreeActExpense({ text: "不要辣子炒肉，来一碗牦牛骨汤" });
+    expect(hit?.price).toBe(8);
+  });
+
+  it("二轮 Review：场地限定——醉仙楼点老孙饭馆的菜不落价，本店菜照落", () => {
+    expect(resolveFreeActExpense({ text: "来一份辣子炒肉", menuKey: "醉仙楼" })).toBeNull();
+    expect(resolveFreeActExpense({ text: "来一壶醉仙酿", menuKey: "醉仙楼" })?.price).toBe(18);
+  });
 });

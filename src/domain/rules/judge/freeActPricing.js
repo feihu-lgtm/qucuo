@@ -86,7 +86,7 @@ export function parseStatedExpense(text) {
   return firstDefinite;
 }
 
-export function resolveFreeActExpense({ text = "", itemName = "", category = "", presentNpcNames = [] } = {}) {
+export function resolveFreeActExpense({ text = "", itemName = "", category = "", presentNpcNames = [], menuKey = "" } = {}) {
   // ①在场商户货架
   const shelves = [];
   for (const name of presentNpcNames || []) {
@@ -100,10 +100,28 @@ export function resolveFreeActExpense({ text = "", itemName = "", category = "",
   // Review 修（夜班银两单）：饭馆/酒楼服务菜单进查价链——点菜破费得按菜单实价扣，
   // 此前菜单不在链上，牦牛骨汤（8 两）落 quality 默认 18 两多扣一倍还多。
   // 菜单具名冲突处理：同名不同价（跨菜单）按歧义不落价；同名同价照用。
+  // 二轮 Review 三修：
+  // ①场地限定——当前建筑 menuKey 已知时只扫该店菜单，在醉仙楼点老孙饭馆的菜不落价；
+  // ②谢绝排除——菜名前缀着 不/别/莫/无/免 的是推掉不要，不算点单、也不制造歧义；
+  // ③份量乘算——「三份/两碗/一壶×3」贴在菜名前的份数按乘算（parseCnNumeral 同款数词）。
+  const NEG_RE = /[不别莫无免][要不要来上吃点叫]?$/;
+  const COUNT_RE = /([一二两三四五六七八九十\d]{1,3})[份碗壶盘杯个只]\s*$/;
   const menuHits = [];
-  for (const dishes of Object.values(SERVICE_MENUS)) {
+  const scanMenus = menuKey && SERVICE_MENUS[menuKey] ? [SERVICE_MENUS[menuKey]] : Object.values(SERVICE_MENUS);
+  for (const dishes of scanMenus) {
     for (const dish of dishes) {
-      if (dish?.name && txt.includes(dish.name)) menuHits.push(dish);
+      if (!dish?.name) continue;
+      const at = txt.indexOf(dish.name);
+      if (at < 0) continue;
+      const before = txt.slice(Math.max(0, at - 8), at);
+      if (NEG_RE.test(before.trimEnd().replace(/[，。、\s]+$/, ""))) continue; // 谢绝不算
+      let portions = 1;
+      const cm = COUNT_RE.exec(before.replace(/[\s，。、]+$/, ""));
+      if (cm) {
+        const n = parseCnNumeral(cm[1].replace(/两/g, "二"));
+        if (Number.isFinite(n) && n >= 1 && n <= 20) portions = n;
+      }
+      menuHits.push({ ...dish, portions });
     }
   }
 
@@ -131,7 +149,10 @@ export function resolveFreeActExpense({ text = "", itemName = "", category = "",
   const menuSame = menuHits.filter((d) => d.name === goodName);
   if (menuSame.length) {
     const prices = [...new Set(menuSame.map((d) => d.price))];
-    if (prices.length === 1 && prices[0] > 0) return { price: prices[0], source: `菜单具名（${goodName}）` };
+    if (prices.length === 1 && prices[0] > 0) {
+      const portions = menuSame[0].portions || 1;
+      return { price: prices[0] * portions, source: `菜单具名（${goodName}${portions > 1 ? `×${portions}份` : ""}）` };
+    }
   }
 
   const entry = CATALOG_INDEX[goodName] || null;
