@@ -49,9 +49,27 @@ export function resolveIntimateTarget({ targetName = "", cmd = "", npcs = [], co
   // Review修：显名检测按全据点花名册（allNpcs，缺省回落在场名单）——玩家点名
   // 别屋 NPC 时绝不能把唯一在场者顶包进门禁（好感扣错人）。点名不在场维持原样
   // 不回落：gate 找不到人自然不触发，与 V5 前口径一致。
-  const roster = allNpcs || npcs || [];
-  const explicitHit = roster.find((n) => n?.name && String(cmd).includes(n.name));
-  if (targetName || explicitHit) return { targetName, explicitHit: explicitHit || null };
+  // 夜班三单串人修：显名搜索池=npcs（在场含随行同伴）∪allNpcs（据点花名册）——
+  // 同伴不收进 room.npcs，只搜花名册会漏掉被点名的跟随同伴（Review 0001）。
+  const rosterMap = new Map();
+  for (const n of [...(allNpcs || []), ...(npcs || [])]) if (n?.name && !rosterMap.has(n.name)) rosterMap.set(n.name, n);
+  const roster = [...rosterMap.values()];
+  const cmdText = String(cmd);
+  const visibleNames = new Set((npcs || []).map((n) => n?.name).filter(Boolean));
+  const explicitHit = roster
+    .filter((n) => n?.name && cmdText.includes(n.name))
+    .sort((a, b) => cmdText.indexOf(a.name) - cmdText.indexOf(b.name))[0] || null;
+  // 证据优先级（Review 0002 修）：intake 的 targetName 若有 cmd 字面证据且在场——信 intake
+  // （它读对了谁是被亲的人；「跟甲打招呼又抱住乙」乙在 cmd 里就是铁证，不能按出现序错绑甲）。
+  // targetName 无字面证据（代词错猜/幻觉人名）时，cmd 显名在场者才压过它（fuzz#192）。
+  if (targetName && targetName !== "无" && cmdText.includes(targetName) && visibleNames.has(targetName)) {
+    return { targetName, explicitHit: rosterMap.get(targetName) || null };
+  }
+  // 显名压 targetName 只在被点者确实在场（visible npcs）时——点名别屋者维持旧口径
+  // targetName 不动、不顶包（gate 找不到人自然不触发），explicitHit 仅供排查参考。
+  const hitVisible = explicitHit && visibleNames.has(explicitHit.name);
+  if (hitVisible) return { targetName: explicitHit.name, explicitHit };
+  if (targetName || explicitHit) return { targetName, explicitHit };
   const visible = (npcs || []).filter((n) => n?.name && n.companion !== true);
   if (visible.length === 1) return { targetName: visible[0].name, explicitHit: null };
   if (visible.length > 1 && /她|他|凑上去|对方/.test(String(cmd))) {

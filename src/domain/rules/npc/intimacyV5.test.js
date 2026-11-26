@@ -134,3 +134,52 @@ describe("V5 Review 五轮修回归", () => {
     expect(iii("解开绑在我手腕上的布条，替我揉按一下")).toBe(false);
   });
 });
+
+describe("夜班三单：亲密目标串人修", () => {
+  const multi = [
+    { name: "雪豹", beast: true, companionCandidate: true },
+    { name: "珍珠" },
+    { name: "卓嘎益西" },
+  ];
+  it("①fuzz#192 原句「抱住雪豹亲一下她的额头」多对象在场必绑雪豹——intake 错猜也盖不掉显名", () => {
+    // intake 把「她」错猜成卓嘎益西——cmd 显名雪豹是玩家原话铁证，优先压过 targetName
+    const rt = resolveIntimateTarget({ targetName: "卓嘎益西", cmd: "抱住雪豹亲一下她的额头", npcs: multi, convo: [] });
+    expect(rt.targetName).toBe("雪豹");
+    expect(rt.explicitHit?.name).toBe("雪豹");
+  });
+  it("②同句点名多人按 cmd 出现序取最前者，不按花名册序", () => {
+    // cmd 先出现谁就算谁点名——「亲雪豹又瞪卓嘎益西」雪豹先出现绑雪豹
+    const rt = resolveIntimateTarget({ targetName: "", cmd: "亲雪豹一口又瞪了卓嘎益西一眼", npcs: multi, convo: [] });
+    expect(rt.targetName).toBe("雪豹");
+  });
+  it("无显名时代词回落 convo 末位说话者口径不变", () => {
+    const rt = resolveIntimateTarget({ targetName: "", cmd: "凑上去亲她一口", npcs: multi, convo: [{ respondedNpcs: ["珍珠"] }] });
+    expect(rt.targetName).toBe("珍珠");
+  });
+});
+
+describe("夜班三单 Review：证据链三修", () => {
+  const multi = [
+    { name: "雪豹", beast: true, companionCandidate: true },
+    { name: "珍珠" },
+    { name: "卓嘎益西" },
+  ];
+  it("0001 点名跟随同伴（不在 room 花名册）也绑定——显名搜索池含在场同伴", () => {
+    const leopard = { name: "雪豹", beast: true, companion: true };
+    const rt = resolveIntimateTarget({
+      targetName: "", cmd: "抱住雪豹亲一下", npcs: [leopard, { name: "珍珠" }],
+      allNpcs: [{ name: "珍珠" }, { name: "卓嘎益西" }], convo: [],
+    });
+    expect(rt.targetName).toBe("雪豹");
+  });
+  it("0002「跟甲打招呼又抱住乙」intake 正确 targetName 有 cmd 证据就信——不按出现序错绑甲", () => {
+    const rt = resolveIntimateTarget({
+      targetName: "雪豹", cmd: "跟卓嘎益西打过招呼，转身抱住雪豹亲一下她的额头", npcs: multi, convo: [],
+    });
+    expect(rt.targetName).toBe("雪豹");
+  });
+  it("0002 反例：intake target 无 cmd 证据时显名仍压（fuzz 原句口径不回归）", () => {
+    const rt = resolveIntimateTarget({ targetName: "卓嘎益西", cmd: "抱住雪豹亲一下她的额头", npcs: multi, convo: [] });
+    expect(rt.targetName).toBe("雪豹");
+  });
+});
