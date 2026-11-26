@@ -118,6 +118,9 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
               npc: npc.name,
               note: forceIntimate ? intimateTicketNote(npc) : intimacyPromptNote(npc, aff),
               ticket: forceIntimate ? npc.name : null,
+              // V8：判官亲密定档输入——好感余量=aff-threshold 反衬情愿度，凭卡=被迫。
+              threshold: gate.threshold,
+              affection: aff,
             };
             trace("亲密门槛", "pass", `${npc.name} 好感 ${aff}/${gate.threshold}，${forceIntimate ? "凭卡强开" : "已亲密"}（intake 判意）`);
           }
@@ -352,6 +355,14 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
         // 每日搜刮配额读 varTree 账本跨日归零。
         // D3：条件裁决现场——前置路由后的位置/在场/移动事实 + 敌袭 + invite 拒收信号
         encounter: ctx.encounter || deps.encounter || null,
+        // V8：亲密门禁放行信号透传判官——凭卡/门槛/好感定档签发好感事实；
+        // 门禁未跑或非亲密回合为 null，判官不补闸。
+        intimateCtx: intimacyGateInfoOut.info ? {
+          npc: intimacyGateInfoOut.info.npc,
+          ticket: !!intimacyGateInfoOut.info.ticket,
+          threshold: intimacyGateInfoOut.info.threshold,
+          affection: intimacyGateInfoOut.info.affection,
+        } : null,
         conditionCtx: {
           encounter: ctx.encounter || deps.encounter || null,
           moved: preMoved || !!systemMoveTurn,
