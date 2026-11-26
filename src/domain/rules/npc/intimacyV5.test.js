@@ -77,3 +77,17 @@ describe("V5 买卖不误触自发契约", () => {
     expect(typeof v.allowSpontaneousPact).toBe("boolean");
   });
 });
+
+describe("V5 Review 三修回归", () => {
+  it("解开包袱/解开绳子不算亲密；解开衣扣才算", async () => {
+    const { isIntimateInput: iii } = await import("../prompt/inputIntent.js");
+    expect(iii("帮老孙解开包袱")).toBe(false);
+    expect(iii("解开她胸前的衣扣")).toBe(true);
+  });
+  it("convo respondedNpcs 数组口径能回落上轮说话者", async () => {
+    const { resolveIntimateTarget: rit } = await import("./intimacy.js");
+    const npcs = [{ name: "罗琦" }, { name: "才旦" }];
+    const r = rit({ targetName: "", cmd: "凑上去亲她", npcs, convo: [{ role: "assistant", respondedNpcs: ["罗琦"] }] });
+    expect(r.targetName).toBe("罗琦");
+  });
+});

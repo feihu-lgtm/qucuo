@@ -51,8 +51,13 @@ export function resolveIntimateTarget({ targetName = "", cmd = "", npcs = [], co
   const visible = (npcs || []).filter((n) => n?.name && n.companion !== true);
   if (visible.length === 1) return { targetName: visible[0].name, explicitHit: null };
   if (visible.length > 1 && /她|他|凑上去|对方/.test(String(cmd))) {
-    const lastSpoke = [...(convo || [])].reverse().find((c) => c?.npc && visible.some((n) => n.name === c.npc));
-    if (lastSpoke) return { targetName: lastSpoke.npc, explicitHit: null };
+    // Review修：convo 说话者真实存法是 respondedNpcs 数组（appendConvo 落条），
+    // 兼容旧 npc 单名字段——找不到时不能说找不到人就不检门禁。
+    const speakerOf = (c) => [c?.npc, ...(Array.isArray(c?.respondedNpcs) ? c.respondedNpcs : [])].filter(Boolean);
+    const lastSpoke = [...(convo || [])].reverse()
+      .flatMap((c) => speakerOf(c))
+      .find((nm) => visible.some((n) => n.name === nm));
+    if (lastSpoke) return { targetName: lastSpoke, explicitHit: null };
   }
   return { targetName: "", explicitHit: null };
 }

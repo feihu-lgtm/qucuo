@@ -10,6 +10,7 @@
 import { classifyIntent, INTENT, isIntimateInput } from "../../domain/rules/prompt/inputIntent.js";
 import { buildCompositeNote, findLookTargetsInText } from "../../domain/rules/input/compositeInput.js";
 import { intimacyGate, intimacyRefusal, intimacyPromptNote, intimateTicketNote, resolveIntimateTarget } from "../../domain/rules/npc/intimacy.js";
+import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { INTIMATE_TICKET_NAME } from "../../domain/rules/npc/goldenEgg.js";
 import { add, set, applyWrite } from "../../domain/rules/state/applyWrite.js";
 import { findTargetedRumor } from "../../domain/rules/npc/npcEmergence.js";
@@ -73,9 +74,12 @@ export async function resolveIntent(cmd, env) {
   if (intimateHit) {
     // V5（10.4-1）封死代词绕过：回落纯函数 resolveIntimateTarget——唯一在场者
     // 或上一轮搭话者，0 好感强吻绝不因指代不明漏过 intimacyGate。
+    // Review修：room.npcs 是全据点花名册——唯一在场者判定必须先按内层房间
+    // 可见性过滤（与 judgePhase 同口径），否则别屋住民搅局、指代不明漏门禁。
+    const visibleHere = (room?.npcs || []).filter((n) => !innerRoomName || isNpcVisibleInInnerRoom(room?.name, innerRoomName, n));
     const rt = resolveIntimateTarget({
       targetName: isTalk ? talkTarget : (talkTarget || activeTarget?.name || activeTarget),
-      cmd, npcs: room?.npcs || [], convo,
+      cmd, npcs: visibleHere, convo,
     });
     const npc = (room?.npcs || []).find((n) => n.name === rt.targetName)
       || rt.explicitHit;
