@@ -144,3 +144,61 @@ describe("roamReactionBackfill 三护栏", () => {
     expect(setLog).not.toHaveBeenCalled();
   });
 });
+
+describe("V6 原位替换占位行（验收）", () => {
+  const placeholderLog = () => [
+    { t: "sys", text: "  你掸了掸衣襟上的雪。", turn: 7 },
+    { t: "sys", text: "  脚步声近，路人甲从「歇马居」走了过来。", fillKey: "k9", fillSlot: 0, turn: 7 },
+  ];
+
+  it("补写成功：日志总条数不变，占位行被白描原位替换", async () => {
+    const state = mkState();
+    let log = placeholderLog();
+    const setLog = (fn) => { log = fn(log); };
+    const ask = vi.fn(async () => ({ text: "门帘一掀，寒气裹着个行脚客进来，他朝掌柜点了点头。" }));
+    roamReactionBackfill(movements, {
+      key: "k9", triggerRoomName: "鱼定村", triggerInnerRoomName: "村口",
+      getState: () => state, setLog, canAsk: () => true, ask,
+    });
+    await new Promise((r) => setTimeout(r, 60));
+    expect(log).toHaveLength(2);
+    const replaced = log.find((e) => e.fillKey === "k9");
+    expect(replaced.text).toContain("门帘一掀");
+    expect(replaced.text).not.toContain("脚步声近");
+    expect(replaced.t).toBe("desc");
+    expect(replaced.turn).toBe(7);
+  });
+
+  it("返回空文本/离线：占位行原样保留保底", async () => {
+    const state = mkState();
+    let log = placeholderLog();
+    const setLog = (fn) => { log = fn(log); };
+    const ask = vi.fn(async () => ({ text: "   " }));
+    roamReactionBackfill(movements, {
+      key: "k9", triggerRoomName: "鱼定村", triggerInnerRoomName: "村口",
+      getState: () => state, setLog, canAsk: () => true, ask,
+    });
+    await new Promise((r) => setTimeout(r, 60));
+    const row = log.find((e) => e.fillKey === "k9");
+    expect(row.text).toContain("脚步声近");
+    expect(log).toHaveLength(2);
+  });
+
+  it("换房后静默丢弃：不改写日志，占位行原样", async () => {
+    const state = mkState();
+    let log = placeholderLog();
+    const setLog = (fn) => { log = fn(log); };
+    const ask = vi.fn(async () => {
+      state.innerRoomName = "老孙饭馆"; // 回调前玩家已换房
+      return { text: "这段白描不该落屏。" };
+    });
+    roamReactionBackfill(movements, {
+      key: "k9", triggerRoomName: "鱼定村", triggerInnerRoomName: "村口",
+      getState: () => state, setLog, canAsk: () => true, ask,
+    });
+    await new Promise((r) => setTimeout(r, 60));
+    const row = log.find((e) => e.fillKey === "k9");
+    expect(row.text).toContain("脚步声近");
+    expect(row.text).not.toContain("不该落屏");
+  });
+});

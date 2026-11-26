@@ -1,7 +1,7 @@
 // W-ROAM 增量：NPC 进出玩家视野房的即时反应后台补写。
 // 走位与占位：roam.js 世界规则判定进出 playerSpot 后，useWorldRulesRunner 先把
 // 极简动向占位行带 tagBackfill 落公屏（离线/无 Key 时的保底），再调本模块——
-// 异步 withAI("roam.reaction") 拿回 60-110 字白描，原位插到占位行下面。
+// 异步 withAI("roam.reaction") 拿回 60-110 字白描，原位替换占位行（V6 起不再追加双行）。
 // 三个防呆护栏（图纸规格）：
 //   1. 同拍多人进出合并单次调用——movements 整组打包进一次 roam.reaction；
 //   2. 回调落屏前核对 room.name/innerRoomName 仍是触发房间，已换房静默丢弃；
@@ -11,7 +11,7 @@ import { gameStore, getGameEpoch, isGameEpochStale, gameActions } from "../../st
 import { createWebAi } from "../../engine/ports/ai.js";
 import { withAI } from "../../engine/ports/withAI.js";
 import { hasApiKey } from "../../engine/ports/storyteller.js";
-import { insertWhenIdle } from "../../engine/ports/backfill.js";
+import { replaceWhenIdle } from "../../engine/ports/backfill.js";
 import { renderDiegeticState } from "../../domain/rules/clapboard/diegeticState.js";
 import { npcAffectionLabel } from "../../domain/rules/prompt/mvu.js";
 import { normalizeLedgerEntries } from "../../domain/rules/memory/npcLedger.js";
@@ -150,7 +150,8 @@ export function roamReactionBackfill(movements, {
       if (stale()) return false;
       const line = String(text || "").trim();
       if (!line) return false;
-      return await insertWhenIdle(key, { 0: line }, { setLog, isStale: stale });
+      // V6：原位替换占位行（不再追加在其下方）——公屏条数不变，杜绝双行重复。
+      return await replaceWhenIdle(key, line, { setLog, isStale: stale });
     } catch {
       return false;
     }
