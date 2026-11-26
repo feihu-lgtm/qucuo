@@ -228,6 +228,10 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
       }
       // 刷新现场：前置路由可能已位移/用物——judgeTurn 与条件裁决必须读新现场。
       const liveAfterRoutes = ctx.getGameState?.() || liveNow;
+      // Review 修：移动+翻箱复合指令的事件发生在目的地——把路由后房间传给 commitRound，
+      // memoryFact 的目击者池与房间作用域按目的地记账，不按出发地。
+      deps.postRouteRoom = liveAfterRoutes.room || null;
+      deps.postRouteInnerRoom = liveAfterRoutes.innerRoomName ?? null;
       if (preReceipts.some((r) => r.kind === "move")) {
         const newInner = liveAfterRoutes.innerRoomName ?? innerRoomNow;
         const newRoomName = liveAfterRoutes.room?.name || deps.room?.name || "";

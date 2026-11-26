@@ -114,8 +114,10 @@ async function runTurnSteps(ctx, cmd, opts) {
   const histSource = mainConvo.length > histWindow ? mainConvo.slice(-histWindow) : mainConvo;
   const hist = buildHistBlock(histSource, {
     recentPairs: isTalk ? 3 : 2,
-    currentRoom: ctx.room?.name || "",
-    currentInner: ctx.innerRoomName ?? null,
+    // Review 修：room 不在 ctx 顶层——turnContext 挂在 state/prompt 下，
+    // 取不到会让「他处旧幕」房间头永远失效。
+    currentRoom: ctx.state?.room?.name || ctx.prompt?.room?.name || "",
+    currentInner: ctx.innerRoomName ?? ctx.state?.innerRoomName ?? ctx.prompt?.innerRoomName ?? null,
   });
   const historySavings = histBlockSavings(histSource, { recentPairs: isTalk ? 3 : 2 });
   if (historySavings.savedChars > 0) {
@@ -398,6 +400,8 @@ async function runTurnSteps(ctx, cmd, opts) {
     derivedRespondedNpcs: deps.derivedRespondedNpcs || null,
     intakeTargets: deps.intakeTargets || null,
     intakeRefIds: deps.intakeRefIds || null,
+    postRouteRoom: deps.postRouteRoom || null,
+    postRouteInnerRoom: deps.postRouteInnerRoom ?? null,
     judgePipelineActive: !!deps.judgePipelineActive,
     groupTalk: !!deps.groupTalkRuleBlock,
     // WO-16F-F2c：交互意向随 turn 对象带出——finalizeTurn 无需特别处理，

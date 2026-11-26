@@ -23,13 +23,19 @@ export function normalizeMemoryText(memory) {
   return String(memory);
 }
 
-export function registerMemoryFact({ p, room, activeTarget, isTalk, talkTarget, time, appendDayMaterial, innerRoomName = null, refIds = [] }) {
+export function registerMemoryFact({ p, room, activeTarget, isTalk, talkTarget, time, appendDayMaterial, innerRoomName = null, refIds = [], postRouteRoom = null, postRouteInnerRoom = null }) {
   if (!p.memory) return null;
   if (typeof p.memory !== "string") {
     p = { ...p, memory: normalizeMemoryText(p.memory) };
     if (!p.memory) return null;
   }
-  const factRoom = p.room && Array.isArray(p.room.npcs) ? p.room : room;
+  let factRoom = p.room && Array.isArray(p.room.npcs) ? p.room : room;
+  // 移动+翻箱/密行复合指令：玩家实际在目的地房间里行动——路由后实况是 ground truth，
+  // 优先于模型回显的 p.room：目击者池=目的地在场者，房间作用域=目的地。
+  if (postRouteRoom) {
+    factRoom = postRouteRoom;
+    innerRoomName = postRouteInnerRoom ?? null;
+  }
   const districtName = factRoom?.name || "";
   const allNpcs = factRoom?.npcs || [];
   // V4 核心根因修：目击者池不再取整座据点 room.npcs（22-28 人全员知情），

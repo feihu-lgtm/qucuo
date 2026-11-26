@@ -130,6 +130,8 @@ export function createTurnContext({ plan, env }) {
         derivedRespondedNpcs: turnResult.derivedRespondedNpcs || null,
         intakeTargets: turnResult.intakeTargets || null,
         intakeRefIds: turnResult.intakeRefIds || null,
+        postRouteRoom: turnResult.postRouteRoom || null,
+        postRouteInnerRoom: turnResult.postRouteInnerRoom ?? null,
         judgePipelineActive: turnResult.judgePipelineActive || false,
         intimateTicket,
         pickupExtractionFailed: turnResult.pickupExtractionFailed,

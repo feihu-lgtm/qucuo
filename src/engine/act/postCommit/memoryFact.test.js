@@ -125,3 +125,18 @@ describe("V4 在场收窄（验收）", () => {
     expect(Object.keys(entry.知晓者)).toEqual(["花嫂"]);
   });
 });
+
+  it("Review：移动+翻箱复合指令按目的地房间记账，不按出发地", () => {
+    const destNpcs = [{ name: "花嫂", innerRoom: "老孙饭馆" }];
+    const out = registerMemoryFact({
+      p: { memory: "玩家翻开了柜台后的酒坛" },
+      room: { name: "鱼定村", npcs: [{ name: "老孙", innerRoom: "村口", schedule: [{}] }] },
+      activeTarget: "", isTalk: false, talkTarget: "", time: 30, appendDayMaterial: null,
+      innerRoomName: "村口",
+      postRouteRoom: { name: "鱼定村", npcs: destNpcs }, postRouteInnerRoom: "老孙饭馆",
+    });
+    const tree = out.changes.varTree({ 世界: {} });
+    const entry = Object.values(tree.世界.知识领域.事实 || {})[0];
+    expect(Object.keys(entry.知晓者)).toEqual(["花嫂"]);
+    expect(entry.房间).toEqual({ district: "鱼定村", inner: "老孙饭馆" });
+  });
