@@ -127,3 +127,10 @@ describe("V5 Review 四轮修回归", () => {
     expect(iii("解开她衣服上的绑带")).toBe(true);
   });
 });
+
+describe("V5 Review 五轮修回归", () => {
+  it("解开绑在手腕上的布条+揉按——绑在算捆绑证据不误判亲密", async () => {
+    const { isIntimateInput: iii } = await import("../prompt/inputIntent.js");
+    expect(iii("解开绑在我手腕上的布条，替我揉按一下")).toBe(false);
+  });
+});
