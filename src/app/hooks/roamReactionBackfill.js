@@ -15,7 +15,8 @@ import { insertWhenIdle } from "../../engine/ports/backfill.js";
 import { renderDiegeticState } from "../../domain/rules/clapboard/diegeticState.js";
 import { npcAffectionLabel } from "../../domain/rules/prompt/mvu.js";
 import { normalizeLedgerEntries } from "../../domain/rules/memory/npcLedger.js";
-import { isNpcVisibleInInnerRoom, getDistrictAnchor } from "../../domain/rules/map/innerMap.js";
+import { isNpcVisibleInInnerRoom, getDistrictAnchor, getInnerRoom } from "../../domain/rules/map/innerMap.js";
+import { unlockedCompanions } from "../../domain/rules/companion/companion.js";
 import { DIRS } from "../../utils/mudHelpers.js";
 import { sessionUiStore } from "../../store/sessionUiStore.js";
 import "../calls/registerAllPrompts.js";
@@ -35,7 +36,21 @@ function voiceTagOf(npc) {
 function lastBeatEchoOf(convo) {
   const last = [...(convo || [])].reverse().find((m) => m?.role === "assistant" && typeof m.content === "string");
   if (!last) return "";
-  const clean = last.content
+  let prose = last.content;
+  // Review 修：单调用旧路 convo 存的是 rawFull 原包（appendConvo 不解析）——
+  // JSON 外壳绝不许当「屋内余波」喂给白描说书人，剥出 output 正文，剥不动整段丢弃。
+  if (/^\s*[{[]/.test(prose)) {
+    try {
+      const parsed = JSON.parse(prose);
+      prose = typeof parsed?.output === "string" ? parsed.output : "";
+    } catch {
+      // 截断的 rawFull（slice 500）多半 parse 不动——试着截 output 字段裸文本
+      const m = prose.match(/"output"\s*:\s*"((?:[^"\\]|\\.)*)/);
+      prose = m ? m[1].replace(/\\n/g, "").replace(/\\"/g, '"') : "";
+    }
+    if (!prose.trim()) return "";
+  }
+  const clean = prose
     .split("---SEAL---")[0]
     .replace(/⟦[^⟧]*⟧/g, "")
     .replace(/\s+/g, "")
@@ -97,10 +112,23 @@ export function roamReactionBackfill(movements, {
     .filter((n) => n?.name && !moverNames.has(n.name) && isNpcVisibleInInnerRoom(triggerRoomName, triggerInnerRoomName, n))
     .slice(0, 6)
     .map((n) => `${n.name}${n.brief ? `（${n.brief}）` : ""}`);
+  // Review 修：随行同伴不入 room.npcs（buildPresence 单并）——旁观者漏了他们，
+  // 玩家明明带着人，喂料却说「空无旁人」。按 D6 同口径补上非留守随行。
+  for (const slot of unlockedCompanions(state.companionState).filter((c) => !state.companionState?.[c.key]?.stationed)) {
+    const label = slot.label || slot.data?.name;
+    if (label && !moverNames.has(label) && !bystanders.some((b) => b.startsWith(label))) {
+      bystanders.push(`${label}（随行同伴）`);
+    }
+  }
   const ctx = {
     placeLabel: triggerInnerRoomName && triggerInnerRoomName !== triggerRoomName
       ? `${triggerRoomName}·${triggerInnerRoomName}` : (playerSpot || triggerRoomName),
-    roomDescBrief: String(state.room?.desc || "").replace(/\s+/g, "").slice(0, 40),
+    // Review 修：room.desc 是据点级描写——内层房得取 INNER_MAP 自己的房间描写，
+    // 不然「老孙饭馆」的进出配着村口泥地的景。
+    roomDescBrief: String(
+      (triggerInnerRoomName && getInnerRoom(triggerRoomName, triggerInnerRoomName)?.desc)
+      || state.room?.desc || "",
+    ).replace(/\s+/g, "").slice(0, 40),
     diegeticLine: renderDiegeticState({ char: state.char, inv: state.inv, time: state.time }),
     lastBeatEcho: lastBeatEchoOf(state.convo),
     movements: enriched,

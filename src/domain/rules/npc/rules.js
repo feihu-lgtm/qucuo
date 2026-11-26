@@ -246,7 +246,11 @@ export const residentNpcRule = {
           npcs: injectNpcs((previous.npcs || []).filter((npc) => {
             if (!(npc.imported || !staleNames.has(npc.name))) return false;
             const injectedNames = injectNameSet;
-            const isStalePool = npc.isPoolNpc && !Array.isArray(npc.schedule)
+            // Review 四轮修：随身物带 sold/stolen/dropped 痕迹的池客不按样本轮替清——
+            // 清掉重建会洗掉偷卖痕迹，同一件固定物能被重复扒第二次。
+            const hasLootHistory = Array.isArray(npc.carriedItems)
+              && npc.carriedItems.some((e) => e?.sold || e?.stolen || e?.dropped);
+            const isStalePool = npc.isPoolNpc && !Array.isArray(npc.schedule) && !hasLootHistory
               && typeof npc.pursuitInnerRoom !== "string" && !injectedNames.has(npc.name);
             if (!isStalePasser(npc) && !isStaleAdventurer(npc) && !isStalePool) return true;
             return npc.adventurerDay == null && (state.varTree?.世界?.驻足锁?.[npc.name] ?? -1) > time;
