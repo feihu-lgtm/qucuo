@@ -37,20 +37,27 @@ export { itemKey, factItemKey };
 //   use_item 吃喝敷药  → inv+vitals（消耗品扣件/回血走系统前路）
 //   take     拾取      → inv（collectGranted deterministic 拾取）
 //   invite   邀同行    → affection（同伴系统结算好感不经判官）
+// D5 豁免粒度收窄：整类豁免改「类目.子项」静态白名单——工种语义决定，
+// 绝不从快照反推实际改了哪些字段（防「漏写=豁免扩大=永远对平」自我洗白）。
+//   trade 只动银两与背包        → inv + vitals.money（hp/exp 照常对账）
+//   duel  只动气血与实战修为    → vitals.hp + cultivation.exp（money/pot 照常对账）
+//   use_item 真耗材服用         → inv + vitals.hp（money 零豁免；演练/出示分支零豁免，
+//                                 由 featureRoutedCats 的 consumable 闸把守）
 export const FEATURE_ROUTED_KIND_CATS = {
   equip: ["inv"],
-  use_item: ["inv", "vitals"],
+  use_item: ["inv", "vitals.hp"],
   take: ["inv"],
   invite: ["affection"],
   // S7 裁决：trade 属延期交互路由（runDeferred→商店 UI），判官链只受理问价/看货
   // 意向，成交发生在后续商店操作——同回合单调用直接记账不参与覆盖率对比。
-  // 粒度说明：vitals 为整类目豁免（hp+money 不可分）——与 use_item 既有先例同口径；
-  // trade 回合几乎无 hp 变动，误豁免风险可忽略，为最小正确实现。
-  trade: ["inv", "vitals"],
+  // D5 粒度收窄：vitals 整类洗白收口为 vitals.money 单子项——商店成交只动银两，
+  // hp 若变是判官真漏签或他因，必须显形。
+  trade: ["inv", "vitals.money"],
   // S7 补漏：duel 同属 DEFERRED_INTENT_KINDS 延期交互路由（deferredIntents.js:9），
   // 交锋发生在后续战斗子系统回合机——同回合单调用直写 hp/exp 不参与对比。
-  // inv 无证据受影响（战斗掉落不进当回合 inv diff），按证据不加。
-  duel: ["vitals", "cultivation"],
+  // D5 粒度收窄：vitals/cultivation 整类洗白收窄到 hp/exp 单子项——战斗不掉银两
+  // 不涨潜能，money/pot 变动照常对账显形。
+  duel: ["vitals.hp", "cultivation.exp"],
 };
 
 // D1：use_item 分流后非耗材（兵刃衣饰演练/凭帖出示）零状态改动——
