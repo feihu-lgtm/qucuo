@@ -1,5 +1,6 @@
 // ── learn 求教收拒裁决（S4 纯搬家：原 judgeTurn.js learn 分支原样移入）──
 import { personaMod, affectionMod } from "./shared.js";
+import { hasNoAffectionTrack } from "../../npc/npcTrack.js";
 import { NPC_SIGNATURE_MOVES } from "../../../data/npc/npcSignatureMoves.js";
 
 export function handleLearn(J, action, npc, aff, stanceMod) {
@@ -31,7 +32,7 @@ export function handleLearn(J, action, npc, aff, stanceMod) {
       });
     }
     // 无好感轨道（兽类/intimacy.forbidden）不签好感——内联谓词与 give 分支同口径
-    if (!(npc?.intimacy?.forbidden || npc?.beast)) {
+    if (!hasNoAffectionTrack(npc)) {
       facts.push({
         id: nextFactId(), op: "MUTATE_SOCIAL", npc: npc.name,
         affectionDelta: lreq.isMaster ? 6 : 3,

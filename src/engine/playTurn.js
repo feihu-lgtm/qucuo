@@ -77,7 +77,8 @@ export async function playTurn(ctx, cmd, opts = {}) {
       // 夜班双修 Review 修：拒决回合时间照走——复合指令里用物/耗时动作在拒决前
       // 已生效（runUseItem 把时辰账留给 commitRound），早退跳过 commit 也得把这一刻
       // 扣了，否则物品花了效果落了时间不流。
-      gameActions?.setTime?.((t) => t + 1);
+      // 与 commitRound 同口径：搭话回合时间免费不扣——拒的是搭话式亲密也不扣。
+      if (!(turnCtx.isTalk ?? opts.isTalk)) gameActions?.setTime?.((t) => t + 1);
       turnMonitor.finish(trace, "亲密门槛拒决");
       return { ok: true, done: true, intimacyRefused: true };
     }

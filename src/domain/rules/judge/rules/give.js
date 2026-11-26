@@ -1,5 +1,6 @@
 // ── give 赠礼收拒裁决（S4 纯搬家：原 judgeTurn.js give 分支原样移入）──
 import { CATALOG_INDEX } from "../../../data/items/catalog.js";
+import { hasNoAffectionTrack } from "../../npc/npcTrack.js";
 import { giftPreference, computeGiftWeight } from "../../npc/giftWeight.js";
 import { personaMod, affectionMod } from "./shared.js";
 import { isNpcAngry } from "../../combat/stealSystem.js";
@@ -159,7 +160,7 @@ export function handleGive(J, action, npc, aff, stanceMod) {
     });
     // WO-16F-F4a：无好感轨道对象（兽类/intimacy.forbidden）只收物不涨好感——
     // 与 legacy giftNpc 的 hasNoAffectionTrack 口径一致（谓词内联同 talk 分支，防循环依赖）。
-    if (!(npc?.intimacy?.forbidden || npc?.beast)) {
+    if (!hasNoAffectionTrack(npc)) {
       facts.push({
         id: nextFactId(), op: "MUTATE_SOCIAL", npc: npc.name,
         affectionDelta: weight?.ratio >= 2 ? 6 : weight?.ratio >= 1 ? 4 : 2,
