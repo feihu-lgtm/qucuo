@@ -31,9 +31,13 @@ export function parsePactOffer(text) {
   const om = t.match(OFFER_RE);
   const rm = t.match(REWARD_RE);
   if (!dm || !om || !rm) return null;
-  // Review 二轮修：追忆拒约改框架副词扫描（前两天/上次/以前/昨天）——
-  //  blankets 过/了 会误伤「送过去」「修好了再回来」等真 forward 承诺。
-  if (/(?:前|上)[一二两三四五六七八九十\d]+(?:天|日|周|个?月)|上次|以前|之前|当年|昨天|昨日/.test(t)) return null;
+  // Review 二/三轮修：追忆拒约=框架副词在「要约从句开始之前」出现才算——
+  // 「上次弄丢的玉佩」里上次修饰物件来历不是玩家动作（三轮反例）；
+  // 「那时/当时/那年」同列补全（三轮反例）。blanket 过/了 仍禁（伤送过去）。
+  const pastAdverb = /(?:前|上)[一二两三四五六七八九十\d]+(?:天|日|周|个?月)|上次|以前|之前|当年|昨天|昨日|那时|当时|那年|那回/;
+  const offerStart = t.indexOf(om[0]);
+  const before = t.slice(0, Math.max(0, offerStart));
+  if (pastAdverb.test(before)) return null;
   const n = cnNum(dm[1]);
   if (!Number.isFinite(n) || n <= 0) return null;
   const unit = dm[2];

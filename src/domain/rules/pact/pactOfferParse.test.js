@@ -41,3 +41,12 @@ describe("派工裁决①拒信关键词", () => {
     expect(PACT_REFUSAL_RE.test("「十两太多，五两如何？」他讨价还价")).toBe(false);
   });
 });
+
+describe("Review 三轮：追忆修饰位置与讨价还价", () => {
+  it("物件来历的上次不误伤 forward 承诺", () => {
+    expect(parsePactOffer("三天之内我定帮你寻回上次弄丢的玉佩，你赏我五两银子")).toBeTruthy();
+  });
+  it("那时/当时追忆仍拒", () => {
+    expect(parsePactOffer("那时我三天之内就去了后山，你赏过我银子")).toBeNull();
+  });
+});

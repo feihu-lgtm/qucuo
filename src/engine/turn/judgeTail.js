@@ -38,7 +38,11 @@ export function verifyJudgeTail({ ctx, deps, judgeVerdict, sealParts, narrativeT
     try {
       const offer = parsePactOffer(deps.cmd || "");
       const pactNpc = (deps.derivedRespondedNpcs || [])[0] || deps.talkTarget || ctx.talkTarget || "";
-      const refused = PACT_REFUSAL_RE.test(rawNarrative || "");
+      // Review 修：按句切分——拒信词与「两/银/钱/加钱/太多/太少」同句是讨价还价
+      // （「不行，十两太多，五两吧」），按派工裁决不算拒；只有干净拒句才拦。
+      const refused = String(rawNarrative || "").split(/[。！？!?\n]/).some((sent) => (
+        PACT_REFUSAL_RE.test(sent) && !/两|银|钱|太多|太少|加钱|少点|便宜/.test(sent)
+      ));
       if (offer && pactNpc && !refused) fallbackPact = { npc: pactNpc, ...offer };
     } catch { /* 解析器绝不阻塞主链 */ }
     const verified = verifySealAndMaterialize({
