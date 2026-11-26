@@ -27,13 +27,12 @@ import { Button } from "../primitives/index.js";
 export function TurnControls({ theme, loading, stopRunning, rollbackBlocked, rollbackOneStep }) {
   return (
     <span className="mobile-center-toolbar-controls" style={{ display: "flex", gap: 8, alignItems: "center" }}>
-      {loading && <span onClick={stopRunning} className="mobile-touch-target" style={chromeBtn(theme)}>⏹ 停止</span>}
-      <span className="mobile-touch-target" onClick={rollbackBlocked ? undefined : rollbackOneStep}
+      {loading && <Button variant="chrome" onClick={stopRunning} className="mobile-touch-target">⏹ 停止</Button>}
+      <Button variant="chrome" className="mobile-touch-target" onClick={rollbackBlocked ? undefined : rollbackOneStep}
         aria-disabled={rollbackBlocked}
-        title="撤销上一步行动，还原到落子之前"
-        style={{ ...chromeBtn(theme), ...(rollbackBlocked ? { color: theme.textDim, cursor: "not-allowed" } : {}) }}>
+        title="撤销上一步行动，还原到落子之前" style={{ ...(rollbackBlocked ? { color: theme.textDim, cursor: "not-allowed" } : {}) }}>
         {rollbackBlocked ? "等待落盘" : "↩ 回滚"}
-      </span>
+      </Button>
     </span>
   );
 }
@@ -44,15 +43,15 @@ export function DevControls({ theme, addLog }) {
   const showDebug = useOverlay(OVERLAY.DEBUG);
   return (
     <>
-      <span className="mobile-touch-target" onClick={() => toggleOverlay(OVERLAY.DEBUG)} style={chromeBtn(theme, { active: showDebug })}>调试</span>
-      <span className="mobile-touch-target" onClick={() => { setGm(g => { const nv = !g; addLog([{ t: "sys", text: nv ? "  [/gamemode 1] 创造模式：无敌，战斗必胜，啥都能干" : "  [/gamemode 0] 生存模式：回归凡人之躯" }]); return nv; }); }} style={chromeBtn(theme, { active: gm })}>/gamemode {gm ? "0" : "1"}</span>
+      <Button variant="chrome" active={showDebug} className="mobile-touch-target" onClick={() => toggleOverlay(OVERLAY.DEBUG)}>调试</Button>
+      <Button variant="chrome" active={gm} className="mobile-touch-target" onClick={() => { setGm(g => { const nv = !g; addLog([{ t: "sys", text: nv ? "  [/gamemode 1] 创造模式：无敌，战斗必胜，啥都能干" : "  [/gamemode 0] 生存模式：回归凡人之躯" }]); return nv; }); }}>/gamemode {gm ? "0" : "1"}</Button>
     </>
   );
 }
 
 export function VersionHistoryButton({ theme }) {
   const label = CURRENT_VERSION.version ? `${CURRENT_VERSION.version} · ${CURRENT_VERSION.time}` : CURRENT_VERSION.time;
-  return <button type="button" onClick={() => openOverlay(OVERLAY.VERSION_HISTORY)} title={`当前版本「${CURRENT_VERSION.codename}」· 点击查看版本历史目录`} style={chromeBtn(theme, { active: false })}>{label}</button>;
+  return <Button variant="chrome" font="native" active={false} type="button" onClick={() => openOverlay(OVERLAY.VERSION_HISTORY)} title={`当前版本「${CURRENT_VERSION.codename}」· 点击查看版本历史目录`}>{label}</Button>;
 }
 
 export default function TopBar({

@@ -2,6 +2,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { PHASE, formatTurnStatus, turnMonitor } from "../../infra/turnMonitor.js";
 import { OVERLAY, openOverlay, useOverlay } from "../../store/uiStore.js";
 import { chromeBtn } from "../../utils/theme.js";
+import { Button } from "../primitives/index.js";
 
 export default function TurnStatusPill({ theme, mobile, docked }) {
   const snapshot = useSyncExternalStore(turnMonitor.subscribe, turnMonitor.getSnapshot);
@@ -21,12 +22,11 @@ export default function TurnStatusPill({ theme, mobile, docked }) {
     const busy = running && !failed;
     const color = busy || failed ? theme.accent : theme.textDim;
     return (
-      <button type="button" title={label} aria-label={`全流程日志：${label}`}
+      <Button variant="chrome" font="native" active={active} type="button" title={label} aria-label={`全流程日志：${label}`}
         className={`mobile-touch-target status-light${busy ? " status-light-busy" : ""}`}
-        onClick={() => openOverlay(OVERLAY.TRACE)}
-        style={{ ...chromeBtn(theme, { active }), width: 29, minWidth: 29, height: 29, padding: 0, borderRadius: "50%", justifyContent: "center", flexShrink: 0, ...(failed ? { border: `2px solid ${theme.accent}` } : {}) }}>
+        onClick={() => openOverlay(OVERLAY.TRACE)} style={{ width: 29, minWidth: 29, height: 29, padding: 0, borderRadius: "50%", justifyContent: "center", flexShrink: 0, ...(failed ? { border: `2px solid ${theme.accent}` } : {}) }}>
         <span style={{ width: 11, height: 11, borderRadius: "50%", background: color, boxShadow: busy ? `0 0 6px ${color}` : "none" }} />
-      </button>
+      </Button>
     );
   }
   return (

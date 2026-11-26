@@ -17,6 +17,7 @@ import {
   resolveReleaseMetricsEnabled,
 } from "../../engine/ports/releaseMetrics.js";
 import LiveClockText from "../components/LiveClockText.jsx";
+import { Button } from "../primitives/index.js";
 
 const LAYER = { ui: "入口", app: "应用", feature: "功能", domain: "规则判定", engine: "引擎", rules: "世界规则", result: "结果", shadow: "影子" };
 
@@ -28,8 +29,8 @@ function AiDetails({ node, theme }) {
       <summary style={{ cursor: "pointer" }}>{node.label} · {node.model || "未指定模型"} · {fmtMs(node.durationMs) || "进行中"}{node.pipeline.success === false ? " · 失败" : ""}</summary>
       <div style={{ display: "flex", gap: 4, marginBlock: 6 }} role="tablist" aria-label="AI 调用详情">
         {Object.keys(tabs).map((name) => (
-          <button key={name} type="button" role="tab" aria-selected={tab === name}
-            onClick={() => setTab(name)} style={{ ...chromeBtn(theme, { active: tab === name }), fontFamily: "inherit" }}>{name}</button>
+          <Button variant="chrome" font="native" active={tab === name} key={name} type="button" role="tab" aria-selected={tab === name}
+            onClick={() => setTab(name)} style={{ fontFamily: "inherit" }}>{name}</Button>
         ))}
       </div>
       <pre role="tabpanel" style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", maxHeight: "35dvh", overflow: "auto" }}>

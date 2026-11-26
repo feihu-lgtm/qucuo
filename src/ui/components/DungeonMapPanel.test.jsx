@@ -1,5 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import DungeonMapPanel from "./DungeonMapPanel.jsx";
+import { Button } from "../primitives/index.js";
+
+// 按钮已迁到 Button 原语：vnode 树里按钮节点的 type 是 Button 组件（不展开），一并认作按钮。
+const isButton = (n) => n.type === "button" || n.type === Button;
 
 // 仓库无 jsdom/RTL：沿用 ClickableMap.test.jsx 的 vnode 树断言惯例。
 // useState 打桩注入可控输入文本，验证自由文本回传。
@@ -45,7 +49,7 @@ function flatten(node, out = []) {
 
 const texts = (flat) => flat.filter(n => n.type === "#text").map(n => n.text).join("");
 const part = (flat, key) => flat.find(n => n.props?.["data-part"] === key);
-const buttonsIn = (flat, key) => flat.filter(n => n.type === "button" && part(flat, key) && isDescendant(part(flat, key), n));
+const buttonsIn = (flat, key) => flat.filter(n => isButton(n) && part(flat, key) && isDescendant(part(flat, key), n));
 
 function isDescendant(parent, node) {
   const kids = parent?.props?.children;
@@ -84,7 +88,7 @@ describe("DungeonMapPanel", () => {
   it("六向键按 n/s/e/w/u/d 序，有出口亮、无出口灭；点击仅亮键回调", () => {
     const { tree, onMove } = render();
     const exitsPart = part(tree, "room-exits");
-    const buttons = tree.filter(n => n.type === "button" && isDescendant(exitsPart, n));
+    const buttons = tree.filter(n => isButton(n) && isDescendant(exitsPart, n));
     expect(buttons.map(b => texts(flatten(b)))).toEqual(["北", "南", "东", "西", "上", "下"]);
     expect(buttons.map(b => !b.props.disabled)).toEqual([true, false, true, false, false, false]);
     buttons[0].props.onClick(); buttons[2].props.onClick();
@@ -96,7 +100,7 @@ describe("DungeonMapPanel", () => {
   it("动作按钮按 options 顺序渲染并回传 label", () => {
     const { tree, onAction } = render();
     const actionsPart = part(tree, "room-actions");
-    const buttons = tree.filter(n => n.type === "button" && isDescendant(actionsPart, n));
+    const buttons = tree.filter(n => isButton(n) && isDescendant(actionsPart, n));
     expect(buttons.map(b => texts(flatten(b)))).toEqual(["推开石门", "叩问老僧"]);
     buttons[1].props.onClick();
     expect(onAction).toHaveBeenCalledWith("叩问老僧");
@@ -107,7 +111,7 @@ describe("DungeonMapPanel", () => {
     const { tree, onText } = render();
     const inputPart = part(tree, "room-input");
     const input = tree.find(n => n.type === "input" && isDescendant(inputPart, n));
-    const send = tree.find(n => n.type === "button" && isDescendant(inputPart, n));
+    const send = tree.find(n => isButton(n) && isDescendant(inputPart, n));
     input.props.onKeyDown({ key: "Enter" });
     send.props.onClick();
     expect(onText.mock.calls.map(c => c[0])).toEqual(["推开石门", "推开石门"]);
@@ -117,7 +121,7 @@ describe("DungeonMapPanel", () => {
   it("空房：全灭方向键、无动作区、无实体区", () => {
     const { tree } = render({ name: "空廊", desc: "空无一物。", exits: {} });
     const exitsPart = part(tree, "room-exits");
-    const buttons = tree.filter(n => n.type === "button" && isDescendant(exitsPart, n));
+    const buttons = tree.filter(n => isButton(n) && isDescendant(exitsPart, n));
     expect(buttons.every(b => b.props.disabled)).toBe(true);
     expect(part(tree, "room-actions")).toBeUndefined();
     expect(part(tree, "room-entities")).toBeUndefined();
