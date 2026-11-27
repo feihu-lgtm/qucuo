@@ -13,6 +13,8 @@ import {
 import { QUCUO_MAP } from "../map/qucuoMap.js";
 import { BUILDING_TYPE, getBuildingsForLocation } from "../buildings/qucuoBuildings.js";
 import { HOMESTEAD_FEATURES } from "../../rules/map/homestead.js";
+import { passerRolesOf } from "../npc/randomPassers.js";
+import { FACTIONS } from "../map/factions.js";
 
 const webpFile = (kind, name) => `public/art/${kind}/${name}.webp`;
 
@@ -52,6 +54,13 @@ describe("美术素材登记表", () => {
     const questFiles = readdirSync("public/art/quest").filter((f) => f.endsWith(".webp")).map((f) => f.slice(0, -5));
     for (const f of npcFiles) expect(NPC_ART.includes(f), `npc/${f} 有图未登记`).toBe(true);
     for (const f of questFiles) expect(QUEST_ART.includes(f), `quest/${f} 有图未登记`).toBe(true);
+  });
+
+  it("每日过路人的身份模板与 WebP 立绘一一对应，随机性别各有一张", () => {
+    const roles = new Set(["鱼定村", "散人", ...FACTIONS.map(({ name }) => name)].flatMap(passerRolesOf));
+    const keys = [...roles].flatMap(({ art, gender }) => gender
+      ? [`passer-${art}`] : [`passer-${art}-male`, `passer-${art}-female`]);
+    expect(readdirSync("public/art/passer").sort()).toEqual(keys.map((key) => `${key}.webp`).sort());
   });
 });
 

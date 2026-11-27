@@ -22,7 +22,7 @@ const DANGER_ACTIONS = new Set(["steal", "lethalDuel"]);
 export default function NpcActionMenu({ npc, inv, initialZoom = false, onClose, onTalk, onGift, onDuel, onSteal, onLook, onLearnSkill, onTrade, onInviteCompanion, companionUnlocked, flags = [], ocRoutes = [], onOcRecruit, onRecallCompanion, onGoldenEgg, nemesisActive = false, lethalBlockReason = null }) {
   const [showGiftPicker, setShowGiftPicker] = useState(false);
   // 点头像放大立绘（人物栏点头像时直接以放大态打开）；没有立绘的人物只有印章，不放大。
-  const portraitUrl = npcArtUrl(npc.name);
+  const portraitUrl = npcArtUrl(npc);
   const [zoom, setZoom] = useState(Boolean(initialZoom && portraitUrl));
   const isMerchant = !!QUCUO_SHOPS[npc.name] || hasOcShop(npc.name);
   // 伙伴候选（目前只有雪豹）：官方六件套之外单独一个"邀请入队"按钮，只在
@@ -81,6 +81,7 @@ export default function NpcActionMenu({ npc, inv, initialZoom = false, onClose, 
         {!zoom && (
           <NpcAvatar
             name={npc.name}
+            src={portraitUrl}
             size="lg"
             onClick={portraitUrl ? () => setZoom(true) : undefined}
             title={portraitUrl ? "放大立绘" : undefined}

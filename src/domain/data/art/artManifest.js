@@ -3,6 +3,7 @@
 // 这里只登记「谁有图、文件叫什么」。
 // 新图入库：把切好的 webp 放进对应目录，再在下面登记一行；scripts/art/artManifest.test.js 会核对
 // 登记的名字在游戏数据里真实存在、登记的文件确实在目录里。
+// 每日随机过路人不用姓名登记：randomPassers.js 的身份模板控制 public/art/passer 下的图。
 //
 // 键的口径与 scripts/art/artPrompts.mjs 的格子 keys 一致：
 //   PLACE_ART       外层据点名（QUCUO_MAP 的键）→ 文件名

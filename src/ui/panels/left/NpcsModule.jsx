@@ -11,6 +11,7 @@ import { partitionPeople } from "./peopleRoster.js";
 import { useGameStore } from "../../../store/gameStore.js";
 import NpcAngerLine from "../NpcAngerLine.jsx";
 import NpcAvatar from "../../components/NpcAvatar.jsx";
+import { npcArtUrl } from "../../art/art.js";
 
 function adventurerClass(npcOrName) {
   const name = typeof npcOrName === "string" ? npcOrName : npcOrName?.name;
@@ -97,6 +98,7 @@ export default function NpcsModule({ room, innerRoomName, varTree, char, addLog,
               <div key={i} className="npc-present-row" data-last={i === present.length - 1}>
                 <NpcAvatar
                   name={n.name}
+                  src={n.passerArt && npcArtUrl(n)}
                   size="md"
                   onClick={() => setActiveNpcMenu({ ...n, zoom: true })}
                   title="放大立绘，并打开互动菜单：细看/切磋/偷窃/对话/送礼/拜师"
@@ -137,7 +139,7 @@ export default function NpcsModule({ room, innerRoomName, varTree, char, addLog,
             const hasProfile = typeof varTree.角色?.[n.name]?.好感度 === "number";
             return (
             <div key={n.name} className="npc-compact-row">
-              <NpcAvatar name={n.name} size="xs" />
+              <NpcAvatar name={n.name} src={n.passerArt && npcArtUrl(n)} size="xs" />
               <span onClick={hasProfile ? () => { setCharacterPageTarget(n.name); openOverlay(OVERLAY.CHARACTER_PAGE); } : undefined}
                 title={hasProfile ? "打开此人详情面板" : "尚未认识——走到他所在之处再交谈"}
                 className="npc-compact-info" data-clickable={Boolean(hasProfile)}>

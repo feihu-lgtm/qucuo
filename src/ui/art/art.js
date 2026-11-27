@@ -49,10 +49,12 @@ export function districtOfRoomLine(text) {
   return name ? name.split("·")[0].trim() : "";
 }
 
-export function npcArtUrl(name, uploadedPortraits = null) {
+export function npcArtUrl(npcOrName, uploadedPortraits = null) {
+  const name = typeof npcOrName === "string" ? npcOrName : npcOrName?.name;
   if (!name) return null;
   if (uploadedPortraits && uploadedPortraits[name]) return uploadedPortraits[name];
   if (NPC_ART_SET.has(name)) return `${BASE}npc/${encodeURIComponent(name)}.webp`;
+  if (npcOrName?.passerArt) return `${BASE}passer/${encodeURIComponent(npcOrName.passerArt)}.webp`;
   return null;
 }
 
