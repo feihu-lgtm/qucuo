@@ -51,7 +51,7 @@ describe("generic FacePanel", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it("shows only current and adjacent labels, with one side for two faces", () => {
+  it("renders horizontal face tabs with current marked and all other faces clickable", () => {
     for (const count of [1, 2, 5]) {
       const preferences = { faces: Array.from({ length: count }, (_, index) => ({
         id: `face-${index}`, name: `Face ${index}`, modules: [],
@@ -64,7 +64,8 @@ describe("generic FacePanel", () => {
       expect(bar).toContain('<span aria-current="true">Face 0</span>');
       expect((bar.match(/aria-label="下一面"/g) || []).length).toBe(count > 1 ? 1 : 0);
       expect((bar.match(/aria-label="上一面"/g) || []).length).toBe(count > 2 ? 1 : 0);
-      expect((bar.match(/aria-hidden="true"/g) || []).length).toBe(Math.max(0, count - 3));
+      expect((bar.match(/<button type="button"/g) || []).length).toBe(count - 1);
+      expect((bar.match(/aria-hidden="true"/g) || []).length).toBe(0);
     }
   });
 

@@ -35,10 +35,12 @@ export default function RightPanel(props) {
     return <Component {...props} />;
   };
   return (
-    <div data-testid="right-panel" style={isMobile
-      ? { ...S.panel, flex: 1, minHeight: 0, borderRight: "none", display: mobileColumn === "right" ? "flex" : "none" }
-      : { flex: 30, ...S.panel, borderRight: "none", minHeight: 0 }}>
-      <div style={S.label}>侠客</div>
+    <div
+      data-testid="right-panel"
+      className={`right-panel-col${isMobile && mobileColumn !== "right" ? " mobile-col-hidden" : ""}`}
+      data-mobile={Boolean(isMobile)}
+    >
+      <div className="panel-col-head">侠客</div>
       <FacePanel faces={faces} theme={THEME_VARS} label="侠客" isMobile={isMobile}
         renderModule={renderModule} isModuleVisible={isModuleVisible} isKeyboardBlocked={isKeyboardBlocked} />
     </div>

@@ -1,5 +1,6 @@
 import React from "react";
 import { Overlay, Header, Btn } from "./buildings/common.jsx";
+import { Icon } from "../primitives/index.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { SNOW_QUEST_ID, SNOW_SPIRITS, snowSpiritCount } from "../../domain/rules/quests/snowLeopardQuest.js";
 import { getCurrentStage } from "../../domain/rules/quests/questEngine.js";
@@ -21,20 +22,20 @@ export function QuestList({ questProgress, flags = [] }) {
 
       {active.length > 0 && (
         <div style={{ marginBottom: 16 }}>
-          <div style={{ color: "var(--accent-dim)", fontSize: "var(--fs-xs)", marginBottom: 8 }}>进行中（{active.length}）</div>
+          <div className="panel-sec-label"><Icon name="进行中" size={12} /> 进行中（{active.length}）</div>
           {active.map(q => {
             const prog = questProgress[q.id];
             const stage = getCurrentStage(q, prog);
             const idx = (prog.currentStageIndex ?? 0) + 1;
             return (
-              <div key={q.id} style={{ marginBottom: 10, padding: "10px 12px", background: "var(--bg-panel)", borderRadius: 0, border: `1px solid var(--border)` }}>
+              <div key={q.id} style={{ marginBottom: 10, padding: "10px 12px", background: "var(--bg-item)", borderRadius: 0, border: `1px solid var(--hairline)` }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                   <span style={{ color: "var(--text)", fontSize: "var(--fs-md)" }}>{q.title}</span>
-                  <span style={{ color: "var(--quest-stage-count)", fontSize: "var(--fs-xs)" }}>{idx}/{q.stages.length}</span>
+                  <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)" }}>{idx}/{q.stages.length}</span>
                 </div>
                 {q.id === SNOW_QUEST_ID && <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)" }}><div>{stage?.title} · {snowSpiritCount(flags)}/5</div>{SNOW_SPIRITS.map(({ flag, label }) => <div key={flag}>{flags.includes(flag) ? "✓" : "○"} {label}</div>)}</div>}
-                {q.giver && <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", marginBottom: 4 }}>委托人：{q.giver}</div>}
-                {stage && <div style={{ color: "var(--quest-stage-desc)", fontSize: "var(--fs-sm)", lineHeight: 1.6 }}>{stage.playerHint ?? stage.description}</div>}
+                {q.giver && <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", marginBottom: 4 }}><Icon name="委托人" size={12} /> 委托人：{q.giver}</div>}
+                {stage && <div style={{ color: "var(--text-sub)", fontSize: "var(--fs-sm)", lineHeight: 1.6 }}>{stage.playerHint ?? stage.description}</div>}
               </div>
             );
           })}
@@ -43,13 +44,13 @@ export function QuestList({ questProgress, flags = [] }) {
 
       {completed.length > 0 && (
         <div style={{ marginBottom: 16 }}>
-          <div style={{ color: "var(--accent-dim)", fontSize: "var(--fs-xs)", marginBottom: 8 }}>已完成（{completed.length}）</div>
+          <div className="panel-sec-label"><Icon name="已成" size={12} /> 已完成（{completed.length}）</div>
           {completed.map(q => {
             const negative = questProgress[q.id]?.outcome === "negative";
             return (
-              <div key={q.id} style={{ marginBottom: 8, padding: "8px 10px", background: negative ? "var(--quest-negative-bg)" : "var(--quest-success-bg)", borderRadius: 0, border: `1px solid ${negative ? "var(--quest-negative-edge)" : "var(--accent)"}` }}>
-                <div style={{ color: negative ? "var(--quest-negative-title)" : "var(--ink-leaf)", fontSize: "var(--fs-sm)", marginBottom: 3 }}>{negative ? "✗" : "✓"} {q.title}</div>
-                {q.rewardText && <div style={{ color: negative ? "var(--quest-negative-text)" : "var(--quest-success-text)", fontSize: "var(--fs-xs)", lineHeight: 1.5 }}>{q.rewardText}</div>}
+              <div key={q.id} style={{ marginBottom: 8, padding: "8px 10px", background: "var(--bg-item)", borderRadius: 0, border: `1px solid ${negative ? "var(--danger-text)" : "var(--good)"}` }}>
+                <div style={{ color: negative ? "var(--danger-text)" : "var(--good)", fontSize: "var(--fs-sm)", marginBottom: 3 }}><Icon name={negative ? "已了" : "已成"} size={12} /> {q.title}</div>
+                {q.rewardText && <div style={{ color: "var(--text-sub)", fontSize: "var(--fs-xs)", lineHeight: 1.5 }}>{q.rewardText}</div>}
               </div>
             );
           })}
@@ -58,11 +59,11 @@ export function QuestList({ questProgress, flags = [] }) {
 
       {locked.length > 0 && (
         <div>
-          <div style={{ color: "var(--accent-dim)", fontSize: "var(--fs-xs)", marginBottom: 8 }}>已错过（{locked.length}）</div>
+          <div className="panel-sec-label"><Icon name="已错过" size={12} /> 已错过（{locked.length}）</div>
           {locked.map(q => (
-            <div key={q.id} style={{ marginBottom: 8, padding: "8px 10px", background: "var(--quest-negative-bg)", borderRadius: 0, border: "1px solid var(--quest-negative-edge)" }}>
-              <div style={{ color: "var(--quest-negative-text)", fontSize: "var(--fs-sm)" }}>{q.title}</div>
-              <div style={{ color: "var(--quest-missed-desc)", fontSize: "var(--fs-xs)" }}>因其他抉择而不再可行。</div>
+            <div key={q.id} style={{ marginBottom: 8, padding: "8px 10px", background: "var(--bg-item)", borderRadius: 0, border: "1px solid var(--hairline)" }}>
+              <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-sm)" }}>{q.title}</div>
+              <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)" }}>因其他抉择而不再可行。</div>
             </div>
           ))}
         </div>

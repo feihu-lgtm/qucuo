@@ -56,7 +56,7 @@ export function Header({ name, onClose }) {
       </div>
       {artSrc && (
         <div className="building-art">
-          <ArtImage src={artSrc} alt={name} variant="panel" />
+          <ArtImage src={artSrc} alt={name} variant="panel" caption={name} />
         </div>
       )}
     </>

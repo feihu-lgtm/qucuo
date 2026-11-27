@@ -74,9 +74,18 @@ function TimeBadge({ entry, mark, className = "narrative-time-badge" }) {
   );
 }
 
+function renderLedgerText(text) {
+  const parts = String(text || "").split(/([−-]\d+|\+\d+)/g);
+  return parts.map((part, idx) => {
+    if (/^[−-]\d+$/.test(part)) return <span key={idx} className="narrative-ledger-dn">{part}</span>;
+    if (/^\+\d+$/.test(part)) return <span key={idx} className="narrative-ledger-up">{part}</span>;
+    return part;
+  });
+}
+
 function LedgerRow({ entries }) {
   const items = entries.map((entry, i) => (
-    <span key={i} className="narrative-ledger-item">{ledgerText(entry)}</span>
+    <span key={i} className="narrative-ledger-item">{renderLedgerText(ledgerText(entry))}</span>
   ));
   return (
     <div className="narrative-ledger">

@@ -194,9 +194,14 @@ export default function LogEntry({ entry, color, onAction, isDayMode = false, on
   const shouldIndent = isDesc && (displayText.includes("\n") || displayText.trim().length >= 42);
   const renderedContent = isDesc
     ? renderMixed(displayText, color, isDayMode)
-    : isRoom && displayText.trim()
-      ? `— ${displayText.trim()} —`
-      : displayText;
+    : isCmd
+      ? (() => {
+          const clean = displayText.replace(/^>\s*/, "");
+          return clean.startsWith("你") ? clean : <><span className="log-cmd-actor">你　</span>{clean}</>;
+        })()
+      : isRoom && displayText.trim()
+        ? `— ${displayText.trim()} —`
+        : displayText;
 
   return (
     <div

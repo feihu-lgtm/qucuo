@@ -14,17 +14,17 @@ export default function FacePanel({ faces, theme, renderModule, isMobile = false
   const [scrollbarWidth, setScrollbarWidth] = useState(0);
   const contentRef = useRef(null);
   const instanceId = useId();
-  const { preferences, face, direction, editable, enableKeyboard, rotate } = faces;
+  const { preferences, face, direction, editable, enableKeyboard, rotate, select } = faces;
   const panelId = `${instanceId}-${face.id}`;
   const modules = face.modules.filter(isModuleVisible);
   useFaceNavigation({ isMobile, editing, contentRef, rotate, enableKeyboard, isKeyboardBlocked, swipe });
   return (
     <div className={`face-panel ${className}`}>
-      <nav className="face-bar" aria-label={`${label}面切换`} style={{ borderColor: theme.border }}>
+      <nav className="face-bar" aria-label={`${label}面切换`}>
         <div className="face-labels" role="group" aria-label={`${label}各面`}>
           {preferences.faces.map((item, index) => (
             <FaceLabel key={item.id} item={item} index={index} preferences={preferences}
-              instanceId={instanceId} rotate={rotate} />
+              instanceId={instanceId} rotate={rotate} select={select} />
           ))}
         </div>
         <div className="face-controls">
@@ -46,18 +46,23 @@ export default function FacePanel({ faces, theme, renderModule, isMobile = false
   );
 }
 
-function FaceLabel({ item, index, preferences, instanceId, rotate }) {
+function FaceLabel({ item, index, preferences, instanceId, rotate, select }) {
   const count = preferences.faces.length;
   const offset = (index - preferences.currentIndex + count) % count;
   const position = offset === 0 ? "current" : offset === 1 ? "next"
     : offset === count - 1 ? "previous" : "hidden";
   const side = position === "previous" || position === "next";
+  const onPick = () => {
+    if (side) { rotate(position === "previous" ? -1 : 1); return; }
+    if (typeof select === "function") select(index);
+    else rotate(offset);
+  };
   return (
-    <div id={`${instanceId}-label-${item.id}`} className={`face-label face-label-${position}`}
-      aria-hidden={position === "hidden" || undefined}>
-      {side ? <button type="button" aria-label={position === "previous" ? "上一面" : "下一面"}
-        onClick={() => rotate(position === "previous" ? -1 : 1)}>{item.name || "未命名"}</button>
-        : <span aria-current={position === "current" ? "true" : undefined}>{item.name || "未命名"}</span>}
+    <div id={`${instanceId}-label-${item.id}`} className={`face-label face-label-${position}`}>
+      {position === "current"
+        ? <span aria-current="true">{item.name || "未命名"}</span>
+        : <button type="button" aria-label={side ? (position === "previous" ? "上一面" : "下一面") : undefined}
+            onClick={onPick}>{item.name || "未命名"}</button>}
     </div>
   );
 }

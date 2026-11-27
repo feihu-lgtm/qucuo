@@ -96,8 +96,8 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
   const hideNarrative = Boolean((activeBuilding || tradingShop) && !buildingPanelMinimized);
 
   return (
-    <div style={isMobile ? { flex: 1, ...S.panel, borderRight: "none", display: mobileColumn === "center" ? "flex" : "none" } : { flex: 55, ...S.panel }}>
-      <div className="mobile-hide" style={{ ...S.label, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <div className={`center-panel-col${isMobile && mobileColumn !== "center" ? " mobile-col-hidden" : ""}`} data-mobile={Boolean(isMobile)}>
+      <div className="mobile-hide panel-col-head center-header">
         <span className="center-view-head">
           <span>江湖</span>
           <span className="center-view-switch" role="group" aria-label="江湖栏视图">
@@ -105,7 +105,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
             <button type="button" className="center-view-tab" data-on={centerView === "journal"} aria-pressed={centerView === "journal"} onClick={() => setCenterView("journal")}>卷宗</button>
           </span>
         </span>
-        <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <span className="center-header-tools">
           <TurnControls theme={THEME_VARS} loading={loading} stopRunning={turn.stopRunning} rollbackBlocked={turn.rollbackBlocked} rollbackOneStep={turn.rollbackOneStep} />
           <DevControls theme={THEME_VARS} addLog={addLog} />
         </span>
@@ -175,10 +175,10 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
             ▾ 最小化
           </div>
           {queueCount > 0 && !gambleStoneMinimized && !activeBuilding?.shopKey && !tradingShop && (
-            <div role="status" aria-live="polite"
-              style={{ ...chromeBtn(THEME_VARS), alignSelf: "flex-start", flexShrink: 0, margin: "4px 12px", cursor: "default" }}>
-              ⏳ 排队中 {queueCount} · 等待落盘后执行
-            </div>
+              <div role="status" aria-live="polite"
+                style={{ ...chromeBtn(THEME_VARS), alignSelf: "flex-start", flexShrink: 0, margin: "4px 12px", cursor: "default" }}>
+                排队中 {queueCount} · 等待落盘后执行
+              </div>
           )}
           {isMobile && activeBuilding?.craft && craftTab !== "shop" && tabs("mobile-trading-tabs-building")}
           {(() => {

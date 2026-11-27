@@ -19,9 +19,9 @@ function DialCard({ title, overlay, items, renderItem, emptyText }) {
   const n = items.length;
   const cur = n ? items[i % n] : null;
   return (
-    <div style={{ border: `1px solid var(--border)`, borderRadius: 0, padding: "6px 8px", background: "rgba(255,255,255,0.02)" }}>
+    <div style={{ border: `1px solid var(--hairline)`, borderRadius: 0, padding: "8px 10px", background: "var(--bg-item)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <span style={{ color: "var(--accent-dim)", fontSize: "var(--fs-xs)" }}>{title}</span>
+        <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", letterSpacing: "2px" }}>{title}</span>
         <span style={{ flex: 1 }} />
         {n > 0 && <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)" }}>{(i % n) + 1}/{n}</span>}
         {overlay && (
@@ -88,9 +88,9 @@ function RelationDialItem({ c, claimedMilestones }) {
         <span style={{ color: "var(--text)", fontSize: "var(--fs-sm)" }}>{c.name}</span>
         {milestone && <span style={{ color: "var(--ember)", fontSize: "var(--fs-2xs)" }}>● 任务</span>}
       </div>
-      <div style={{ ...dim, color: "var(--pink)" }}>{npcAffectionLabel(affection)} · {affection}/100</div>
-      <div style={{ height: 5, background: "var(--bg-panel)", borderRadius: 0, overflow: "hidden", marginTop: 2 }}>
-        <div style={{ height: "100%", width: `${Math.min(100, affection)}%`, background: "linear-gradient(90deg, var(--pink), var(--ember))" }} />
+      <div style={{ ...dim, color: "var(--lotus)" }}>{npcAffectionLabel(affection)} · {affection}/100</div>
+      <div className="night-bar">
+        <div className="night-bar-fill night-bar-fill--lotus" style={{ width: `${Math.min(100, affection)}%` }} />
       </div>
       {tagCounts.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 3 }}>
@@ -110,7 +110,7 @@ function LoreDialItem({ fact }) {
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <span style={{ fontSize: "var(--fs-2xs)", color: "var(--accent)" }}>{fmtTurn(fact.诞生回合 || 0)}</span>
+        <span style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)" }}>{fmtTurn(fact.诞生回合 || 0)}</span>
         {fact.标签 && <span style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", border: `1px solid var(--border)`, borderRadius: 0, padding: "0 4px" }}>{fact.标签}</span>}
       </div>
       <div style={{ fontSize: "var(--fs-sm)", color: "var(--lore-summary)", lineHeight: 1.55, marginTop: 2 }}>{fact.摘要 || "（此事尚无定论）"}</div>

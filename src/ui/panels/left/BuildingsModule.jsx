@@ -14,11 +14,23 @@ export default function BuildingsModule({ room, innerRoomName }) {
   const activeBuilding = useSessionUi(s => s.activeBuilding);
   const list = visibleBuildings(room, innerRoomName);
   if (!list.length) return null;
-  return <div>
-    <div style={{ color: "var(--accent-dim)", fontSize: "var(--fs-xs)", marginBottom: 5 }}>此地建筑</div>
-    {list.map(b => <div key={b.id} style={{ marginBottom: 3 }}>
-      <Button variant="chrome" font="native" active={activeBuilding?.id === b.id} type="button" onClick={() => setActiveBuilding(activeBuilding?.id === b.id ? null : { ...b, district: room.name })}>{b.name}</Button>
-      <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", marginLeft: 6 }}>{BUILDING_TYPE_LABEL[b.type] || ""}</span>
-    </div>)}
-  </div>;
+  return (
+    <div className="left-buildings">
+      <div className="panel-sec-label">此地建筑</div>
+      <div className="left-building-list">
+        {list.map(b => (
+          <button
+            key={b.id}
+            type="button"
+            className="chip-btn"
+            data-on={Boolean(activeBuilding?.id === b.id)}
+            onClick={() => setActiveBuilding(activeBuilding?.id === b.id ? null : { ...b, district: room.name })}
+          >
+            <span>{b.name}</span>
+            {BUILDING_TYPE_LABEL[b.type] && <span className="chip-btn-sub">{BUILDING_TYPE_LABEL[b.type]}</span>}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }

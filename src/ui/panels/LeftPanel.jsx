@@ -23,10 +23,18 @@ export default function LeftPanel(props) {
     return <Component {...props} />;
   };
   return (
-    <div data-testid="left-panel" style={isMobile
-      ? { ...S.panel, flex: 1, minHeight: 0, borderRight: "none", display: mobileColumn === "left" ? "flex" : "none" }
-      : { flex: 25, ...S.panel, minHeight: 0 }}>
-      <div style={{ ...S.label, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>天地 <span style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", letterSpacing: "1px" }}>· {zoneName}</span><VersionHistoryButton theme={THEME_VARS} /></div>
+    <div
+      data-testid="left-panel"
+      className={`left-panel-col${isMobile && mobileColumn !== "left" ? " mobile-col-hidden" : ""}`}
+      data-mobile={Boolean(isMobile)}
+    >
+      <div className="panel-col-head">
+        <span className="left-head-title">
+          <span>天地</span>
+          <span className="left-zone-tag">· {zoneName}</span>
+        </span>
+        <VersionHistoryButton theme={THEME_VARS} />
+      </div>
       <FacePanel faces={faces} theme={THEME_VARS} label="天地" isMobile={isMobile}
         renderModule={renderModule} isModuleVisible={isModuleVisible} />
     </div>

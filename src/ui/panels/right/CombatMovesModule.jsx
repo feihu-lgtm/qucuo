@@ -1,25 +1,28 @@
 import { QUALITY_COLOR } from "../../../domain/data/items/qualityColor.js";
+import { Icon } from "../../primitives/index.js";
 
 export default function CombatMovesModule({ char, inspectItem, inspecting }) {
   const extras = (char.moveset || []).filter(m => !m.sourceSkill);
   if (!extras.length) return null;
-  const TYPE_SHORT = { 攻击: "攻", 防御: "防", 状态: "状" };
   return (
-    <div style={{ borderTop: `1px solid var(--border)`, paddingTop: 8, marginBottom: 10 }}>
-      <div style={{ fontSize: "var(--fs-xs)", color: "var(--accent-dim)", marginBottom: 4 }}>临阵招式 <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)" }}>切磋自带补位 · 运功对应类型的武学即替换（回气永在，能量枯竭保命）</span></div>
+    <div className="right-section">
+      <div className="panel-sec-label">
+        <Icon name="临阵招式" size={13} /> 临阵招式 <span className="panel-sec-sub">切磋自带补位</span>
+      </div>
       {extras.map((m, i) => {
         const q = m.quality || "白";
         const qc = QUALITY_COLOR[q] || "var(--text)";
         const origin = m.learnedFromMaster ? "授" : "基础";
         return (
-          <div key={i} style={{ marginBottom: 3, fontSize: "var(--fs-xs)", display: "flex", alignItems: "center", gap: 5, opacity: 0.92, paddingLeft: 6 }}>
-            <span style={{ fontSize: "var(--fs-2xs)", color: "var(--bg-deep)", background: qc, borderRadius: 0, padding: "0 3px", fontWeight: 700 }}>{TYPE_SHORT[m.type] || "?"}</span>
+          <div key={i} className="combat-move-row">
+            <span className="skill-kind-icon"><Icon name={m.type || "招式"} size={13} /></span>
             <span
               onClick={() => inspectItem("skill", m.name, `${q}品·临阵招式（${origin}）`, null, { worldLook: true })}
-              style={{ cursor: inspecting === m.name ? "wait" : "pointer", color: qc, textDecoration: "underline", textDecorationStyle: "dotted", textDecorationColor: "var(--text-dim)", opacity: inspecting === m.name ? 0.6 : 1 }}
+              className="skill-name-btn"
+              style={{ color: qc, opacity: inspecting === m.name ? 0.6 : 1 }}
             >{m.name}{inspecting === m.name ? "…" : ""}</span>
-            <span style={{ fontSize: "var(--fs-2xs)", color: qc, opacity: 0.9 }}>（{q}品）</span>
-            <span style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)" }}>{origin}</span>
+            <span className="skill-quality" style={{ color: qc }}>（{q}品）</span>
+            <span className="combat-move-origin">{origin}</span>
           </div>
         );
       })}
