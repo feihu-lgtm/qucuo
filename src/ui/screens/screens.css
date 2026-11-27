@@ -846,10 +846,14 @@
   cursor: pointer;
   white-space: nowrap;
 }
-.codex-chip[data-on="true"] {
-  border-color: var(--accent);
+.codex-chip:hover {
   color: var(--text);
-  background: color-mix(in srgb, var(--accent) 16%, var(--bg-item));
+}
+/* 选中态不用朱红（朱红只给主行动、当前所在、未读）：抬一层底色、描边转实线、字转正文色。 */
+.codex-chip[data-on="true"] {
+  border-color: var(--text-dim);
+  color: var(--text);
+  background: var(--bg-raise);
 }
 .codex-npc-body {
   flex: 1;

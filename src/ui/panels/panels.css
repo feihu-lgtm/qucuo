@@ -901,18 +901,19 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  text-shadow: 0 0 12px var(--bg, #0c0b09);
+  /* 字压在画上，不随日夜切换：画永远是夜色，字永远是宣纸白。 */
+  text-shadow: 0 0 12px var(--ink-bg);
 }
 .art-caption-name {
   font-size: var(--fs-xl, 20px);
   letter-spacing: 0.6em;
   padding-left: 0.6em;
-  color: var(--text);
+  color: var(--ink-text);
 }
 .art-caption-sub {
   font-size: var(--fs-xs);
   letter-spacing: 0.2em;
-  color: var(--text-dim);
+  color: var(--ink-text-dim);
 }
 .art-caption-rule {
   width: 140px;

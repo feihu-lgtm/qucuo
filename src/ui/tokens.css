@@ -586,32 +586,36 @@
   --plate: #f4f2e9;
   --qc-hi: #201d18;
   /* 中栏与日志白昼调色板（与 :root / [data-theme="night"] 变量序列保持一致） */
-  --center-group-bg: rgba(32, 29, 24, 0.025);
-  --center-group-border: color-mix(in srgb, var(--border) 42%, transparent);
-  --center-group-divider: color-mix(in srgb, var(--border) 28%, transparent);
+  /* 日间与暗夜同一套规矩（夜色精修）：正文不套框，系统行退到标签色，行动与地名用次要色，
+     对话回到正文色，数值类统一成批语色，任务青绿；只是换成宣纸底上的深墨色。 */
+  --center-group-bg: transparent;
+  --center-group-border: transparent;
+  --center-group-divider: rgba(42, 38, 32, 0.14);
   --center-outside-text: var(--text-dim);
   --center-outside-room: var(--log-room);
-  --center-letter-bg: rgba(138, 42, 106, 0.045);
-  --center-letter-border: color-mix(in srgb, var(--log-narrator) 35%, var(--border));
+  --center-letter-bg: rgba(122, 58, 98, 0.04);
+  --center-letter-border: rgba(42, 38, 32, 0.22);
   --center-letter-accent: var(--log-narrator);
   --center-letter-body: var(--text);
-  --log-sys: var(--good);
-  --log-cmd: var(--warn);
+  --log-sys: #6d6759;
+  --log-cmd: #4e483c;
   --log-desc: #3d3626;
-  --log-room: #1e5a6a;
+  --log-room: #4e483c;
   --log-item: #7a5410;
-  --log-stat: var(--info);
-  --log-skill: #5a3a7a;
+  --log-stat: #6a5a44;
+  --log-skill: #6a5a44;
   --log-err: var(--accent);
-  --log-choice: #2e6a4a;
-  --log-narrator: #8a2a6a;
+  --log-choice: #2e5a2e;
+  --log-narrator: #7a3a62;
   --log-crash: var(--accent);
-  --log-confess: #8a5a0a;
-  --log-affection: #a0305a;
-  --log-quest: #8a5a0a;
-  --log-dialogue: #8a1e6a;
+  --log-confess: #7a3a62;
+  --log-affection: #6a5a44;
+  --log-quest: #2e5a2e;
+  --log-dialogue: #201d18;
   --npc-name: #8a4a2a;
   --npc-affection: #a8524a;
+  /* 建筑面板底色日间跟随宣纸底：原先固定夜底，日间下标题与正文（深墨字）落在夜底上看不见。 */
+  --building-panel-bg: var(--bg-panel);
 }
 /* 固定暗夜的子树（开始页、开场、创角、酒馆经营、开始页的卡牌导入）：根节点写
    data-theme="night"，这里把日间块覆盖过的变量按 :root 的暗夜值重新声明一遍，
@@ -673,6 +677,7 @@
   --log-dialogue: #ece6d6;
   --npc-name: #cfa95a;
   --npc-affection: #c99bb2;
+  --building-panel-bg: #0c0b09;
 }
 
 

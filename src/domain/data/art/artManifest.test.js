@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync, statSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   BUILDING_ART,
@@ -45,5 +45,16 @@ describe("美术素材登记表", () => {
     for (const name of NPC_ART) expect(existsSync(webpFile("npc", name)), name).toBe(true);
     for (const key of ITEM_ART) expect(existsSync(webpFile("item", key)), key).toBe(true);
     for (const id of QUEST_ART) expect(existsSync(webpFile("quest", id)), id).toBe(true);
+  });
+});
+
+describe("素材目录体积", () => {
+  it("public/art 下只放 webp，单张不超过 400KB（舆图底卷除外），避免原尺寸 png 拖慢加载", () => {
+    for (const kind of readdirSync("public/art")) {
+      for (const name of readdirSync(`public/art/${kind}`)) {
+        expect(name.endsWith(".webp"), `${kind}/${name}`).toBe(true);
+        if (kind !== "map") expect(statSync(`public/art/${kind}/${name}`).size, `${kind}/${name}`).toBeLessThan(400 * 1024);
+      }
+    }
   });
 });

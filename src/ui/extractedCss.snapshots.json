@@ -110,19 +110,19 @@
   "on": {
    "cursor": "pointer",
    "padding": "12px 10px",
-   "borderRadius": "0",
+   "borderRadius": "2px",
    "textAlign": "center",
-   "background": "var(--bg)",
-   "border": "1px solid var(--border)",
+   "background": "var(--bg-item)",
+   "border": "1px solid var(--hairline)",
    "opacity": "1"
   },
   "off": {
    "cursor": "pointer",
    "padding": "12px 10px",
-   "borderRadius": "0",
+   "borderRadius": "2px",
    "textAlign": "center",
-   "background": "var(--bg)",
-   "border": "1px solid var(--border)",
+   "background": "var(--bg-item)",
+   "border": "1px solid var(--hairline)",
    "opacity": "0.4"
   }
  },
