@@ -2842,3 +2842,21 @@
   min-width: 0;
 }
 
+
+/* 底栏右下角打坐钮（用户点单挪位）：与发送键同族线描但更素——休息是次动作 */
+.game-meditate-button {
+  flex-shrink: 0;
+  min-width: 52px;
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+.game-meditate-button:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
+.game-meditate-button:disabled { opacity: 0.5; cursor: default; }

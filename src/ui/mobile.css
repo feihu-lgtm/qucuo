@@ -870,9 +870,16 @@
 
   .mobile-control-row,
   .mobile-people-row,
-  .mobile-ground-strip,
-  .mobile-input-bar {
+  .mobile-ground-strip {
     height: 35px;
+  }
+
+  /* 输入栏不夹 35px（用户点单「下方拉长撑满」）：加高到 48px，打字区不再憋屈 */
+  .mobile-input-bar {
+    min-height: 48px !important;
+    height: auto !important;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
   }
 
   .mobile-tab-bar {
