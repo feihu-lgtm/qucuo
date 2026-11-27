@@ -89,8 +89,10 @@ export function getAllBattleCandidates() {
   const seen = new Map();
   for (const c of list) {
     const prev = seen.get(c.name);
-    // 同名撞车（基础池与 OC 池都有，如元朵朵）时留 OC 版——kungfu 专属招式更全
-    if (!prev || c.pool === "oc") seen.set(c.name, c);
+    // 同名撞车两层口径：基础池内部后来居上（驻场表在游走池之后 push，levelCap
+    // 更权威，沿用原口径——否则李若由从蓝掉绿、小牧童阿索/鱼定大娘从绿掉白）；
+    // OC 版压一切（kungfu 专属招式更全）。
+    if (!prev || c.pool === "oc" || prev.pool !== "oc") seen.set(c.name, c);
   }
   const deduped = [...seen.values()].map((c) => ({ ...c, pool: c.pool || "base" }));
 
