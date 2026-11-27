@@ -1,6 +1,8 @@
 import { isNpcAngry } from "../../domain/rules/combat/stealSystem.js";
 import { appeaseAngryNpc } from "./anger.js";
 import { companionKeyByName, unlockImportedCompanion, unlockPearl, unlockSnowLeopard } from "../../domain/rules/companion/companion.js";
+import { setCompanionDescForm } from "../../domain/rules/companion/companionForms.js";
+import { getCompanionProfile } from "../../domain/data/npc/companionProfiles.js";
 import { markNpcAsKnown as markNpcKnown } from "../../domain/rules/npc/npcAwareness.js";
 import { removeNpc } from "../../domain/rules/npc/roomNpcs.js";
 import { SNOW_QUEST_ID, SNOW_TRUSTED, SNOW_INVITED } from "../../domain/rules/quests/snowLeopardQuest.js";
@@ -8,6 +10,7 @@ import { createQuestProgress } from "../../domain/rules/quests/questEngine.js";
 import { npcBusyInQuest } from "./ocRecruit.js";
 import { systemAffectionPin, hasNoAffectionTrack } from "../../domain/rules/state/affection.js";
 import { AFFECTION_RULES } from "../../domain/rules/state/fields.js";
+import { writePath } from "../../domain/rules/state/applyWrite.js";
 
 export function inviteCompanion(state, npc, ctx = {}) {
   if (!npc) return { logs: [{ t: "err", text: "  此地没有这位人物。" }] };
@@ -21,31 +24,64 @@ export function inviteCompanion(state, npc, ctx = {}) {
   if (key === "snowLeopard" && !(state.flags || []).includes(SNOW_TRUSTED)) {
     return { logs: [{ t: "sys", text: "  雪豹偏过头去，不肯随行。山川之灵尚未认你。" }] };
   }
-  if (key === "snowLeopard") companionState = unlockSnowLeopard(companionState);
-  else if (key === "pearl") companionState = unlockPearl(companionState);
+  const now = ctx.getNow?.() ?? Date.now();
+  if (key === "snowLeopard") companionState = unlockSnowLeopard(companionState, { now });
+  else if (key === "pearl") companionState = unlockPearl(companionState, { now });
   else if (npc.imported) companionState = unlockImportedCompanion(companionState, npc);
   else return {};
 
-  const now = ctx.getNow?.() ?? Date.now();
+  const profile = key ? getCompanionProfile(key) : null;
+  if (profile) setCompanionDescForm(profile.key, "human");
+  const knownName = profile?.beastName || npc.name;
+
   return {
     changes: {
       companionState,
+      ...(profile ? {
+        flags: (f) => [...new Set([
+          ...f,
+          ...(key === "snowLeopard" ? [SNOW_INVITED] : []),
+          profile.humanFormFlag,
+        ])],
+      } : {}),
       ...(key === "snowLeopard" ? {
-        flags: (f) => [...new Set([...f, SNOW_INVITED])],
         questProgress: (p) => ({ ...p, [SNOW_QUEST_ID]: { ...(p?.[SNOW_QUEST_ID] || createQuestProgress(SNOW_QUEST_ID, now)), status: "completed", currentStageIndex: 2, completedAt: now } }),
       } : {}),
       varTree: (prev) => {
-        const known = markNpcKnown(prev || {}, npc.name);
+        let tree = markNpcKnown(prev || {}, knownName);
+        if (profile) {
+          tree = writePath(tree, ["角色", profile.beastName, "化形人名"], profile.humanName);
+          tree = writePath(tree, ["角色", profile.beastName, "形态"], "人形");
+          tree = writePath(tree, ["角色", profile.beastName, "已化形"], true);
+          return systemAffectionPin(tree, profile.beastName, AFFECTION_RULES.companion.example).tree;
+        }
         // WO-16B：同行情谊钉初始好感 deterministic；兽类/无好感轨道跳过。
-        if (hasNoAffectionTrack(npc)) return known;
-        return systemAffectionPin(known, npc.name, AFFECTION_RULES.companion.example).tree;
+        if (hasNoAffectionTrack(npc)) return tree;
+        return systemAffectionPin(tree, npc.name, AFFECTION_RULES.companion.example).tree;
       },
       room: (prev) => ({
         ...prev,
-        npcs: removeNpc(prev.npcs, (entry) => entry.name === npc.name && (entry.companionCandidate || entry.imported)),
+        npcs: removeNpc(
+          prev.npcs,
+          (entry) => (entry.name === npc.name || (profile && profile.aliases.includes(entry.name)))
+            && (entry.companionCandidate || entry.imported),
+        ),
       }),
     },
+    ...(profile ? {
+      logs: [{ t: "sys", text: `  灵光流转间，${profile.beastName}褪去兽身化作人形女子「${profile.humanName}」同行。` }],
+    } : {}),
     settle: `向${npc.name}伸出手，郑重邀它同行`,
-    settleOptions: { settleNpc: npc.name, settleKind: "companion_invite", settleBeast: !!npc.beast },
+    settleOptions: {
+      settleNpc: npc.name,
+      settleKind: "companion_invite",
+      settleBeast: !!npc.beast,
+      ...(profile ? {
+        companionKey: profile.key,
+        firstTransform: true,
+        humanName: profile.humanName,
+        beastName: profile.beastName,
+      } : {}),
+    },
   };
 }

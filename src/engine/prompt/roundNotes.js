@@ -7,8 +7,9 @@ import { hasInnerMap, getDistrictAnchor, isNpcVisibleInInnerRoom } from "../../d
 import { isAtQuestPlace } from "../../domain/rules/quests/questPlace.js";
 import { roadEncounterFor } from "../../domain/data/encounters/roadEncounters.js";
 import { getPresentNpcs } from "../../domain/rules/prompt/promptRefs.js";
-import { activeCompanion, activeCompanionKey, COMPANION_LORE, unlockedCompanions, stationedCompanions, companionNpcEntry } from "../../domain/rules/companion/companion.js";
-import { formatCompanionBodyBlock } from "../../domain/rules/character/companionBodyProfiles.js";
+import { activeCompanionKey, COMPANION_LORE, unlockedCompanions, stationedCompanions, companionNpcEntry } from "../../domain/rules/companion/companion.js";
+import { formatCompanionDossierBlock } from "../../domain/rules/companion/companionLore.js";
+import { getPromptOverrides } from "../../domain/rules/prompt/registry.js";
 import { getAllResidentNpcLore } from "../../domain/data/npc/residentNpcs.js";
 import { matchNpcLore, buildNpcLoreBlock } from "../../domain/rules/prompt/worldbook.js";
 import { detectReunions, buildReunionBlock, REUNION_GAP_THRESHOLD } from "../../domain/rules/npc/npcAwareness.js";
@@ -293,20 +294,24 @@ export function buildNpcContext({ convo, preset, visibleNpcs, room, cmd, isTalk,
       includeLastReply: isTalk,
     })
   );
-  // 随行伙伴（雪豹/珍珠…灵兽类）的二形态人设：伙伴不在 visibleNpcs（走 visibleNpcsForAI
-  // 单独随行），worldbook 的 matchNpcLore 匹配不到它，人设从不注入 prompt——这里单独补。
-  // 用哪套描述（兽形/人形）由玩家在外貌选择器里挑（getCompanionDescForm，入队后默认人形），选中的那套
-  // 连同身份底色一起注入；■模式且选了人形、且该伙伴有私密性情条目，才追加那段。
-  // 明日香这类本就是在场人物的伙伴不登记 COMPANION_LORE，走常规 NPC 人设，此处跳过。
+  // 随行化形同伴（雪豹→白栖雪 / 珍珠→夏明珠）全档案：遍历所有已解锁且未留守的化形同伴，
+  // 注入三字人名、当前形态、性格、武功及受 ■ 模式门控的体貌明细；接受总控台 companion_dossier 开关与文案覆盖。
   let companionLore = "";
-  const activeComp = activeCompanion(companionState);
-  if (activeComp && COMPANION_LORE[activeComp.key]) {
-    const lore = COMPANION_LORE[activeComp.key];
-    const form = companionForms[activeComp.key] || "human";
-    companionLore = `\n\n【${activeComp.label}·随行伙伴在场设定】${lore.base}`;
-    companionLore += form === "human" ? lore.human : lore.beast;
-    if (form === "human") companionLore += formatCompanionBodyBlock(activeComp.key, { nsfw: !!nsfwOn });
-    if (form === "human" && nsfwOn && lore.nsfw) companionLore += lore.nsfw;
+  const activeKey = activeCompanionKey(companionState);
+  const followingLoreSlots = unlockedCompanions(companionState)
+    .filter((slot) => !companionState?.[slot.key]?.stationed && COMPANION_LORE[slot.key]);
+  if (followingLoreSlots.length) {
+    const overrides = getPromptOverrides();
+    for (const slot of followingLoreSlots) {
+      const entry = companionState[slot.key];
+      const form = companionForms[slot.key] || entry?.form || "human";
+      companionLore += formatCompanionDossierBlock(slot.key, {
+        active: slot.key === activeKey,
+        form,
+        nsfw: !!nsfwOn,
+        overrides,
+      });
+    }
   }
   // 随行/留守队友清单：告诉 AI 谁跟在你身边、谁留在哪个房间等你——
   // 留守队友不在在场名单里（落在据点房间），不注入就会变成“凭空消失”。

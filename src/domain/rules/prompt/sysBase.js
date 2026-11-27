@@ -10,6 +10,7 @@ import { ENGINE_IDENTITY, ISOLATION, MAP_LAW, CATALOG_TAIL, buildTalkItemRule } 
 import { buildSeaOfMindRule } from "../narrator/seaOfMind.js";
 import { makeBlock } from "./tavernMapping.js";
 import { ADULT_HUMAN_FORM, isHumanFormCompanion } from "../companion/companionSlots.js";
+import { buildFirstTransformPrompt } from "../companion/companionLore.js";
 import { getPromptOverrides } from "./registry.js";
 import { loadCopy } from "../../../copy/loadCopy.js";
 
@@ -109,6 +110,10 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       return `\n【送礼反应铁律】「${o.giftInfo?.itemName ? o.giftInfo.itemName : "礼物"}」已由系统交付并结算完毕，禁重复扣除、禁改写收讫事实。${o.settleNpc}的反应按其自身性情与礼物分量自然写：性情冷傲者即便心里受用也只是淡淡收下，豪爽者拍腿道谢，精明者掂量估值；厚礼动心、薄礼随意，因人而异、禁千人一腔地惊喜转暖，也禁无由为难起疑。` + preferHint;
     }
     if (o.settleKind === "companion_invite") {
+      if (isHumanFormCompanion(o.settleNpc) || o.firstTransform) {
+        const custom = buildFirstTransformPrompt(o.companionKey || o.settleNpc, { overrides: ov, singleCall: false });
+        if (custom) return `\n${custom}`;
+      }
       const cn = o.settleNpc || "对方";
       const speech = isHumanFormCompanion(o.settleNpc)
         ? `认主这一刻褪去兽身、化为人形（${ADULT_HUMAN_FORM}），化形后能开口说话，用言语与神情表达结伴之意`
@@ -151,6 +156,10 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       return `\n【送礼反应铁律】${o.giftInfo?.itemName ? `「${o.giftInfo.itemName}」` : "这件礼物"}已由系统交付并结算完毕，好感改动也已由系统按礼物分量确定性落账，禁重复扣除、禁改写收讫事实。${o.settleNpc}的反应按其自身性情与礼物分量自然写：冷傲者即便心里受用也只是淡淡收下，豪爽者拍腿道谢，精明者掂量估值；厚礼动心、薄礼随意，因人而异、禁千人一腔地惊喜转暖，也禁无由为难起疑。\n礼物信息：品阶【${o.giftInfo?.quality || "白"}】${o.giftInfo?.categoryLabel ? `，类别「${o.giftInfo.categoryLabel}」` : ""}，描述：${o.giftInfo?.desc || "寻常物件"}。\n本轮禁输出任何好感相关 <mvu>——写了会被系统拦截，且与已落定账本重复。`;
     }
     if (o.settleKind === "companion_invite") {
+      if (isHumanFormCompanion(o.settleNpc) || o.firstTransform) {
+        const custom = buildFirstTransformPrompt(o.companionKey || o.settleNpc, { overrides: ov, singleCall: true });
+        if (custom) return `\n${custom}`;
+      }
       const cn = o.settleNpc || "对方";
       const { min, max, example } = AFFECTION_RULES.companion;
       const speech = isHumanFormCompanion(o.settleNpc)

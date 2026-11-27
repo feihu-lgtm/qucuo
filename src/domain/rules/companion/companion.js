@@ -17,6 +17,7 @@ import { ocSignatureMoves } from "./ocKungfu.js";
 import { deriveMovesetFromSig, generateNpcMoveset } from "../npc/npcMovesets.js";
 import { createEmptyStatusSlots } from "../combat/statusEffects.js";
 import { COMPANION_SLOTS } from "./companionSlots.js";
+import { COMPANION_PROFILES, HUMAN_PROFILE_REV, resolveCompanionKeyByAlias } from "../../data/npc/companionProfiles.js";
 export { initCompanionState } from "./companionState.js";
 export { COMPANION_SLOTS } from "./companionSlots.js";
 export { SNOW_LEOPARD_PROFILE, createSnowLeopard, unlockSnowLeopard, isSnowLeopardAvailable,
@@ -214,10 +215,67 @@ export function unlockFollowerCompanion(companionState, owner) {
 //     伙伴 data.moveset 在战斗外没有任何写回（成长招式只在战斗内的 movesetLocal 拷贝里累积，
 //     不回写伙伴数据），所以重建不会丢任何成长。
 //  ② OC 主人已入队而随从槽缺失（旧档只给铁伯建过槽）→ 补建随从槽；主人当时留守在哪，随从就在哪。
+//  ③ 已入队的化形灵兽（雪豹→白栖雪 / 珍珠→夏明珠）若缺新版人设修订戳 → 补全三字人名、全档案、武功与化形槽位（不动既有战斗数值与 moveset）。
 // 没变化时原样返回同一引用。
+function hydrateBuiltinHumanFormSlot(entry, profile) {
+  const d = entry?.data;
+  if (!entry?.unlocked || !d || !profile) return entry;
+  const form = entry.form || "human";
+  const needData = d.humanProfileRev !== HUMAN_PROFILE_REV;
+  const needSlot = !entry.humanName || !entry.form || entry.transformed !== true || entry.affectionable !== true;
+  if (!needData && !needSlot) return entry;
+  const nextData = needData
+    ? {
+      ...d,
+      humanName: profile.humanName,
+      beastName: profile.beastName,
+      nativeName: profile.nativeName,
+      aliases: [...profile.aliases],
+      title: profile.title,
+      gender: profile.gender,
+      age: profile.age,
+      faction: profile.faction,
+      brief: profile.brief,
+      beastBrief: profile.beastBrief,
+      personality: profile.personality,
+      lifeHistory: profile.lifeHistory,
+      fullBio: profile.fullBio,
+      likes: profile.likes,
+      hobby: profile.hobby,
+      tradeStyle: profile.tradeStyle,
+      kungfu: profile.kungfu,
+      nsfw: profile.nsfwProfile.summary,
+      nsfwProfile: profile.nsfwProfile,
+      bodyProfile: profile.bodyProfile,
+      carry: Array.isArray(d.carry) && d.carry.length ? d.carry : profile.carry.map((item) => ({ ...item })),
+      stealables: d.stealables || {
+        equipment: profile.stealables.equipment.map((item) => ({ ...item })),
+        sundries: profile.stealables.sundries.map((item) => ({ ...item })),
+      },
+      humanProfileRev: HUMAN_PROFILE_REV,
+    }
+    : d;
+  return {
+    ...entry,
+    data: nextData,
+    form,
+    transformed: true,
+    humanName: profile.humanName,
+    beastName: profile.beastName,
+    voice: form === "beast" ? "beast" : "human",
+    cannotSpeak: form === "beast",
+    affectionable: true,
+  };
+}
+
 export function migrateCompanionState(companionState) {
   if (!companionState || typeof companionState !== "object") return companionState;
   let next = companionState;
+  for (const [key, profile] of Object.entries(COMPANION_PROFILES)) {
+    const cur = next[key];
+    const updated = hydrateBuiltinHumanFormSlot(cur, profile);
+    if (updated !== cur) next = { ...next, [key]: updated };
+  }
   for (const [key, entry] of Object.entries(companionState)) {
     if (!entry?.imported || !entry.unlocked || !entry.data || entry.servantOf) continue;
     const adv = findAdventurerByName(entry.label || entry.data.name);
@@ -247,11 +305,26 @@ function allCompanionKeys(companionState) {
   return keys;
 }
 
-// 槽位元信息（label/beast）：内置的从 COMPANION_SLOTS 取，导入的从 state 条目自身取。
+// 槽位元信息（label/beast/化形人名与当前形态）：内置的从 COMPANION_SLOTS 取，导入的从 state 条目自身取。
 export function companionMeta(companionState, key) {
   const fixed = COMPANION_SLOTS.find(s => s.key === key);
-  if (fixed) return fixed;
   const c = companionState?.[key];
+  if (fixed) {
+    const profile = COMPANION_PROFILES[key];
+    if (!profile) return fixed;
+    const form = c?.form || (fixed.humanForm ? "human" : "beast");
+    const humanName = c?.humanName || fixed.humanName || profile.humanName;
+    const beastName = c?.beastName || fixed.beastName || fixed.label;
+    return {
+      ...fixed,
+      title: profile.title,
+      humanName,
+      beastName,
+      displayName: form !== "beast" ? humanName : beastName,
+      form,
+      transformed: c?.transformed ?? !!c?.unlocked,
+    };
+  }
   return { key, label: c?.label || c?.data?.name || key, beast: !!c?.beast };
 }
 
@@ -302,22 +375,25 @@ export function unlockedCompanions(companionState) {
     .map(k => companionMeta(companionState, k));
 }
 
-// 按 NPC 名字查它对应的伙伴槽位（雪豹/珍珠/明日香），不是伙伴候选返回 null。
+// 按 NPC 名字或化形人名/别名查它对应的伙伴槽位（雪豹/白栖雪/珍珠/夏明珠/墨团/明日香），不是伙伴候选返回 null。
 export function companionKeyByName(name) {
-  const s = COMPANION_SLOTS.find(x => x.label === name);
+  const byAlias = resolveCompanionKeyByAlias(name);
+  if (byAlias) return byAlias;
+  const s = COMPANION_SLOTS.find(x => x.label === name || x.humanName === name || (x.aliases || []).includes(name));
   return s ? s.key : null;
 }
 
 // 按名字找跟随中（已解锁非留守）同伴的槽位键——形影不离的同伴坐标恒等于玩家
 // （buildPresence 在场口径），判官/听意看得见他们，执行与结算链也得按名找得到，
-// 否则「跟珍珠切磋」「把药囊交给雪豹」被接受后落空。
+// 否则「跟珍珠/夏明珠切磋」「把药囊交给雪豹/白栖雪」被接受后落空。
 export function followingCompanionKey(companionState, name) {
   if (!name) return null;
   for (const k of allCompanionKeys(companionState)) {
     const c = companionState?.[k];
     if (!c?.unlocked || c?.stationed || !c?.data) continue;
     const meta = companionMeta(companionState, k);
-    if (meta.label === name || c.data.name === name) return k;
+    const aliases = c.data.aliases || COMPANION_PROFILES[k]?.aliases || [];
+    if (meta.label === name || c.data.name === name || c.humanName === name || c.data.humanName === name || aliases.includes(name)) return k;
   }
   return null;
 }
@@ -372,6 +448,49 @@ export function stationedCompanions(companionState) {
     .map(k => ({ key: k, label: companionMeta(companionState, k).label, stationed: companionState[k].stationed }));
 }
 
+// 切换已解锁灵兽伙伴形态（"human" | "beast"），同步槽位发声与不可言标记。
+export function setCompanionFormState(companionState, keyOrName, form) {
+  const key = companionState?.[keyOrName] ? keyOrName : companionKeyByName(keyOrName);
+  const c = key ? companionState?.[key] : null;
+  const profile = key ? COMPANION_PROFILES[key] : null;
+  if (!c?.unlocked || !c?.data || !profile) return companionState;
+  const nextForm = form === "beast" ? "beast" : "human";
+  const nextSpeak = nextForm === "beast";
+  if (c.form === nextForm && c.cannotSpeak === nextSpeak) return companionState;
+  return {
+    ...companionState,
+    [key]: {
+      ...c,
+      form: nextForm,
+      transformed: true,
+      humanName: c.humanName || profile.humanName,
+      beastName: c.beastName || profile.beastName,
+      voice: nextSpeak ? "beast" : "human",
+      cannotSpeak: nextSpeak,
+      affectionable: true,
+    },
+  };
+}
+
+// 查询某同伴完整档案（合并运行时 data 与静态全档案），供后端判定与外部面板直接消费。
+export function getCompanionFullProfile(companionState, keyOrName) {
+  const key = companionState?.[keyOrName] ? keyOrName : companionKeyByName(keyOrName);
+  if (!key) return null;
+  const c = companionState?.[key];
+  const base = COMPANION_PROFILES[key] || null;
+  if (!base && !c?.data) return null;
+  return {
+    ...(base || {}),
+    ...(c?.data || {}),
+    key,
+    unlocked: !!c?.unlocked,
+    active: !!c?.active,
+    stationed: c?.stationed || null,
+    form: c?.form || (base ? "human" : "beast"),
+    transformed: c?.transformed ?? !!c?.unlocked,
+  };
+}
+
 // 伙伴槽折成 room.npcs 条目形状（左栏名单、动作菜单、切磋都直接拿这份）。
 // 战斗数据（moveset/combatStats/七维…）整份带上：从名单点「切磋」时这份条目就是对手，
 // buildEnemyUnit/DuelScreen 读 moveset 选招，缺了第一回合就卡死。
@@ -381,16 +500,41 @@ export function companionNpcEntry(companionState, key, extra = {}) {
   const c = companionState?.[key];
   const d = c?.data || {};
   const meta = companionMeta(companionState, key);
+  const profile = COMPANION_PROFILES[key];
+  const form = profile ? (c?.form || "human") : null;
+  const isMuted = profile
+    ? form === "beast"
+    : !!(c?.mute || c?.cannotSpeak);
   return {
-    ...d, personalityProfile: d.profile,
-    name: meta.label, id: key, companion: true, beast: !!(meta.beast || c?.beast), brief: d.brief || meta.label, levelCap: d.levelCap,
-    // D6 Review 修：同伴携物定为「非交互保管」——名册条目不暴露携物池。
-    // 玩家赠礼由 materializeFacts 落进 companionState.<key>.data.carriedItems（正本保留），
-    // 但同伴不是商贩/盗匪目标：条目若带 carriedItems，切磋福缘掉落/战斗顺手摸走/交易货架
-    // 都会把同一件物复制一份给玩家（正本在 companionState 里原样还在，room.npcs 标记
-    // 不到它），偷窃/交易还会开出莫名货架。条目置空后这些交互天然无的放矢。
+    ...(profile ? {
+      humanName: profile.humanName,
+      beastName: profile.beastName,
+      aliases: [...profile.aliases],
+      title: profile.title,
+      gender: profile.gender,
+      age: profile.age,
+      faction: profile.faction,
+      personality: profile.personality,
+      lifeHistory: profile.lifeHistory,
+      fullBio: profile.fullBio,
+      kungfu: profile.kungfu,
+      nsfw: profile.nsfwProfile.summary,
+      nsfwProfile: profile.nsfwProfile,
+      bodyProfile: profile.bodyProfile,
+      affectionable: true,
+    } : {}),
+    ...d,
+    personalityProfile: d.profile,
+    name: meta.label,
+    displayName: meta.displayName || meta.label,
+    id: key,
+    companion: true,
+    beast: !!(meta.beast || c?.beast),
+    brief: d.brief || meta.label,
+    levelCap: d.levelCap,
+    ...(form ? { form, transformed: c?.transformed ?? true } : {}),
     carriedItems: [],
-    ...(c?.mute || c?.cannotSpeak ? { cannotSpeak: true } : {}),
+    ...(isMuted ? { cannotSpeak: true } : {}),
     ...extra,
   };
 }

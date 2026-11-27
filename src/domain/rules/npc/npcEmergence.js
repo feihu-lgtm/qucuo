@@ -67,7 +67,11 @@ const MAX_NAME_LEN = 8;
 
 function exclusionSet({ roomNpcs = [], playerName = "" } = {}) {
   const set = new Set([...getAllResidentNpcNames(), ...getImportedResidentNames()]);
-  for (const slot of COMPANION_SLOTS) if (slot?.label) set.add(slot.label);
+  for (const slot of COMPANION_SLOTS) {
+    if (slot?.label) set.add(slot.label);
+    if (slot?.humanName) set.add(slot.humanName);
+    for (const alias of slot?.aliases || []) set.add(alias);
+  }
   for (const npc of roomNpcs) if (npc?.name) set.add(npc.name);
   if (playerName) set.add(playerName);
   return set;
