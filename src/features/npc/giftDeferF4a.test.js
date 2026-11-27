@@ -46,7 +46,8 @@ describe("giftNpc deferToJudge（先裁后落）", () => {
     expect(result.settleOptions.giftRequest).toBeUndefined();
     expect(result.changes.inv).toBeDefined();
     const tree = runVarTree(result, state);
-    expect(tree.世界.好感日增.gained.温掌柜).toBeGreaterThan(0);
+    // 日涨封顶已拆：好感直写不再有日增账——断言好感本身落账
+    expect(tree.角色.温掌柜.好感度).toBeGreaterThan(0);
   });
 
   it("生气送礼不 defer（归 F3 appease 判官路）：settleKind=appease 且无 giftRequest", () => {

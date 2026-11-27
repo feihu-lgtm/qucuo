@@ -222,7 +222,8 @@ describe("materializeFacts 十二律覆盖矩阵", () => {
     ], {});
     const types = out.patches.map((p) => `${p.op}:${p.path.join(".")}`);
     expect(types).toContain("set:varTree.角色.才旦.好感度");
-    expect(types).toContain("set:varTree.世界.好感日增");
+    // 日涨封顶已拆——不再写好感日增账
+    expect(types).not.toContain("set:varTree.世界.好感日增");
     // 无好感轨道：整条事实跳过（含心账）
     expect(out.patches.some((p) => p.factId === "F31")).toBe(false);
     expect(out.logs.some((l) => l.text.includes("无好感轨道"))).toBe(true);
@@ -244,9 +245,8 @@ describe("materializeFacts 十二律覆盖矩阵", () => {
     // 同一 NPC 两条事实串行：最终 patch 必须是 10+2+3=15（若从同一快照起算会写成 13 覆盖 12）
     const lastCain = out.patches.filter((p) => p.path.join(".") === "varTree.角色.才旦.好感度").at(-1);
     expect(lastCain.value).toBe(15);
-    // 日增账：两个 NPC 的额度都保留（后一条不冲掉前一条的 gained）
-    const lastGained = out.patches.filter((p) => p.path.join(".") === "varTree.世界.好感日增").at(-1);
-    expect(lastGained.value.gained).toMatchObject({ 才旦: 5, 卓玛: 4 });
+    // 日涨封顶已拆——串行叠加不再写日增账
+    expect(out.patches.some((p) => p.path.join(".") === "varTree.世界.好感日增")).toBe(false);
   });
 
   it("MUTATE_SOCIAL charm 口径：effectiveSpecialNow 优先于裸 char.special", () => {
@@ -615,5 +615,59 @@ describe("D2 旁观者「见」补好感建档", () => {
     const pins = (out.patches || []).filter((pp) => pp.path.join(".").includes("好感度") && pp.value === 10);
     expect(pins).toHaveLength(0);
     expect((out.patches || []).some((pp) => pp.path.join(".").includes("心账"))).toBe(true);
+  });
+});
+
+describe("好感增减主栏上屏（设计缺口补）", () => {
+  const mkState = (npcs, affs, charm = 5) => {
+    const base = baseState();
+    base.varTree = { 角色: affs, 世界: {} };
+    base.char = { ...base.char, special: { 魅力: charm } };
+    base.room = { ...base.room, npcs };
+    return base;
+  };
+  const statLines = (out) => out.logs.filter((l) => l.t === "affection").map((l) => l.text);
+
+  it("搭话类（恩+2）：上屏行格式「  才旦 好感 10→12（+2）」", () => {
+    const out = materializeFacts(mkState([{ name: "才旦" }], { 才旦: { 好感度: 10 } }), [
+      { id: "T1", op: "MUTATE_SOCIAL", npc: "才旦", affectionDelta: 2, ledgerKind: "恩", reason: "闲谈相投" },
+    ], {});
+    expect(statLines(out)).toContain("  💗 才旦 好感度 +2（10 → 12）");
+  });
+  it("送礼类（恩+4）：格式一致", () => {
+    const out = materializeFacts(mkState([{ name: "卓玛" }], { 卓玛: { 好感度: 20 } }), [
+      { id: "G1", op: "MUTATE_SOCIAL", npc: "卓玛", affectionDelta: 4, ledgerKind: "恩", reason: "赠礼" },
+    ], {});
+    expect(statLines(out)).toContain("  💗 卓玛 好感度 +4（20 → 24）");
+  });
+  it("辱骂类（怨-4）：负数格式「  罗琦 好感 40→36（-4）」", () => {
+    const out = materializeFacts(mkState([{ name: "罗琦" }], { 罗琦: { 好感度: 40 } }), [
+      { id: "H1", op: "MUTATE_SOCIAL", npc: "罗琦", affectionDelta: -4, ledgerKind: "怨", reason: "言语冲撞" },
+    ], {});
+    expect(statLines(out)).toContain("  💗 罗琦 好感度 -4（40 → 36）");
+  });
+  it("亲密类（闺房温存+3）：雪豹格式一致", () => {
+    const out = materializeFacts(mkState(
+      [{ name: "雪豹", beast: true, companionCandidate: true }], { 雪豹: { 好感度: 85 } }), [
+      { id: "I1", op: "MUTATE_SOCIAL", npc: "雪豹", affectionDelta: 3, ledgerKind: "恩", reason: "闺房温存" },
+    ], {});
+    expect(statLines(out)).toContain("  💗 雪豹 好感度 +3（85 → 88）");
+  });
+  it("日涨封顶已拆：当天已涨 11 再签 +6 全额落账不括注（用户钦定行为变更）", () => {
+    const base = mkState([{ name: "才旦" }], { 才旦: { 好感度: 10 } });
+    base.varTree.世界.好感日增 = { dayStamp: Math.floor(42 / 24), gained: { 才旦: 11 } };
+    const out = materializeFacts(base, [
+      { id: "D1", op: "MUTATE_SOCIAL", npc: "才旦", affectionDelta: 6, ledgerKind: "恩" },
+    ], { time: 42 });
+    const line = statLines(out).find((t) => t.includes("才旦 好感度"));
+    expect(line).toContain("+6（10 → 16）");
+    expect(line).not.toContain("日涨封顶");
+  });
+  it("心账落条（恩/怨/见）本身不额外出上屏行——只有数值行", () => {
+    const out = materializeFacts(mkState([{ name: "才旦" }], { 才旦: { 好感度: 10 } }), [
+      { id: "T1", op: "MUTATE_SOCIAL", npc: "才旦", affectionDelta: 2, ledgerKind: "恩", reason: "闲谈相投" },
+    ], {});
+    const npcLines = out.logs.filter((l) => l.text.includes("才旦") && !l.text.includes("好感"));
+    expect(npcLines.filter((l) => l.t === "affection")).toHaveLength(0);
   });
 });

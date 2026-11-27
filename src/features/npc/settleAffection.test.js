@@ -26,10 +26,8 @@ describe("送礼好感确定性硬结算", () => {
     expect(result.settleOptions.settleKind).toBe("gift");
     const tree = runVarTree(result, state);
     const v = tree.角色.温掌柜.好感度;
-    // 新认识 NPC 先有初始好感（markNpcAsKnown 既有行为），好感增量记日涨账
-    const gained = tree.世界.好感日增.gained.温掌柜;
-    expect(gained).toBeGreaterThan(0);
-    expect(v).toBeGreaterThanOrEqual(gained);
+    // 日涨封顶已拆：好感直写不再有日增账——好感本身超初始基线即落账
+    expect(v).toBeGreaterThan(0);
   });
 
   it("偏好命中：取区间上沿", () => {
