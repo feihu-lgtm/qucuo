@@ -73,6 +73,7 @@ const DUEL_BANNER_RE = /^[\s\u3000]*──\s*(.+?)\s*──[\s\u3000]*$/;
 const SETTLE_BANNER_RE = /^[\s\u3000]*◈\s*.+?·\s*战斗结算[\s\u3000]*$/;
 const LETTER_LINE_RE = /^[\s\u3000]*「([^」]+)来信」([\s\S]*)$/;
 const NARRATOR_PREFIX_RE = /^[\s\u3000]*「旁白」/;
+const escapeRe = (str) => String(str).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const NEW_FACE_RE = /^※\s*新人物出现\s+(.+?)（(.*)）$/;
 
 // 正文统一排版：每段去掉前导空白，缩进只交给样式表的 text-indent（2em），不再叠加原文里的空格。
@@ -231,8 +232,10 @@ export default function LogEntry({
   }
 
   // 细看卡片的头一行「名字 来历」：名字用人名色，来历用次要色，不当正文段落缩进。
-  if (lookName && isDesc && stripLeadingSpace(rawText).startsWith(lookName)) {
-    const brief = stripLeadingSpace(rawText).slice(lookName.length).trim();
+  // 只认「名字」或「名字 + 空白 + 来历」这一种形状；补写的描写（fillProse）就算以名字开头也照常落正文。
+  const lookHeadText = lookName && isDesc && !entry.fillProse ? stripLeadingSpace(rawText).trim() : "";
+  if (lookHeadText && (lookHeadText === lookName || new RegExp(`^${escapeRe(lookName)}[\\s\u3000]`).test(lookHeadText))) {
+    const brief = lookHeadText.slice(lookName.length).trim();
     return (
       <div className={`${baseCls} log-entry--fact log-look-head`}>
         <span className="log-npc-name">{lookName}</span>
@@ -320,14 +323,9 @@ export default function LogEntry({
     ? (
       <>
         ※ 新人物出现{" "}
-        <span
-          className="log-npc-name"
-          role={onOpenNpc ? "button" : undefined}
-          tabIndex={onOpenNpc ? 0 : undefined}
-          onClick={onOpenNpc ? () => onOpenNpc(newFace[1]) : undefined}
-        >
-          {newFace[1]}
-        </span>
+        {onOpenNpc
+          ? <button type="button" className="log-npc-name log-npc-link" onClick={() => onOpenNpc(newFace[1])}>{newFace[1]}</button>
+          : <span className="log-npc-name">{newFace[1]}</span>}
         <span className="log-fact-note">（{newFace[2]}）</span>
       </>
     )

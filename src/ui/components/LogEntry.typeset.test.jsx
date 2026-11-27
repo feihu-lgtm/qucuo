@@ -25,7 +25,8 @@ describe("中栏统一排版", () => {
 
   it("「新人物出现」的名字用人名色，给了 onOpenNpc 就能点", () => {
     const html = render({ t: "sys", text: "  ※ 新人物出现 大公鸡（点击可细看其人）" }, { onOpenNpc: () => {} });
-    expect(html).toMatch(/class="log-npc-name" role="button"[^>]*>大公鸡</);
+    expect(html).toMatch(/<button type="button" class="log-npc-name log-npc-link">大公鸡<\/button>/);
+    expect(render({ t: "sys", text: "  ※ 新人物出现 大公鸡（点击可细看其人）" })).not.toContain("<button");
     expect(html).toContain("（点击可细看其人）");
   });
 
@@ -35,6 +36,13 @@ describe("中栏统一排版", () => {
     expect(html).toMatch(/class="log-npc-name">大公鸡</);
     expect(html).toContain("村口一只油亮好斗的大公鸡");
     expect(html).not.toContain("log-para");
+  });
+
+  it("补写的描写即使以人名开头也照常落正文段，不再当第二个抬头", () => {
+    const html = render({ t: "desc", text: "  雪豹伏在青石上，尾尖微动。", fillKey: "k", fillProse: true }, { lookName: "雪豹" });
+    expect(html).not.toContain("log-look-head");
+    expect(html).toContain("log-para");
+    expect(render({ t: "desc", text: "  雪豹伏在青石上。" }, { lookName: "雪豹" })).not.toContain("log-look-head");
   });
 
   it("同组的补写描写照常落正文段", () => {
@@ -72,5 +80,13 @@ describe("头像与物品图放大", () => {
     expect(small).toContain("item-art--lg");
     expect(big).toContain("item-art--zoom");
     expect(big).toContain("查看");
+  });
+});
+
+describe("包袱与装备的放大入口可用键盘", () => {
+  it("包袱图标是原生按钮", async () => {
+    const { default: InventoryModule } = await import("../panels/right/InventoryModule.jsx");
+    const html = renderToStaticMarkup(createElement(InventoryModule, { inv: [{ id: "a", name: "青锋剑", category: "weapon", quality: "白" }] }));
+    expect(html).toMatch(/<button type="button" class="pack-row-art"/);
   });
 });

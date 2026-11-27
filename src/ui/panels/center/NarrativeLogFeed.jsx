@@ -111,6 +111,7 @@ export default function NarrativeLogFeed({
   collapsedGroups, setCollapsedGroups,
   loading, queueCount, pendingTalks, inspecting, logEnd,
   playerAvatar = null,
+  isNpcHere = () => true,
 }) {
   const log = useGameStore(s => s?.log) || [];
   const room = useGameStore(s => s?.room);
@@ -130,8 +131,10 @@ export default function NarrativeLogFeed({
       setInputCapsule({ kind: "whisper", name: "旁白" });
       return;
     }
+    // 只有此刻就在眼前（同一内层房间）的人才开互动菜单；已经走开的人，从日志里点名字、立绘
+    // 只能看人物页，不能隔着房间切磋、偷窃、送礼。
     const inRoom = (room?.npcs || []).find(n => n?.name === speakerName);
-    if (inRoom) {
+    if (inRoom && isNpcHere(inRoom)) {
       setActiveNpcMenu(inRoom);
       return;
     }
@@ -387,7 +390,7 @@ export default function NarrativeLogFeed({
                             onOpenNpc={handleOpenNpc}
                             narratorPortraitSrc={narratorPortraitSrc}
                             playerAvatar={playerAvatar}
-                            lookName={lookName}
+                            lookName={lookName && ri === 0 && !entry.fillProse ? lookName : null}
                           />
                         )}
                     </div>

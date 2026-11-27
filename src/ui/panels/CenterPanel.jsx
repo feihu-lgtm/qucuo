@@ -15,6 +15,7 @@ import { BUILDING_TYPE } from "../../domain/data/buildings/qucuoBuildings.js";
 import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
 import { applyTradeToNpcState, buyFromNpcCarry, sellToNpcCarry, resolveBuyInId } from "../../domain/rules/npc/npcTradeFlow.js";
 import { getBuildingInstanceKey } from "./buildingInstanceKey.js";
+import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import NarrativeLogFeed from "./center/NarrativeLogFeed.jsx";
 import JuanzongView from "./center/JuanzongView.jsx";
 import CenterFooterBar from "./center/CenterFooterBar.jsx";
@@ -259,6 +260,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
         collapsedGroups={collapsedGroups} setCollapsedGroups={setCollapsedGroups}
         loading={loading} queueCount={queueCount} pendingTalks={pendingTalks}
         inspecting={aiInspect.inspecting} logEnd={logEnd} playerAvatar={ui.playerAvatar}
+        isNpcHere={(npc) => isNpcVisibleInInnerRoom(room?.name, innerRoomName, npc)}
       />
 
       <CenterFooterBar ui={ui} turn={turn} handlers={handlers} />

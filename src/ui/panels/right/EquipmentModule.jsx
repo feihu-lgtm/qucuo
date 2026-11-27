@@ -43,9 +43,9 @@ export default function EquipmentModule({ inv, setInv }) {
                 const qc = QUALITY_COLOR[item.quality] || "var(--text)";
                 return (
                   <div key={item.id} className="equip-slot" onClick={() => setInv(v => toggleEquip(v, item.id))}>
-                    <span className="equip-slot-ib is-clickable" onClick={openItem(item)} title="放大看看">
+                    <button type="button" className="equip-slot-ib is-clickable" onClick={openItem(item)} title="放大看看" aria-label={`放大看看${item.name}`}>
                       <ItemIcon item={item} size="md" fallbackIcon={iconName} />
-                    </span>
+                    </button>
                     <div className="equip-slot-body">
                       <div className="equip-slot-name">{item.name}</div>
                       <div className="equip-slot-meta">
@@ -65,9 +65,9 @@ export default function EquipmentModule({ inv, setInv }) {
                   <div key={item.id} className="equip-spare-row" onClick={() => setInv(v => toggleEquip(v, item.id))}>
                     <div className="equip-spare-title">
                       <span>
-                        <span className="equip-spare-art" onClick={openItem(item)} title="放大看看">
+                        <button type="button" className="equip-spare-art" onClick={openItem(item)} title="放大看看" aria-label={`放大看看${item.name}`}>
                           <ItemIcon item={item} size="xs" fallbackIcon={iconName} />
-                        </span>
+                        </button>
                         {item.name}
                       </span>
                       <span className="equip-spare-meta">({item.quality || "白"}{stat ? `·${stat}` : ""})</span>

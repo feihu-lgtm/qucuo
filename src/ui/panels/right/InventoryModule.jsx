@@ -20,13 +20,15 @@ export default function InventoryModule({ inv }) {
         onClick={() => setActiveItemMenu({ item: it, mode: "inventory", canConsume })}
         className="pack-row"
       >
-        <span
+        <button
+          type="button"
           className="pack-row-art"
           onClick={(e) => { e.stopPropagation(); setActiveItemMenu({ item: it, mode: "inventory", canConsume, zoom: true }); }}
           title="放大看看"
+          aria-label={`放大看看${name}`}
         >
           <ItemIcon item={it} size="xs" />
-        </span>
+        </button>
         <span className="pack-row-name" style={{ color }}>
           {name}{isObj && quality !== "白" ? <span className="pack-row-q">（{quality}）</span> : ""}
         </span>

@@ -468,7 +468,11 @@
 .log-npc-name {
   color: var(--npc-name);
 }
-.log-npc-name[role="button"] {
+.log-npc-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
   cursor: pointer;
   border-bottom: 1px dashed color-mix(in srgb, var(--npc-name) 45%, transparent);
 }
@@ -2544,6 +2548,11 @@
 .equip-slot-ib.is-clickable {
   display: inline-flex;
   align-items: center;
+  padding: 0;
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
   cursor: zoom-in;
 }
 .equip-spare-art {
