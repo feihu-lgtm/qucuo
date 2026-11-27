@@ -82,7 +82,7 @@ const DUEL_BANNER_RE = /^[\s\u3000]*──\s*(.+?)\s*──[\s\u3000]*$/;
 const SETTLE_BANNER_RE = /^[\s\u3000]*◈\s*.+?·\s*战斗结算[\s\u3000]*$/;
 const LETTER_LINE_RE = /^[\s\u3000]*「([^」]+)来信」([\s\S]*)$/;
 
-export default function LogEntry({ entry, color, onAction, isDayMode = false, onOpenLetters }) {
+export default function LogEntry({ entry, color, onAction, isDayMode = false, onOpenLetters, onOpenJournal, onOpenSettings }) {
   // 得物卡（切磋掉落/偷窃成功/偷师得手）：整条换成像素卡渲染，不走纯文本。
   // 偷招传的是 entry.skill（无 item），偷物传 entry.item——两者都要放行，
   // 否则偷师得手会漏卡、退化成一行纯文本（此前正是这个 bug）。
@@ -143,6 +143,26 @@ export default function LogEntry({ entry, color, onAction, isDayMode = false, on
     );
   }
 
+  // 接口/系统故障（带 kind）：主栏只有一句话，同因连续失败合成一条并标次数；
+  // 详情在卷宗里看，额度、密钥、地址这类改设置才会好的，给一个「接口设置」入口。
+  if (entry.t === LOG_T.ERR && entry.kind) {
+    const count = Number(entry.count) || 1;
+    return (
+      <div className={`${baseCls} log-turn-error`}>
+        <span className="log-turn-error-text">{stripLeadingSpace(rawText)}</span>
+        {count > 1 && <span className="log-turn-error-count">×{count}</span>}
+        <span className="log-turn-error-actions">
+          {entry.retryable === false && onOpenSettings && (
+            <button type="button" className="log-inline-link" onClick={onOpenSettings}>接口设置</button>
+          )}
+          {onOpenJournal && (
+            <button type="button" className="log-inline-link" onClick={onOpenJournal}>看卷宗</button>
+          )}
+        </span>
+      </div>
+    );
+  }
+
   // 切磋分割条「── 与XX切磋 ──」居中配两侧细线
   const duelMatch = entry.t === LOG_T.SYS ? rawText.match(DUEL_BANNER_RE) : null;
   if (duelMatch) {
@@ -156,7 +176,7 @@ export default function LogEntry({ entry, color, onAction, isDayMode = false, on
   }
 
   // 战斗结算小标题「◈ XX 切磋 YY · 战斗结算」做成整齐底线小标
-  if (entry.t === LOG_T.AFF && SETTLE_BANNER_RE.test(rawText)) {
+  if (entry.t === LOG_T.AFFECTION && SETTLE_BANNER_RE.test(rawText)) {
     return (
       <div className={`${cls} log-settle-banner`} style={{ color }}>
         <span>{stripLeadingSpace(rawText)}</span>

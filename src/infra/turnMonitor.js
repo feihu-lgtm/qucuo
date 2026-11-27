@@ -14,10 +14,10 @@ const transitions = {
   [DONE]: [], [ERROR]: [], [ROLLED_BACK]: [], [DISCARDED]: [],
 };
 const terminal = new Set([DONE, ERROR, ROLLED_BACK, DISCARDED]);
+// 前台回合与后台调用分开封顶：后台的 world.prep / map.prerun / bookkeep 等跑得勤，
+// 共用一个上限会把玩家回合挤出缓冲区，卷宗和全流程日志就查不到刚才那一回合了。
 const LIMIT = 40;
-// shadow 排在 engine 后、result 前——影子对账实际发生在 commit 落账后，
-// 不入排序 indexOf 得 -1 会被排到回合最前，时间语义颠倒。
-const layers = ["ui", "app", "feature", "domain", "engine", "rules", "shadow", "result"];
+const BACKGROUND_LIMIT = 40;
 
 export function createTurnMonitor({ now = Date.now, strict = !!import.meta.env?.VITEST } = {}) {
   let seq = 0;
@@ -39,16 +39,21 @@ export function createTurnMonitor({ now = Date.now, strict = !!import.meta.env?.
   }
 
   function trimHistory() {
-    while (trees.length > LIMIT) {
-      const index = trees.findLastIndex((entry) => terminal.has(entry.phase));
-      if (index < 0) break;
-      trees.splice(index, 1);
+    for (const [isBackground, limit] of [[true, BACKGROUND_LIMIT], [false, LIMIT]]) {
+      const count = () => trees.filter((entry) => !!entry.background === isBackground).length;
+      while (count() > limit) {
+        const index = trees.findLastIndex((entry) => !!entry.background === isBackground && terminal.has(entry.phase));
+        if (index < 0) break;
+        trees.splice(index, 1);
+      }
     }
   }
 
+  // 节点按真实发生顺序排列（push 顺序即时间序）。此前按层排序，会把所有 domain 节点挤到
+  // engine 前面，前哨 AI → 判官 → 主叙事 → 尾章 的因果顺序就看不出来了。layer 仍保留在节点上供着色。
   function publish() {
     const view = (turn) => turn && { ...turn, phases: [...turn.phases],
-      nodes: [...turn.nodes].sort((a, b) => layers.indexOf(a.layer) - layers.indexOf(b.layer)).map((node) => ({ ...node })) };
+      nodes: turn.nodes.map((node) => ({ ...node })) };
     snapshot = { current: view(current), trees: trees.map(view), backgroundCount };
     listeners.forEach((listener) => listener());
   }
@@ -162,6 +167,13 @@ export function createTurnMonitor({ now = Date.now, strict = !!import.meta.env?.
       if (current === turn) current = trees.find((entry) => !entry.passive && !entry.background) ?? null;
       publish();
     },
+    // 瞬态说明（如「接口中断，正在重试 1/2」）：只挂在回合上给状态灯显示，不写进主栏日志。
+    note(turn, text) {
+      if (!turn) return;
+      turn.note = text || null;
+      if (text) add(turn, "engine", text, { kind: "note", status: "warn" });
+      else publish();
+    },
     getSnapshot: () => snapshot,
     getTrees: () => snapshot.trees,
     subscribe(listener) {
@@ -196,5 +208,6 @@ export function formatTurnStatus({ current, trees, backgroundCount }, now = Date
   const model = current?.model && [AI_WAIT, AI_STREAM].includes(current.phase) ? ` · ${current.model}` : "";
   const elapsed = current ? time(current.totalMs ?? now - current.ts) : "";
   const rollback = trees?.some((turn) => turn.commandId === "rollback" && turn.queued) ? " · 回滚已排队" : "";
-  return { label: `${label}${model}${elapsed ? ` · ${elapsed}` : ""}${rollback}`, backgroundCount, phase: current?.phase ?? null };
+  const note = current?.note && current.totalMs == null ? ` · ${current.note}` : "";
+  return { label: `${label}${model}${note}${elapsed ? ` · ${elapsed}` : ""}${rollback}`, backgroundCount, phase: current?.phase ?? null };
 }

@@ -9,7 +9,7 @@ import { bindTurnAi, createWebAi } from "./ports/ai.js";
 import { assemblePrompt } from "./prompt/assemblePrompt.js";
 import { getApiModel } from "../content/apiModel.js";
 import { filterPlanDelta, filterRejectedEffects } from "../domain/rules/intent/planNotes.js";
-import { classifyError } from "../utils/apiErrors.js";
+import { classifyError, redactSecrets } from "../utils/apiErrors.js";
 import { withAI } from "./ports/withAI.js";
 import { parseGroupTalkSeal } from "../domain/rules/judge/judgeRuleBlock.js";
 import { recordSealMetric } from "./ports/releaseMetrics.js";
@@ -44,10 +44,15 @@ function retryVerdict(error, attempt) {
   return { retry: true, delayMs };
 }
 
+// 自动重试只是过程，不是结果：说明挂在回合状态灯上（turnMonitor.note），不写进主栏日志；
+// 重试成功它就自然消失，全部失败才由 useTurn 落一条报错。原文脱敏后只进全流程日志与卷宗。
 function retryNotice(error, verdict, attempt) {
-  if (!verdict.delayMs) return `  ⚠ 接口中断（${error.message || error}），正在自动重试（第 ${attempt}/${MAX_AUTO_RETRY} 次）…`;
-  return `  ⏳ 接口限流（${error.message || error}），${Math.ceil(verdict.delayMs / 1000)} 秒后自动重试（第 ${attempt}/${MAX_AUTO_RETRY} 次）…`;
+  const { line } = classifyError(error);
+  if (!verdict.delayMs) return `${line}，正在重试 ${attempt}/${MAX_AUTO_RETRY}`;
+  return `${line}，${Math.ceil(verdict.delayMs / 1000)} 秒后重试 ${attempt}/${MAX_AUTO_RETRY}`;
 }
+
+const errText = (error) => redactSecrets(error?.message || error);
 
 function withPresenceTrace(ctx) {
   if (!ctx.prompt?.buildPresence) return ctx;
@@ -220,15 +225,15 @@ async function runTurnSteps(ctx, cmd, opts) {
         if (ctx.isStale?.()) return { stale: true };
         const verdict = retryVerdict(error, attempt);
         if (verdict.retry) {
-          addLog([{ t: "sys", text: retryNotice(error, verdict, attempt) }]);
-          trace("AI调用", "fail", `主叙事第${attempt}次失败：${error.message || error}，重试`);
+          turnMonitor.note(ctx._trace, retryNotice(error, verdict, attempt));
+          trace("AI调用", "fail", `主叙事第${attempt}次失败：${errText(error)}，重试`);
           if (verdict.delayMs) {
             await (ctx.sleep || sleep)(verdict.delayMs);
             if (ctx.isStale?.()) return { stale: true };
           }
           continue;
         }
-        trace("AI调用", "fail", `主叙事${verdict.why}：${error.message || error}`);
+        trace("AI调用", "fail", `主叙事${verdict.why}：${errText(error)}`);
         throw error;
       }
     }
@@ -290,15 +295,15 @@ async function runTurnSteps(ctx, cmd, opts) {
         if (ctx.isStale?.()) return { stale: true };
         const verdict = retryVerdict(error, attempt);
         if (verdict.retry) {
-          addLog([{ t: "sys", text: retryNotice(error, verdict, attempt) }]);
-          trace("AI调用", "fail", `第${attempt}次失败：${error.message || error}，重试`);
+          turnMonitor.note(ctx._trace, retryNotice(error, verdict, attempt));
+          trace("AI调用", "fail", `第${attempt}次失败：${errText(error)}，重试`);
           if (verdict.delayMs) {
             await (ctx.sleep || sleep)(verdict.delayMs);
             if (ctx.isStale?.()) return { stale: true };
           }
           continue;
         }
-        trace("AI调用", "fail", `${verdict.why}：${error.message || error}`);
+        trace("AI调用", "fail", `${verdict.why}：${errText(error)}`);
         throw error;
       }
       ({ p, mvuCommands, dealResult } = parseMainResponse(rawFull));
@@ -307,7 +312,7 @@ async function runTurnSteps(ctx, cmd, opts) {
       narrativeText = (p.output || []).join("");
       const truncated = p._truncated || /length|max[_ ]?tokens|max[_ ]?output/i.test(finishReason || "");
       if (truncated && attempt <= MAX_AUTO_RETRY) {
-        addLog([{ t: "sys", text: `  ⚠ 上一轮被接口截断，正在自动重说一遍（第 ${attempt}/${MAX_AUTO_RETRY} 次，这次会更简短）…` }]);
+        turnMonitor.note(ctx._trace, `叙事被截断，正在重说 ${attempt}/${MAX_AUTO_RETRY}`);
         continue;
       }
       if (p.output?.[0]?.startsWith("（引擎回应格式异常，原始内容）")) {

@@ -6,6 +6,7 @@ import { getStoredVertexHeaders } from "./vertexCredentials.js";
 import { getApiModel } from "./apiModel.js";
 import { parseRetryAfter } from "./retryAfter.js";
 import { getSamplingHeaders } from "./samplingTags.js";
+import { scrubCredentialPatterns } from "./textRedaction.js";
 import {
   API_TYPES, applyThinkingAnthropic, applyThinkingGemini, applyThinkingOpenAI,
   clampMaxTokensForProvider, DEFAULT_CALL_TOKEN_LIMITS, migrateProvider,
@@ -81,9 +82,12 @@ export async function fetchWithTimeout(url, options = {}, timeoutMs = _requestTi
 
 
 export function httpFailure(res, label, requestUrl, vendorMessage) {
-  const err = new Error(`${label} HTTP ${res.status}：${vendorMessage}`);
+  // 上游报错可能带回密钥别名或残片（如「Key=xxx (sk-...)」），进 Error 之前就脱敏，
+  // 之后无论落主栏、卷宗、全流程日志还是调试包，都见不到原文。
+  const safeMessage = scrubCredentialPatterns(String(vendorMessage ?? ""));
+  const err = new Error(`${label} HTTP ${res.status}：${safeMessage}`);
   err.httpStatus = res.status;
-  err.vendorMessage = String(vendorMessage);
+  err.vendorMessage = safeMessage;
   err.requestUrl = requestUrl || res.url;
   const retryAfterMs = parseRetryAfter(res.headers?.get?.("retry-after"));
   if (retryAfterMs != null) err.retryAfterMs = retryAfterMs;
@@ -126,7 +130,7 @@ export async function readJsonOrThrow(res, label, requestUrl = "") {
     if (!res.ok) {
       throw httpFailure(res, label, requestUrl, bodyText.trim() ? bodyText.slice(0, 120) : "响应体为空");
     }
-    const err = new Error(`${label}：接口返回的内容无法解析（HTTP ${res.status}）。返回开头是「${bodyText.slice(0, 60)}」——请检查设置里的接口地址和接口类型。`);
+    const err = new Error(`${label}：接口返回的内容无法解析（HTTP ${res.status}）。返回开头是「${scrubCredentialPatterns(bodyText.slice(0, 60))}」——请检查设置里的接口地址和接口类型。`);
     err.code = "unparsable";
     err.httpStatus = res.status;
     err.requestUrl = requestUrl || res.url;

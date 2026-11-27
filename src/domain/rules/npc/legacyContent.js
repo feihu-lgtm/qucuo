@@ -2,6 +2,7 @@ import { QUCUO_QUESTS } from "../../data/quests/qucuoQuests.js";
 import { migrateCompanionState } from "../companion/companion.js";
 import { ocSignatureMovesByName } from "../companion/ocKungfu.js";
 import { deriveSignatureMoveset, resolveBurdenMoves } from "./npcMovesets.js";
+import { scrubLogEntries } from "../log/logTypes.js";
 
 // 历史版本人物改名迁移表：同一个 NPC 在旧版本里叫别的名字/用别的 id 时，
 // 老存档里按旧名/旧 id 记下的数据（角色面板键、在场 NPC、roomMap、日志文本等）
@@ -80,6 +81,7 @@ export function migrateLegacySnapshot(snap) {
   if (!snap || typeof snap !== "object") return snap;
   const migrated = migrateValue(snap);
   if (migrated.char && snap.char && snap.char.name != null) migrated.char.name = snap.char.name;
+  if (Array.isArray(migrated.log)) migrated.log = scrubLogEntries(migrated.log);
   return migrateOcContent(realignQuestStages(migrated));
 }
 

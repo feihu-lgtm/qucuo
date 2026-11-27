@@ -25,6 +25,7 @@ import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
 import { stampLogEntries } from "../../domain/rules/log/logTypes.js";
 import { gameActions, gameStore, getGameEpoch } from "../../store/gameStore.js";
 import { LOG_T } from "../../domain/data/log/logTypes.js";
+import { presentError } from "../../utils/apiErrors.js";
 
 export function usePrivateTalk({
   apiCfg, nsfwOn, jotNote, noteAction, changePendingTalks,
@@ -442,7 +443,7 @@ export function usePrivateTalk({
       if (isStale()) return;
       traceStep(_wt, "AI调用", "fail", `私聊失败：${e.message || e}`);
       turnMonitor.transition(_wt, PHASE.ERROR, `私聊中断（${e.message || e}）`);
-      addLog([{ t: "err", text: `  [错误] ${e.message}` }]);
+      addLog([{ t: "err", kind: presentError(e).kind, text: `  ${presentError(e).line}，这句私语没有送到。` }]);
     }
     endTrace(_wt, summary);
     noteAction("whisper");

@@ -360,6 +360,14 @@ flowchart LR
   F --> V["结果：b1 仅 (turn<5) 及 (turn=5,seq<=2) 可见<br/>被撤回的 seq=3 与 turn=6 永久不可见<br/>新续写进入 b2 (turn=5, seq=1...)"]
 ```
 
+## 5.4 报错与追踪的出口（日志梳理）
+
+- **脱敏入口**：`infra/apiTransport.js` 的 `httpFailure` 与无法解析分支、`infra/observeAi.js` 的失败记录、`utils/apiErrors.js` 的 `classifyError` 都先脱敏（密钥别名 `Key=…`、截断残片 `sk-...`、`x-api-key`、Bearer、查询参数 key）；调试包规则在 `infra/textRedaction.js` 同步补齐。
+- **额度识别**：4xx 报错只要措辞是 budget / exceeded / quota / 余额 / 额度，一律归为 `quota`，不可重试。
+- **回合失败**：`useTurn` 只经 `addTurnError` 落一句话（`presentError().line`），同因连续失败合并计数；分类、建议与脱敏原文写进追踪节点（`errorKind / errorDetail / hint`）。
+- **自动重试**：`runTurn` 的重试与截断重说改为 `turnMonitor.note`，只显示在状态灯上，不再写主栏日志。
+- **追踪顺序与缓冲**：`turnMonitor` 节点按真实发生顺序输出；前台、后台各留 40 棵树。主栏日志条目带 `tid`，卷宗据此把日志与追踪拼成同一回合。
+
 ## 6. 已确认的设计取舍
 
 这些是实现时对手册字面的修正，后续文档与代码都应按这里的口径，不再按旧稿字面理解：

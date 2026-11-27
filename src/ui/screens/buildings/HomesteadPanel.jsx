@@ -83,7 +83,7 @@ function CookingFeature({ inv, setInv, char, setChar, addLog, runCommand }) {
     }
     nextInv.push({ name: recipe.result, category: "misc", quality: "绿", desc: `烹饪所得。${recipe.buff}，持续${recipe.duration}回合。` });
     setInv(nextInv);
-    addLog?.({ text: `【烹饪】你生火做饭，炮制出一份「${recipe.result}」。${recipe.buff}。`, type: "system" });
+    addLog?.([{ t: "sys", text: `  【烹饪】你生火做饭，炮制出一份「${recipe.result}」。${recipe.buff}。` }]);
   });
 
   return (
@@ -122,7 +122,7 @@ function WineFeature({ roomName, inv, setInv, addLog, runCommand }) {
     }
     setInv(nextInv);
     persist([...cellar, { recipe: recipe.id, result: recipe.result, buff: recipe.buff, note: recipe.note, readyAt: now + recipe.ageTime * 60000 }]);
-    addLog?.({ text: `【酿酒】你把${recipe.ingredients.join("、")}封进坛子，搁在窖里。${recipe.ageTime}分钟后可取。`, type: "system" });
+    addLog?.([{ t: "sys", text: `  【酿酒】你把${recipe.ingredients.join("、")}封进坛子，搁在窖里。${recipe.ageTime}分钟后可取。` }]);
   });
 
   const collect = (idx) => runCommand("homesteadWine", () => {
@@ -131,7 +131,7 @@ function WineFeature({ roomName, inv, setInv, addLog, runCommand }) {
     const next = [...cellar]; next.splice(idx, 1);
     persist(next);
     setInv([...inv, { name: item.result, category: "misc", quality: "蓝", desc: `${item.note} ${item.buff}` }]);
-    addLog?.({ text: `【酒窖】你起开泥封，「${item.result}」成了。${item.note}`, type: "system" });
+    addLog?.([{ t: "sys", text: `  【酒窖】你起开泥封，「${item.result}」成了。${item.note}` }]);
   });
 
   return (
@@ -180,7 +180,7 @@ function GardenFeature({ roomName, inv, setInv, addLog, runCommand }) {
     if (garden.length >= 3) return;
     if (garden.some(g => g.id === slot.id)) return;
     persist([...garden, { id: slot.id, yield: slot.yield, readyAt: now + slot.growTime * 60000 }]);
-    addLog?.({ text: `【菜畦】你翻土下种，${slot.note}`, type: "system" });
+    addLog?.([{ t: "sys", text: `  【菜畦】你翻土下种，${slot.note}` }]);
   });
 
   const harvest = (idx) => runCommand("homesteadGarden", () => {
@@ -189,7 +189,7 @@ function GardenFeature({ roomName, inv, setInv, addLog, runCommand }) {
     const next = [...garden]; next.splice(idx, 1);
     persist(next);
     setInv([...inv, { name: g.yield, category: "misc", quality: "白", desc: "自家菜畦种的。" }]);
-    addLog?.({ text: `【菜畦】你拔出一把「${g.yield}」，带着泥，新鲜。`, type: "system" });
+    addLog?.([{ t: "sys", text: `  【菜畦】你拔出一把「${g.yield}」，带着泥，新鲜。` }]);
   });
 
   return (
@@ -240,7 +240,7 @@ function PigeonFeature({ addLog, runCommand }) {
         笼门上刻着一行小字：「急事才放，鸽子也累。」
       </div>
       {!sent ? (
-        <span onClick={() => runCommand("homesteadLeisure", () => { setSent(true); addLog?.({ text: "【鸽子笼】你解下一只灰鸽，脚环上拴了纸条，往天上一抛。鸽子扑棱棱飞远了。", type: "system" }); })} style={btnStyle}>
+        <span onClick={() => runCommand("homesteadLeisure", () => { setSent(true); addLog?.([{ t: "sys", text: "  【鸽子笼】你解下一只灰鸽，脚环上拴了纸条，往天上一抛。鸽子扑棱棱飞远了。" }]); })} style={btnStyle}>
           🕊 放飞信鸽
         </span>
       ) : (
@@ -264,7 +264,7 @@ function TelescopeFeature({ addLog, runCommand }) {
         铜制望远镜架在窗台上，镜片擦得还算干净。正对山谷，视野极好。
       </div>
       {!looked ? (
-        <span onClick={() => runCommand("homesteadLeisure", () => { setLooked(true); addLog?.({ text: `【望远镜】你凑上去看了一眼——${sights[Math.floor(random() * sights.length)]}`, type: "system" }); })} style={btnStyle}>
+        <span onClick={() => runCommand("homesteadLeisure", () => { setLooked(true); addLog?.([{ t: "sys", text: `  【望远镜】你凑上去看了一眼——${sights[Math.floor(random() * sights.length)]}` }]); })} style={btnStyle}>
           🔭 远眺
         </span>
       ) : (
@@ -283,7 +283,7 @@ function RestFeature({ label, desc, hpRestore, char, setChar, addLog, runCommand
     const newHp = Math.min(maxHp, hp + hpRestore);
     setChar(c => ({ ...c, hp: [newHp, c.hp[1]] }));
     setDone(true);
-    addLog?.({ text: `【${label}】${desc} 气血恢复 ${newHp - hp} 点。`, type: "system" });
+    addLog?.([{ t: "sys", text: `  【${label}】${desc} 气血恢复 ${newHp - hp} 点。` }]);
   });
 
   return (

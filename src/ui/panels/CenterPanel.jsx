@@ -8,13 +8,14 @@ import { OVERLAY, closeOverlay, openOverlay, useOverlay } from "../../store/uiSt
 import { gameActions, useGameStore } from "../../store/gameStore.js";
 import {
   useSessionUi, setInteractMode, setActiveBuilding, setTradingShop,
-  setBuildingPanelMinimized, setCollapsedGroups,
+  setBuildingPanelMinimized, setCollapsedGroups, setCenterView,
 } from "../../store/sessionUiStore.js";
 import { BUILDING_TYPE } from "../../domain/data/buildings/qucuoBuildings.js";
 import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
 import { applyTradeToNpcState, buyFromNpcCarry, sellToNpcCarry, resolveBuyInId } from "../../domain/rules/npc/npcTradeFlow.js";
 import { getBuildingInstanceKey } from "./buildingInstanceKey.js";
 import NarrativeLogFeed from "./center/NarrativeLogFeed.jsx";
+import JuanzongView from "./center/JuanzongView.jsx";
 import CenterFooterBar from "./center/CenterFooterBar.jsx";
 
 const TradingScreen = lazy(() => import("../screens/TradingScreen.jsx"));
@@ -36,6 +37,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
     logEnd,
   } = ui;
   const collapsedGroups = useSessionUi(s => s.collapsedGroups);
+  const centerView = useSessionUi(s => s.centerView);
   const isMobile = useSessionUi(s => s.isMobile);
   const mobileColumn = useSessionUi(s => s.mobileColumn);
   const loading = useSessionUi(s => s.loading);
@@ -96,7 +98,13 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
   return (
     <div style={isMobile ? { flex: 1, ...S.panel, borderRight: "none", display: mobileColumn === "center" ? "flex" : "none" } : { flex: 55, ...S.panel }}>
       <div className="mobile-hide" style={{ ...S.label, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span>江湖</span>
+        <span className="center-view-head">
+          <span>江湖</span>
+          <span className="center-view-switch" role="group" aria-label="江湖栏视图">
+            <button type="button" className="center-view-tab" data-on={centerView !== "journal"} aria-pressed={centerView !== "journal"} onClick={() => setCenterView("story")}>正文</button>
+            <button type="button" className="center-view-tab" data-on={centerView === "journal"} aria-pressed={centerView === "journal"} onClick={() => setCenterView("journal")}>卷宗</button>
+          </span>
+        </span>
         <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <TurnControls theme={THEME_VARS} loading={loading} stopRunning={turn.stopRunning} rollbackBlocked={turn.rollbackBlocked} rollbackOneStep={turn.rollbackOneStep} />
           <DevControls theme={THEME_VARS} addLog={addLog} />
@@ -219,8 +227,9 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
         </div>
       )}
 
+      <JuanzongView hidden={hideNarrative || centerView !== "journal"} />
       <NarrativeLogFeed
-        hidden={hideNarrative} clr={clr} isDayMode={isDayMode} act={turn.act}
+        hidden={hideNarrative || centerView === "journal"} clr={clr} isDayMode={isDayMode} act={turn.act}
         collapsedGroups={collapsedGroups} setCollapsedGroups={setCollapsedGroups}
         loading={loading} queueCount={queueCount} pendingTalks={pendingTalks}
         inspecting={aiInspect.inspecting} logEnd={logEnd}

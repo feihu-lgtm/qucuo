@@ -1,13 +1,48 @@
 // 错误分类：把五花八门的原始错误翻成玩家看得懂的话 + 给出处理建议。
-// 返回 { kind, icon, title, detail, hint }，供 UI 分级展示。
-function redactErrorValue(value, apiKey = "") {
-  let text = String(value || "");
-  if (apiKey) text = text.split(apiKey).join("[REDACTED]");
+// 返回 { kind, icon, title, detail, hint, line }：line 是主栏给玩家的一句话，
+// detail 一律先脱敏，只进卷宗与全流程日志，不进主栏。
+
+// 脱敏：上游报错常把密钥、密钥别名、截断的密钥残片原样带回来
+// （如 LiteLLM 的「Budget has been exceeded! Key=qucuo-admin (sk-...)」），
+// 主栏、存档、卷宗、复制、调试包都只能见到脱敏后的文本。
+export function redactSecrets(value, apiKey = "") {
+  let text = String(value ?? "");
+  if (apiKey && apiKey.length >= 6) text = text.split(apiKey).join("[REDACTED]");
   return text
-    .replace(/\bBearer\s+[^\s,;"']+/gi, "Bearer [REDACTED]")
-    .replace(/(authorization\s*[:=]\s*)[^\s,;"']+/gi, "$1[REDACTED]")
-    .replace(/(x-api-key\s*[:=]\s*)[^\s,;"']+/gi, "$1[REDACTED]")
-    .replace(/([?&](?:key|api[_-]?key|token)=)[^&\s]*/gi, "$1[REDACTED]");
+    .replace(/\bBearer\s+[^\s,;"')]+/gi, "Bearer [REDACTED]")
+    .replace(/(authorization\s*[:=]\s*)[^\s,;"')]+/gi, "$1[REDACTED]")
+    .replace(/(x-api-key\s*[:=]\s*)[^\s,;"')]+/gi, "$1[REDACTED]")
+    .replace(/([?&](?:key|api[_-]?key|token|access_token)=)[^&\s]*/gi, "$1[REDACTED]")
+    .replace(/\b((?:api[_-]?)?key(?:[_-]?(?:alias|name|id))?\s*[:=]\s*)[^\s,;"')]+/gi, "$1[REDACTED]")
+    .replace(/\bsk-[A-Za-z0-9._*\-]*/g, "[REDACTED]")
+    .replace(/\b(?:ya29\.[A-Za-z0-9._-]+|AIza[0-9A-Za-z_-]{20,})/g, "[REDACTED]");
+}
+
+const redactErrorValue = redactSecrets;
+
+// 额度类措辞：不管状态码是 422、400 还是 429，只要上游说的是预算/余额/额度用尽，就是额度用尽。
+const QUOTA_TEXT = /budget|exceeded|insufficient|balance|billing|quota|余额|额度|欠费/i;
+const RATE_TEXT = /per.?minute|per.?second|rate.?limit|retry.?after|too many requests|每分钟|稍后/i;
+
+// 主栏一句话：江湖口吻，只说原因类别，不带任何技术细节。
+const PLAYER_LINE = {
+  quota: "天机不畅（接口额度已尽）",
+  auth: "天机不畅（接口密钥无效）",
+  endpoint: "天机不畅（接口地址或模型名有误）",
+  parameter: "天机不畅（请求参数被拒）",
+  request: "天机不畅（请求被接口拒绝）",
+  timeout: "天机暂阻（接口超时）",
+  network: "天机暂阻（连不上接口）",
+  rateLimit: "天机暂阻（请求太密）",
+  server: "天机暂阻（对方服务出错）",
+  unparsable: "天机不清（返回内容无法解析）",
+  empty: "天机不清（接口没有返回内容）",
+  format: "天机不清（返回格式异常）",
+  unknown: "天机不畅",
+};
+
+export function playerLineFor(kind) {
+  return PLAYER_LINE[kind] || PLAYER_LINE.unknown;
 }
 
 function redactRequestUrl(value, apiKey) {
@@ -74,8 +109,8 @@ function httpError(status, msg) {
 }
 
 // retryable=false 的错误（地址/模型名/密钥/参数/额度）原样重发也不会好，不自动重试。
-export function classifyError(err, options = {}) {
-  const msg = String(err?.message || err || "");
+function classifyRaw(err, options = {}) {
+  const msg = redactSecrets(err?.message || err || "", options.apiKey);
   const code = err?.code;
   const has = (...ks) => ks.some(k => msg.includes(k));
   if (options.connection) {
@@ -86,6 +121,9 @@ export function classifyError(err, options = {}) {
   const timeout = { kind: "timeout", icon: "⏱", title: "接口超时", detail: msg, hint: "网络慢或模型太忙。可稍等重试，或在设置里换个更快的模型/中转站。", retryable: true };
   if (code === "timeout") return timeout;
   const status = httpStatusOf(err);
+  if (status && status >= 400 && status < 500 && status !== 401 && status !== 403 && QUOTA_TEXT.test(msg) && !RATE_TEXT.test(msg)) {
+    return { kind: "quota", icon: "💳", title: `接口额度已尽（HTTP ${status}）`, detail: msg, hint: "账户余额或预算用完了，重试也不会好。去服务商充值/提额，或在设置里换个账号。", retryable: false };
+  }
   if ((code === "html" || has("网页而不是数据", "<!DOCTYPE", "<html")) && !(status >= 500)) {
     return { kind: "endpoint", icon: "🧭", title: "接口地址可能填错", detail: msg, hint: "接口返回的是网页不是数据。检查设置里的接口地址是否完整、类型是否选对。", retryable: false };
   }
@@ -120,6 +158,17 @@ export function classifyError(err, options = {}) {
     return { kind: "server", icon: "🛠", title: "服务端出错", detail: msg, hint: "对方服务器临时故障或过载，稍后重试。", retryable: true };
   }
   return { kind: "unknown", icon: "⚠", title: "出错了", detail: msg, hint: "可重试一次；反复出现请把这条错误发给作者。", retryable: true };
+}
+
+export function classifyError(err, options = {}) {
+  const result = classifyRaw(err, options);
+  return result.connection ? result : { ...result, line: playerLineFor(result.kind) };
+}
+
+// 给主栏的报错：只有一句玩家能看懂的话，加上分类与是否可重试；脱敏后的详情另交卷宗。
+export function presentError(err, options = {}) {
+  const ec = classifyError(err, options);
+  return { kind: ec.kind, line: ec.line, retryable: ec.retryable !== false, title: ec.title, detail: ec.detail, hint: ec.hint };
 }
 
 export function isRetryableError(err) {
