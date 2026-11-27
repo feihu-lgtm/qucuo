@@ -7,6 +7,7 @@ import {
   groupHeartLedgerByTag,
 } from "../../domain/rules/memory/npcLedger.js";
 import ModalShell from "../primitives/ModalShell.jsx";
+import NpcAvatar from "../components/NpcAvatar.jsx";
 
 const cardStyle = {
   background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0,
@@ -43,15 +44,18 @@ export default function CharacterPage({ varTree, claimedMilestones, onClaimMiles
               style={{ ...cardStyle, borderColor: milestone ? "var(--ember)" : "var(--ink-border)" }}
               onClick={() => setSelected(name)}
             >
-              <div style={{ color: "var(--text)", fontSize: "var(--fs-md)", marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span>{name}</span>
-                {milestone && <span style={{ color: "var(--ember)", fontSize: "var(--fs-2xs)" }}>● 任务</span>}
+              <div className="char-card-head">
+                <NpcAvatar name={name} size="md" />
+                <div className="char-card-meta">
+                  <div className="char-card-name">
+                    <span>{name}</span>
+                    {milestone && <span className="char-card-milestone">● 任务</span>}
+                  </div>
+                  <div className="char-card-aff">{npcAffectionLabel(affection)}</div>
+                </div>
               </div>
-              <div style={{ fontSize: "var(--fs-xs)", color: "var(--pink)", marginBottom: 3 }}>{npcAffectionLabel(affection)}</div>
-              <div style={{ height: 6, background: "var(--bg-panel)", borderRadius: 0, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${Math.min(100, affection)}%`, background: "linear-gradient(90deg, var(--pink), var(--ember))" }} />
-              </div>
-              <div style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", marginTop: 3, textAlign: "right" }}>{affection}/100</div>
+              <div className="night-bar"><div className="night-bar-fill night-bar-fill--accent" style={{ width: `${Math.min(100, affection)}%` }} /></div>
+              <div className="char-card-num">{affection}/100</div>
             </div>
           );
         })}
@@ -96,16 +100,20 @@ function CharacterDetail({ name, attrs, claimedMilestones, onClaimMilestone, onG
       panelClassName="character-detail-panel" panelStyle={{ width: 460, maxHeight: "80vh" }}>
       {!viewingMilestone ? (
         <>
-          <div className="mobile-overlay-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <span style={{ color: "var(--accent)", fontSize: "var(--fs-base)" }}>{name}</span>
-            <span className="mobile-overlay-close" style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
+          <div className="char-detail-head">
+            <NpcAvatar name={name} size="lg" />
+            <div className="char-detail-meta">
+              <div className="mobile-overlay-header char-detail-title-row">
+                <span className="char-detail-title">{name}</span>
+                <span className="mobile-overlay-close char-detail-close" onClick={onClose}>× 关闭</span>
+              </div>
+              <div className="char-detail-aff-row">
+                <span className="char-card-aff">{npcAffectionLabel(affection)}</span>
+                <span className="char-card-num">{affection}/100</span>
+              </div>
+              <div className="night-bar"><div className="night-bar-fill night-bar-fill--accent" style={{ width: `${Math.min(100, affection)}%` }} /></div>
+            </div>
           </div>
-
-          <div style={{ fontSize: "var(--fs-sm)", color: "var(--pink)", marginBottom: 4 }}>{npcAffectionLabel(affection)}</div>
-          <div style={{ height: 8, background: "var(--bg-panel)", borderRadius: 0, overflow: "hidden", marginBottom: 4 }}>
-            <div style={{ height: "100%", width: `${Math.min(100, affection)}%`, background: "linear-gradient(90deg, var(--pink), var(--ember))" }} />
-          </div>
-          <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 14 }}>{affection}/100</div>
 
           {attrs.态度 && (
             <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 14, fontStyle: "italic" }}>「{attrs.态度}」</div>

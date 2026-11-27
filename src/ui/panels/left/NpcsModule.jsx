@@ -10,6 +10,7 @@ import { ADVENTURER_BY_NAME, isAdventurerName } from "../../../domain/data/dunge
 import { partitionPeople } from "./peopleRoster.js";
 import { useGameStore } from "../../../store/gameStore.js";
 import NpcAngerLine from "../NpcAngerLine.jsx";
+import NpcAvatar from "../../components/NpcAvatar.jsx";
 
 function adventurerClass(npcOrName) {
   const name = typeof npcOrName === "string" ? npcOrName : npcOrName?.name;
@@ -93,26 +94,34 @@ export default function NpcsModule({ room, innerRoomName, varTree, char, addLog,
             const attrs = varTree.角色?.[n.name] || {};
             const hasAffection = known && typeof attrs.好感度 === "number";
             return (
-              <div key={i} style={{ marginBottom: 6, paddingBottom: 6, borderBottom: i < present.length - 1 ? `1px solid var(--hairline)` : "none" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ color: uiGreen, flex: 1 }}>
-                    {(() => {
-                      const cls = adventurerClass(n);
-                      return cls ? <span className={cls}>{n.name}</span> : n.name;
-                    })()}
-                    <span style={{ color: "var(--text-sub)", fontSize: "var(--fs-xs)", marginLeft: 6 }}>{n.brief}</span>
-                  </span>
-                  {hasAffection ? (
-                    <span style={{ fontSize: "var(--fs-xs)", flexShrink: 0, textAlign: "right", whiteSpace: "nowrap" }} title={`好感度 ${attrs.好感度}/100`}>
-                      <span style={{ color: "var(--note)" }}>{npcAffectionLabel(attrs.好感度)}</span>
-                      <span style={{ color: "var(--text-dim)", marginLeft: 4 }}>{attrs.好感度}</span>
+              <div key={i} className="npc-present-row" data-last={i === present.length - 1}>
+                <NpcAvatar
+                  name={n.name}
+                  size="md"
+                  onClick={() => setActiveNpcMenu(n)}
+                  title="打开互动菜单：细看/切磋/偷窃/对话/送礼/拜师"
+                />
+                <div className="npc-present-main">
+                  <div className="npc-present-head">
+                    <span className="npc-present-name" style={{ color: uiGreen }}>
+                      {(() => {
+                        const cls = adventurerClass(n);
+                        return cls ? <span className={cls}>{n.name}</span> : n.name;
+                      })()}
+                      <span className="npc-present-brief">{n.brief}</span>
                     </span>
-                  ) : (
-                    <span style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", flexShrink: 0, whiteSpace: "nowrap" }}>{known ? "" : "尚未认识"}</span>
-                  )}
+                    {hasAffection ? (
+                      <span className="npc-present-aff" title={`好感度 ${attrs.好感度}/100`}>
+                        <span className="npc-present-aff-label">{npcAffectionLabel(attrs.好感度)}</span>
+                        <span className="npc-present-aff-num">{attrs.好感度}</span>
+                      </span>
+                    ) : (
+                      <span className="npc-present-unmet">{known ? "" : "尚未认识"}</span>
+                    )}
+                  </div>
+                  <span onClick={() => setActiveNpcMenu(n)} title="打开互动菜单：细看/切磋/偷窃/对话/送礼/拜师"
+                    className="npc-present-panel-btn">角色面板</span>{known && <NpcAngerLine angerState={attrs.生气状态} />}
                 </div>
-                <span onClick={() => setActiveNpcMenu(n)} title="打开互动菜单：细看/切磋/偷窃/对话/送礼/拜师"
-                  style={{ fontSize: "var(--fs-2xs)", color: "var(--text-sub)", cursor: "pointer", display: "block", marginTop: 2 }}>角色面板</span>{known && <NpcAngerLine angerState={attrs.生气状态} />}
               </div>
             );
           })}</div>)}
@@ -127,13 +136,14 @@ export default function NpcsModule({ room, innerRoomName, varTree, char, addLog,
             // CharacterPage 按好感度选人，陌生人点进去只会掉到关系列表。
             const hasProfile = typeof varTree.角色?.[n.name]?.好感度 === "number";
             return (
-            <div key={n.name} style={{ marginBottom: 4, paddingLeft: 16, display: "flex", alignItems: "center", gap: 6 }}>
+            <div key={n.name} className="npc-compact-row">
+              <NpcAvatar name={n.name} size="xs" />
               <span onClick={hasProfile ? () => { setCharacterPageTarget(n.name); openOverlay(OVERLAY.CHARACTER_PAGE); } : undefined}
                 title={hasProfile ? "打开此人详情面板" : "尚未认识——走到他所在之处再交谈"}
-                style={{ cursor: hasProfile ? "pointer" : "default", color: "var(--text-dim)", flex: 1, fontSize: "var(--fs-xs)" }}>
+                className="npc-compact-info" data-clickable={Boolean(hasProfile)}>
                 {n.name}
-                <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)", marginLeft: 6 }}>{n.brief || ""}</span>
-                {!hasProfile && <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)", marginLeft: 6 }}>尚未认识</span>}
+                <span className="npc-compact-brief">{n.brief || ""}</span>
+                {!hasProfile && <span className="npc-compact-brief">尚未认识</span>}
               </span>
               {pigeonEntry(n.name)}
             </div>
@@ -149,10 +159,11 @@ export default function NpcsModule({ room, innerRoomName, varTree, char, addLog,
             const attrs = varTree.角色?.[name] || {};
             const hasAff = known && typeof attrs.好感度 === "number";
             return (
-              <div key={name} style={{ marginBottom: 5 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div key={name} className="npc-absent-item">
+                <div className="npc-absent-head">
+                  <NpcAvatar name={name} size="xs" dim />
                   <span onClick={() => { setCharacterPageTarget(name); openOverlay(OVERLAY.CHARACTER_PAGE); }} title="打开此人详情面板"
-                    style={{ cursor: "pointer", color: "var(--text)", flex: 1, fontSize: "var(--fs-xs)" }}>
+                    className="npc-absent-name">
                     {(() => {
                       const cls = adventurerClass(name);
                       return cls ? <span className={cls}>{name}</span> : name;
@@ -160,15 +171,15 @@ export default function NpcsModule({ room, innerRoomName, varTree, char, addLog,
                   </span>
                   {pigeonEntry(name)}
                   {hasAff ? (
-                    <span style={{ fontSize: "var(--fs-2xs)", flexShrink: 0, whiteSpace: "nowrap" }} title={`好感度 ${attrs.好感度}/100`}>
-                      <span style={{ color: "var(--note)" }}>{npcAffectionLabel(attrs.好感度)}</span>
-                      <span style={{ color: "var(--text-dim)", marginLeft: 4 }}>{attrs.好感度}</span>
+                    <span className="npc-present-aff" title={`好感度 ${attrs.好感度}/100`}>
+                      <span className="npc-present-aff-label">{npcAffectionLabel(attrs.好感度)}</span>
+                      <span className="npc-present-aff-num">{attrs.好感度}</span>
                     </span>
                   ) : (
-                    <span style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", flexShrink: 0, whiteSpace: "nowrap" }}>{known ? "" : "尚未认识"}</span>
+                    <span className="npc-present-unmet">{known ? "" : "尚未认识"}</span>
                   )}
                 </div>
-                {known && attrs.态度 && <div style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)" }}>{attrs.态度}</div>}
+                {known && attrs.态度 && <div className="npc-absent-att">{attrs.态度}</div>}
                 {known && <NpcAngerLine angerState={attrs.生气状态} />}
               </div>
             );

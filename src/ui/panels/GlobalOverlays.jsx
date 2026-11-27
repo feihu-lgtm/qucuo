@@ -170,7 +170,7 @@ export default function GlobalOverlays({
       <TraceViewer theme={THEME_VARS} onClose={() => closeOverlay(OVERLAY.TRACE)} onReport={() => openOverlay(OVERLAY.BUG_REPORT)} />
     )},
     { show: showCodex, render: () => (
-      <CodexScreen isDayMode={isDayMode} inv={inv} skills={skills} onClose={() => closeOverlay(OVERLAY.CODEX)} />
+      <CodexScreen inv={inv} skills={skills} varTree={varTree} onClose={() => closeOverlay(OVERLAY.CODEX)} />
     )},
     { show: showBugReport, render: () => (
       <BugReportModal

@@ -1,4 +1,8 @@
 // 旧版默认预设原文：玩家没改过的条目在读档时升级成新版默认文字，改过的原样保留。
+import { loadCopy } from "../../../copy/loadCopy.js";
+
+const legacyWenfengV2 = loadCopy("wenfengLegacy.txt");
+
 export const LEGACY_DEFAULT_CONTENT = {
   genrules: [
     `- 不搜索不给隐藏物品，只描述外观
@@ -38,6 +42,7 @@ export const LEGACY_DEFAULT_CONTENT = {
 - 情绪靠行动或台词表现，禁五官特写（"眼底闪过""嘴角勾起""瞳孔一缩"）
 - 比喻须新颖具体，禁陈腐喻体（"涟漪""惊雷""潮水""投石入湖"等）
 - 禁"不是X，而是Y"，直接说Y；形容词副词不连用，单段成语≤2个`,
+    legacyWenfengV2,
   ],
 };
 

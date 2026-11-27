@@ -2,7 +2,7 @@ import { npcAffectionLabel } from "../../../domain/rules/prompt/mvu.js";
 import { unlockedCompanions, activeCompanionKey, companionNpcEntry } from "../../../domain/rules/companion/companion.js";
 import { INNER_MAP, getDistrictAnchor, getPublicInnerRoomNames } from "../../../domain/rules/map/innerMap.js";
 import { setActiveNpcMenu } from "../../../store/sessionUiStore.js";
-import { Icon } from "../../primitives/index.js";
+import NpcAvatar from "../../components/NpcAvatar.jsx";
 
 // 留守落点清单：每个据点的锚点房（玩家进据点实际落脚的房间，如 鱼定村→村口）
 // + 全部公共内层房；私宅/上锁房不列——把队友塞进别人家里说不过去。
@@ -41,7 +41,7 @@ export default function TeamModule({ companionState, varTree, onSwitchCompanion,
               onClick={() => onSwitchCompanion?.(isOn ? null : slot.key)}
               title={isOn ? "点一下换下出战位" : stationedAt ? `${slot.label}留守在${stationedAt.roomName || stationedAt.district}，先去接回来` : `换 ${slot.label} 出战`} className="team-portrait-card" data-on={Boolean(isOn)}
             >
-              <span className="team-icon" data-on={Boolean(isOn)}><Icon name="羁绊" size={15} /></span>
+              <NpcAvatar name={slot.label} size="md" dim={!isOn && Boolean(stationedAt)} />
               <div className="team-card-body">
                 <div className="team-card-name" data-on={Boolean(isOn)}>
                   {slot.label}

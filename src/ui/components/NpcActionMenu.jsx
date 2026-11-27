@@ -13,6 +13,7 @@
 import React, { useState } from "react";
 import { QUCUO_SHOPS, hasOcShop } from "../../domain/data/shops/qucuoShops.js";
 import ModalShell from "../primitives/ModalShell.jsx";
+import NpcAvatar from "./NpcAvatar.jsx";
 
 export default function NpcActionMenu({ npc, inv, onClose, onTalk, onGift, onDuel, onSteal, onLook, onLearnSkill, onTrade, onInviteCompanion, companionUnlocked, flags = [], ocRoutes = [], onOcRecruit, onRecallCompanion, onGoldenEgg, nemesisActive = false, lethalBlockReason = null }) {
   const [showGiftPicker, setShowGiftPicker] = useState(false);
@@ -63,9 +64,14 @@ export default function NpcActionMenu({ npc, inv, onClose, onTalk, onGift, onDue
   }
 
   return (
-    <ModalShell onClose={onClose} layer="dialog" backdrop="soft" mobile="sheet" showClose={false} ariaLabel={`与${npc.name}互动`} panelStyle={{ width: 320 }}>
-      <div style={{ color: "var(--accent)", fontSize: "var(--fs-base)", marginBottom: 4 }}>{npc.name}{npc.intimate ? " ♥" : ""}</div>
-      <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", marginBottom: 16 }}>{npc.brief}</div>
+    <ModalShell onClose={onClose} layer="dialog" backdrop="soft" mobile="sheet" showClose={false} ariaLabel={`与${npc.name}互动`} panelStyle={{ width: 340 }}>
+      <div className="npc-menu-head">
+        <NpcAvatar name={npc.name} size="lg" />
+        <div className="npc-menu-head-text">
+          <div className="npc-menu-title">{npc.name}{npc.intimate ? " ♥" : ""}</div>
+          <div className="npc-menu-brief">{npc.brief}</div>
+        </div>
+      </div>
 
       <div className="mobile-action-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
         {ACTIONS.map((a) => (

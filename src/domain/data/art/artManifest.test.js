@@ -1,17 +1,26 @@
 import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { BUILDING_ART, BUILDING_ID_ART, HOME_ART, MAP_ART, PLACE_ART } from "./artManifest.js";
+import {
+  BUILDING_ART,
+  BUILDING_ID_ART,
+  HOME_ART,
+  ITEM_ART,
+  MAP_ART,
+  NPC_ART,
+  PLACE_ART,
+  QUEST_ART,
+} from "./artManifest.js";
 import { QUCUO_MAP } from "../map/qucuoMap.js";
 import { BUILDING_TYPE, getBuildingsForLocation } from "../buildings/qucuoBuildings.js";
 import { HOMESTEAD_FEATURES } from "../../rules/map/homestead.js";
 
-const file = (kind, name) => `public/art/${kind}/${name}.webp`;
+const webpFile = (kind, name) => `public/art/${kind}/${name}.webp`;
 
 describe("美术素材登记表", () => {
   it("登记的据点都是真实存在的外层据点，文件都在 public/art/place", () => {
     for (const [name, f] of Object.entries(PLACE_ART)) {
       expect(QUCUO_MAP[name], name).toBeTruthy();
-      expect(existsSync(file("place", f)), file("place", f)).toBe(true);
+      expect(existsSync(webpFile("place", f)), webpFile("place", f)).toBe(true);
     }
   });
 
@@ -23,9 +32,18 @@ describe("美术素材登记表", () => {
     const types = new Set(Object.values(BUILDING_TYPE));
     const ids = new Set(Object.keys(QUCUO_MAP).flatMap((d) => getBuildingsForLocation(d).map((b) => b.id)));
     const homeIds = new Set(Object.values(HOMESTEAD_FEATURES).flatMap((h) => h.features.map((f) => f.id)));
-    for (const [k, f] of Object.entries(BUILDING_ART)) { expect(types.has(k), k).toBe(true); expect(existsSync(file("building", f)), f).toBe(true); }
-    for (const [k, f] of Object.entries(BUILDING_ID_ART)) { expect(ids.has(k), k).toBe(true); expect(existsSync(file("building", f)), f).toBe(true); }
-    for (const [k, f] of Object.entries(HOME_ART)) { expect(homeIds.has(k), k).toBe(true); expect(existsSync(file("building", f)), f).toBe(true); }
-    if (MAP_ART) expect(existsSync(file("map", MAP_ART))).toBe(true);
+    for (const [k, f] of Object.entries(BUILDING_ART)) { expect(types.has(k), k).toBe(true); expect(existsSync(webpFile("building", f)), f).toBe(true); }
+    for (const [k, f] of Object.entries(BUILDING_ID_ART)) { expect(ids.has(k), k).toBe(true); expect(existsSync(webpFile("building", f)), f).toBe(true); }
+    for (const [k, f] of Object.entries(HOME_ART)) { expect(homeIds.has(k), k).toBe(true); expect(existsSync(webpFile("building", f)), f).toBe(true); }
+    if (MAP_ART) expect(existsSync(webpFile("map", MAP_ART))).toBe(true);
+  });
+
+  it("NPC 头像、物品图标、任务插图登记表均非空且对应 .webp 文件全部存在", () => {
+    expect(NPC_ART.length).toBeGreaterThanOrEqual(260);
+    expect(ITEM_ART.length).toBe(36);
+    expect(QUEST_ART.length).toBe(81);
+    for (const name of NPC_ART) expect(existsSync(webpFile("npc", name)), name).toBe(true);
+    for (const key of ITEM_ART) expect(existsSync(webpFile("item", key)), key).toBe(true);
+    for (const id of QUEST_ART) expect(existsSync(webpFile("quest", id)), id).toBe(true);
   });
 });

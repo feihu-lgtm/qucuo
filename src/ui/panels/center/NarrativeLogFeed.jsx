@@ -1,13 +1,16 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import LogEntry, { NarrativeSkeleton, isNarrativePlaceholder } from "../../components/LogEntry.jsx";
 import { formatRealDateTime, getGameDay, getTimeStr } from "../../../utils/mudHelpers.js";
 import { useGameStore } from "../../../store/gameStore.js";
 import { openOverlay, OVERLAY } from "../../../store/uiStore.js";
-import { setCenterView } from "../../../store/sessionUiStore.js";
+import {
+  useSessionUi, setActiveNpcMenu, setCenterView, setCharacterPageTarget, setInputCapsule,
+} from "../../../store/sessionUiStore.js";
 import { LOG_T } from "../../../domain/data/log/logTypes.js";
+import { NPC_ART } from "../../../domain/data/art/artManifest.js";
 import { createArrivalMarker, createClockMarker, createMapNoteFilter, foldFailedRuns, groupReplies, isRuleHint, ledgerText } from "./feedModel.js";
 import ArtImage from "../../components/ArtImage.jsx";
-import { districtOfRoomLine, placeArtUrl } from "../../art/art.js";
+import { districtOfRoomLine, narratorArtUrl, placeArtUrl } from "../../art/art.js";
 
 // 对象级稳定 React Key：彻底避免在流式占位/插入地名/后台补写时因数组下标左移右移，
 // 导致 React 错认兄弟节点、重播入场动画或把行跳飞。
@@ -99,8 +102,36 @@ export default function NarrativeLogFeed({
   hidden, clr, isDayMode, act,
   collapsedGroups, setCollapsedGroups,
   loading, queueCount, pendingTalks, inspecting, logEnd,
+  playerAvatar = null,
 }) {
-  const log = useGameStore(s => s.log);
+  const log = useGameStore(s => s?.log) || [];
+  const room = useGameStore(s => s?.room);
+  const varTree = useGameStore(s => s?.varTree);
+  const narratorAffection = useGameStore(s => s?.narrator?.affection ?? 0);
+  const dialoguePortraitMode = useSessionUi(s => s?.dialoguePortraitMode || "gutter");
+  const knownSpeakers = useMemo(() => {
+    const set = new Set(NPC_ART);
+    for (const npc of room?.npcs || []) if (npc?.name) set.add(npc.name);
+    for (const name of Object.keys(varTree?.角色 || {})) if (name) set.add(name);
+    return [...set];
+  }, [room?.npcs, varTree?.角色]);
+  const narratorPortraitSrc = narratorArtUrl(narratorAffection);
+  const handleOpenNpc = (speakerName) => {
+    if (!speakerName) return;
+    if (speakerName === "旁白") {
+      setInputCapsule({ kind: "whisper", name: "旁白" });
+      return;
+    }
+    const inRoom = (room?.npcs || []).find(n => n?.name === speakerName);
+    if (inRoom) {
+      setActiveNpcMenu(inRoom);
+      return;
+    }
+    if (varTree?.角色?.[speakerName]?.好感度 != null) {
+      setCharacterPageTarget(speakerName);
+      openOverlay(OVERLAY.CHARACTER_PAGE);
+    }
+  };
   const feedRef = useRef(null);
   const nearBottomRef = useRef(true);
   const prevLenRef = useRef(0);
@@ -226,6 +257,11 @@ export default function NarrativeLogFeed({
                   onOpenLetters={() => openOverlay(OVERLAY.LETTERS)}
                   onOpenJournal={openJournal}
                   onOpenSettings={openSettings}
+                  dialoguePortraitMode={dialoguePortraitMode}
+                  knownSpeakers={knownSpeakers}
+                  onOpenNpc={handleOpenNpc}
+                  narratorPortraitSrc={narratorPortraitSrc}
+                  playerAvatar={playerAvatar}
                 />
               </div>}
               {isRoom && standaloneMark && (
@@ -335,6 +371,11 @@ export default function NarrativeLogFeed({
                             onOpenLetters={() => openOverlay(OVERLAY.LETTERS)}
                             onOpenJournal={openJournal}
                             onOpenSettings={openSettings}
+                            dialoguePortraitMode={dialoguePortraitMode}
+                            knownSpeakers={knownSpeakers}
+                            onOpenNpc={handleOpenNpc}
+                            narratorPortraitSrc={narratorPortraitSrc}
+                            playerAvatar={playerAvatar}
                           />
                         )}
                     </div>

@@ -8,7 +8,7 @@ import { OVERLAY, closeOverlay, openOverlay, useOverlay } from "../../store/uiSt
 import { gameActions, useGameStore } from "../../store/gameStore.js";
 import {
   useSessionUi, setInteractMode, setActiveBuilding, setTradingShop,
-  setBuildingPanelMinimized, setCollapsedGroups, setCenterView,
+  setBuildingPanelMinimized, setCollapsedGroups, setCenterView, setDialoguePortraitMode,
 } from "../../store/sessionUiStore.js";
 import { BUILDING_TYPE } from "../../domain/data/buildings/qucuoBuildings.js";
 import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
@@ -38,6 +38,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
   } = ui;
   const collapsedGroups = useSessionUi(s => s.collapsedGroups);
   const centerView = useSessionUi(s => s.centerView);
+  const dialoguePortraitMode = useSessionUi(s => s.dialoguePortraitMode);
   const isMobile = useSessionUi(s => s.isMobile);
   const mobileColumn = useSessionUi(s => s.mobileColumn);
   const loading = useSessionUi(s => s.loading);
@@ -106,6 +107,26 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
           </span>
         </span>
         <span className="center-header-tools">
+          {centerView !== "journal" && !hideNarrative && (
+            <span className="center-portrait-switch" role="group" aria-label="中栏头像">
+              {[
+                ["gutter", "书页像"],
+                ["inline", "行内像"],
+                ["off", "纯文"],
+              ].map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  className="center-portrait-tab"
+                  data-on={dialoguePortraitMode === key}
+                  aria-pressed={dialoguePortraitMode === key}
+                  onClick={() => setDialoguePortraitMode(key)}
+                >
+                  {label}
+                </button>
+              ))}
+            </span>
+          )}
           <TurnControls theme={THEME_VARS} loading={loading} stopRunning={turn.stopRunning} rollbackBlocked={turn.rollbackBlocked} rollbackOneStep={turn.rollbackOneStep} />
           <DevControls theme={THEME_VARS} addLog={addLog} />
         </span>
@@ -232,7 +253,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
         hidden={hideNarrative || centerView === "journal"} clr={clr} isDayMode={isDayMode} act={turn.act}
         collapsedGroups={collapsedGroups} setCollapsedGroups={setCollapsedGroups}
         loading={loading} queueCount={queueCount} pendingTalks={pendingTalks}
-        inspecting={aiInspect.inspecting} logEnd={logEnd}
+        inspecting={aiInspect.inspecting} logEnd={logEnd} playerAvatar={ui.playerAvatar}
       />
 
       <CenterFooterBar ui={ui} turn={turn} handlers={handlers} />
