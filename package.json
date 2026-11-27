@@ -13,6 +13,7 @@
     "ratchet": "node scripts/ratchet.mjs",
     "copy-gate": "node scripts/checkPromptCopy.mjs",
     "docs-gate": "node scripts/checkAiChainDocs.mjs",
+    "art:prompts": "node scripts/art/buildArtPrompts.mjs",
     "stats": "node scripts/ratchet.mjs --stats",
     "tree": "node scripts/tree.mjs",
     "e2e": "node e2e/run.mjs",
