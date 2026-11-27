@@ -73,6 +73,7 @@ WO-15 起这就是线上主回路：**旧状态提取层（turn.extraction/extra
 | settle 社交好感硬结算 | 已落地 | 送礼/送银/求教/邀同行的好感增量由 feature 确定性写入（系统账本语义：魅力修正/每日 +12 上限/0-100 clamp/无好感轨道跳过），模型只写叙事不写好感 MVU。 |
 | 天机落账卡 UI | 已落地/动作结构化直写 | `EffectReceiptCard` 消费 `receipts` 渲染落账条；按钮派发结构化 action（itemId/skillId/factId/op/kind），经 NarrativeLogFeed 原样透传进 `act`，useTurn 在 intent 识别前的系统边界按 id 寻址确定性幂等执行（features/receipts/logic，equip/activate 为 explicit-on 语义），行动识别关闭同样生效，写账走 applyResult 统一边界。例外：`viewPact` 无结构化面板入口，保留文本指令。 |
 | 化形同伴档案与初入队调度 | 已落地 | `companionProfiles` 收拢雪豹（白栖雪）与珍珠（夏明珠）的三字人名、武功、12 项体貌与受 `nsfwOn` 硬门控的私密细节；`inviteCompanion` 初次入队写入人形化态、化形旗标与 `varTree` 形态并钉好感；`companion_transform`（初入队化形演出）与 `companion_dossier`（全随行化形同伴档案注入 `buildNpcContext`）两块文本单源住 `src/copy/*.txt` 并接入统一提示词总控台。档案里的当前形态以存档 `companionState[key].form` 为准（入队化形与 `switchCompanionForm` 写入），浏览器本地的外貌形态偏好只给没有 `form` 字段的老档兜底；人物面原先的手动外貌切换已随重复伙伴头像一并移除。 |
+| 金鸟金蛋 AI 开奖 `goldenEgg.prize` | 已落地 | 元朵朵每日金蛋改由 AI 自由随机一件实物：`openGoldenEgg` 先同步记签到日（防连点重领）并按气运 `rollQuality` 掷定品阶；`goldenEgg.prize`（app/calls/hookCalls.js 注册，提示词单源 `src/copy/goldenEgg.sys.txt`，strict schema 五键全必填）只出名字/类别/描述/朵朵反应，`parseEggPrize` 裁剪后由 `settleAiEggPrize` 经 `makeItemSmart` 落物——照抄现成物件名按物件志实例化，其余按系统品阶 `makeItem` 算攻防与价格，行囊函数式叠写；回包经 `applyResult` 统一边界后台落账，存档纪元一变整段作废。无 API、AI 失败或回包不合规退回 `GOLDEN_EGG_POOL` 加权奖池并配手写反应句；情趣物与卡券按用户钦定进 AI 开奖约束：`EGG_SPECIAL_RATE` 各占 7.5%，系统侧强制注入（forced）而非 AI 自由心证。 |
 
 ## 4. 目标链路分层
 
@@ -416,4 +417,4 @@ CI 有硬门禁：`npm run docs-gate` 会读取 PR 相对 base 的文件清单�
 | D8 亲密判意上移 intake | 待合 #575 | intake schema/提示词加 intimate 布尔前哨判意；judgePhase 执行门禁（拒词直写中止管线/过线 notes 注入/凭卡 ticket 挂 verdict 焚卡），resolveIntent 前置拦截撤除；intake 缺失或本地合成时正则降级兜底。已知限制：单调用模式过线时门槛提示 note 无注入通道（单调用不收新投资，nsfw+单调用双重窄角，裁决记录在案）。 |
 | 夜班急修·决斗队列空转复发根治：U 链打字路径 runDeferred（execute/条件步触发两处）补传 autoProceedAfterLook——未端详 NPC 静默端详直拉邀战，不再走 act("look")+return 老路致邀战永不落地；useDuel/useIntentRouter 回归测试钉死（无修复则红） | 已开 PR 未合并 |
 | 银两账务叙事矛盾修复：MAIN_STATE_TEMPLATE VITALS 补喂 银两:@银两（fields char.money 注册 refs，此前主叙事从不喂玩家银两，哭穷摆阔全凭模型瞎编）+[银两铁律]入状态块（禁写系统未结算的收付钱/伙计结账情节）+intake outcome 指引消费类动作一律填破费（freeAct 查价链 deterministic 扣账通道命中率） | 待合 #621 |
-| 气头上切磋定案：duelInviteLine/判官链交互意向回执按 isNpcAngry 分流——pissed 时写挑衅激怒打将过来（不写心平气和应下）；settleNpcDuel 不论胜负清除生气状态（resolvedBy combat），根治「打两次」（旧账不清 3 回合后 escalated 强制恶斗复发） | 已开 PR 未合并 |
+| 金鸟金蛋 AI 开奖补全：系统侧 rollEggSpecial 先掷（假阳具/女眷一次卡各 7.5%），命中则 prompt 明写必开照抄+reaction 定向（羞态/肉疼）且回包名字系统强校，AI 失败不退奖池改手写兜底守概率；未命中走 AI 自由开奖（sys copy 禁自造情趣/卡券）；开奖结果挂 result.fact 走 registerFact 记忆链（朵朵+在场 NPC 目击），AI/兜底两路同挂 | 已开 PR 未合并 |

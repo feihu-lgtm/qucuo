@@ -1,6 +1,11 @@
-// 元朵朵·金鸟金蛋每日签到：每游戏日（time/24 取整）一次，金鸟飞进来下一颗金蛋，
-// 开蛋加权抽奖。这里是纯数据与判定——状态读写走 features/npc/goldenEgg.js，
-// 朵朵的临场反应另走 AI 后台补写（无 API 时本文件兜底句随机挑）。
+import { loadCopy } from "../../../copy/loadCopy.js";
+
+// 元朵朵·金鸟金蛋每日签到：每游戏日（time/24 取整）一次，金鸟飞进来下一颗金蛋。
+// 这里是纯数据与判定——状态读写走 features/npc/goldenEgg.js。
+//
+// 有 API 时开什么由 AI 自由随机（goldenEgg.prize 调用，见 app/calls/hookCalls.js）：
+// 系统先按气运掷定品阶，AI 只出名字/类别/描述/朵朵反应，数值与价格由 makeItem 按品阶算。
+// 无 API 或 AI 失败时退回下面的加权奖池（GOLDEN_EGG_POOL），朵朵的反应用手写兜底句。
 //
 // 奖池只有三类：money（银两直接加 char.money）/ item（CATALOG_INDEX 真实词条，
 // makeNamedItem 实例化进 inv，自带 buyPrice/sellPrice，能卖回朵朵店里）/
@@ -60,25 +65,8 @@ export function eggAlreadyClaimed(npcState, time) {
   return Number.isFinite(lastDay) && lastDay === eggGameDay(time);
 }
 
-// ── 朵朵临场反应 ─────────────────────────────────────────────────────────
-// AI 现写：她的人设（视财如命又笨蛋美人）+ 开出的奖项喂进去，一段话回来。
-
-export function eggReactionPrompt({ prize, tier }) {
-  const sys = `你是曲措乡的说书人，替元朵朵写一句开奖后的当场反应（不超过六十字）。
-元朵朵是锦官城巨商独女，视财如命又笨蛋美人——装娇蛮，嘴硬心软，说话又甜又憨。
-铁律：只写她的神态动作与一两句对白，不替玩家做决定、不推进事件、不写其他人；
-白话古文，不用冒号破折号。只输出正文，不要任何前后缀。`;
-  const mood = {
-    jackpot: "玩家开出了大奖（金锭、贵重玉器或稀罕卡券）——她亲眼看着自家金鸟把好东西送出去，肉疼得直跺脚，心疼到失态但不好意思反悔。",
-    small: "玩家开出寻常彩头——她得意洋洋，一副「看吧跟着本小姐有肉吃」的派头。",
-    blush: "玩家开出一件不正经的玩意儿（情趣物件）——她看清是什么的瞬间脸红到耳根，羞得跳脚还想强装镇定，此地无银地嚷嚷这东西不是她的。",
-    empty: "玩家开出一颗空蛋——她先愣住然后笑到打跌，欠揍地嘲笑玩家手气。",
-  }[tier] || "玩家开了金蛋。";
-  const user = `今日金鸟落在元朵朵肩头下了一颗金蛋。玩家当场开蛋，开出：${prize.label}。
-${mood}
-写她此刻的反应。`;
-  return { sys, user };
-}
+// ── 朵朵临场反应兜底 ─────────────────────────────────────────────────────
+// 有 API 时她的反应随 goldenEgg.prize 一并由 AI 写出；这里只留无 API / AI 失败时的手写句。
 
 // 无 API 兜底：按反应档各备几条手写句，随机挑。
 const FALLBACK = {
@@ -104,4 +92,73 @@ const FALLBACK = {
 export function eggFallbackLine(tier, rng = Math.random) {
   const lines = FALLBACK[tier] || FALLBACK.small;
   return lines[Math.floor(rng() * lines.length) % lines.length];
+}
+
+// ── AI 自由开奖（goldenEgg.prize）─────────────────────────────────────────
+
+const EGG_PRIZE_SYS = loadCopy("goldenEgg.sys.txt");
+export const EGG_PRIZE_CATEGORIES = ["weapon", "armor", "accessory", "misc"];
+export const EGG_PRIZE_MOODS = ["jackpot", "small"];
+
+// 「现成物件」名单：奖池里寻常的具名物件（不含情趣物与卡券，那两样只留在无 API 兜底奖池）。
+export const EGG_CATALOG_PICKS = GOLDEN_EGG_POOL
+  .filter((e) => e.kind === "item" && !e.blush && e.itemName !== INTIMATE_TICKET_NAME)
+  .map((e) => e.itemName);
+
+// 用户钦定：情趣物（假阳具）与卡券（女眷一次卡·不可拒绝）在 AI 开奖里各占约 7.5%。
+// AI 无法精确控概率，概率约束落系统侧：开奖前先掷这一把——命中就强制本次必开该件
+// （写进 prompt 让 AI 照抄名字并对 reaction 做羞态/稀罕定向），AI 只填描述与朵朵反应；
+// 未命中走 AI 自由开奖（两件不在自由名单内，概率保持精确）。兜底奖池（无 API）维持原权重不动。
+export const EGG_SPECIAL_FAKE = "假阳具";
+export const EGG_SPECIAL_RATE = 0.075;
+export function rollEggSpecial(rng = Math.random) {
+  const roll = rng();
+  if (roll < EGG_SPECIAL_RATE) return EGG_SPECIAL_FAKE;
+  if (roll < EGG_SPECIAL_RATE * 2) return INTIMATE_TICKET_NAME;
+  return null;
+}
+
+export function eggPrizePrompt({ quality, picks = EGG_CATALOG_PICKS, forced = null } = {}) {
+  const forcedBlock = forced ? `系统已定：这颗蛋里必开「${forced}」——name 必须一字不差照抄这个名字，category 按物件本身归类，desc 照写它的模样来历。${forced === EGG_SPECIAL_FAKE ? "这是件不正经的玩意儿：朵朵看清是什么的瞬间羞到跳脚、此地无银地嚷嚷这不是她的，reaction 就写她的羞态。" : "这是稀罕卡券：朵朵肉疼失态，mood 写 jackpot，reaction 写她又心疼又不好意思反悔。"}
+` : "";
+  const user = `今日金鸟落在元朵朵肩头，下了一颗金蛋，玩家当场就要开。
+系统掷定的品阶：${quality}（白、绿、蓝、紫、橙、红，由低到高）。
+${forcedBlock}现成物件（可挑可不挑）：${picks.join("、") || "无"}
+
+只输出 JSON：
+{"name":"物件名，不超过八个字","category":"weapon|armor|accessory|misc 四选一（兵器/护身之物/随身饰物/其余杂物）","desc":"一两句说书人描述，讲它的模样或来历","mood":"jackpot|small","reaction":"朵朵当场的反应，不超过六十字"}`;
+  return { sys: EGG_PRIZE_SYS, user };
+}
+
+// 原生结构化输出 schema：五键全必填、无联合类型，满足 strict 通道。
+export const EGG_PRIZE_SCHEMA = {
+  name: "golden_egg_prize",
+  schema: {
+    type: "object",
+    additionalProperties: false,
+    required: ["name", "category", "desc", "mood", "reaction"],
+    properties: {
+      name: { type: "string" },
+      category: { type: "string", enum: EGG_PRIZE_CATEGORIES },
+      desc: { type: "string" },
+      mood: { type: "string", enum: EGG_PRIZE_MOODS },
+      reaction: { type: "string" },
+    },
+  },
+};
+
+const stripText = (v, max) => String(v ?? "").replace(/[\r\n]+/g, " ").trim().slice(0, max);
+
+// 把 AI 回包裁成能落账的奖品；名字空了就判无效（由调用方退回兜底奖池）。
+export function parseEggPrize(data) {
+  if (!data || typeof data !== "object") return null;
+  const name = stripText(data.name, 12).replace(/[「」『』"“”]/g, "");
+  if (!name) return null;
+  return {
+    name,
+    category: EGG_PRIZE_CATEGORIES.includes(data.category) ? data.category : "misc",
+    desc: stripText(data.desc, 120),
+    mood: EGG_PRIZE_MOODS.includes(data.mood) ? data.mood : "small",
+    reaction: stripText(data.reaction, 120),
+  };
 }
