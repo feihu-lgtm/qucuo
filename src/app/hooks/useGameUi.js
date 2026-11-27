@@ -6,7 +6,7 @@ import { getLocalQuestStage } from "../../domain/rules/quests/localStages.js";
 import { getZoneName } from "../../utils/theme.js";
 
 import { isNpcVisibleInInnerRoom as isVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
-import { loadPortraits, getSnowLeopardForm, getPearlForm } from "../../domain/rules/companion/portraits.js";
+import { loadPortraits } from "../../domain/rules/companion/portraits.js";
 import { usePromptInspector } from "./ui/usePromptInspector.js";
 import {
   useSessionUi, sessionUiStore, setInput, setLoading, setWaitSecs, setPendingTalks,
@@ -106,10 +106,6 @@ export function useGameUi({
   }, [avatarKey, char?.avatarId]);
   const characterPageTarget = useSessionUi(s => s.characterPageTarget);
   const [portraits, setPortraits] = useState(loadPortraits());
-  const [slForm, setSlFormState] = useState(getSnowLeopardForm());
-  const [slImgErr, setSlImgErr] = useState(false);
-  const [pearlForm, setPearlFormState] = useState(getPearlForm());
-  const [pearlImgErr, setPearlImgErr] = useState(false);
   const [narratorImgErr, setNarratorImgErr] = useState(false);
   const portraitTarget = useSessionUi(s => s.portraitTarget);
   const apiCfg = useSessionUi(s => s.apiCfg);
@@ -206,8 +202,7 @@ export function useGameUi({
     nsfwOn, setNsfwOn, outfitState, setOutfitState, pigeonTarget, setPigeonTarget,
     activeNpcMenu, setActiveNpcMenu, activeItemMenu, setActiveItemMenu,
     playerAvatarCustom, setPlayerAvatarCustom, characterPageTarget, setCharacterPageTarget,
-    portraits, setPortraits, slForm, setSlFormState, slImgErr, setSlImgErr,
-    pearlForm, setPearlFormState, pearlImgErr, setPearlImgErr,
+    portraits, setPortraits,
     narratorImgErr, setNarratorImgErr, portraitTarget, setPortraitTarget,
     apiCfg, setApiCfg, uiScale, setUiScale, font, setFont, isDayMode, setIsDayMode, cmdHistory, setCmdHistory,
     histIdx, setHistIdx, forcedDuelNpc, setForcedDuelNpc, duelingNpc, setDuelingNpc,

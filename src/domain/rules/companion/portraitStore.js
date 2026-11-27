@@ -170,12 +170,9 @@ export function fileToDataUrl(file) {
   });
 }
 
-// ── 雪豹立绘·三形态（本轮新增）──
-// 伙伴雪豹有三张官方立绘：两张人形（前世羁绊的人形相）+ 一张雪豹真身。
-// 资源放在 public/portraits/snowleopard/ 下——刻意不走 src/assets 硬加载：
-// 图片由作者自行投放，构建不该依赖文件是否存在；缺失时界面上给占位提示，
-// 不影响构建与游戏运行（跟 public/portraits/player/ 玩家头像同一套思路）。
-const SL_BASE = ((import.meta.env && import.meta.env.BASE_URL) || "/") + "portraits/snowleopard/";
+// ── 雪豹形态·三档 ──
+// 两档人形（前世羁绊的人形相）+ 一档雪豹真身。这里只记形态键（化形/外貌描述据此切换），
+// 界面上的伙伴头像统一走 NpcAvatar（art/npc），不再按形态读 public/portraits/ 下的立绘。
 export const SNOW_LEOPARD_FORMS = [
   { key: "form1", label: "人形·立雪", file: "form1.webp" },
   { key: "form2", label: "人形·倚剑", file: "form2.webp" },
@@ -192,15 +189,9 @@ export function getSnowLeopardForm() {
 export function setSnowLeopardForm(key) {
   try { localStorage.setItem(SL_FORM_KEY, key); } catch { /* ignore */ }
 }
-function snowLeopardPortraitUrl(formKey) {
-  const f = SNOW_LEOPARD_FORMS.find(x => x.key === formKey) || SNOW_LEOPARD_FORMS[2];
-  return SL_BASE + f.file;
-}
 
-// ── 珍珠立绘·双形态 ──
-// 伙伴珍珠有两张官方立绘：人形（比基尼+轻纱·马耳马尾姑娘）+ 马形（通体雪白小白马）。
-// 资源放在 public/portraits/pearl/ 下，同雪豹一套思路。
-const PEARL_BASE = ((import.meta.env && import.meta.env.BASE_URL) || "/") + "portraits/pearl/";
+// ── 珍珠形态·双档 ──
+// 人形（马耳马尾姑娘）+ 马形（通体雪白小白马），同雪豹一样只记形态键。
 export const PEARL_FORMS = [
   { key: "form1", label: "人形·珍珠", file: "form1.webp" },
   { key: "beast", label: "马形·珍珠", file: "beast.webp" },
@@ -215,17 +206,8 @@ export function getPearlForm() {
 export function setPearlForm(key) {
   try { localStorage.setItem(PEARL_FORM_KEY, key); } catch { /* ignore */ }
 }
-export function pearlPortraitUrl(formKey) {
-  const f = PEARL_FORMS.find(x => x.key === formKey) || PEARL_FORMS[1];
-  return PEARL_BASE + f.file;
-}
 
-// 通用：按伙伴 key 取形态列表 / 当前形态 / 立绘 URL / setter
-export function getCompanionForms(key) {
-  if (key === "snowLeopard") return SNOW_LEOPARD_FORMS;
-  if (key === "pearl") return PEARL_FORMS;
-  return null;
-}
+// 通用：按伙伴 key 取当前形态 / setter
 export function getCompanionForm(key) {
   if (key === "snowLeopard") return getSnowLeopardForm();
   if (key === "pearl") return getPearlForm();
@@ -234,9 +216,4 @@ export function getCompanionForm(key) {
 export function setCompanionForm(key, formKey) {
   if (key === "snowLeopard") setSnowLeopardForm(formKey);
   else if (key === "pearl") setPearlForm(formKey);
-}
-export function companionPortraitUrl(key, formKey) {
-  if (key === "snowLeopard") return snowLeopardPortraitUrl(formKey);
-  if (key === "pearl") return pearlPortraitUrl(formKey);
-  return null;
 }
