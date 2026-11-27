@@ -1,5 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { buildingArtUrl, districtOfRoomLine, homeArtUrl, mapArtUrl, placeArtUrl } from "./art.js";
+import {
+  buildingArtUrl,
+  classifyItemArtKey,
+  districtOfRoomLine,
+  homeArtUrl,
+  itemArtUrl,
+  mapArtUrl,
+  narratorArtUrl,
+  npcArtUrl,
+  placeArtUrl,
+  questArtUrl,
+} from "./art.js";
 
 describe("按字段查图", () => {
   it("据点按外层名查图，没登记的返回 null", () => {
@@ -27,5 +38,27 @@ describe("按字段查图", () => {
     expect(districtOfRoomLine("    鱼定村·歇马居")).toBe("鱼定村");
     expect(districtOfRoomLine("    天都镇（马车）")).toBe("天都镇");
     expect(districtOfRoomLine("")).toBe("");
+  });
+
+  it("人物头像优先玩家上传覆盖，再查已入库 webp，未入库返回 null", () => {
+    expect(npcArtUrl("元朵朵")).toMatch(/art\/npc\/.*\.webp$/);
+    expect(npcArtUrl("不存在的NPC")).toBeNull();
+    expect(npcArtUrl("元朵朵", { 元朵朵: "data:image/png;base64,abc" })).toBe("data:image/png;base64,abc");
+  });
+
+  it("物品按类别与关键词归入 36 类实物图标", () => {
+    expect(classifyItemArtKey({ name: "鱼定长枪", category: "weapon" })).toBe("weapon-spear");
+    expect(classifyItemArtKey({ name: "青布长衫", category: "armor" })).toBe("armor-cloth");
+    expect(classifyItemArtKey({ name: "玉器轩断簪", category: "accessory" })).toBe("accessory-hairpin");
+    expect(classifyItemArtKey("青稞炒面")).toBe("misc-food");
+    expect(itemArtUrl("雪山当归")).toMatch(/art\/item\/misc-herb\.webp$/);
+  });
+
+  it("任务插图与旁白立绘按 ID 和好感档查图", () => {
+    expect(questArtUrl("gaze_1_mitu")).toMatch(/art\/quest\/gaze_1_mitu\.webp$/);
+    expect(questArtUrl("no_such_quest")).toBeNull();
+    expect(narratorArtUrl(0)).toMatch(/portraits\/narrator\/tier1\.webp$/);
+    expect(narratorArtUrl(55)).toMatch(/portraits\/narrator\/tier3\.webp$/);
+    expect(narratorArtUrl(95)).toMatch(/portraits\/narrator\/true\.webp$/);
   });
 });

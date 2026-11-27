@@ -3,6 +3,7 @@ import { effectBrief } from "../../../domain/rules/economy/itemEffectText.js";
 import { QUALITY_COLOR } from "../../../domain/data/items/qualityColor.js";
 import { statLabel } from "../../format/itemStats.js";
 import { Icon } from "../../primitives/index.js";
+import ItemIcon from "../../components/ItemIcon.jsx";
 
 const SLOT_ICON = {
   [ITEM_CATEGORY.WEAPON]: "招式",
@@ -35,7 +36,7 @@ export default function EquipmentModule({ inv, setInv }) {
                 const qc = QUALITY_COLOR[item.quality] || "var(--text)";
                 return (
                   <div key={item.id} className="equip-slot" onClick={() => setInv(v => toggleEquip(v, item.id))}>
-                    <span className="equip-slot-ib"><Icon name={iconName} size={17} /></span>
+                    <span className="equip-slot-ib"><ItemIcon item={item} size="md" fallbackIcon={iconName} /></span>
                     <div className="equip-slot-body">
                       <div className="equip-slot-name">{item.name}</div>
                       <div className="equip-slot-meta">

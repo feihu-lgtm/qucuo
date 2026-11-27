@@ -64,6 +64,11 @@ export const sessionUiStore = createStore(() => ({
   collapsedGroups: new Set(),
   // 江湖栏视图：story=正文（读故事），journal=卷宗（一行一事地查账、查错、看机器明细）
   centerView: "story",
+  // 中栏对白头像落点：gutter=书页落像（默认），inline=行内小像，off=纯文
+  dialoguePortraitMode: (() => {
+    const v = lsGet("qucuo_dialogue_portrait_mode");
+    return v === "inline" || v === "off" ? v : "gutter";
+  })(),
   mapBig: false,
   mapView: "outer",
   // 不在此地默认收起：曾遇人物会越攒越多，把在场的人挤出视野
@@ -83,6 +88,7 @@ sessionUiStore.subscribe((state, prev) => {
     setDomDataset("theme", state.isDayMode ? "day" : "night");
   }
   if (state.mobileColumn !== prev.mobileColumn) writeMobileColumn(undefined, state.mobileColumn);
+  if (state.dialoguePortraitMode !== prev.dialoguePortraitMode) lsSet("qucuo_dialogue_portrait_mode", state.dialoguePortraitMode);
 });
 
 export const useSessionUi = useSessionUiStore;
@@ -135,6 +141,7 @@ export const setCharacterPageTarget = fieldSetter("characterPageTarget");
 export const setPortraitTarget = fieldSetter("portraitTarget");
 export const setCollapsedGroups = fieldSetter("collapsedGroups");
 export const setCenterView = fieldSetter("centerView");
+export const setDialoguePortraitMode = fieldSetter("dialoguePortraitMode");
 export const setMapBig = fieldSetter("mapBig");
 export const setMapView = fieldSetter("mapView");
 export const setPeoplePanel = fieldSetter("peoplePanel");

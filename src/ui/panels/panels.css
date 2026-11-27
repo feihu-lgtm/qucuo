@@ -2187,3 +2187,322 @@
 .narrator-confess-btn:hover {
   border-color: var(--lotus);
 }
+
+/* ── 统一人物头像（透明水墨抠底）与物品图标 ── */
+.npc-ava {
+  position: relative;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 2px;
+  border: 1px solid var(--card-border);
+  background: var(--bg-item);
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  user-select: none;
+}
+.npc-ava--xs { width: 22px; height: 22px; }
+.npc-ava--sm { width: 28px; height: 28px; }
+.npc-ava--md { width: 40px; height: 40px; }
+.npc-ava--lg { width: 56px; height: 56px; }
+.npc-ava--xl { width: 88px; height: 88px; }
+.npc-ava--dossier { width: 148px; height: 148px; }
+.npc-ava-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 14%;
+  display: block;
+}
+.npc-ava.is-clickable {
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+.npc-ava.is-clickable:hover {
+  border-color: var(--npc-name);
+}
+.npc-ava.is-lotus {
+  border-color: color-mix(in srgb, var(--lotus) 50%, var(--card-border));
+}
+.npc-ava.is-dim .npc-ava-img {
+  filter: grayscale(0.45) opacity(0.76);
+}
+.npc-ava.is-locked .npc-ava-img {
+  filter: brightness(0.18) saturate(0.15) contrast(1.1);
+}
+.npc-ava-lock-tag {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-2xs);
+  color: var(--text-dim);
+  background: color-mix(in srgb, var(--bg) 42%, transparent);
+  letter-spacing: 1px;
+}
+.npc-ava-seal {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  font-size: var(--fs-base);
+}
+.npc-ava--xs .npc-ava-seal { font-size: var(--fs-xs); }
+.npc-ava--sm .npc-ava-seal { font-size: var(--fs-sm); }
+.npc-ava--xl .npc-ava-seal { font-size: var(--fs-2xl); }
+.npc-ava--dossier .npc-ava-seal { font-size: var(--fs-3xl); }
+
+.item-art {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+.item-art--xs { width: 18px; height: 18px; }
+.item-art--md { width: 32px; height: 32px; }
+.item-art--lg { width: 46px; height: 46px; }
+.item-art-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.item-art.is-dim .item-art-img {
+  filter: grayscale(0.45) opacity(0.75);
+}
+
+/* ── 中栏头像切换与对白落像 ── */
+.center-portrait-switch {
+  display: inline-flex;
+  border: 1px solid var(--border);
+}
+.center-portrait-tab {
+  background: none;
+  border: none;
+  padding: 1px 8px;
+  font: inherit;
+  font-size: var(--fs-xs);
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.center-portrait-tab[data-on="true"] {
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+.log-dlg-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.log-dlg-prose-line {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+.log-dlg-gutter {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 2px 0;
+}
+.log-dlg-gutter > .npc-ava {
+  margin-top: 4px;
+}
+.log-dlg-gutter--lotus {
+  border-left: 2px solid color-mix(in srgb, var(--lotus) 45%, transparent);
+  padding-left: 10px;
+}
+.log-dlg-gutter-body {
+  flex: 1;
+  min-width: 0;
+}
+.log-dlg-speaker-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 1px;
+}
+.log-dlg-speaker {
+  font-size: var(--fs-sm);
+  color: var(--npc-name);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.log-dlg-speaker:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.log-dlg-speaker.is-lotus {
+  color: var(--lotus);
+}
+.log-dlg-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+.log-dlg-inline {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+.log-dlg-inline > .npc-ava {
+  margin-top: 5px;
+}
+.log-dlg-inline--lotus {
+  border-left: 2px solid color-mix(in srgb, var(--lotus) 45%, transparent);
+  padding-left: 10px;
+}
+.log-letter-card--with-ava {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.log-letter-card-main {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── 左栏在场/附近人物行与互动菜单头 ── */
+.npc-present-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--hairline);
+}
+.npc-present-row[data-last="true"] {
+  border-bottom: none;
+}
+.npc-present-main {
+  flex: 1;
+  min-width: 0;
+}
+.npc-present-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.npc-present-name {
+  flex: 1;
+  min-width: 0;
+}
+.npc-present-brief {
+  color: var(--text-sub);
+  font-size: var(--fs-xs);
+  margin-left: 6px;
+}
+.npc-present-aff {
+  font-size: var(--fs-xs);
+  flex-shrink: 0;
+  text-align: right;
+  white-space: nowrap;
+}
+.npc-present-aff-label { color: var(--note); }
+.npc-present-aff-num { color: var(--text-dim); margin-left: 4px; }
+.npc-present-unmet {
+  font-size: var(--fs-2xs);
+  color: var(--text-dim);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.npc-present-panel-btn {
+  font-size: var(--fs-2xs);
+  color: var(--text-sub);
+  cursor: pointer;
+  display: inline-block;
+  margin-top: 2px;
+}
+.npc-present-panel-btn:hover { color: var(--text); }
+.npc-compact-row {
+  margin-bottom: 4px;
+  padding-left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.npc-compact-info {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+  cursor: default;
+}
+.npc-compact-info[data-clickable="true"] {
+  cursor: pointer;
+}
+.npc-compact-info[data-clickable="true"]:hover {
+  color: var(--npc-name);
+}
+.npc-compact-brief {
+  color: var(--text-dim);
+  font-size: var(--fs-2xs);
+  margin-left: 6px;
+}
+.npc-absent-item {
+  margin-bottom: 5px;
+}
+.npc-absent-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.npc-absent-name {
+  cursor: pointer;
+  color: var(--text);
+  flex: 1;
+  font-size: var(--fs-xs);
+}
+.npc-absent-name:hover { color: var(--npc-name); }
+.npc-absent-att {
+  font-size: var(--fs-2xs);
+  color: var(--text-dim);
+  padding-left: 28px;
+}
+.npc-menu-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.npc-menu-head-text {
+  flex: 1;
+  min-width: 0;
+}
+.npc-menu-title {
+  color: var(--npc-name);
+  font-size: var(--fs-base);
+  margin-bottom: 3px;
+}
+.npc-menu-brief {
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+}
+
+/* ── 右栏：行囊对齐与旁白头像横排 ── */
+.pack-row {
+  align-items: center;
+}
+.narrator-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.narrator-row-body {
+  flex: 1;
+  min-width: 0;
+}
+

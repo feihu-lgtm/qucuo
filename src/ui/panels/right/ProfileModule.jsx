@@ -5,6 +5,7 @@ import { getCompanionDescForm, setCompanionDescForm } from "../../../domain/rule
 import { bodyProfileFilled } from "../../../domain/rules/character/bodyProfile.js";
 import { OVERLAY, openOverlay } from "../../../store/uiStore.js";
 import { Icon } from "../../primitives/index.js";
+import { npcArtUrl } from "../../art/art.js";
 
 export default function ProfileModule({ char, exp, pot, playerAvatar, companionState, slForm, setSnowLeopardForm, setSlFormState, slImgErr, setSlImgErr, pearlForm, setPearlForm, setPearlFormState, pearlImgErr, setPearlImgErr, inspectItem, inspecting }) {
   const [, setCompFormTick] = useState(0);
@@ -18,6 +19,8 @@ export default function ProfileModule({ char, exp, pot, playerAvatar, companionS
   const compFormKey = comp ? (comp.key === "snowLeopard" ? slForm : comp.key === "pearl" ? pearlForm : null) : null;
   const compImgErr = comp ? (comp.key === "snowLeopard" ? slImgErr : comp.key === "pearl" ? pearlImgErr : true) : true;
   const compSetImgErr = comp ? (comp.key === "snowLeopard" ? setSlImgErr : comp.key === "pearl" ? setPearlImgErr : null) : null;
+  const compFallbackArt = comp ? npcArtUrl(comp.label) : null;
+  const compSrc = comp ? (compForms && !compImgErr ? companionPortraitUrl(comp.key, compFormKey) : compFallbackArt) : null;
   const cycleCompForm = () => {
     if (!comp || !compForms) return;
     const idx = compForms.findIndex(f => f.key === compFormKey);
@@ -58,9 +61,9 @@ export default function ProfileModule({ char, exp, pot, playerAvatar, companionS
             onClick={compForms ? cycleCompForm : undefined}
             title={compForms ? `${comp.label} · 点击切换立绘形态` : comp.label} className="profile-companion-card" data-on={Boolean(compForms)}
           >
-            {compForms && !compImgErr ? (
-              <img src={companionPortraitUrl(comp.key, compFormKey)} alt={comp.label} className="profile-avatar-img"
-                onError={() => compSetImgErr?.(true)} />
+            {compSrc ? (
+              <img src={compSrc} alt={comp.label} className="profile-avatar-img"
+                onError={() => { if (compForms && !compImgErr) compSetImgErr?.(true); }} />
             ) : (
               <span className="profile-avatar-empty">{comp.label}立绘<br/>待投放</span>
             )}

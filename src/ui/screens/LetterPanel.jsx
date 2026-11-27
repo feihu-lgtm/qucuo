@@ -3,6 +3,7 @@ import { Overlay, Header, Btn } from "./buildings/common.jsx";
 import { useGameStore } from "../../store/gameStore.js";
 import { closeOverlay, OVERLAY } from "../../store/uiStore.js";
 import { setInputCapsule } from "../../store/sessionUiStore.js";
+import NpcAvatar from "../components/NpcAvatar.jsx";
 
 // 「信」面板——翻历史来信：列表 → 正文；回信沿用飞鸽路径（输入条进寄信模式）。
 const EMPTY_LETTERS = [];
@@ -36,35 +37,32 @@ export default function LetterPanel({ onClose, inline }) {
               {letters.map((l) => (
                 <div key={l.id}
                   onClick={() => setOpenId(l.id)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 8, cursor: "pointer",
-                    padding: "6px 10px", border: `1px solid ${open?.id === l.id ? "var(--accent-dim)" : "var(--border)"}`,
-                    background: open?.id === l.id ? "var(--bg-panel)" : "transparent",
-                  }}>
-                  <span style={{ color: open?.id === l.id ? "var(--text)" : "var(--text-dim)", fontSize: "var(--fs-sm)", flexShrink: 0 }}>
+                  className="letter-list-row" data-on={Boolean(open?.id === l.id)}>
+                  <NpcAvatar name={l.npcName} size="sm" />
+                  <span className="letter-list-sender" data-on={Boolean(open?.id === l.id)}>
                     ✉ {l.npcName}
                   </span>
-                  {!l.read && <span style={{ color: "var(--accent-dim)", fontSize: "var(--fs-2xs)" }}>未读</span>}
-                  <span style={{
-                    color: "var(--text-dim)", fontSize: "var(--fs-xs)", flex: 1,
-                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                  }}>{l.content}</span>
+                  {!l.read && <span className="letter-list-unread">未读</span>}
+                  <span className="letter-list-preview">{l.content}</span>
                 </div>
               ))}
             </div>
             {open && (
-              <div style={{ padding: "10px 12px", background: "var(--bg-panel)", border: `1px solid var(--border)` }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                  <span style={{ color: "var(--accent-dim)", fontSize: "var(--fs-sm)" }}>「{open.npcName} 来信」</span>
+              <div className="letter-detail-box">
+                <div className="letter-detail-head">
+                  <span className="letter-detail-sender">
+                    <NpcAvatar name={open.npcName} size="md" />
+                    <span>「{open.npcName} 来信」</span>
+                  </span>
                   <Btn
                     label={pigeons > 0 ? "回信" : "回信（缺信鸽）"}
                     disabled={pigeons <= 0}
                     onClick={() => reply(open.npcName)}
                   />
                 </div>
-                <div style={{ color: "var(--text)", fontSize: "var(--fs-md)", lineHeight: 1.8, whiteSpace: "pre-wrap" }}>{open.content}</div>
+                <div className="letter-detail-body">{open.content}</div>
                 {pigeons <= 0 && (
-                  <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", marginTop: 6 }}>没有信鸽可回——来信时鸽子会留下一只，或去驿站买。</div>
+                  <div className="letter-detail-hint">没有信鸽可回——来信时鸽子会留下一只，或去驿站买。</div>
                 )}
               </div>
             )}

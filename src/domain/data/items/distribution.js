@@ -283,7 +283,3 @@ export const ITEM_DISTRIBUTION = {
   "天都护商长刀": { regions: ["市镇"], shopTypes: ["铁铺"] },
   "贡措冰铁矛": { regions: ["山野"], shopTypes: ["铁铺"] },
 };
-
-export function isPoolable(name) {
-  return Object.prototype.hasOwnProperty.call(ITEM_DISTRIBUTION, name);
-}
