@@ -7,7 +7,8 @@ import { parseLocalCommand } from "../../engine/localCommands.js";
 import { shouldThrottleMovement } from "../../features/map/logic.js";
 import { consumeDuelRequest } from "./useDuel.js";
 import { ACTION_KINDS } from "../../domain/rules/intent/actionKinds.js";
-import { classifyError } from "../../utils/apiErrors.js";
+import { presentError } from "../../utils/apiErrors.js";
+import { turnErrorEntry } from "../../domain/rules/log/turnErrors.js";
 import { step as traceStep } from "../../infra/actionTrace.js";
 import { getTurnContext, PHASE, turnMonitor } from "../../infra/turnMonitor.js";
 import { burnSquare, consumeArrival } from "../../domain/rules/map/mapSquares.js";
@@ -27,7 +28,7 @@ import { lookNpcInBackground } from "./npcLookBackfill.js";
 import { companionChatterTick } from "../../features/npc/companionChatter.js";
 import { askStoryteller } from "../../engine/ports/storyteller.js";
 import { stampLogEntries } from "../../domain/rules/log/logTypes.js";
-import { applySquareOps, featureCtx as runtimeCtx, registerRuntime } from "../runtime/gameRuntime.js";
+import { addTurnError, applySquareOps, clearActiveTraceId, featureCtx as runtimeCtx, registerRuntime, setActiveTraceId } from "../runtime/gameRuntime.js";
 import { receiptActionResult } from "../../features/receipts/logic.js";
 import { sessionUiStore, setGambleSession } from "../../store/sessionUiStore.js";
 import { appendDayMaterial } from "./useNotes.js";
@@ -109,6 +110,7 @@ export function useTurn({
       ? parent
       : turnMonitor.start(opts.displayCmd || cmd, { raw: rawCmd, source: opts.forceLayer ? "button" : "command", parentId: parent?.id, passive: loading, commandId: "actRouter" });
     if (parent === _trace) _trace.awaitingSettlement = true;
+    setActiveTraceId(_trace.id);
     const applyLocal = (result, feature) => applyResult(runtimeCtx(), result, { turn: _trace, feature });
     let summary, result;
     try {
@@ -219,17 +221,11 @@ export function useTurn({
     result = await playTurn(turnCtx, cmd, opts);
     if (result.stale) return;
     if (!result.ok) {
-      const e = result.error;
-      const ec = classifyError(e);
-      traceStep(_trace, "状态写回", "fail", `异常回滚：${ec.title}`);
-      addLog([
-        { t: "err", text: `  ${ec.icon} ${ec.title}` },
-        { t: "err", text: `     ${ec.detail}` },
-        { t: "sys", text: `     ▸ ${ec.hint}` },
-        { t: "sys", text: ec.retryable === false
-          ? `     （本轮状态已整体回滚，未留下半提交脏数据；改好设置后再试）`
-          : `     （本轮状态已整体回滚，未留下半提交脏数据；可直接重试）` },
-      ]);
+      // 主栏只落一句话（同因连续失败合并计数）；分类、建议与脱敏后的原文进全流程追踪，
+      // 卷宗按 tid 取出来展开看。状态已整体回滚，这一点由「本轮未计入」交代。
+      const pe = presentError(result.error, { apiKey: apiCfg?.apiKey });
+      traceStep(_trace, "状态写回", "fail", `异常回滚：${pe.title}`, "domain", { errorKind: pe.kind, retryable: pe.retryable, errorDetail: pe.detail, hint: pe.hint });
+      addTurnError(turnErrorEntry(pe));
     }
     consumeDuelRequest(result, { opts, isStale, isTalk, interactMode: effMode, setActiveTarget, setDuelPending, trace: _trace });
     // WO-16F-F2c 交互意向消费：duel/trade 在叙事完成、事务落盘且未 stale 后才接
@@ -306,6 +302,7 @@ export function useTurn({
       throw error;
     } finally {
       await Promise.resolve();
+      clearActiveTraceId(_trace.id);
       if (isStale() && _trace.totalMs == null) turnMonitor.transition(_trace, PHASE.DISCARDED, "收到过期结果");
       else turnMonitor.finish(_trace, summary);
     }

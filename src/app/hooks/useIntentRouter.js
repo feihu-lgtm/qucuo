@@ -142,7 +142,7 @@ export function useIntentRouter(routerRef, {
         `${gate.route} · 置信度 ${(gate.confidence * 100).toFixed(0)}% · ${gate.recognition.actions.map((a) => a.kind).join("→")}`, gate.ms);
       if (gate.route === ROUTES.FALLBACK) return false;
       turnMonitor.activate(_trace);
-      addLog([{ t: "cmd", text: `> ${cmd}` }]);
+      addLog([{ t: "cmd", text: `> ${cmd}`, tid: _trace?.id }]);
       if (gate.route === ROUTES.EXECUTE) {
         execute(cmd, gate.recognition.actions, _trace);
         return true;

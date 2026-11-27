@@ -1,11 +1,11 @@
-import { useEffect, useState, useSyncExternalStore } from "react";
-import { PHASE, formatTurnStatus, turnMonitor } from "../../infra/turnMonitor.js";
+import { useEffect, useState } from "react";
+import { PHASE, formatTurnStatus, useTurnTrace } from "../hooks/useTurnTrace.js";
 import { OVERLAY, openOverlay, useOverlay } from "../../store/uiStore.js";
 import { chromeBtn } from "../../utils/theme.js";
 import { Button } from "../primitives/index.js";
 
 export default function TurnStatusPill({ theme, mobile, docked }) {
-  const snapshot = useSyncExternalStore(turnMonitor.subscribe, turnMonitor.getSnapshot);
+  const snapshot = useTurnTrace();
   const active = useOverlay(OVERLAY.TRACE);
   const [now, setNow] = useState(Date.now);
   const running = snapshot.current && snapshot.current.totalMs == null;

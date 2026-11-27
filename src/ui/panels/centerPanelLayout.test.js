@@ -12,7 +12,9 @@ describe("建筑面板必须独占整条主叙事栏", () => {
   it("叙事正文区带着「建筑展开时让位」的显示条件", () => {
     expect(SRC, "CenterPanel 未计算建筑展开让位条件")
       .toMatch(/hideNarrative\s*=\s*Boolean\(\(activeBuilding \|\| tradingShop\) && !buildingPanelMinimized\)/);
-    expect(SRC, "NarrativeLogFeed 未接上 hidden={hideNarrative}").toContain("hidden={hideNarrative}");
+    // 正文与卷宗两种视图都要给建筑面板让位：hidden 条件里都必须带 hideNarrative。
+    expect(SRC, "NarrativeLogFeed 未接上 hideNarrative").toMatch(/<NarrativeLogFeed[\s\S]{0,80}hidden=\{hideNarrative \|\| centerView === "journal"\}/);
+    expect(SRC, "JuanzongView 未接上 hideNarrative").toMatch(/<JuanzongView hidden=\{hideNarrative \|\| centerView !== "journal"\}/);
     const line = FEED_SRC.split("\n").find(l => l.includes('padding: "20px 32px"') && l.includes('lineHeight: "var(--lh-narrative)"'));
     expect(line, "没找到叙事正文区容器，指纹可能变了，请同步这条守卫").toBeTruthy();
     expect(line, "叙事区没有让位条件——它会和建筑面板平分高度，建筑面板又只剩一半")

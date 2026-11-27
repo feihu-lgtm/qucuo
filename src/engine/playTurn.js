@@ -7,6 +7,7 @@ import { narrateTurn } from "./turn/narrateTurn.js";
 import { finalizeTurn } from "./turn/finalizeTurn.js";
 import { runShadowJudge, resolveShadowJudgeEnabled } from "./act/shadow/shadowJudge.js";
 import { buildPresence } from "./prompt/index.js";
+import { dropRolledBackEntries } from "../domain/rules/log/rollbackLog.js";
 
 export const ROLLBACK_KEYS = [
   "room", "char", "dao", "skills", "inv", "exp", "pot", "flags",
@@ -33,10 +34,12 @@ function captureSnapshot(getGameState) {
     },
     rngState: getRngState(),
     squares: serializeSquares(),
+    // 回合开始时已在主栏的条目（按对象身份记）：回滚时只撤本回合新写的世界变化。
+    logEntries: new Set(Array.isArray(state.log) ? state.log : []),
   };
 }
 
-function restoreSnapshot(snapshot, getGameState, actions) {
+function restoreSnapshot(snapshot, getGameState, actions, tid) {
   for (const key of ROLLBACK_KEYS) {
     if (getGameState()[key] !== snapshot.state[key]) {
       actions[setterForKey(key)](snapshot.state[key]);
@@ -44,6 +47,10 @@ function restoreSnapshot(snapshot, getGameState, actions) {
   }
   setRngState(snapshot.rngState);
   loadSquares(snapshot.squares);
+  // 日志不整体回滚（玩家的行动行、报错、来信要留），只撤本回合写进去的进房、新人物、半截正文等。
+  const log = getGameState().log;
+  const next = dropRolledBackEntries(log, { before: snapshot.logEntries, tid });
+  if (next !== log) actions.setLog?.(next);
 }
 
 // 回合编排器：事务快照 → narrateTurn（前哨判官+主叙事+尾章校对）
@@ -134,7 +141,7 @@ export async function playTurn(ctx, cmd, opts = {}) {
     return finalized;
   } catch (error) {
     if (ctx.isStale?.()) return stale(error);
-    if (snapshot) withTurnContext(trace, () => restoreSnapshot(snapshot, getGameState, gameActions));
+    if (snapshot) withTurnContext(trace, () => restoreSnapshot(snapshot, getGameState, gameActions, trace.id));
     turnMonitor.transition(trace, PHASE.ERROR, String(error));
     return { ok: false, error };
   }

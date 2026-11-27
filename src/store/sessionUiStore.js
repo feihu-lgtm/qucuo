@@ -61,6 +61,8 @@ export const sessionUiStore = createStore(() => ({
   portraitTarget: null,
   // 面板本地态（PR-2D）：无 ref 耦合的纯 UI 折叠/视图开关
   collapsedGroups: new Set(),
+  // 江湖栏视图：story=正文（读故事），journal=卷宗（一行一事地查账、查错、看机器明细）
+  centerView: "story",
   mapBig: false,
   mapView: "outer",
   // 不在此地默认收起：曾遇人物会越攒越多，把在场的人挤出视野
@@ -131,6 +133,7 @@ export const setActiveItemMenu = fieldSetter("activeItemMenu");
 export const setCharacterPageTarget = fieldSetter("characterPageTarget");
 export const setPortraitTarget = fieldSetter("portraitTarget");
 export const setCollapsedGroups = fieldSetter("collapsedGroups");
+export const setCenterView = fieldSetter("centerView");
 export const setMapBig = fieldSetter("mapBig");
 export const setMapView = fieldSetter("mapView");
 export const setPeoplePanel = fieldSetter("peoplePanel");

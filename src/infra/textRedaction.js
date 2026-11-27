@@ -7,7 +7,9 @@ const CREDENTIAL_PATTERNS = [
   /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)/g,
   /(?:\\*["'])?\b(?:private_key|refresh_token|client_secret)\b(?:\\*["'])?(?:\s*[:=]\s*(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\\+"[^"\s,}&]*"|[^\s,}&"']+))?/gi,
   /\bBearer\s+[A-Za-z0-9._~+/-]+=*/gi,
-  /\b(?:ya29\.[A-Za-z0-9._-]+|sk-[A-Za-z0-9_-]+|1\/\/0[A-Za-z0-9_-]{20,})/g,
+  /\b(?:ya29\.[A-Za-z0-9._-]+|sk-[A-Za-z0-9._*-]*|1\/\/0[A-Za-z0-9_-]{20,})/g,
+  // 上游报错里的密钥别名与截断残片：「Key=qucuo-admin (sk-...)」「x-api-key: …」
+  /\b(?:x-api-key|(?:api[_-]?)?key(?:[_-]?(?:alias|name|id))?)\s*[:=]\s*[^\s,;"')]+/gi,
 ];
 
 export function scrubCredentialPatterns(text, onMatch) {
@@ -43,7 +45,7 @@ export function collectConfigValues(config) {
 export function scrubString(value, configuredValues = []) {
   if (typeof value !== "string") return value;
   let result = value
-    .replace(/sk-[A-Za-z0-9]{16,}/g, "[REDACTED]")
+    .replace(/\bsk-[A-Za-z0-9._*-]*/g, "[REDACTED]")
     .replace(/Bearer\s+\S+/gi, "[REDACTED]");
   for (const secret of configuredValues) {
     if (secret) result = result.split(secret).join("[REDACTED]");

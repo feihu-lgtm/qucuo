@@ -7,6 +7,7 @@ import { createWebAi } from "../../engine/ports/ai.js";
 import { withAI } from "../../engine/ports/withAI.js";
 import { gameActions, gameStore } from "../../store/gameStore.js";
 import "../calls/hookCalls.js";
+import { presentError } from "../../utils/apiErrors.js";
 
 const webAi = createWebAi();
 
@@ -79,7 +80,7 @@ export function useAiInspect({
         jotNote({ text: `端详了${kindLabel}「${name}」，看清了它的来历门道。`, owner: [], source: NOTE_SOURCE.NARRATIVE });
       }
     } catch (e) {
-      addLog([{ t: "err", text: `  [错误] ${e.message}` }]);
+      addLog([{ t: "err", kind: presentError(e).kind, text: `  ${presentError(e).line}，这次端详没有成功。` }]);
       turnMonitor.transition(turn, PHASE.ERROR, String(e));
     }
     endTrace(turn);

@@ -3,10 +3,28 @@
 import { gameActions, gameStore } from "../../store/gameStore.js";
 import { burnSquare, consumeArrival } from "../../domain/rules/map/mapSquares.js";
 import { stampLogEntries } from "../../domain/rules/log/logTypes.js";
+import { appendTurnError } from "../../domain/rules/log/turnErrors.js";
+
+// 当前回合的追踪编号（turnMonitor 的 turn id）。useTurn / 行动识别在回合开始时登记，
+// addLog 给这段时间写进主栏的条目都盖上 tid，卷宗据此把主栏条目和全流程追踪拼成同一回合。
+let activeTraceId = null;
+export const setActiveTraceId = (id) => { activeTraceId = id || null; };
+export const clearActiveTraceId = (id) => { if (!id || activeTraceId === id) activeTraceId = null; };
+const withTraceId = (lines) => (activeTraceId && Array.isArray(lines)
+  ? lines.map((line) => (line && typeof line === "object" && line.tid == null ? { ...line, tid: activeTraceId } : line))
+  : lines);
 
 export const addLog = (lines) => {
   const time = gameStore.getState().time;
-  return gameActions.setLog((prev) => [...(prev || []), ...stampLogEntries(lines, time)]);
+  const list = Array.isArray(lines) ? lines : (lines ? [lines] : []);
+  return gameActions.setLog((prev) => [...(prev || []), ...stampLogEntries(withTraceId(list), time)]);
+};
+
+// 回合失败：主栏只落一句话，同因连续失败合并成一条并计数（规则见 turnErrors.js）。
+export const addTurnError = (entry) => {
+  const time = gameStore.getState().time;
+  const [stamped] = stampLogEntries(withTraceId([entry]), time);
+  return gameActions.setLog((prev) => appendTurnError(prev || [], stamped));
 };
 
 export const applySquareOps = (ops) => {
@@ -25,6 +43,7 @@ export const resetRuntime = () => { for (const k of Object.keys(registered)) del
 // 注册值（act/jotNote/后台任务，或测试注入的替身）覆盖默认实现。
 export const featureCtx = () => ({
   addLog,
+  addTurnError,
   applySquareOps,
   gameActions,
   setVarTree: gameActions.setVarTree,

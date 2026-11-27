@@ -5,6 +5,7 @@ import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
 import { createWebAi } from "../../engine/ports/ai.js";
 import { withAI } from "../../engine/ports/withAI.js";
 import "../calls/hookCalls.js";
+import { presentError } from "../../utils/apiErrors.js";
 
 const webAi = createWebAi();
 
@@ -29,7 +30,7 @@ export function useCraftingAI({
       }
       return t;
     } catch (e) {
-      addLog([{ t: "err", text: `  [错误] 相石失败：${e.message}` }]);
+      addLog([{ t: "err", kind: presentError(e).kind, text: `  ${presentError(e).line}，相石没有成功。` }]);
       return "";
     }
   }, [apiCfg, addLog, jotNote]);
@@ -38,7 +39,7 @@ export function useCraftingAI({
     try {
       return await forgeDesign({ material, category, requirement }, apiCfg);
     } catch (e) {
-      addLog([{ t: "err", text: `  [错误] 铁匠铺设计失败：${e.message || e}` }]);
+      addLog([{ t: "err", kind: presentError(e).kind, text: `  ${presentError(e).line}，铁匠这回没出成样式。` }]);
       return { ok: false, candidates: [] };
     }
   }, [apiCfg, addLog]);
@@ -47,7 +48,7 @@ export function useCraftingAI({
     try {
       return await forgeDesign({ material, category, requirement, craft: { shop: "金玉行", maker: "玉匠", wares: "玉器饰物护身之物" } }, apiCfg);
     } catch (e) {
-      addLog([{ t: "err", text: `  [错误] 金玉行设计失败：${e.message || e}` }]);
+      addLog([{ t: "err", kind: presentError(e).kind, text: `  ${presentError(e).line}，玉匠这回没出成样式。` }]);
       return { ok: false, candidates: [] };
     }
   }, [apiCfg, addLog]);

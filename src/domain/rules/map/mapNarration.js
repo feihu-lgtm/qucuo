@@ -34,12 +34,14 @@ export function describeInnerArrival(districtName, fromRoom, toRoom, dir, { flag
   // 远处：本据点在外层大地图上通往乡境其他据点的出口。
   const outerStr = formatExits(QUCUO_MAP[districtName]?.exits);
 
+  // mapNote 标出每行的角色，主栏据此去重：同一间房的固定描写、同一据点的「远处」
+  // 再次进房时不重印（规则在 ui/panels/center/feedModel.js 的 createMapNoteFilter）。
   const lines = [];
   if (fromRoom) {
-    lines.push({ t: "desc", text: `  你自「${fromRoom}」向${DIRS[dir] || dir}，来到此处。` });
+    lines.push({ t: "desc", text: `  你自「${fromRoom}」向${DIRS[dir] || dir}，来到此处。`, mapNote: "arrive" });
   }
-  lines.push({ t: "desc", text: `  ${dest?.desc || ""}` });
-  if (innerStr) lines.push({ t: "sys", text: `  四周：${innerStr}` });
-  if (outerStr) lines.push({ t: "sys", text: `  远处：${outerStr}` });
+  lines.push({ t: "desc", text: `  ${dest?.desc || ""}`, mapNote: "roomDesc" });
+  if (innerStr) lines.push({ t: "sys", text: `  四周：${innerStr}`, mapNote: "near" });
+  if (outerStr) lines.push({ t: "sys", text: `  远处：${outerStr}`, mapNote: "far" });
   return lines;
 }

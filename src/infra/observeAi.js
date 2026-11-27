@@ -1,5 +1,6 @@
 import { turnMonitor } from "./turnMonitor.js";
 import { getApiModel } from "./apiModel.js";
+import { scrubCredentialPatterns } from "./textRedaction.js";
 
 export const observed = Symbol("observed-ai");
 
@@ -50,7 +51,7 @@ export async function observeAi(messages, opts, request) {
     call.end({ success: true, response: result.text, finishReason: result.finishReason, usage, cachedTokens });
     return result;
   } catch (error) {
-    call.end({ success: false, error: error.message || String(error) });
+    call.end({ success: false, error: scrubCredentialPatterns(String(error?.message || error)), httpStatus: error?.httpStatus });
     throw error;
   }
 }

@@ -1,6 +1,7 @@
 // 日志条目类型清单 LOG_T 在 domain/data/log/logTypes.js（各层都能读）；这里只留由它派生的
 // 集合与盖时间戳的规则。
 import { LOG_T } from "../../data/log/logTypes.js";
+import { redactSecrets } from "../../../utils/apiErrors.js";
 
 export const LOG_TYPES = new Set(Object.values(LOG_T));
 
@@ -22,4 +23,19 @@ export function stampLogEntries(entries, gameTime, realTs = Date.now()) {
     if (realTs != null && next.realTs == null) next.realTs = realTs;
     return next;
   });
+}
+
+// 读档清洗：旧版本会把上游报错原文（可能带密钥别名或残片）写进主栏日志并存进存档。
+// 读档时把每条日志文字过一遍脱敏，之后自动存档写回去的就是干净的了。没有可疑内容的条目原样返回。
+export function scrubLogEntries(log) {
+  if (!Array.isArray(log)) return log;
+  let changed = false;
+  const next = log.map((entry) => {
+    if (!entry || typeof entry !== "object" || typeof entry.text !== "string") return entry;
+    const text = redactSecrets(entry.text);
+    if (text === entry.text) return entry;
+    changed = true;
+    return { ...entry, text };
+  });
+  return changed ? next : log;
 }

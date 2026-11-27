@@ -25,6 +25,7 @@ import { isAtQuestPlace } from "../../domain/rules/quests/questPlace.js";
 import { stampLogEntries } from "../../domain/rules/log/logTypes.js";
 import { gameStore } from "../../store/gameStore.js";
 import { isMobileViewport } from "../../utils/viewport.js";
+import { redactSecrets } from "../../utils/apiErrors.js";
 
 const AVATAR_GENDER_DEFAULT = "__gender_default__";
 
@@ -234,7 +235,7 @@ export function usePresetImport({ loadPreset, setPresets, setLog }) {
           const np = { ...DEFAULT_PRESETS[0], ...p, id: p.id || Date.now().toString() };
           setPresets(ps => [...ps.filter(x => x.id !== np.id), np]);
           loadPreset(np);
-        } catch (err) { setLog(l => [...l, ...stampLogEntries([{ t: "err", text: `  导入失败：${err.message}` }], gameStore.getState().time)]); }
+        } catch (err) { setLog(l => [...l, ...stampLogEntries([{ t: "err", text: `  导入失败：${redactSecrets(err.message)}` }], gameStore.getState().time)]); }
       };
       r.readAsText(f);
     };
