@@ -14,7 +14,7 @@ const BigMapModal = lazy(() => import("./components/BigMapModal.jsx"));
 export default function GameLayout({ layout }) {
   const {
     overlayHost, addLog, jotNote, activeBuffs, setVarTree,
-    setSnowLeopardForm, setPearlForm, trainCost,
+    trainCost,
     ui, autosave, derived, turn, handlers,
   } = layout;
   const { playerActionHandlers, progressionHandlers, aiInspect } = handlers;
@@ -177,8 +177,6 @@ export default function GameLayout({ layout }) {
           playerAvatar={ui.playerAvatar}
           companionState={companionState} onSwitchCompanion={playerActionHandlers.handleSwitchCompanion}
           onStationCompanion={handlers.screenHandlers.handleStationCompanion}
-          slForm={ui.slForm} setSnowLeopardForm={setSnowLeopardForm} setSlFormState={ui.setSlFormState} slImgErr={ui.slImgErr} setSlImgErr={ui.setSlImgErr}
-          pearlForm={ui.pearlForm} setPearlForm={setPearlForm} setPearlFormState={ui.setPearlFormState} pearlImgErr={ui.pearlImgErr} setPearlImgErr={ui.setPearlImgErr}
           trainNeigong={progressionHandlers.trainNeigong} trainWaigong={progressionHandlers.trainWaigong} trainCost={trainCost}
           effectiveSpecialNow={turn.effectiveSpecialNow} activeBuffs={activeBuffs}
           varTree={varTree}

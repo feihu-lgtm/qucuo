@@ -3,7 +3,6 @@ import { NNPC_STAGE } from "../domain/rules/narrator/narrator.js";
 import { narratorVars } from "../domain/rules/prompt/mvu.js";
 import { SECT_ENTRY } from "../domain/rules/character/sectEntry.js";
 import { SEA_OF_MIND, canEnterSea } from "../domain/rules/narrator/seaOfMind.js";
-import { setPearlForm, setSnowLeopardForm } from "../domain/rules/companion/portraits.js";
 import { getRngState } from "../utils/rng.js";
 import { CURRENT_VERSION } from "../utils/version.js";
 
@@ -87,8 +86,6 @@ export function buildLayoutCtx({ ui, game, overlayHost, autosave, actions, activ
     jotNote,
     activeBuffs,
     setVarTree: game.setVarTree,
-    setSnowLeopardForm,
-    setPearlForm,
     trainCost,
     ui,
     autosave: {
