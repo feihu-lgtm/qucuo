@@ -7,3 +7,5 @@ export { default as Tabs } from "./Tabs.jsx";
 export { default as List } from "./List.jsx";
 export { default as Badge } from "./Badge.jsx";
 export { default as ModalShell } from "./ModalShell.jsx";
+export { default as Icon } from "./Icon.jsx";
+export { ICONS, ICON_GROUPS, ICON_TONE, iconSvg } from "./iconPaths.js";

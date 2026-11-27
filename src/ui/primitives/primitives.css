@@ -195,3 +195,10 @@
   background: rgba(255, 255, 255, 0.04);
   color: var(--accent);
 }
+
+/* 线描图标原语（夜色精修）：默认跟随文字色，只有 data-tone 的几枚带语义色。 */
+.ui-icon { display: inline-block; flex-shrink: 0; vertical-align: -0.2em; }
+.ui-icon[data-tone="accent"] { color: var(--accent); }
+.ui-icon[data-tone="good"] { color: var(--good); }
+.ui-icon[data-tone="danger"] { color: var(--red-soft); }
+.ui-icon[data-tone="gold"] { color: var(--gold); }
