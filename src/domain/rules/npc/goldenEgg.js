@@ -105,10 +105,25 @@ export const EGG_CATALOG_PICKS = GOLDEN_EGG_POOL
   .filter((e) => e.kind === "item" && !e.blush && e.itemName !== INTIMATE_TICKET_NAME)
   .map((e) => e.itemName);
 
-export function eggPrizePrompt({ quality, picks = EGG_CATALOG_PICKS }) {
+// 用户钦定：情趣物（假阳具）与卡券（女眷一次卡·不可拒绝）在 AI 开奖里各占约 7.5%。
+// AI 无法精确控概率，概率约束落系统侧：开奖前先掷这一把——命中就强制本次必开该件
+// （写进 prompt 让 AI 照抄名字并对 reaction 做羞态/稀罕定向），AI 只填描述与朵朵反应；
+// 未命中走 AI 自由开奖（两件不在自由名单内，概率保持精确）。兜底奖池（无 API）维持原权重不动。
+export const EGG_SPECIAL_FAKE = "假阳具";
+export const EGG_SPECIAL_RATE = 0.075;
+export function rollEggSpecial(rng = Math.random) {
+  const roll = rng();
+  if (roll < EGG_SPECIAL_RATE) return EGG_SPECIAL_FAKE;
+  if (roll < EGG_SPECIAL_RATE * 2) return INTIMATE_TICKET_NAME;
+  return null;
+}
+
+export function eggPrizePrompt({ quality, picks = EGG_CATALOG_PICKS, forced = null } = {}) {
+  const forcedBlock = forced ? `系统已定：这颗蛋里必开「${forced}」——name 必须一字不差照抄这个名字，category 按物件本身归类，desc 照写它的模样来历。${forced === EGG_SPECIAL_FAKE ? "这是件不正经的玩意儿：朵朵看清是什么的瞬间羞到跳脚、此地无银地嚷嚷这不是她的，reaction 就写她的羞态。" : "这是稀罕卡券：朵朵肉疼失态，mood 写 jackpot，reaction 写她又心疼又不好意思反悔。"}
+` : "";
   const user = `今日金鸟落在元朵朵肩头，下了一颗金蛋，玩家当场就要开。
 系统掷定的品阶：${quality}（白、绿、蓝、紫、橙、红，由低到高）。
-现成物件（可挑可不挑）：${picks.join("、") || "无"}
+${forcedBlock}现成物件（可挑可不挑）：${picks.join("、") || "无"}
 
 只输出 JSON：
 {"name":"物件名，不超过八个字","category":"weapon|armor|accessory|misc 四选一（兵器/护身之物/随身饰物/其余杂物）","desc":"一两句说书人描述，讲它的模样或来历","mood":"jackpot|small","reaction":"朵朵当场的反应，不超过六十字"}`;

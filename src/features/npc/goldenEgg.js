@@ -110,6 +110,25 @@ export function settlePoolEggPrize(state, { rng = Math.random } = {}) {
   return { prize, tier, logs, changes };
 }
 
+
+// 用户定案：开奖不走回合叙事，结果必须系统侧落账留痕——银两/物品由 changes 硬落账；
+// 记忆链走 features/run 的 result.fact 通道（与切磋同一 registerFact 路径）：
+// 朵朵在场目击必然知情，开出情趣物/卡券这类有后效的物件，她日后对话/判官上下文该能提起。
+export function eggFact(state, label) {
+  return {
+    id: `goldenegg_d${eggGameDay(state?.time)}`,
+    摘要: `主角开元朵朵的金鸟金蛋，开出「${label}」`,
+    标签: "金蛋",
+    知晓者: [
+      { name: DUODUO_NAME, 途径: "目击" },
+      ...(state?.room?.npcs || [])
+        .filter((entry) => entry?.name && entry.name !== DUODUO_NAME)
+        .map((entry) => ({ name: entry.name, 途径: "目击" })),
+    ],
+    currentTurn: state?.time ?? 0,
+  };
+}
+
 /**
  * 一步开完（无 API 路径）：openGoldenEgg + 奖池结算。
  * @returns {{claimed?:true, prize?:object, tier?:string, logs:Array, changes?:object}}

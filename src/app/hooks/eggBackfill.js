@@ -5,8 +5,8 @@
 // 存档纪元一变（读档/回滚）就整段作废，不往别的存档里塞东西。
 import { gameStore, getGameEpoch, isGameEpochStale } from "../../store/gameStore.js";
 import { sessionUiStore } from "../../store/sessionUiStore.js";
-import { eggFallbackLine, parseEggPrize } from "../../domain/rules/npc/goldenEgg.js";
-import { settleAiEggPrize, settlePoolEggPrize } from "../../features/npc/goldenEgg.js";
+import { eggFallbackLine, parseEggPrize, rollEggSpecial, EGG_SPECIAL_FAKE } from "../../domain/rules/npc/goldenEgg.js";
+import { eggFact, settleAiEggPrize, settlePoolEggPrize } from "../../features/npc/goldenEgg.js";
 import { createWebAi } from "../../engine/ports/ai.js";
 import { withAI } from "../../engine/ports/withAI.js";
 import { hasApiKey } from "../../engine/ports/storyteller.js";
@@ -16,8 +16,15 @@ const webAi = createWebAi();
 
 // 兜底：奖池开奖 + 手写反应句，两段一起落。
 export function settleEggFromPool({ apply, getState = () => gameStore.getState(), rng = Math.random }) {
-  const pool = settlePoolEggPrize(getState(), { rng });
-  apply({ ...pool, logs: [...pool.logs, { t: "sys", text: `  ${eggFallbackLine(pool.tier, rng)}` }] });
+  const state = getState();
+  const pool = settlePoolEggPrize(state, { rng });
+  const label = pool.prize?.kind === "empty" ? "空蛋" : pool.prize?.label || "彩头";
+  const summaryLabel = pool.prize?.kind === "empty" ? "空蛋" : label;
+  apply({
+    ...pool,
+    fact: eggFact(state, summaryLabel),
+    logs: [...pool.logs, { t: "sys", text: `  ${eggFallbackLine(pool.tier, rng)}` }],
+  });
   return pool;
 }
 
@@ -33,18 +40,34 @@ export async function runEggPrize(quality, {
   const epoch = getGameEpoch();
   const stale = () => Boolean(isStale?.()) || isGameEpochStale(epoch);
   if (stale()) return null;
+  // 用户钦定：情趣物/卡券各约 7.5%——概率约束落系统侧（AI 控不了精确概率）。
+  // 先掷这一把：命中则本次必开该件（prompt 明写照抄+reaction 定向，回包名字系统强校），
+  // 未命中走 AI 自由开奖；兜底奖池维持原样不受影响。
+  const forced = rollEggSpecial(rng);
   if (!canAsk()) return settleEggFromPool({ apply, getState, rng });
   let prize = null;
   try {
-    const res = await withAI("goldenEgg.prize", { quality }, { ai, apiCfg: getApiCfg(), isStale: stale, throwOnError: false });
+    const res = await withAI("goldenEgg.prize", { quality, forced }, { ai, apiCfg: getApiCfg(), isStale: stale, throwOnError: false });
     if (stale()) return null;
     prize = res?.ok ? parseEggPrize(res.data) : null;
   } catch {
     prize = null;
   }
   if (stale()) return null;
+  if (prize && forced) prize = { ...prize, name: forced }; // 系统强校：必开件名字一字不差，makeItemSmart 按物件志实例化
+  if (!prize && forced) {
+    // AI 失败但系统已掷定必开件：不退回奖池（会丢掉这 7.5%），按手写兜底句落该件。
+    prize = {
+      name: forced,
+      category: "misc",
+      desc: "",
+      mood: forced === EGG_SPECIAL_FAKE ? "small" : "jackpot",
+      reaction: eggFallbackLine(forced === EGG_SPECIAL_FAKE ? "blush" : "jackpot", rng),
+    };
+  }
   if (!prize) return settleEggFromPool({ apply, getState, rng });
   const settled = settleAiEggPrize(prize, quality);
-  apply(settled);
-  return settled;
+  const withFact = { ...settled, fact: eggFact(getState(), prize.name) };
+  apply(withFact);
+  return withFact;
 }
