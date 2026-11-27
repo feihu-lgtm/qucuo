@@ -217,6 +217,15 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
             onClick={() => turn.onKey.submit?.()}
             aria-label={capsule?.kind === "pigeon" ? "放飞信鸽" : "发送"}
           >{capsule?.kind === "pigeon" ? "放飞" : "发送"}</button>
+        <button
+          type="button"
+          className="game-meditate-button mobile-touch-target"
+          data-testid="footer-meditate"
+          disabled={loading}
+          onClick={() => handlers.progressionHandlers?.meditate?.()}
+          title="打坐运功：消耗1回合，恢复部分气血"
+          aria-label="打坐运功"
+        >⊙ 打坐</button>
         </div>
       </div>
     </>

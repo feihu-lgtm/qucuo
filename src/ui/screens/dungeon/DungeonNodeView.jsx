@@ -3,6 +3,7 @@ import React from "react";
 import { DUNGEON_NODE_TYPE } from "../../../domain/data/dungeon/catalog.js";
 import { calcDungeonCheckRate, computeSettledLoot } from "../../../domain/rules/dungeon/engine.js";
 import { Button } from "../../primitives/index.js";
+import NpcAvatar from "../../components/NpcAvatar.jsx";
 
 const NODE_BADGE = {
   [DUNGEON_NODE_TYPE.TRAP]: "机关",
@@ -20,9 +21,11 @@ function renderNodeTitle(node) {
   const prefix = node.title.split("·")[0]?.trim() || "江湖奇遇";
   const cls = `adventurer-rainbow adventurer-rainbow--${adv.rainbowStyle || "prism"}`;
   return (
-    <span>
+    <span className="dungeon-node-title-row">
+      {/* 冒险者立绘落像：npcArtUrl 按名查登记表，缺图降级单字印章——与人物卡同口径 */}
+      <NpcAvatar name={adv.name} size="sm" />
       {prefix} · <span className={cls}>{adv.name}</span>
-      <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginLeft: 6 }}>
+      <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginLeft: 2 }}>
         {adv.title} · {adv.archetypeLabel}
       </span>
     </span>

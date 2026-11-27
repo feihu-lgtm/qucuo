@@ -40,8 +40,11 @@ export function collectDeferredIntents(actions = [], { npcs = [], isTalk = false
 // 意向回执文案（判官铁律块注入用）——措辞必须是「系统已受理的交互意向」：
 // duel 只许写抱拳邀战/摆开架势，不得写已开打或胜负；
 // trade 只许写开口问价/请对方拿货来看，不得写已成交。
-export function deferredIntentReceipt(intent) {
+export function deferredIntentReceipt(intent, { angry = false } = {}) {
   if (intent.kind === "duel") {
+    if (angry) {
+      return `你向${intent.target}挑衅邀战——对方正在气头上，系统已受理交互意向，正文只写挑衅激怒、对方怒然起身打将过来的架势，不得写已分胜负或对方心平气和地应下。`;
+    }
     return `你向${intent.target}抱拳邀战——系统已受理交互意向，正文只写邀战与架势，不得写已开打或胜负。`;
   }
   return `你向${intent.target}开口问价——系统已受理交互意向，正文只写问价与看货，不得写已成交。`;

@@ -5,7 +5,7 @@ bindTurnRuntime({ getTurnContext, PHASE, turnMonitor, withTurnContext });
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createTurnStaleCheck } from "./useUndo.js";
-import { consumeDuelRequest, narrateDuelInBackground, openDuelAfterNarration, useDuel } from "./useDuel.js";
+import { consumeDuelRequest, duelInviteLine, narrateDuelInBackground, openDuelAfterNarration, useDuel } from "./useDuel.js";
 import { GAME_KEYS, gameActions, gameStore, initGameStore } from "../../store/gameStore.js";
 import { registerRuntime, resetRuntime } from "../runtime/gameRuntime.js";
 
@@ -312,5 +312,23 @@ describe("端详门槛", () => {
     } finally {
       restoreStore();
     }
+  });
+});
+
+describe("气头上邀战文案", () => {
+  it("pissed 时挑衅开打方向（不写心平气和点头应下），非 pissed 原文案不变", () => {
+    const npc = { name: "师父" };
+    expect(duelInviteLine(npc, { angry: true })).toContain("打将过来");
+    expect(duelInviteLine(npc, { angry: true })).not.toContain("点头应下");
+    expect(duelInviteLine(npc)).toContain("点头应下");
+  });
+
+  it("openDuelAfterNarration 按怒气状态分流文案", async () => {
+    const lines = [];
+    const addLog = (entries) => lines.push(...entries.map((e) => e.text));
+    initGameStore({ flags: [], inv: [], questProgress: {}, room: { name: "曲措乡", npcs: [] }, char: { name: "行旅" },
+      varTree: { 角色: { 师父: { 生气状态: { active: true, turnsLeft: 2, reason: "偷窃被察觉" } } }, 世界: {} } });
+    await openDuelAfterNarration({ addLog, setDuelPending: vi.fn(), isStale: () => false }, { name: "师父" });
+    expect(lines[0]).toContain("打将过来");
   });
 });
