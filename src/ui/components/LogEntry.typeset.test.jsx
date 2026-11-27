@@ -90,3 +90,15 @@ describe("包袱与装备的放大入口可用键盘", () => {
     expect(html).toMatch(/<button type="button" class="pack-row-art"/);
   });
 });
+
+describe("打坐按钮", () => {
+  it("生成中置灰且不挂点击，闲时可点", async () => {
+    const { TurnControls } = await import("../panels/TopBar.jsx");
+    const props = { theme: {}, stopRunning: () => {}, rollbackBlocked: false, rollbackOneStep: () => {}, onMeditate: () => {} };
+    const busy = renderToStaticMarkup(createElement(TurnControls, { ...props, loading: true }));
+    expect(busy).toMatch(/aria-disabled="true"[^>]*aria-label="打坐"|aria-label="打坐"[^>]*aria-disabled="true"/);
+    const idle = renderToStaticMarkup(createElement(TurnControls, { ...props, loading: false }));
+    expect(idle).toContain('aria-label="打坐"');
+    expect(idle).not.toMatch(/aria-disabled="true"[^>]*aria-label="打坐"/);
+  });
+});

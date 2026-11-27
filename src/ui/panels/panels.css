@@ -1674,10 +1674,23 @@
   justify-content: space-between;
   padding: 0 18px;
 }
+/* 窄桌面窗口下工具行放不下时横向滑动，最右的按钮不会被中栏裁掉。 */
 .center-header-tools {
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.center-header-tools::-webkit-scrollbar {
+  display: none;
+}
+.center-header-tools > * {
+  flex-shrink: 0;
+}
+.center-view-head {
+  flex-shrink: 0;
 }
 .center-tool-sep {
   width: 1px;

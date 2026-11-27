@@ -149,7 +149,7 @@ export default function GameLayout({ layout }) {
         autoSaveError={autosave.autoSaveError} lastAutoSave={autosave.lastAutoSave}
         playerAvatarCustom={ui.playerAvatarCustom} setPlayerAvatarCustom={ui.setPlayerAvatarCustom}
         AV_BASE={ui.AV_BASE} genderAvatar={ui.genderAvatar}
-        turnControls={{ loading, stopRunning: turn.stopRunning, rollbackBlocked: turn.rollbackBlocked, rollbackOneStep: turn.rollbackOneStep }}
+        turnControls={{ loading, stopRunning: turn.stopRunning, rollbackBlocked: turn.rollbackBlocked, rollbackOneStep: turn.rollbackOneStep, onMeditate: progressionHandlers?.meditate }}
         addLog={addLog}
       />
 

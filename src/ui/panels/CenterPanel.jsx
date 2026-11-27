@@ -132,7 +132,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
             </span>
           )}
           {centerView !== "journal" && !hideNarrative && <span className="center-tool-sep" aria-hidden="true" />}
-          <TurnControls theme={THEME_VARS} loading={loading} stopRunning={turn.stopRunning} rollbackBlocked={turn.rollbackBlocked} rollbackOneStep={turn.rollbackOneStep} />
+          <TurnControls theme={THEME_VARS} loading={loading} stopRunning={turn.stopRunning} rollbackBlocked={turn.rollbackBlocked} rollbackOneStep={turn.rollbackOneStep} onMeditate={handlers.progressionHandlers?.meditate} />
           <span className="center-tool-sep" aria-hidden="true" />
           <DevControls theme={THEME_VARS} addLog={addLog} />
         </span>

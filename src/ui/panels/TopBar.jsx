@@ -47,9 +47,22 @@ function ShichenRing({ time }) {
 }
 
 // 回合控制（停止/回滚）：桌面在中栏标题行，手机并入顶栏同一行；一律图标，文字进悬停提示
-export function TurnControls({ theme, loading, stopRunning, rollbackBlocked, rollbackOneStep }) {
+export function TurnControls({ theme, loading, stopRunning, rollbackBlocked, rollbackOneStep, onMeditate }) {
   return (
     <span className="mobile-center-toolbar-controls topbar-turn-controls">
+      {onMeditate && (
+        // 生成中不收打坐：排进队列的回调会带着旧的 loading 回放、什么也不做，所以这时直接置灰。
+        <Button
+          variant="chrome"
+          onClick={loading ? undefined : onMeditate}
+          className={`mobile-touch-target topbar-icon-btn${loading ? " topbar-btn-disabled" : ""}`}
+          aria-disabled={loading}
+          aria-label="打坐"
+          title={loading ? "本回合生成中，结束后才能打坐" : "打坐运功：消耗 1 回合，恢复部分气血（也可输入「打坐」）"}
+        >
+          <Icon name="打坐" size={15} />
+        </Button>
+      )}
       {loading && (
         <Button variant="chrome" onClick={stopRunning} className="mobile-touch-target topbar-icon-btn" aria-label="停止" title="停止本回合生成">
           <Icon name="停止" size={15} />
