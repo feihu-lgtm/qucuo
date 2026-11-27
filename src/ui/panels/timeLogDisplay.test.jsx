@@ -110,4 +110,34 @@ describe("局内时间合并与叙事日志回合显示", () => {
     expect(html).toContain("log-letter-card");
     expect(html).toContain("✉ 元朵朵 来信");
   });
+
+  it("细看立绘只包住细看那一回合，同组后续回合回到版心左边界", () => {
+    mockState.log = [
+      { t: "cmd", text: "> 看 珍珠", turn: 6, day: 1 },
+      { t: "desc", text: "  珍珠 村口通体雪白的小白马", turn: 6, day: 1 },
+      { t: "sys", text: "  装束 珍珠的缰绳", turn: 6, day: 1 },
+      { t: "sys", text: "  你向珍珠抱拳邀战，珍珠点头应下。", turn: 7, day: 1 },
+    ];
+    const html = renderToStaticMarkup(createElement(NarrativeLogFeed, {
+      hidden: false,
+      clr: { sys: "var(--text)", cmd: "var(--accent)", desc: "var(--text)" },
+      isDayMode: false, act: () => {}, collapsedGroups: new Set(), setCollapsedGroups: () => {},
+      loading: false, queueCount: 0, pendingTalks: 0, inspecting: null, logEnd: { current: null },
+    }));
+    // 取出 narrative-look-body 这一个 div 的完整内容（按 div 配对找闭合处）。
+    const start = html.indexOf('<div class="narrative-look-body">');
+    expect(start).toBeGreaterThan(-1);
+    let depth = 0;
+    let end = start;
+    const tag = /<div\b|<\/div>/g;
+    tag.lastIndex = start;
+    for (let m = tag.exec(html); m; m = tag.exec(html)) {
+      depth += m[0] === "</div>" ? -1 : 1;
+      if (depth === 0) { end = m.index; break; }
+    }
+    const lookBody = html.slice(start, end);
+    expect(lookBody).toContain("装束 珍珠的缰绳");
+    expect(lookBody).not.toContain("抱拳");
+    expect(html).toContain("抱拳");
+  });
 });

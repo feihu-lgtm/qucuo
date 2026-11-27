@@ -34,9 +34,9 @@ export default function BigMapModal({  act, autoTravelTo,
       showClose={false}
       ariaLabel="大地图"
       panelStyle={{
-        // 夜色精修：撤掉卷轴贴图。外层视图有舆图底卷（M01）就铺在节点底下，没有就是纯夜色底，节点与连线由代码画。
+        // 夜色精修：撤掉卷轴贴图。外层视图有舆图底卷（M01）就整张铺在节点底下（contain，不裁边），没有就是纯夜色底，节点与连线由代码画。
         background: view === "outer" && mapArtUrl()
-          ? `var(--bg) url("${mapArtUrl()}") center/cover no-repeat`
+          ? `var(--bg) url("${mapArtUrl()}") center/contain no-repeat`
           : "var(--bg)",
         border: "1px solid var(--border)",
         minWidth: 300, width: "70vw", maxWidth: 980, maxHeight: "86vh", overflowY: "auto",

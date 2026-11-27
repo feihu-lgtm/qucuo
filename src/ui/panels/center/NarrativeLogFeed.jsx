@@ -361,6 +361,8 @@ export default function NarrativeLogFeed({
             {!collapsed && (visibleReplies.length > 0 || (isActiveGroup && showSkeleton)) && (
               <div className={g.cmd ? "narrative-group-body narrative-group-body--indented" : "narrative-group-body"}>
                 {(() => {
+                  // 立绘只包住细看那一回合：同组后面换了回合（切磋、搭话接在后头）的行回到版心左边界。
+                  let lookRowCount = units.length;
                   const rows = units.map((unit, ri) => {
                   const entry = unit.kind === "ledger" ? unit.entries[0] : unit.entry;
                   const entryTurn = typeof entry?.turn === "number" ? entry.turn : null;
@@ -369,6 +371,7 @@ export default function NarrativeLogFeed({
                   const dividerMark = turnChanged ? markClock(entry) : null;
                   const showDivider = Boolean(dividerMark) || (isLetterRow && ri > 0 && entry?.realTs != null);
                   if (entryTurn !== null) trackedTurn = entryTurn;
+                  if ((turnChanged || showDivider) && ri < lookRowCount) lookRowCount = ri;
                   return (
                     <div key={getEntryRenderKey(entry, `reply-${groupKey}`)} className="narrative-reply-slot">
                       {showDivider && (
@@ -399,12 +402,15 @@ export default function NarrativeLogFeed({
                     </div>
                   );
                 });
-                  if (!lookPortrait) return rows;
+                  if (!lookPortrait || lookRowCount === 0) return rows;
                   return (
-                    <div className="narrative-look">
-                      <NpcAvatar name={lookName} size="xl" onClick={() => handleOpenNpc(lookName)} title={`互动 · ${lookName}`} />
-                      <div className="narrative-look-body">{rows}</div>
-                    </div>
+                    <>
+                      <div className="narrative-look">
+                        <NpcAvatar name={lookName} size="xl" onClick={() => handleOpenNpc(lookName)} title={`互动 · ${lookName}`} />
+                        <div className="narrative-look-body">{rows.slice(0, lookRowCount)}</div>
+                      </div>
+                      {rows.slice(lookRowCount)}
+                    </>
                   );
                 })()}
                 {isActiveGroup && showSkeleton && <NarrativeSkeleton key={`skel-${groupKey}`} />}
