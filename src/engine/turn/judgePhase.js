@@ -13,6 +13,7 @@ import { buildIntakeUserContent, normalizeIntakeResult, synthesizeTalkIntake, sh
 import { buildExtractionCfg } from "../../domain/rules/prompt/structuredCallCfg.js";
 import { buildJudgeRuleBlock, buildGroupTalkRuleBlock } from "../../domain/rules/judge/judgeRuleBlock.js";
 import { collectDeferredIntents, deferredIntentReceipt, deferredFailureReceipt, DEFERRED_INTENT_KINDS } from "../../domain/rules/judge/deferredIntents.js";
+import { isNpcAngry } from "../../domain/rules/combat/stealSystem.js";
 import { inferAppeaseStance } from "../../domain/rules/npc/appeaseStance.js";
 import { resolveFloatingItems } from "../../domain/rules/judge/floatingRelics.js";
 import { questAdvanceCandidates } from "../../domain/rules/quests/questAdvanceCandidates.js";
@@ -504,7 +505,7 @@ export async function runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cm
       if (deferredIntents.length || deferredFailures.length) {
         deps.deferredIntents = deferredIntents;
         deps.judgeRuleBlock += "\n\n【系统已受理·交互意向】以下交互意向系统已受理，正文只写意向本身，不得写成交互结果：\n"
-          + deferredIntents.map((it) => `· ${deferredIntentReceipt(it)}`).join("\n")
+          + deferredIntents.map((it) => `· ${deferredIntentReceipt(it, { angry: it.kind === "duel" && isNpcAngry(deps.varTree || ctx.getGameState?.()?.varTree, it.target) })}`).join("\n")
           + (deferredFailures.length ? `\n${deferredFailures.map((f) => `· ${deferredFailureReceipt(f)}`).join("\n")}` : "");
         trace("判官管线", "pass", `交互意向收集 ${deferredIntents.length} 条（${deferredIntents.map((it) => `${it.kind}→${it.target}`).join("、")}）${deferredFailures.length ? `，失败 ${deferredFailures.length} 条` : ""}`);
       }
