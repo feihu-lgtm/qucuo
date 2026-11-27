@@ -15,6 +15,7 @@ import { BUILDING_TYPE, getBuildingsForLocation } from "../buildings/qucuoBuildi
 import { HOMESTEAD_FEATURES } from "../../rules/map/homestead.js";
 import { passerRolesOf } from "../npc/randomPassers.js";
 import { FACTIONS } from "../map/factions.js";
+import { QUCUO_PRESET } from "../presets/qucuo.js";
 
 const webpFile = (kind, name) => `public/art/${kind}/${name}.webp`;
 
@@ -47,6 +48,12 @@ describe("美术素材登记表", () => {
     for (const name of NPC_ART) expect(existsSync(webpFile("npc", name)), name).toBe(true);
     for (const key of ITEM_ART) expect(existsSync(webpFile("item", key)), key).toBe(true);
     for (const id of QUEST_ART) expect(existsSync(webpFile("quest", id)), id).toBe(true);
+  });
+
+  it("开局预设里的每位 NPC 都能按游戏显示名找到立绘", () => {
+    for (const { name } of QUCUO_PRESET.room.npcs) {
+      expect(NPC_ART.includes(name) && existsSync(webpFile("npc", name)), name).toBe(true);
+    }
   });
 
   it("覆盖率硬门禁：public/art/npc 与 quest 目录里每张图都必须登记——有图未登记即缺口", () => {
