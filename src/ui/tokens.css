@@ -24,18 +24,20 @@
   --mobile-viewport-height: 100dvh;
   --mobile-viewport-offset: 0px;
   --mobile-keyboard-height: 0px;
-  --bg: #0a0a09;
-  --bg-panel: #111110;
-  --border: #4a453c;
-  --text: #e8e4d6;
-  --text-dim: #8f8a7c;
+  /* 夜色精修色板（设计稿 §二）：夜 #0c0b09 / 栏 #13120f / 实线 #3a362e / 正文 #ece6d6 / 标签 #8c8573；
+     朱红只给主行动、当前所在、未读；青绿=增益与任务，金=人名银两贵重物，石青=说明。 */
+  --bg: #0c0b09;
+  --bg-panel: #13120f;
+  --border: #3a362e;
+  --text: #ece6d6;
+  --text-dim: #8c8573;
   --accent: #c8323a;
   --accent-dim: #8a4a48;
   --start-menu-card-bg: rgba(10, 8, 5, 0.25);
-  --good: #5a8a5a;
-  --warn: #d4a853;
-  --info: #8ac8b8;
-  --muted: #8a8270;
+  --good: #8fb57a;
+  --warn: #cfa95a;
+  --info: #7fa3b0;
+  --muted: #8c8573;
   --font-body: "Songti SC", "STSong", "SimSun", serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
   /* 字号阶梯（唯一来源）：UI 里任何 font-size 都只能取这几档，不再写裸 px。
      档位与原来的高频字面量对齐，所以替换后观感基本不变；9~10px 归到 2xs。 */
@@ -232,17 +234,17 @@
 
   /* 墨拓定色（不随 data-theme="day" 切换）：原硬编码字面量本身就是定色——
      它们与随主题切换的 --text/--bg 等值相同但语义不同，日间模式下不能跟着变。 */
-  --ink-text: #e8e4d6;
-  --ink-text-dim: #8f8a7c;
-  --ink-muted: #8a8270;
-  --ink-warn: #d4a853;
-  --ink-info: #8ac8b8;
+  --ink-text: #ece6d6;
+  --ink-text-dim: #8c8573;
+  --ink-muted: #8c8573;
+  --ink-warn: #cfa95a;
+  --ink-info: #7fa3b0;
   --ink-accent: #c8323a;
   --ink-accent-dim: #8a4a48;
-  --ink-border: #4a453c;
-  --ink-good: #5a8a5a;
-  --ink-bg: #0a0a09;
-  --ink-bg-panel: #111110;
+  --ink-border: #3a362e;
+  --ink-good: #8fb57a;
+  --ink-bg: #0c0b09;
+  --ink-bg-panel: #13120f;
 
   /* 酒馆模拟定色（原字面量，不随日间模式变）。 */
   --tavern-disabled-bg: #1a1a1a;
@@ -473,10 +475,10 @@
   --dur: 180ms;
   --dx: 0px;
   --dy: 0px;
-  --plate: #111110;
+  --plate: #13120f;
   --qc: #c8323a;
   --qc-glow: rgba(200, 50, 58, 0.32);
-  --qc-hi: #e8e4d6;
+  --qc-hi: #ece6d6;
   --slash-rot: rotate(0deg);
 
   /* 导卡/审改流程：选中态浅绿高亮（收录 #bce8ac #cdeebf #b4ecdc #c8dfc0 一族） */
@@ -496,33 +498,35 @@
   --lh-center-body: var(--lh-narrative);
   --lh-center-card: var(--lh-snug);
   --center-prose-indent: 2em;
-  --center-group-bg: rgba(255, 255, 255, 0.015);
-  --center-group-border: color-mix(in srgb, var(--border) 68%, transparent);
-  --center-group-divider: color-mix(in srgb, var(--border) 48%, transparent);
+  /* 夜色精修：正文不套框，回合之间只靠分隔行；每种颜色只负责一件事——
+     系统行与行动行退到标签/次要色，人名金、旁白藕荷、任务青绿、扣减朱红字。 */
+  --center-group-bg: transparent;
+  --center-group-border: transparent;
+  --center-group-divider: #25231f;
   --center-outside-text: var(--text-dim);
   --center-outside-room: var(--log-room);
-  --center-letter-bg: rgba(214, 138, 138, 0.06);
-  --center-letter-border: color-mix(in srgb, var(--pink) 38%, var(--border));
-  --center-letter-accent: var(--pink);
+  --center-letter-bg: rgba(201, 155, 178, 0.05);
+  --center-letter-border: #3a362e;
+  --center-letter-accent: #c99bb2;
   --center-letter-body: var(--ink-text);
-  --log-sys: var(--ink-good);
-  --log-cmd: var(--ink-warn);
+  --log-sys: #8c8573;
+  --log-cmd: #b9b19e;
   --log-desc: var(--ink-text);
-  --log-room: var(--ink-accent);
-  --log-item: var(--gold);
-  --log-stat: #8ab4d4;
-  --log-skill: var(--violet);
-  --log-err: var(--red-soft);
-  --log-choice: #6aaa8a;
-  --log-narrator: var(--pink);
-  --log-crash: var(--red-soft);
-  --log-confess: var(--ember);
-  --log-affection: #f0a0c0;
-  --log-quest: var(--ember);
-  --log-dialogue: #e8a0d8;
+  --log-room: #b9b19e;
+  --log-item: #cfa95a;
+  --log-stat: #b9a68a;
+  --log-skill: #b9a68a;
+  --log-err: #e5675c;
+  --log-choice: #8fb57a;
+  --log-narrator: #c99bb2;
+  --log-crash: #e5675c;
+  --log-confess: #c99bb2;
+  --log-affection: #b9a68a;
+  --log-quest: #8fb57a;
+  --log-dialogue: #ece6d6;
   /* NPC 名与好感/私聊的语义色（原 theme.js 的 ink("green") / ink("pink")），随日夜切换。 */
-  --npc-name: #c07050;
-  --npc-affection: #d68a8a;
+  --npc-name: #cfa95a;
+  --npc-affection: #c99bb2;
   --bp-phone-max: 767px;
   --bp-tablet-min: 768px;
   --bp-compact-max: 768px;
@@ -582,45 +586,45 @@
    全局切到日间时子树仍是暗夜。变量清单与取值由 themeTokens.test.js 锁住。 */
 [data-theme="night"] {
   color-scheme: dark;
-  --bg: #0a0a09;
-  --bg-panel: #111110;
-  --border: #4a453c;
-  --text: #e8e4d6;
-  --text-dim: #8f8a7c;
+  --bg: #0c0b09;
+  --bg-panel: #13120f;
+  --border: #3a362e;
+  --text: #ece6d6;
+  --text-dim: #8c8573;
   --accent: #c8323a;
   --accent-dim: #8a4a48;
-  --good: #5a8a5a;
-  --warn: #d4a853;
-  --info: #8ac8b8;
-  --muted: #8a8270;
-  --plate: #111110;
-  --qc-hi: #e8e4d6;
-  --center-group-bg: rgba(255, 255, 255, 0.015);
-  --center-group-border: color-mix(in srgb, var(--border) 68%, transparent);
-  --center-group-divider: color-mix(in srgb, var(--border) 48%, transparent);
+  --good: #8fb57a;
+  --warn: #cfa95a;
+  --info: #7fa3b0;
+  --muted: #8c8573;
+  --plate: #13120f;
+  --qc-hi: #ece6d6;
+  --center-group-bg: transparent;
+  --center-group-border: transparent;
+  --center-group-divider: #25231f;
   --center-outside-text: var(--text-dim);
   --center-outside-room: var(--log-room);
-  --center-letter-bg: rgba(214, 138, 138, 0.06);
-  --center-letter-border: color-mix(in srgb, var(--pink) 38%, var(--border));
-  --center-letter-accent: var(--pink);
+  --center-letter-bg: rgba(201, 155, 178, 0.05);
+  --center-letter-border: #3a362e;
+  --center-letter-accent: #c99bb2;
   --center-letter-body: var(--ink-text);
-  --log-sys: var(--ink-good);
-  --log-cmd: var(--ink-warn);
+  --log-sys: #8c8573;
+  --log-cmd: #b9b19e;
   --log-desc: var(--ink-text);
-  --log-room: var(--ink-accent);
-  --log-item: var(--gold);
-  --log-stat: #8ab4d4;
-  --log-skill: var(--violet);
-  --log-err: var(--red-soft);
-  --log-choice: #6aaa8a;
-  --log-narrator: var(--pink);
-  --log-crash: var(--red-soft);
-  --log-confess: var(--ember);
-  --log-affection: #f0a0c0;
-  --log-quest: var(--ember);
-  --log-dialogue: #e8a0d8;
-  --npc-name: #c07050;
-  --npc-affection: #d68a8a;
+  --log-room: #b9b19e;
+  --log-item: #cfa95a;
+  --log-stat: #b9a68a;
+  --log-skill: #b9a68a;
+  --log-err: #e5675c;
+  --log-choice: #8fb57a;
+  --log-narrator: #c99bb2;
+  --log-crash: #e5675c;
+  --log-confess: #c99bb2;
+  --log-affection: #b9a68a;
+  --log-quest: #8fb57a;
+  --log-dialogue: #ece6d6;
+  --npc-name: #cfa95a;
+  --npc-affection: #c99bb2;
 }
 
 

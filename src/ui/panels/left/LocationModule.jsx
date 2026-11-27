@@ -20,11 +20,11 @@ export default function LocationModule({ room, innerRoomName, time }) {
           <ArtImage src={artSrc} alt={room.name} variant="thumb" />
         </div>
       )}
-      <div style={{ color: "var(--accent)", fontWeight: "bold", fontSize: "var(--fs-base)", marginBottom: 2, letterSpacing: "1px" }}>
+      <div style={{ color: "var(--text)", fontWeight: "bold", fontSize: "var(--fs-base)", marginBottom: 2, letterSpacing: "1px" }}>
         <span style={label}>外层</span>{room.name}
       </div>
       {inner && (
-        <div style={{ color: "var(--accent)", fontSize: "var(--fs-md)", marginBottom: 4, letterSpacing: "1px" }}>
+        <div style={{ color: "var(--text)", fontSize: "var(--fs-md)", marginBottom: 4, letterSpacing: "1px" }}>
           <span style={label}>内层</span>{inner}
           {isAnchor && <span style={{ ...label, marginLeft: 6 }}>（进出口）</span>}
         </div>

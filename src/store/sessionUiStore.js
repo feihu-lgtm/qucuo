@@ -47,7 +47,8 @@ export const sessionUiStore = createStore(() => ({
   // 偏好设置/面板态（PR-2C）——apiCfg/uiScale/font/isDayMode/mobileColumn 带持久化
   apiCfg: loadApiCfg(),
   uiScale: (() => { const s = lsGet("wuxia_mud_ui_scale"); return s ? parseFloat(s) : 1; })(),
-  font: lsGet("wuxia_mud_ui_font") === "song" ? "song" : "pixel",
+  // 夜色精修：正文默认宋体；像素字体保留为设置里的可选项（玩家主动选过才用）。
+  font: lsGet("wuxia_mud_ui_font") === "pixel" ? "pixel" : "song",
   isDayMode: lsGet("wuxia_mud_day_mode") === "1",
   nsfwOn: true,
   gm: false,

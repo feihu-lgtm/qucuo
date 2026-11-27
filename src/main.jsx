@@ -28,11 +28,12 @@ const QuickBattleScreen = lazy(() => import("./ui/screens/quickBattle/QuickBattl
 const TavernSimScreen = lazy(() => import("./ui/screens/tavernSim/TavernSimScreen.jsx"));
 const CardImportScreen = lazy(() => import("./ui/screens/CardImportScreen.jsx"));
 
+// 与 sessionUiStore 同口径：正文默认宋体，玩家在设置里选过像素字体才用像素字体（夜色精修）。
 try {
   document.documentElement.dataset.font =
-    localStorage.getItem("wuxia_mud_ui_font") === "song" ? "song" : "pixel";
+    localStorage.getItem("wuxia_mud_ui_font") === "pixel" ? "pixel" : "song";
 } catch {
-  document.documentElement.dataset.font = "pixel";
+  document.documentElement.dataset.font = "song";
 }
 
 function InkSpinner() {
