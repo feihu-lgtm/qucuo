@@ -120,3 +120,45 @@ describe("情趣物+卡券系统侧 7.5% 约束", () => {
     expect(applied[0].fact.标签).toBe("金蛋");
   });
 });
+
+describe("Review 三修回归", () => {
+  it("修②：未命中必开档时 AI 开出保留物（假阳具/卡券）被硬拒，落兜底奖池", async () => {
+    for (const reserved of ["假阳具", "女眷一次卡·不可拒绝"]) {
+      withAIMock.impl = async () => ({ ok: true, data: { name: reserved, category: "misc", desc: "", mood: "small", reaction: "" } });
+      const applied = [];
+      const res = await runEggPrize("绿", baseOpts(applied, { canAsk: () => true }));
+      // rng 0.5 未命中必开档 → 保留名被硬拒 → 兜底奖池（res.prize 是奖池条目而非 AI 物件）
+      expect(res.prize).toBeTruthy();
+      expect(res.item?.name).not.toBe(reserved);
+    }
+  });
+
+  it("修③：fact 见证按开蛋时刻状态且别屋 NPC 不算目击", async () => {
+    withAIMock.impl = async () => ({ ok: true, data: { name: "铜铃", category: "misc", desc: "", mood: "small", reaction: "" } });
+    const applied = [];
+    const openingState = {
+      inv: [], char: { money: 0 }, time: 25,
+      room: { name: "鱼定村", npcs: [{ name: "元朵朵" }] },
+      innerRoomName: null,
+    };
+    let currentState = openingState;
+    const res = await runEggPrize("绿", baseOpts(applied, {
+      canAsk: () => true,
+      getState: () => currentState,
+    }));
+    // 落账前玩家换房——fact 仍按开蛋时刻见证
+    currentState = { ...openingState, room: { name: "青城山", npcs: [{ name: "远山客" }] } };
+    expect(res.fact.知晓者.some((k) => k.name === "元朵朵")).toBe(true);
+    expect(res.fact.知晓者.some((k) => k.name === "远山客")).toBe(false);
+  });
+
+  it("修③：内层房间外层的 NPC 不列目击（isNpcVisibleInInnerRoom 收窄）", async () => {
+    const { eggFact } = await import("../../features/npc/goldenEgg.js");
+    const fact = eggFact({
+      time: 1,
+      room: { name: "鱼定村", npcs: [{ name: "元朵朵", innerRoom: "村口" }, { name: "外屋人", innerRoom: "别处" }] },
+      innerRoomName: "村口",
+    }, "松子糖");
+    expect(fact.知晓者.some((k) => k.name === "外屋人")).toBe(false);
+  });
+});

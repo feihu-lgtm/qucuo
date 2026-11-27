@@ -1,6 +1,6 @@
 // 金鸟金蛋：游戏日界（time/24）/ 加权奖池各档 / 物品带价入行囊 / 兜底句 / 卡券强开档。
 import { describe, it, expect } from "vitest";
-import { claimGoldenEgg, openGoldenEgg, settleAiEggPrize } from "./goldenEgg.js";
+import { claimGoldenEgg, eggSignInChange, openGoldenEgg, settleAiEggPrize } from "./goldenEgg.js";
 import {
   GOLDEN_EGG_POOL, GOLDEN_EGG_STATE_KEY, INTIMATE_TICKET_NAME,
   eggAlreadyClaimed, eggGameDay, eggFallbackLine, eggTier, rollGoldenEgg,
@@ -154,12 +154,18 @@ describe("女眷一次卡·不可拒绝", () => {
 });
 
 describe("AI 自由开奖", () => {
-  it("openGoldenEgg 记签到日、掷品阶、只落开场两行，不发奖", () => {
+  it("openGoldenEgg 掷品阶、只落开场两行，不发奖不记账（签到账后移到奖品落账帧——防存档截在中间丢奖）", () => {
     const res = openGoldenEgg({ time: 30, char: { special: { 气运: 5 } } }, duoduo, { quality: "蓝" });
     expect(res.quality).toBe("蓝");
     expect(res.logs).toHaveLength(2);
     expect(res.changes.inv).toBeUndefined();
     expect(res.changes.char).toBeUndefined();
+    expect(res.changes.npcState).toBeUndefined();
+    expect(eggSignInChange({ time: 30 })({})[GOLDEN_EGG_STATE_KEY].lastDay).toBe(1);
+  });
+
+  it("claimGoldenEgg 一步开完路径含签到账（npcState lastDay）", () => {
+    const res = claimGoldenEgg({ time: 30, inv: [], char: { money: 0 } }, duoduo, { rng: () => 0.5 });
     expect(res.changes.npcState({})[GOLDEN_EGG_STATE_KEY].lastDay).toBe(1);
   });
 

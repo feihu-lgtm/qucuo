@@ -12,6 +12,7 @@ import {
   GOLDEN_EGG_STATE_KEY, eggAlreadyClaimed, eggGameDay, eggTier, rollGoldenEgg,
 } from "../../domain/rules/npc/goldenEgg.js";
 import { updateField, add, set, applyWrite } from "../../domain/rules/state/applyWrite.js";
+import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 
 export const DUODUO_NAME = "元朵朵";
 
@@ -46,13 +47,18 @@ export function openGoldenEgg(state, npc, { quality } = {}) {
   return {
     quality: quality || rollQuality(luck),
     logs: OPEN_LINES.map((line) => ({ ...line })),
-    changes: {
-      npcState: (prev) => ({
-        ...(prev || {}),
-        [GOLDEN_EGG_STATE_KEY]: { lastDay: eggGameDay(state?.time) },
-      }),
-    },
+    changes: {},
   };
+}
+
+// 签到日记账（lastDay）——Review 修：不在 open 时写。open 到 AI 回包之间存档会记下
+// 「已领」却没奖品，读档后奖品永丢；改在奖品落账的同一帧写入（AI/奖池两路同），
+// 存档无论截在哪一刻都自洽：要么连奖带账都有，要么都没有（可重领）。
+export function eggSignInChange(state) {
+  return (prev) => ({
+    ...(prev || {}),
+    [GOLDEN_EGG_STATE_KEY]: { lastDay: eggGameDay(state?.time) },
+  });
 }
 
 /**
@@ -122,7 +128,9 @@ export function eggFact(state, label) {
     知晓者: [
       { name: DUODUO_NAME, 途径: "目击" },
       ...(state?.room?.npcs || [])
-        .filter((entry) => entry?.name && entry.name !== DUODUO_NAME)
+        // V4 同口径：据点内层房间收窄——别屋 NPC 不算目击（知情隔离）。
+        .filter((entry) => entry?.name && entry.name !== DUODUO_NAME
+          && isNpcVisibleInInnerRoom(state?.room?.name, state?.innerRoomName, entry))
         .map((entry) => ({ name: entry.name, 途径: "目击" })),
     ],
     currentTurn: state?.time ?? 0,
@@ -141,6 +149,6 @@ export function claimGoldenEgg(state, npc, { rng = Math.random } = {}) {
     prize: pool.prize,
     tier: pool.tier,
     logs: [...opened.logs, ...pool.logs],
-    changes: { ...opened.changes, ...pool.changes },
+    changes: { ...opened.changes, ...pool.changes, npcState: eggSignInChange(state) },
   };
 }

@@ -16,7 +16,7 @@ import { inviteCompanion } from "../../features/npc/inviteCompanion.js";
 import { recruitOC, applyRecruit, hirePriceFor } from "../../features/npc/ocRecruit.js";
 import { recruitNemesis } from "../../features/npc/recruitNemesis.js";
 import { openGoldenEgg } from "../../features/npc/goldenEgg.js";
-import { runEggPrize } from "./eggBackfill.js";
+import { eggPrizePending, markEggPrizeOpen, runEggPrize } from "./eggBackfill.js";
 import { OC_BY_NAME } from "../../domain/rules/npc/npcCarry.js";
 import { stationCompanion, unstationCompanion } from "../../domain/rules/companion/companion.js";
 import { companionReunionLine } from "../../features/npc/companionChatter.js";
@@ -90,11 +90,17 @@ export function useScreenHandlers({
   // 元朵朵·金鸟金蛋：开场两行与签到日立刻落定（防连点重领），奖品由 AI 在系统掷定的品阶里
   // 自由随机后补到；无 API / AI 失败退回加权奖池。回包落账走 applyResult 统一边界。
   const handleGoldenEgg = useCallback((npc) => applyResult(featureCtx(), () => {
+    // 连点防重领：签到账后移到奖品落账帧（Review 修①），异步窗口靠内存 pending 闸。
+    if (eggPrizePending()) {
+      addLog([{ t: "sys", text: "  金鸟还在路上，蛋还没开完——莫急。" }]);
+      return;
+    }
     const opened = openGoldenEgg(gameStore.getState(), npc);
     if (opened.changes) captureUndo();
     setActiveTarget(npc.name);
     applyResult(featureCtx(), opened);
     if (opened.quality) {
+      markEggPrizeOpen();
       runEggPrize(opened.quality, {
         apply: (result) => applyResult(featureCtx(), result, { feature: "npc.goldenEggPrize", background: true }),
       });
