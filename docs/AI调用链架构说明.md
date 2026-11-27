@@ -369,6 +369,17 @@ flowchart LR
 - **回滚连日志**：`playTurn` 回滚时除恢复 ROLLBACK_KEYS 外，按 tid 撤掉本回合新写进主栏的世界变化行（`domain/rules/log/rollbackLog.js`），玩家行动行、报错、来信保留；`log` 本身仍不进 ROLLBACK_KEYS。
 - **追踪顺序与缓冲**：`turnMonitor` 节点按真实发生顺序输出；前台、后台各留 40 棵树。主栏日志条目带 `tid`，卷宗据此把日志与追踪拼成同一回合。
 
+## 5.5 Gemini 3+ / 4 调用口径（2026-11 对齐官方文档）
+
+依据 Gemini API 官方文档 2026-10 版（What's new in Gemini 3.6 / 3.8 Flash、What's new in Gemini 4 Argon、Thinking、Context caching），原生 `generateContent` / `streamGenerateContent` 与 OpenAI 兼容通道（Vertex、OpenRouter、自定义中转）统一走 `infra/providers.js` 的同一套口径：
+
+- **思考**：3 系列以后只下发 `thinkingLevel`（OpenAI 兼容通道为 `reasoning_effort`），不再与 `thinkingBudget` 混用。设置里选“关”或短调用 `disableThinking` 时压到该型号支持的最低档：3 Flash、3.5 / 3.6 Flash、3.1 / 3.5 Flash-Lite 给 `minimal`；3.7 / 3.8 Flash 与 Gemini 4 不支持 `minimal`（传了报错），给 `low`。此前原生通道选“关”时不下发思考配置，3.8 Flash / Gemini 4 会按默认 `medium` 思考。
+- **采样参数**：`temperature` / `top_p` / `top_k` 自 3.6 起弃用并被忽略，后续型号会直接 400；3 系列以后一律不传（2.5 照旧）。
+- **输出上限**：`maxOutputTokens` 同时计入思考与正文；3 系列下限 8192、Gemini 4 下限 32768（官方建议值），避免思考吃光额度后正文截断。计费按实际生成量，抬高下限不增加花费；想省 token 应降思考档。
+- **请求结构**：系统提示走 `systemInstruction`，不再拼进首条 user 消息；密钥走 `x-goog-api-key` 请求头，不进 URL；末尾预填的 model 轮并成一条 user 轮（3.6 起末尾是 model 轮会 400）。
+- **缓存**：隐式缓存对 3.8 Flash、3.6 Flash 与 Gemini 4 的最低前缀为 4096 token，命中部分输入价打一折以下（Gemini 4 官方为 95% 折扣）；Gemini 4 不支持显式缓存。固定内容（系统提示、预设）放最前，有利于命中。
+- **模型清单**：Gemini 与 Vertex 预设模型更新为 `gemini-3.8-flash`、`gemini-4-argon`、`gemini-3.6-flash`、`gemini-3.5-flash-lite`、`gemini-2.5-flash`。
+
 ## 6. 已确认的设计取舍
 
 这些是实现时对手册字面的修正，后续文档与代码都应按这里的口径，不再按旧稿字面理解：

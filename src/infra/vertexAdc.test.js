@@ -199,7 +199,8 @@ describe("Vertex ADC", () => {
         "Content-Type": "application/json", Authorization: "Bearer ya29.mock-token-1", "x-goog-user-project": "test-quota-project",
       });
       expect(JSON.parse(request.body)).toMatchObject({
-        model: vertexModel, max_tokens: 1000, messages: [{ role: "system", content: "叙述" }, ...messages], reasoning_effort: "low",
+        // Gemini 4 的输出上限同时计入思考与正文，官方建议显式设置时不低于 32768：1000 被抬到下限。
+        model: vertexModel, max_tokens: 32768, messages: [{ role: "system", content: "叙述" }, ...messages], reasoning_effort: "low",
       });
     }
     expect(turn.nodes.filter(node => node.pipeline).map(node => node.pipeline.response)).toEqual(["曲措", "江湖"]);

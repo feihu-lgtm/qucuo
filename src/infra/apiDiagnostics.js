@@ -5,7 +5,7 @@ import { withProxy, httpFailure, callModel, fetchWithTimeout, readJsonOrThrow, s
 import { API_TYPES, migrateProvider, DEFAULT_CALL_TOKEN_LIMITS, PROVIDERS,
 
   normalizeOpenAIEndpoint, normalizeAnthropicEndpoint, normalizeGeminiBase,
-  applyThinkingAnthropic, applyThinkingGemini, applyThinkingOpenAI,
+  applyThinkingAnthropic, applyThinkingOpenAI, buildGeminiRequest,
   clampMaxTokensForProvider, ANTHROPIC_KNOWN_MODELS } from "./providers.js";
 
 // W-FIX3 协调裁决（方案 c）：首包看门狗随用户超时缩放 min(用户超时, max(18000, 用户超时/3))——
@@ -96,20 +96,14 @@ async function requestStream(cfg, systemPrompt, messages, onChunk, opts) {
       // 只带增量文本；usageMetadata 在末帧给出（含 cachedContentTokenCount 缓存命中数）。
       const provider = PROVIDERS[cfg.provider];
       const base = normalizeGeminiBase(cfg.endpoint || provider.endpoint);
-      const url = withProxy(`${base}/${encodeURIComponent(cfg.model)}:streamGenerateContent?alt=sse&key=${encodeURIComponent(cfg.apiKey)}`, cfg);
-      const contents = messages.map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
-      if (contents.length && contents[0].role === "user") {
-        const systemText = Array.isArray(systemPrompt) ? systemPrompt.map(formatBlock).join("\n\n") : systemPrompt;
-        contents[0].parts[0].text = systemText + "\n\n" + contents[0].parts[0].text;
-      }
-      const genConfig = { temperature, maxOutputTokens: clampMaxTokensForProvider(maxTokens, cfg, provider) };
-      if (opts.jsonOnly) genConfig.responseMimeType = "application/json";
-      applyThinkingGemini(genConfig, cfg, opts);
-      const res = await fetchWithTimeout(url, {
-        method: "POST",
-        headers: { ...provider.extraHeaders, "Content-Type": "application/json" },
-        body: JSON.stringify({ contents, generationConfig: genConfig }),
+      const url = withProxy(`${base}/${encodeURIComponent(cfg.model)}:streamGenerateContent?alt=sse`, cfg);
+      const systemText = Array.isArray(systemPrompt) ? systemPrompt.map(formatBlock).join("\n\n") : systemPrompt;
+      const { headers, body } = buildGeminiRequest({
+        cfg, provider, systemText, messages, opts,
+        maxOutputTokens: clampMaxTokensForProvider(maxTokens, cfg, provider),
+        sampling: { temperature },
       });
+      const res = await fetchWithTimeout(url, { method: "POST", headers, body: JSON.stringify(body) });
       await rejectNonStream(res, "Gemini 流式调用", url);
       await sse(res, (eventData) => {
         const parts = eventData.candidates?.[0]?.content?.parts;
@@ -161,8 +155,8 @@ export async function listModels(cfg) {
 
   if (provider.protocol === "gemini") {
     const cleanBase = normalizeGeminiBase(config.endpoint || provider.endpoint);
-    const url = withProxy(`${cleanBase}?key=${encodeURIComponent(config.apiKey)}`, config);
-    const res = await fetch(url, { headers: provider.extraHeaders });
+    const url = withProxy(cleanBase, config);
+    const res = await fetch(url, { headers: { ...provider.extraHeaders, "x-goog-api-key": config.apiKey || "" } });
     const data = await readJsonOrThrow(res, "获取模型列表");
     if (data.error) throw new Error(data.error.message || "获取模型列表失败");
     const list = (data.models || [])

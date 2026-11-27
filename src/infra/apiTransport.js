@@ -8,7 +8,7 @@ import { parseRetryAfter } from "./retryAfter.js";
 import { getSamplingHeaders } from "./samplingTags.js";
 import { scrubCredentialPatterns } from "./textRedaction.js";
 import {
-  API_TYPES, applyThinkingAnthropic, applyThinkingGemini, applyThinkingOpenAI,
+  API_TYPES, adaptOpenAIBodyForGemini, applyThinkingAnthropic, applyThinkingOpenAI, buildGeminiRequest,
   clampMaxTokensForProvider, DEFAULT_CALL_TOKEN_LIMITS, migrateProvider,
   normalizeAnthropicEndpoint, normalizeGeminiBase, normalizeOpenAIEndpoint, PROVIDERS,
   ANTHROPIC_KNOWN_MODELS,
@@ -168,6 +168,7 @@ export async function fetchOpenAI(cfg, systemPrompt, messages, opts, stream = fa
     if (value != null) body[field] = value;
   }
   applyThinkingOpenAI(body, cfg, provider, vertex, opts);
+  adaptOpenAIBodyForGemini(body);
   const auth = vertex ? await (opts.getVertexHeaders || (() => getStoredVertexHeaders(fetchWithTimeout)))()
     : { Authorization: `Bearer ${cfg.apiKey}` };
   try {
@@ -275,33 +276,24 @@ async function requestModel(cfg, systemPrompt, messages, opts) {
     } else if (cfg.apiType === API_TYPES.GEMINI) {
       const provider = PROVIDERS[cfg.provider];
       const base = normalizeGeminiBase(cfg.endpoint || provider.endpoint);
-      const url = withProxy(`${base}/${encodeURIComponent(cfg.model)}:generateContent?key=${encodeURIComponent(cfg.apiKey)}`, cfg);
-      const contents = messages.map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
-      if (contents.length && contents[0].role === "user") {
-        const systemText = Array.isArray(systemPrompt) ? systemPrompt.map(formatBlock).join("\n\n") : systemPrompt;
-        contents[0].parts[0].text = systemText + "\n\n" + contents[0].parts[0].text;
-      }
-      const genConfig = { temperature, maxOutputTokens: clampMaxTokensForProvider(maxTokens, cfg, provider) };
-      // Gemini 的 generationConfig 原生支持这四个字段，直接按官方字段名传。
-      if (topP != null) genConfig.topP = topP;
-      if (topK != null) genConfig.topK = topK;
-      if (frequencyPenalty != null) genConfig.frequencyPenalty = frequencyPenalty;
-      if (presencePenalty != null) genConfig.presencePenalty = presencePenalty;
-      // 结构化抽取任务（角色卡扫描）要求纯 JSON 输出。官方接口支持这个字段，但
-      // 第三方反代常常把它过滤掉，所以调用方那边**不能只靠它**——提示词里同样
-      // 要写死"只输出 JSON"，并对返回值做剥围栏/截取的容错解析。这里加上是因为
-      // 原生支持时它确实能显著降低跑偏率，成本为零。
-      if (opts.jsonOnly) genConfig.responseMimeType = "application/json";
+      const url = withProxy(`${base}/${encodeURIComponent(cfg.model)}:generateContent`, cfg);
+      const systemText = Array.isArray(systemPrompt) ? systemPrompt.map(formatBlock).join("\n\n") : systemPrompt;
+      // 结构化抽取任务要求纯 JSON：官方接口支持 responseMimeType，第三方反代常常过滤掉，
+      // 所以调用方提示词里仍写死「只输出 JSON」并做容错解析；这里加上能显著降低跑偏率。
+      const { headers, body } = buildGeminiRequest({
+        cfg, provider, systemText, messages, opts,
+        maxOutputTokens: clampMaxTokensForProvider(maxTokens, cfg, provider),
+        sampling: { temperature, topP, topK, frequencyPenalty, presencePenalty },
+      });
       // 原生结构化输出：responseSchema 走 v1beta 官方字段；additionalProperties 键 Gemini 不收，递归剔除。
       if (opts.schema) {
-        genConfig.responseMimeType = "application/json";
-        genConfig.responseSchema = stripAdditionalProperties(opts.schema.schema);
+        body.generationConfig.responseMimeType = "application/json";
+        body.generationConfig.responseSchema = stripAdditionalProperties(opts.schema.schema);
       }
-      applyThinkingGemini(genConfig, cfg, opts);
       const res = await fetchWithTimeout(url, {
         method: "POST",
-        headers: { ...provider.extraHeaders, "Content-Type": "application/json", ...getSamplingHeaders() },
-        body: JSON.stringify({ contents, generationConfig: genConfig }),
+        headers: { ...headers, ...getSamplingHeaders() },
+        body: JSON.stringify(body),
       });
       raw = await readJsonOrThrow(res, "Gemini 调用", url);
       if (raw.error) throw new Error(raw.error.message || "Gemini API 错误");

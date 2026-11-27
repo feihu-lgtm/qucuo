@@ -47,14 +47,14 @@ describe("callModelStream Gemini 原生 SSE", () => {
 
     expect(urls[0]).toContain("gemini-2.5-flash:streamGenerateContent");
     expect(urls[0]).toContain("alt=sse");
-    expect(urls[0]).toContain("key=test-key");
+    expect(urls[0]).not.toContain("key=");
     expect(chunks).toEqual([["雪山", "雪山"], ["派", "雪山派"], ["到了。", "雪山派到了。"]]);
     expect(result.text).toBe("雪山派到了。");
     expect(result.finishReason).toBe("STOP");
     expect(result.usage?.cachedContentTokenCount).toBe(80);
   });
 
-  it("系统提示拼进首条 user 消息（与非流式 Gemini 一致）", async () => {
+  it("系统提示走 systemInstruction，不再拼进首条 user 消息（与非流式 Gemini 一致）", async () => {
     const bodies = [];
     vi.stubGlobal("fetch", async (_url, opts) => {
       bodies.push(JSON.parse(opts.body));
@@ -62,7 +62,8 @@ describe("callModelStream Gemini 原生 SSE", () => {
     });
     await callModelStream(geminiCfg, "你是系统", [{ role: "user", content: "问" }], () => {});
     expect(bodies[0].contents[0].role).toBe("user");
-    expect(bodies[0].contents[0].parts[0].text).toBe("你是系统\n\n问");
+    expect(bodies[0].contents[0].parts[0].text).toBe("问");
+    expect(bodies[0].systemInstruction).toEqual({ parts: [{ text: "你是系统" }] });
   });
 });
 
