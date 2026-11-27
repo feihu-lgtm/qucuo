@@ -15,8 +15,8 @@ import {
 import { inviteCompanion } from "../../features/npc/inviteCompanion.js";
 import { recruitOC, applyRecruit, hirePriceFor } from "../../features/npc/ocRecruit.js";
 import { recruitNemesis } from "../../features/npc/recruitNemesis.js";
-import { claimGoldenEgg } from "../../features/npc/goldenEgg.js";
-import { duoduoEggReaction } from "./eggBackfill.js";
+import { openGoldenEgg } from "../../features/npc/goldenEgg.js";
+import { runEggPrize } from "./eggBackfill.js";
 import { OC_BY_NAME } from "../../domain/rules/npc/npcCarry.js";
 import { stationCompanion, unstationCompanion } from "../../domain/rules/companion/companion.js";
 import { companionReunionLine } from "../../features/npc/companionChatter.js";
@@ -87,13 +87,18 @@ export function useScreenHandlers({
     applyResult(featureCtx(), result);
   }, { feature: "npc.recruitNemesis" }), [captureUndo]);
 
-  // 元朵朵·金鸟金蛋：开奖卡片落定后，她的临场反应走 AI 后台补写（无 API 兜底句）
+  // 元朵朵·金鸟金蛋：开场两行与签到日立刻落定（防连点重领），奖品由 AI 在系统掷定的品阶里
+  // 自由随机后补到；无 API / AI 失败退回加权奖池。回包落账走 applyResult 统一边界。
   const handleGoldenEgg = useCallback((npc) => applyResult(featureCtx(), () => {
-    const res = claimGoldenEgg(gameStore.getState(), npc);
-    if (res.changes) captureUndo();
+    const opened = openGoldenEgg(gameStore.getState(), npc);
+    if (opened.changes) captureUndo();
     setActiveTarget(npc.name);
-    applyResult(featureCtx(), res);
-    if (res.prize) duoduoEggReaction(res.prize, res.tier, { addLog });
+    applyResult(featureCtx(), opened);
+    if (opened.quality) {
+      runEggPrize(opened.quality, {
+        apply: (result) => applyResult(featureCtx(), result, { feature: "npc.goldenEggPrize", background: true }),
+      });
+    }
   }, { feature: "npc.goldenEgg" }), [captureUndo]);
 
   // OC 冒险者四路招募：recruitOC 判门成功则 applyRecruit 落盘，失败只写系统日志

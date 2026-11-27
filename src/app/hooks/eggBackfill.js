@@ -1,33 +1,50 @@
-// 金鸟金蛋开奖后，元朵朵的当场反应：开奖卡片先落，她的反应稍后追加——
-// 有 API 由 AI 现写一句（人设+奖项分档喂进小 prompt）；没 API 或 AI 失败
-// 按反应档挑手写兜底句。不插占位行，写完才来，免得留一条「……」挂尾巴。
-import { gameActions, getGameEpoch, isGameEpochStale } from "../../store/gameStore.js";
-import { eggFallbackLine, eggReactionPrompt } from "../../domain/rules/npc/goldenEgg.js";
-import { parseSettleNarration } from "../../domain/rules/settle/settleBrief.js";
-import { askStoryteller, hasApiKey } from "../../engine/ports/storyteller.js";
+// 金鸟金蛋开奖的异步一段：开场两行先落，奖品稍后补到。
+// 有 API：goldenEgg.prize 让 AI 在系统掷定的品阶里自由随机一件实物（名字/类别/描述/朵朵反应），
+// 回包裁剪后由 settleAiEggPrize 落成真物件入行囊。
+// 没 API、AI 失败或回包不合规：退回加权奖池（settlePoolEggPrize），朵朵反应用手写兜底句。
+// 存档纪元一变（读档/回滚）就整段作废，不往别的存档里塞东西。
+import { gameStore, getGameEpoch, isGameEpochStale } from "../../store/gameStore.js";
+import { sessionUiStore } from "../../store/sessionUiStore.js";
+import { eggFallbackLine, parseEggPrize } from "../../domain/rules/npc/goldenEgg.js";
+import { settleAiEggPrize, settlePoolEggPrize } from "../../features/npc/goldenEgg.js";
+import { createWebAi } from "../../engine/ports/ai.js";
+import { withAI } from "../../engine/ports/withAI.js";
+import { hasApiKey } from "../../engine/ports/storyteller.js";
+import "../calls/hookCalls.js";
 
-export async function duoduoEggReaction(prize, tier, {
-  addLog, rng = Math.random,
-  ask = askStoryteller, canAsk = hasApiKey, isStale,
+const webAi = createWebAi();
+
+// 兜底：奖池开奖 + 手写反应句，两段一起落。
+export function settleEggFromPool({ apply, getState = () => gameStore.getState(), rng = Math.random }) {
+  const pool = settlePoolEggPrize(getState(), { rng });
+  apply({ ...pool, logs: [...pool.logs, { t: "sys", text: `  ${eggFallbackLine(pool.tier, rng)}` }] });
+  return pool;
+}
+
+export async function runEggPrize(quality, {
+  apply,
+  getState = () => gameStore.getState(),
+  rng = Math.random,
+  ai = webAi,
+  getApiCfg = () => sessionUiStore.getState().apiCfg,
+  canAsk = hasApiKey,
+  isStale,
 } = {}) {
   const epoch = getGameEpoch();
-  const stale = () => isStale?.() || isGameEpochStale(epoch);
+  const stale = () => Boolean(isStale?.()) || isGameEpochStale(epoch);
   if (stale()) return null;
-  const log = addLog || ((lines) => gameActions.setLog((p) => [...p, ...lines]));
-  const fallback = () => log([{ t: "sys", text: `  ${eggFallbackLine(tier, rng)}` }]);
-  if (!canAsk()) { fallback(); return null; }
+  if (!canAsk()) return settleEggFromPool({ apply, getState, rng });
+  let prize = null;
   try {
-    const text = await ask(
-      ...(() => { const { sys, user } = eggReactionPrompt({ prize, tier }); return [sys, user]; })(),
-      { callLabel: "朵朵开奖反应", maxTokens: 1000 },
-    );
+    const res = await withAI("goldenEgg.prize", { quality }, { ai, apiCfg: getApiCfg(), isStale: stale, throwOnError: false });
     if (stale()) return null;
-    const lines = text ? parseSettleNarration(text) : null;
-    if (lines?.length) { log(lines); return lines; }
-    fallback();
-    return null;
+    prize = res?.ok ? parseEggPrize(res.data) : null;
   } catch {
-    if (!stale()) fallback();
-    return null;
+    prize = null;
   }
+  if (stale()) return null;
+  if (!prize) return settleEggFromPool({ apply, getState, rng });
+  const settled = settleAiEggPrize(prize, quality);
+  apply(settled);
+  return settled;
 }

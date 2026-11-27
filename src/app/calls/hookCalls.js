@@ -5,6 +5,7 @@ import { buildOutfitRequest } from "../../domain/rules/character/bodyProfile.js"
 import { effectBrief } from "../../domain/rules/economy/itemEffectText.js";
 import { buildSquarePrompt } from "../../domain/rules/map/mapSquares.js";
 import { buildExtractionCfg } from "../../domain/rules/prompt/structuredCallCfg.js";
+import { EGG_PRIZE_SCHEMA, eggPrizePrompt } from "../../domain/rules/npc/goldenEgg.js";
 
 const INSPECT_KIND_LABEL = { skill: "武学", item: "物品", pigeon: "信鸽" };
 const INSPECT_KIND_NOUN = { skill: "武学功法", item: "随身物品", pigeon: "信鸽（用于飞鸽传书的鸟）" };
@@ -159,6 +160,30 @@ export function registerHookCalls() {
     cfg: (apiCfg) => buildExtractionCfg("SQUARE_PRERUN", apiCfg),
     join: "",
     blocks: ["map.prerun.sys", "map.prerun.user"],
+  });
+  definePrompt("block", "goldenEgg.prize.sys", {
+    label: "金鸟金蛋开奖系统指令",
+    slot: "sys",
+    text: (ctx) => eggPrizePrompt(ctx).sys,
+  });
+
+  definePrompt("block", "goldenEgg.prize.user", {
+    label: "金鸟金蛋品阶与现成物件",
+    slot: "user",
+    text: (ctx) => eggPrizePrompt(ctx).user,
+  });
+
+  definePrompt("call", "goldenEgg.prize", {
+    group: "async",
+    label: "金鸟金蛋开奖",
+    execution: "async_background",
+    route: "light",
+    reviewDesc: "AI 自由随机一件实物（名字/类别/描述/朵朵反应），品阶由系统按气运先掷定，数值价格由 makeItem 按品阶算；失败退回加权奖池",
+    tokenLimitKey: "inspect",
+    defaultMaxTokens: 1200,
+    join: "",
+    blocks: ["goldenEgg.prize.sys", "goldenEgg.prize.user"],
+    schema: EGG_PRIZE_SCHEMA,
   });
 }
 

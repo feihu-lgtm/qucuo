@@ -73,6 +73,7 @@ WO-15 起这就是线上主回路：**旧状态提取层（turn.extraction/extra
 | settle 社交好感硬结算 | 已落地 | 送礼/送银/求教/邀同行的好感增量由 feature 确定性写入（系统账本语义：魅力修正/每日 +12 上限/0-100 clamp/无好感轨道跳过），模型只写叙事不写好感 MVU。 |
 | 天机落账卡 UI | 已落地/动作结构化直写 | `EffectReceiptCard` 消费 `receipts` 渲染落账条；按钮派发结构化 action（itemId/skillId/factId/op/kind），经 NarrativeLogFeed 原样透传进 `act`，useTurn 在 intent 识别前的系统边界按 id 寻址确定性幂等执行（features/receipts/logic，equip/activate 为 explicit-on 语义），行动识别关闭同样生效，写账走 applyResult 统一边界。例外：`viewPact` 无结构化面板入口，保留文本指令。 |
 | 化形同伴档案与初入队调度 | 已落地 | `companionProfiles` 收拢雪豹（白栖雪）与珍珠（夏明珠）的三字人名、武功、12 项体貌与受 `nsfwOn` 硬门控的私密细节；`inviteCompanion` 初次入队写入人形化态、化形旗标与 `varTree` 形态并钉好感；`companion_transform`（初入队化形演出）与 `companion_dossier`（全随行化形同伴档案注入 `buildNpcContext`）两块文本单源住 `src/copy/*.txt` 并接入统一提示词总控台。档案里的当前形态以存档 `companionState[key].form` 为准（入队化形与 `switchCompanionForm` 写入），浏览器本地的外貌形态偏好只给没有 `form` 字段的老档兜底；人物面原先的手动外貌切换已随重复伙伴头像一并移除。 |
+| 金鸟金蛋 AI 开奖 `goldenEgg.prize` | 已落地 | 元朵朵每日金蛋改由 AI 自由随机一件实物：`openGoldenEgg` 先同步记签到日（防连点重领）并按气运 `rollQuality` 掷定品阶；`goldenEgg.prize`（app/calls/hookCalls.js 注册，提示词单源 `src/copy/goldenEgg.sys.txt`，strict schema 五键全必填）只出名字/类别/描述/朵朵反应，`parseEggPrize` 裁剪后由 `settleAiEggPrize` 经 `makeItemSmart` 落物——照抄现成物件名按物件志实例化，其余按系统品阶 `makeItem` 算攻防与价格，行囊函数式叠写；回包经 `applyResult` 统一边界后台落账，存档纪元一变整段作废。无 API、AI 失败或回包不合规退回 `GOLDEN_EGG_POOL` 加权奖池并配手写反应句；情趣物与卡券只留在兜底奖池，不进 AI 的现成物件名单。 |
 
 ## 4. 目标链路分层
 

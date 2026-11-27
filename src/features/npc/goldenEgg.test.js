@@ -1,9 +1,10 @@
 // 金鸟金蛋：游戏日界（time/24）/ 加权奖池各档 / 物品带价入行囊 / 兜底句 / 卡券强开档。
 import { describe, it, expect } from "vitest";
-import { claimGoldenEgg } from "./goldenEgg.js";
+import { claimGoldenEgg, openGoldenEgg, settleAiEggPrize } from "./goldenEgg.js";
 import {
   GOLDEN_EGG_POOL, GOLDEN_EGG_STATE_KEY, INTIMATE_TICKET_NAME,
-  eggAlreadyClaimed, eggGameDay, eggFallbackLine, eggReactionPrompt, eggTier, rollGoldenEgg,
+  eggAlreadyClaimed, eggGameDay, eggFallbackLine, eggTier, rollGoldenEgg,
+  EGG_CATALOG_PICKS, EGG_PRIZE_SCHEMA, eggPrizePrompt, parseEggPrize,
 } from "../../domain/rules/npc/goldenEgg.js";
 import { intimateTicketNote } from "../../domain/rules/npc/intimacy.js";
 import { CATALOG_INDEX } from "../../domain/data/items/catalog.js";
@@ -110,12 +111,6 @@ describe("奖池各档", () => {
 });
 
 describe("朵朵反应", () => {
-  it("反应 prompt 按档喂演法（blush 档含羞到跳脚）", () => {
-    const { sys, user } = eggReactionPrompt({ prize: { label: "假阳具" }, tier: "blush" });
-    expect(sys).toContain("元朵朵");
-    expect(user).toContain("假阳具");
-    expect(user).toMatch(/羞|脸红/);
-  });
 
   it("兜底句按档随机且提朵朵", () => {
     for (const tier of ["jackpot", "small", "blush", "empty"]) {
@@ -155,5 +150,72 @@ describe("女眷一次卡·不可拒绝", () => {
     expect(note).toContain("凭「女眷一次卡·不可拒绝」强开");
     expect(note).toContain("无从推拒");
     expect(note).toContain("造物无情人有情");
+  });
+});
+
+describe("AI 自由开奖", () => {
+  it("openGoldenEgg 记签到日、掷品阶、只落开场两行，不发奖", () => {
+    const res = openGoldenEgg({ time: 30, char: { special: { 气运: 5 } } }, duoduo, { quality: "蓝" });
+    expect(res.quality).toBe("蓝");
+    expect(res.logs).toHaveLength(2);
+    expect(res.changes.inv).toBeUndefined();
+    expect(res.changes.char).toBeUndefined();
+    expect(res.changes.npcState({})[GOLDEN_EGG_STATE_KEY].lastDay).toBe(1);
+  });
+
+  it("openGoldenEgg 不传品阶时按气运掷，取值落在六档内", () => {
+    const res = openGoldenEgg({ time: 0, char: { special: { 气运: 10 } } }, duoduo);
+    expect(["白", "绿", "蓝", "紫", "橙", "红"]).toContain(res.quality);
+  });
+
+  it("同日再开被拦、非朵朵报错，都不掷品阶", () => {
+    const npcState = { [GOLDEN_EGG_STATE_KEY]: { lastDay: 1 } };
+    expect(openGoldenEgg({ time: 30, npcState }, duoduo).quality).toBeUndefined();
+    expect(openGoldenEgg({}, { name: "张三" }).quality).toBeUndefined();
+  });
+
+  it("AI 新起名的物件按系统品阶算数值与价格，函数式叠进最新行囊", () => {
+    const res = settleAiEggPrize({ name: "雪鸮翎扇", category: "accessory", desc: "扇骨里藏着一根白翎。", mood: "small", reaction: "朵朵哼了一声，说这扇子本来要留给自己。" }, "紫");
+    expect(res.item.name).toBe("雪鸮翎扇");
+    expect(res.item.quality).toBe("紫");
+    expect(res.item.goldenEgg).toBe(true);
+    expect(res.item.buyPrice).toBeGreaterThan(0);
+    expect(res.changes.inv([{ name: "旧物" }]).map((i) => i.name)).toEqual(["旧物", "雪鸮翎扇"]);
+    const text = res.logs.map((l) => l.text).join("");
+    expect(text).toContain("雪鸮翎扇");
+    expect(text).toContain("朵朵哼了一声");
+  });
+
+  it("AI 照抄现成物件名时数值以物件志为准", () => {
+    const res = settleAiEggPrize({ name: "金疮药", category: "weapon", desc: "", mood: "small", reaction: "" }, "红");
+    const catalog = CATALOG_INDEX["金疮药"];
+    expect(res.item.category).toBe(catalog.category);
+    expect(res.item.quality).toBe(catalog.quality || res.item.quality);
+    expect(res.item.quality).not.toBe("红");
+  });
+
+  it("现成物件名单不含情趣物与卡券，且都在物件志里", () => {
+    expect(EGG_CATALOG_PICKS).not.toContain(INTIMATE_TICKET_NAME);
+    expect(EGG_CATALOG_PICKS).not.toContain("假阳具");
+    for (const name of EGG_CATALOG_PICKS) expect(CATALOG_INDEX[name], name).toBeTruthy();
+  });
+
+  it("提示词带上系统品阶与现成物件，schema 五键全必填", () => {
+    const { sys, user } = eggPrizePrompt({ quality: "橙" });
+    expect(sys).toContain("元朵朵");
+    expect(user).toContain("橙");
+    expect(user).toContain("松子糖");
+    expect(EGG_PRIZE_SCHEMA.schema.required).toEqual(Object.keys(EGG_PRIZE_SCHEMA.schema.properties));
+  });
+
+  it("parseEggPrize 裁长度、去引号、非法枚举归位，空名判无效", () => {
+    expect(parseEggPrize(null)).toBeNull();
+    expect(parseEggPrize({ name: "  " })).toBeNull();
+    const p = parseEggPrize({ name: "「一二三四五六七八九十十一十二」", category: "food", desc: "x\ny", mood: "huge", reaction: "r" });
+    expect(p.name).not.toMatch(/[「」]/);
+    expect(p.name.length).toBeLessThanOrEqual(12);
+    expect(p.category).toBe("misc");
+    expect(p.mood).toBe("small");
+    expect(p.desc).toBe("x y");
   });
 });
