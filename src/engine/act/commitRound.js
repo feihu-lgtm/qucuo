@@ -152,6 +152,7 @@ export function commitRound(d) {
   applyPostResult(d, commitModelFlags({  // flags_add 过滤落盘（原 commitProposalWrites 尾部内嵌）
     p: d.p, room: d.room, innerRoomName: d.innerRoomName,
     questProgress: d.questProgress,
+    cmd: d.cmd, talkTarget: d.talkTarget, activeTarget: d.activeTarget,
   }));
   // WO-13 判官管线落账：materializeFacts 的 changes 直写状态切片，
   // patches 走标准 applyPatches 落到 varTree 等路径，logs 回吐事实短句。

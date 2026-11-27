@@ -4,16 +4,22 @@ import { Overlay, Header } from "../buildings/common.jsx";
 import DungeonNodeView from "./DungeonNodeView.jsx";
 import {
   applyDungeonBattleResult,
+  applyMapBattleResult,
   createDungeonRun,
   DUNGEON_ID_TO_DISTRICT,
+  ensureDungeonWorld,
+  getGameDayFromTime,
   moveRoom,
+  normalizeDungeonStore,
   resolveDungeonChoice,
+  restoreCheckpoint,
   retreatDungeonRun,
   retreatRun,
   routeRoomAction,
   routeRoomText,
   selectDungeonNode,
   startMapRun,
+  syncDungeonWorld,
 } from "../../../domain/rules/dungeon/engine.js";
 import { settleDungeonRun, settleMapRun } from "../../../features/dungeon/logic.js";
 import { applyResult } from "../../../features/run.js";
@@ -29,12 +35,55 @@ export default function DungeonScreen({
 }) {
   const [run, setRun] = useState(() => createDungeonRun(building?.dungeonId, { char }));
   const [narration, setNarration] = useState("");
+  const [worldVersion, setWorldVersion] = useState(0);
   const settledRef = useRef(false);
   const narrationSeqRef = useRef(0);
-  // 内层地图分支：与旧节点流并存， dungeonId→districtKey 有映射才给入口
+
   const mapDistrictKey = DUNGEON_ID_TO_DISTRICT[building?.dungeonId];
+  // 注意：mapRun 保持组件内唯一一个初始为 null 的 state（测试桩约定）
   const [mapRun, setMapRun] = useState(null);
-  // 旧 run 还没动过（没清节点/没嗑药/没掉血）才放转入，免得转入丢掉未结算进度
+
+  const storeSnapshot = gameStore?.getState?.() || {};
+  const dungeonStore = normalizeDungeonStore(storeSnapshot.dungeonRun);
+  const currentTime = storeSnapshot.time ?? 0;
+  const currentDay = getGameDayFromTime(currentTime);
+
+  const companionNames = Object.values(storeSnapshot.companionState || {})
+    .filter((c) => c?.unlocked && c?.label)
+    .map((c) => c.label);
+
+  const currentWorld = mapDistrictKey
+    ? ensureDungeonWorld(mapDistrictKey, dungeonStore.worlds?.[mapDistrictKey], {
+        time: currentTime,
+        excludedNames: companionNames,
+      })
+    : null;
+  const savedActiveRun = dungeonStore.active && dungeonStore.active.districtKey === mapDistrictKey
+    ? dungeonStore.active
+    : null;
+
+  // 若首次为本宫生成了 7 天世界，写回 store 保证离开时可直接读取
+  useEffect(() => {
+    if (!mapDistrictKey || !currentWorld) return;
+    if (dungeonStore.worlds?.[mapDistrictKey]?.seed !== currentWorld.seed) {
+      gameActions.setDungeonRun({
+        active: dungeonStore.active,
+        worlds: { ...dungeonStore.worlds, [mapDistrictKey]: currentWorld },
+      });
+    }
+  }, [mapDistrictKey, currentWorld?.seed]);
+
+  const persistActiveMapRun = (nextMapRun) => {
+    if (!mapDistrictKey || !nextMapRun) return;
+    const latest = normalizeDungeonStore(gameStore?.getState?.()?.dungeonRun);
+    const baseWorld = latest.worlds?.[mapDistrictKey] || currentWorld;
+    const synced = baseWorld ? syncDungeonWorld(baseWorld, nextMapRun, { time: gameStore?.getState?.()?.time ?? currentTime }) : baseWorld;
+    gameActions.setDungeonRun({
+      active: nextMapRun.status === "exploring" || nextMapRun.status === "combat" ? nextMapRun : null,
+      worlds: synced ? { ...latest.worlds, [mapDistrictKey]: synced } : latest.worlds,
+    });
+  };
+
   const oldRunUntouched = run.clearedNodes === 0 && !run.usedItems.length
     && run.hp[0] === (char?.hp?.[0] ?? run.hp[0]);
 
@@ -54,7 +103,6 @@ export default function DungeonScreen({
     return () => { cancelled = true; };
   }, [run.clearedNodes, run.status, run.dungeonName, run.floorName, run.log]);
 
-  // 结算结果落盘的公共件：actLocal 事务里现取 state 现算，写 char/inv/exp/pot/time/flags + 日志 + 笔记
   const execSettle = (settle) => {
     const exec = runCommand || ((_id, fn) => fn());
     exec("actLocal", () => {
@@ -64,7 +112,6 @@ export default function DungeonScreen({
     });
   };
 
-  // 侧栏点当前建筑等不走 onClose 的卸载：兜底结算，免得丢收获或白嫖探索时间
   const runRef = useRef(run);
   runRef.current = run;
   const mapRunRef = useRef(mapRun);
@@ -78,7 +125,7 @@ export default function DungeonScreen({
     const c = charRef.current;
     if (m) {
       settledRef.current = true;
-      execSettle(() => settleMapRun(gameStore.getState(), m.status === "exploring" ? retreatRun(m).runState : m));
+      execSettle(() => settleMapRun(gameStore.getState(), m.status === "exploring" || m.status === "combat" ? retreatRun({ ...m, status: "exploring" }).runState : m));
     } else if (r.status !== "exploring" || r.clearedNodes > 0 || r.usedItems.length > 0
         || r.hp[0] !== (c?.hp?.[0] ?? r.hp[0])) {
       settledRef.current = true;
@@ -96,7 +143,6 @@ export default function DungeonScreen({
     onClose?.();
   };
 
-  // 内层地图：探索中关屏兜底按撤退结算（丢图不丢货）；终局走 settleMapRun 落盘
   const handleMapSettleAndClose = () => {
     if (settledRef.current) {
       onClose?.();
@@ -107,32 +153,86 @@ export default function DungeonScreen({
     onClose?.();
   };
 
-  const startInnerMap = () => {
-    setMapRun(startMapRun(mapDistrictKey, `${building?.dungeonId}|${Date.now()}`, { char }));
+  const startInnerMap = (entryRoom) => {
+    const st = gameStore?.getState?.() || {};
+    const nextRun = startMapRun(mapDistrictKey, `${building?.dungeonId}|${Date.now()}`, {
+      char,
+      world: currentWorld,
+      entryRoom,
+      flags: st.flags || [],
+      skills: skills || st.skills || [],
+      inv: inv || st.inv || [],
+    });
+    setMapRun(nextRun);
+    persistActiveMapRun(nextRun);
   };
-  const handleMapMove = (dir) => setMapRun((prev) => moveRoom(prev, dir).runState);
-  // 房间事件/自由文本走 actionRouter 裁决；谜题认不出的输入（needsAI）回退到
-  // 主输入框同一条 AI 意图通路（act）——叙事照旧走 AI，判定照旧走系统。
+
+  const resumeSavedMap = () => {
+    if (!savedActiveRun) return;
+    setMapRun(savedActiveRun);
+  };
+
+  const resetWorldMap = () => {
+    if (!mapDistrictKey) return;
+    const fresh = ensureDungeonWorld(mapDistrictKey, currentWorld, {
+      time: currentTime,
+      excludedNames: companionNames,
+      forceReset: true,
+    });
+    const latest = normalizeDungeonStore(gameStore?.getState?.()?.dungeonRun);
+    gameActions.setDungeonRun({
+      active: null,
+      worlds: { ...latest.worlds, [mapDistrictKey]: fresh },
+    });
+    setWorldVersion((v) => v + 1);
+  };
+
+  const updateMapRun = (next) => {
+    setMapRun(next);
+    persistActiveMapRun(next);
+  };
+
+  const handleMapMove = (dir) => {
+    const next = moveRoom(mapRun, dir).runState;
+    updateMapRun(next);
+  };
+
   const applyMapRoute = (res, text) => {
     if (!res) return;
     if (res.needsAI) { act?.(text); return; }
-    let next = res.runState;
+    const next = res.runState;
     if (!next) return;
-    if (res.combatNpc) {
-      next = { ...next, log: [...next.log, "对方亮了兵器——遭遇战接线中。"] };
+    if (res.combatNpc && !next.activeBattle) {
+      updateMapRun({
+        ...next,
+        status: "combat",
+        activeBattle: { npc: res.combatNpc, reward: { money: 25, exp: 5, pot: 3 }, roomName: next.current },
+      });
+      return;
     }
-    setMapRun(next);
+    updateMapRun(next);
   };
+
   const handleMapAction = (label) => applyMapRoute(routeRoomAction(mapRun, label, { attrs: effectiveSpecialNow }), label);
   const handleMapText = (t) => applyMapRoute(routeRoomText(mapRun, t, { attrs: effectiveSpecialNow }), t);
-  const handleMapRetreat = () => setMapRun((prev) => retreatRun(prev).runState);
+  const handleMapRetreat = () => updateMapRun(retreatRun(mapRun).runState);
+  const handleMapRestoreCheckpoint = () => {
+    const res = restoreCheckpoint(mapRun);
+    if (res?.runState) updateMapRun(res.runState);
+  };
+
+  const handleMapBattleFinish = (outcome, loot, _battleLog, _moveset, usedItems, playerHp, dodgeStolenItems) => {
+    const next = applyMapBattleResult(mapRun, { outcome, loot, playerHp, usedItems, dodgeStolenItems });
+    updateMapRun(next);
+  };
 
   const handleHeaderClose = () => {
     if (mapRun) {
       if (mapRun.status === "exploring") {
-        setMapRun((prev) => retreatRun(prev).runState);
+        updateMapRun(retreatRun(mapRun).runState);
         return;
       }
+      if (mapRun.status === "combat") return;
       handleMapSettleAndClose();
       return;
     }
@@ -162,10 +262,17 @@ export default function DungeonScreen({
     }));
   };
 
+  const curMapRoom = mapRun ? mapRun.map.rooms[mapRun.current] : null;
+  const canRetreatHere = Boolean(mapRun && (mapRun.current === mapRun.map.anchor || curMapRoom?.exitUnlocked));
+  const availableSilverNow = mapRun
+    ? Math.max(0, (mapRun.charMoney ?? char?.money ?? 0) + (mapRun.loot?.money || 0) - (mapRun.spentMoney || 0))
+    : 0;
+  const daysLeft = currentWorld ? Math.max(0, (currentWorld.expiresAtDay ?? currentDay + 7) - currentDay) : 7;
+
   return (
     <Overlay onClose={handleHeaderClose} inline={inline}>
       <Header name={building?.name || run.dungeonName} onClose={handleHeaderClose} />
-      <div style={{ padding: 14 }}>
+      <div style={{ padding: 14 }} data-world-v={worldVersion}>
         <div style={{
           display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8,
           fontSize: "var(--fs-sm)", color: "var(--text-dim)", marginBottom: 10,
@@ -175,7 +282,7 @@ export default function DungeonScreen({
             <>
               <span>{mapRun.districtKey}·内层（第 {mapRun.step} 步）</span>
               <span>气血 {mapRun.hp[0]}/{mapRun.hp[1]}</span>
-              <span>收获：{mapRun.loot.money}两 · 物事 {mapRun.loot.items.length}</span>
+              <span>银两可用 {availableSilverNow}两 · 物事 {mapRun.loot.items.length}</span>
             </>
           ) : (
             <>
@@ -187,27 +294,23 @@ export default function DungeonScreen({
         </div>
 
         {mapRun ? (
-          mapRun.status === "exploring" ? (
+          mapRun.status === "exploring" || mapRun.status === "combat" ? (
             <>
               <DungeonMapPanel
-                room={{ name: mapRun.current, ...mapRun.map.rooms[mapRun.current] }}
+                room={{ name: mapRun.current, ...curMapRoom }}
                 runState={mapRun}
                 onMove={handleMapMove}
                 onAction={handleMapAction}
                 onText={handleMapText}
               />
-              {mapRun.current === mapRun.map.anchor && (
+              {canRetreatHere && (
                 <button
                   type="button"
-                  onClick={handleMapRetreat} className="dungeon-screen-1"
+                  onClick={handleMapRetreat}
+                  className="dungeon-screen-1"
                 >
-                  撤回外城（保收获）
+                  {mapRun.current === mapRun.map.anchor ? "撤回外城（保收获）" : `经「${mapRun.current}」撤回外城（保收获）`}
                 </button>
-              )}
-              {mapRun.map.rooms[mapRun.current]?.isBoss && (
-                <div style={{ marginTop: 8, fontSize: "var(--fs-xs)", color: "var(--text-dim)" }}>
-                  此地有镇宫首领盘踞——决战接线中，先记下方位。
-                </div>
               )}
               {mapRun.log.length > 0 && (
                 <div style={{
@@ -223,27 +326,80 @@ export default function DungeonScreen({
           ) : (
             <div style={{ fontSize: "var(--fs-sm)", lineHeight: 1.8 }}>
               <div style={{ color: "var(--accent)", marginBottom: 6 }}>
-                {mapRun.status === "victory" ? "打通内层地宫！" : mapRun.status === "retreated" ? "已撤回锚点之外。" : "负伤被逐出地宫……"}
+                {mapRun.status === "victory" ? "打通内层地宫！" : mapRun.status === "retreated" ? "已稳妥撤回外城。" : "负伤被逐出地宫……"}
               </div>
-              <div>带出：{mapRun.loot.money} 两 · 物事 {mapRun.loot.items.length} 件</div>
-              <button
-                type="button"
-                onClick={handleMapSettleAndClose} className="dungeon-screen-2"
-              >
-                结算离开
-              </button>
+              <div>带出：银两 {mapRun.loot.money} 两 · 潜能 {mapRun.loot.pot} · 物事 {mapRun.loot.items.length} 件</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                {mapRun.status === "defeated" && mapRun.checkpointSnapshot && (
+                  <button
+                    type="button"
+                    onClick={handleMapRestoreCheckpoint}
+                    style={{
+                      padding: "4px 14px", fontSize: "var(--fs-sm)",
+                      border: `1px solid var(--accent-dim)`, color: "var(--accent)",
+                      background: "transparent", cursor: "pointer",
+                    }}
+                  >
+                    从检查点重来（{mapRun.checkpointSnapshot.current}）
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleMapSettleAndClose}
+                  className="dungeon-screen-2"
+                >
+                  结算离开
+                </button>
+              </div>
             </div>
           )
         ) : (
           <>
             {mapDistrictKey && oldRunUntouched && (
-              <button
-                type="button"
-                data-part="enter-inner-map"
-                onClick={startInnerMap} className="dungeon-screen-3"
-              >
-                转入内层地图（房间图探法）
-              </button>
+              <div style={{ marginBottom: 10, display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+                {savedActiveRun && (
+                  <button
+                    type="button"
+                    onClick={resumeSavedMap}
+                    style={{
+                      padding: "4px 14px", fontSize: "var(--fs-sm)",
+                      border: `1px solid var(--gold)`, color: "var(--gold)",
+                      background: "transparent", cursor: "pointer",
+                    }}
+                  >
+                    继续上次进度（{savedActiveRun.current}）
+                  </button>
+                )}
+                {(currentWorld?.unlockedEntries || [currentWorld?.map?.anchor]).filter(Boolean).map((entryName) => (
+                  <button
+                    key={entryName}
+                    type="button"
+                    data-part="enter-inner-map"
+                    onClick={() => startInnerMap(entryName)}
+                    className="dungeon-screen-3"
+                  >
+                    {entryName === currentWorld?.map?.anchor ? `进入内层地图（${entryName}）` : `由已通出口潜入：${entryName}`}
+                  </button>
+                ))}
+                {currentWorld?.bossDefeated && (
+                  <button
+                    type="button"
+                    onClick={resetWorldMap}
+                    style={{
+                      padding: "4px 12px", fontSize: "var(--fs-xs)",
+                      border: `1px solid var(--border)`, color: "var(--text-dim)",
+                      background: "transparent", cursor: "pointer",
+                    }}
+                  >
+                    重探新脉（换一张新图）
+                  </button>
+                )}
+                {currentWorld && (
+                  <span style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)" }}>
+                    当前地宫余 {daysLeft} 日不变 · 潜入冒险者 {currentWorld.adventurers?.length || 0} 人
+                  </span>
+                )}
+              </div>
             )}
             <DungeonNodeView
               run={run}
@@ -280,6 +436,21 @@ export default function DungeonScreen({
             playerMoveset={char?.moveset}
             playerSkills={skills}
             onFinish={handleBattleFinish}
+          />
+        </Suspense>
+      )}
+
+      {mapRun?.status === "combat" && mapRun.activeBattle?.npc && (
+        <Suspense fallback={null}>
+          <DuelScreen
+            key={`map_${mapRun.step}_${mapRun.activeBattle.npc.id}`}
+            npc={mapRun.activeBattle.npc}
+            playerChar={{ ...char, hp: mapRun.hp, special: effectiveSpecialNow }}
+            pendingCombatBuff={char?.pendingCombatBuff}
+            playerInv={inv}
+            playerMoveset={char?.moveset}
+            playerSkills={skills}
+            onFinish={handleMapBattleFinish}
           />
         </Suspense>
       )}

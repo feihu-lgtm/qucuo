@@ -5,20 +5,124 @@ import { Button } from "../primitives/index.js";
 
 // 地宫内层地图房间面板（docs/设计_地宫内层地图.md §A 呈现顺序）。
 // 纯受控组件：不读 domain/store 状态，接线方传入 room/runState 与三个回调。
-// room 为内层地图房间对象（genDungeonMap / mapRun 产出）：
-//   {desc, exits:{n/s/e/w/u/d:目标房名}, residentNpcName?, envTag?,
-//    roomEvent?:{options:[{label,...}]}, groundLoot?:[{name}|string], isTreasure?, isCheckpoint?}
-// runState 目前只用于展示 hp/loot/step 等底栏信息，可缺省。
 const DIR_KEYS = ["n", "s", "e", "w", "u", "d"];
 
+const KIND_GLYPH = {
+  entry: "入",
+  exit: "出",
+  boss: "王",
+  merchant: "商",
+  trade: "易",
+  supply: "补",
+  puzzle: "谜",
+  chest: "箱",
+  trap_chest: "险",
+  combat: "战",
+  neutral: "·",
+};
+
+function FogGrid({ runState, theme }) {
+  const size = runState?.map?.gridSize;
+  const rooms = runState?.map?.rooms;
+  if (!size || !rooms) return null;
+
+  const visited = new Set(runState.visited || []);
+  const revealed = new Set(runState.revealedExits || []);
+  const unlocked = new Set(runState.unlockedExits || []);
+  const byCoord = new Map();
+  for (const [name, r] of Object.entries(rooms)) {
+    if (Number.isInteger(r.x) && Number.isInteger(r.y)) {
+      byCoord.set(`${r.x},${r.y}`, { name, room: r });
+    }
+  }
+  const isAdjacentToVisited = (r) =>
+    Object.values(r?.exits || {}).some((target) => visited.has(target));
+
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div style={{ fontSize: "var(--fs-2xs)", color: theme.textDim, marginBottom: 4 }}>
+        内层平面迷雾（{size}×{size} · @当前 / ?未知路 / 出已探出口 · 中心待探）
+      </div>
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: `repeat(${size}, 18px)`,
+        gap: 2,
+        padding: 6,
+        background: "rgba(0,0,0,0.28)",
+        border: `1px solid ${theme.border}`,
+        width: "fit-content",
+      }}>
+        {Array.from({ length: size * size }, (_, idx) => {
+          const x = idx % size;
+          const y = Math.floor(idx / size);
+          const entry = byCoord.get(`${x},${y}`);
+          if (!entry) {
+            return <span key={idx} style={{ width: 18, height: 18, display: "inline-block", opacity: 0.12, background: "#000" }} />;
+          }
+          const { name, room: r } = entry;
+          const isCur = name === runState.current;
+          const isVis = visited.has(name);
+          const isRev = revealed.has(name) || unlocked.has(name);
+          const isAdj = !isVis && isAdjacentToVisited(r);
+
+          let ch = "";
+          let color = theme.textDim;
+          let bg = "rgba(255,255,255,0.03)";
+          let border = `1px solid ${theme.border}`;
+
+          if (isCur) {
+            ch = "@";
+            color = theme.bgPanel || "#111";
+            bg = theme.accent;
+            border = `1px solid ${theme.accent}`;
+          } else if (isVis) {
+            ch = KIND_GLYPH[r.roomKind] || "·";
+            if (r.roomKind === "exit" || r.roomKind === "entry") color = theme.turquoise || theme.green;
+            else if (r.roomKind === "chest" || r.roomKind === "merchant") color = theme.gold;
+            else if (r.roomKind === "boss") color = theme.accent;
+            else color = theme.text;
+            bg = "rgba(255,255,255,0.08)";
+          } else if (isRev) {
+            ch = "出";
+            color = theme.gold;
+            border = `1px dashed ${theme.gold}`;
+          } else if (isAdj) {
+            ch = "?";
+            color = theme.textDim;
+            border = `1px dashed ${theme.border}`;
+          } else {
+            border = "1px solid transparent";
+            bg = "rgba(0,0,0,0.22)";
+          }
+
+          return (
+            <span
+              key={idx}
+              title={isVis || isRev ? name : isAdj ? "???" : ""}
+              style={{
+                width: 18, height: 18, display: "inline-flex", alignItems: "center", justifyContent: "center",
+                fontSize: "10px", lineHeight: 1, boxSizing: "border-box",
+                color, background: bg, border,
+              }}
+            >
+              {ch}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function DungeonMapPanel({ room, runState, onMove, onAction, onText }) {
-  // 唯一的调用方地牢屏每次都传主题，原先的暗夜兜底走不到；颜色统一取 CSS 变量。
   const theme = THEME_VARS;
   const [text, setText] = useState("");
   const exits = room?.exits || {};
   const options = room?.roomEvent?.options || [];
   const npcs = room?.residentNpcName ? [room.residentNpcName] : [];
   const loot = (room?.groundLoot || []).map(g => (typeof g === "string" ? g : g?.name)).filter(Boolean);
+  const isGrid = Boolean(runState?.map?.gridSize);
+  const visitedSet = isGrid ? new Set(runState.visited || []) : null;
 
   const submit = () => {
     const t = text.trim();
@@ -39,9 +143,17 @@ export default function DungeonMapPanel({ room, runState, onMove, onAction, onTe
       <div data-part="room-name" style={{ fontSize: "var(--fs-md)", color: theme.accent, letterSpacing: "2px", marginBottom: 6 }}>
         {room?.name || "无名之室"}
         {room?.isTreasure && <span style={{ ...chip, marginLeft: 8, color: theme.gold }}>✦ 藏宝</span>}
+        {room?.isExit && (
+          <span style={{ ...chip, marginLeft: 8, color: room.exitUnlocked ? theme.green : theme.gold }}>
+            {room.exitUnlocked ? "◈ 已通出口" : "◇ 封堵出口"}
+          </span>
+        )}
         {room?.isCheckpoint && <span style={{ ...chip, marginLeft: 8, color: theme.turquoise }}>◈ 检点</span>}
         {room?.envTag && <span style={{ ...chip, marginLeft: 8, color: theme.textDim }}>{room.envTag}</span>}
       </div>
+
+      {/* 13x13 迷雾平面图（无 data-part，不影响现有契约顺序） */}
+      {isGrid && <FogGrid runState={runState} theme={theme} />}
 
       {/* 2. 描述 */}
       <div data-part="room-desc" style={{ color: theme.textDim, marginBottom: 12, whiteSpace: "pre-wrap" }}>
@@ -66,22 +178,30 @@ export default function DungeonMapPanel({ room, runState, onMove, onAction, onTe
         </div>
       )}
 
-      {/* 4. 六向按钮：有出口的亮，无出口的暗置 */}
+      {/* 4. 六向按钮：有出口的亮，无出口的暗置；大平面未探之地显示 ??? */}
       <div data-part="room-exits" style={{ marginBottom: options.length > 0 ? 12 : 14 }}>
         <div style={label}>出口</div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {DIR_KEYS.map(dir => {
             const target = exits[dir];
             const enabled = Boolean(target);
+            const targetLabel = !enabled
+              ? DIRS[dir]
+              : (visitedSet && !visitedSet.has(target))
+                ? `${DIRS[dir]}：???`
+                : `${DIRS[dir]}：${target}`;
             return (
-              <Button variant="chrome" font="native" active={enabled}
+              <Button
+                variant="chrome"
+                font="native"
+                active={enabled}
                 key={dir}
                 type="button"
                 disabled={!enabled}
                 aria-disabled={!enabled}
                 onClick={() => enabled && onMove?.(dir)}
-                title={enabled ? `${DIRS[dir]}：${target}` : DIRS[dir]} style={{ opacity: enabled ? 1 : 0.35,
-                  cursor: enabled ? "pointer" : "default" }}
+                title={targetLabel}
+                style={{ opacity: enabled ? 1 : 0.35, cursor: enabled ? "pointer" : "default" }}
               >
                 {DIRS[dir]}
               </Button>
@@ -122,7 +242,7 @@ export default function DungeonMapPanel({ room, runState, onMove, onAction, onTe
       {/* 底栏：runState 摘要（可选） */}
       {runState && (
         <div data-part="run-state" style={{ marginTop: 10, fontSize: "var(--fs-2xs)", color: theme.textDim }}>
-          {`第 ${runState.step ?? 0} 步`}{runState.hp != null && ` · 气血 ${runState.hp}`}
+          {`第 ${runState.step ?? 0} 步`}{runState.hp != null && ` · 气血 ${Array.isArray(runState.hp) ? runState.hp[0] : runState.hp}`}
           {Array.isArray(runState.loot) && runState.loot.length > 0 && ` · 得物 ${runState.loot.length} 件`}
         </div>
       )}

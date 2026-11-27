@@ -11,10 +11,31 @@ import { advanceExploring } from "./resolve.js";
 export { calcDungeonCheckRate } from "./internal.js";
 export { resolveDungeonChoice } from "./resolve.js";
 export { makePuzzle, PUZZLE_FACTORIES } from "./puzzles.js";
-export { pickDungeonAdventurers, genAdventurerEncounter } from "./dungeonPool.js";
+export {
+  pickDungeonAdventurers,
+  genAdventurerEncounter,
+  calcAdventurerDiveProb,
+  rollDungeonDiveSquad,
+  getAdventurerById,
+} from "./dungeonPool.js";
 export { summonFollower, followerEffectInCombat, followerLeaveChance, dismissFollower } from "../follower/followers.js";
 export { resolveRoomEvent, ROOM_EVENT_KINDS } from "./events.js";
-export { startMapRun, moveRoom, retreatRun, runEnd, restoreCheckpoint, serializeMapRun, deserializeMapRun, DUNGEON_ID_TO_DISTRICT } from "./mapRun.js";
+export {
+  startMapRun,
+  moveRoom,
+  retreatRun,
+  runEnd,
+  restoreCheckpoint,
+  serializeMapRun,
+  deserializeMapRun,
+  DUNGEON_ID_TO_DISTRICT,
+  normalizeDungeonStore,
+  ensureDungeonWorld,
+  syncDungeonWorld,
+  rollChestRewards,
+  applyMapBattleResult,
+  getGameDayFromTime,
+} from "./mapRun.js";
 export { routeRoomAction, routeRoomText } from "./actionRouter.js";
 
 export function createDungeonRun(dungeonId, { char } = {}) {

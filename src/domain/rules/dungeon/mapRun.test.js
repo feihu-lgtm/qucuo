@@ -1,6 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { DUNGEON_DISTRICTS_ALL } from "../../data/dungeon/districts.js";
-import { deserializeMapRun, moveRoom, restoreCheckpoint, retreatRun, runEnd, serializeMapRun, startMapRun } from "./mapRun.js";
+import {
+  applyMapBattleResult,
+  deserializeMapRun,
+  ensureDungeonWorld,
+  moveRoom,
+  normalizeDungeonStore,
+  restoreCheckpoint,
+  retreatRun,
+  rollChestRewards,
+  runEnd,
+  serializeMapRun,
+  startMapRun,
+  syncDungeonWorld,
+} from "./mapRun.js";
+import { routeRoomAction } from "./actionRouter.js";
 
 const DK = "白塔地宫";
 
@@ -285,16 +299,37 @@ describe("checkpointSnapshot / restoreCheckpoint / 序列化", () => {
   it("覆盖：再访检点房刷新快照（以最近一次歇脚为准）", () => {
     const rs0 = findCheckpointRun();
     const first = rs0.checkpointSnapshot;
-    // 离开检点房再回来
-    const out = Object.entries(rs0.map.rooms[rs0.current].exits).find(([, t]) => t !== rs0.current);
+    // 先沿 BFS 走到 first.current（确保站在检点房上），再离开又回来
+    const bfsPath = (from, to, rooms) => {
+      if (from === to) return [];
+      const q = [[from, []]];
+      const seen = new Set([from]);
+      while (q.length) {
+        const [cur, dirs] = q.shift();
+        for (const [d, nxt] of Object.entries(rooms[cur].exits)) {
+          if (seen.has(nxt)) continue;
+          const nextDirs = [...dirs, d];
+          if (nxt === to) return nextDirs;
+          seen.add(nxt);
+          q.push([nxt, nextDirs]);
+        }
+      }
+      return [];
+    };
+    let atCk = rs0;
+    for (const d of bfsPath(rs0.current, first.current, rs0.map.rooms)) {
+      atCk = moveRoom(atCk, d).runState;
+    }
+    const baseSnap = atCk.checkpointSnapshot;
+    const out = Object.entries(atCk.map.rooms[atCk.current].exits).find(([, t]) => t !== atCk.current);
     expect(out).toBeTruthy();
-    const away = moveRoom(rs0, out[0]).runState;
-    const backDir = Object.entries(away.map.rooms[away.current].exits).find(([, t]) => t === first.current);
+    const away = moveRoom(atCk, out[0]).runState;
+    const backDir = Object.entries(away.map.rooms[away.current].exits).find(([, t]) => t === baseSnap.current);
     expect(backDir).toBeTruthy();
     const back = moveRoom(away, backDir[0]).runState;
     expect(back.checkpointSnapshot.step).toBe(back.step);
-    expect(back.checkpointSnapshot.step).toBeGreaterThan(first.step);
-    expect(back.checkpointSnapshot.visited.length).toBeGreaterThanOrEqual(first.visited.length);
+    expect(back.checkpointSnapshot.step).toBeGreaterThan(baseSnap.step);
+    expect(back.checkpointSnapshot.visited.length).toBeGreaterThanOrEqual(baseSnap.visited.length);
   });
 
   it("无快照时 restoreCheckpoint 安全返回 null", () => {
@@ -326,5 +361,128 @@ describe("checkpointSnapshot / restoreCheckpoint / 序列化", () => {
     expect(back.log).toEqual([]);
     expect(deserializeMapRun(null)).toBeNull();
     expect(deserializeMapRun({})).toBeNull();
+  });
+});
+
+describe("7 天周期 · 选入口重进 · 银两黑市 · 奖励箱 · 战斗/BOSS 接线", () => {
+  it("出宫后 7 天内同图不变，满 7 天到期重 roll 新图", () => {
+    const w1 = ensureDungeonWorld("白塔地宫", null, { time: 0 }); // 第 1 天，expiresAtDay = 8
+    expect(w1.unlockedEntries).toEqual([w1.map.anchor]);
+    expect(w1.adventurers.length).toBeGreaterThanOrEqual(7);
+
+    // 第 5 天仍在 7 天窗口内，图完全一致
+    const wSame = ensureDungeonWorld("白塔地宫", w1, { time: 24 * 4 });
+    expect(wSame).toBe(w1);
+
+    // 第 5 天带新解锁出口出宫，顺延到第 5+7=12 天过期
+    const run = startMapRun("白塔地宫", w1.seed, { world: w1, char: { hp: [100, 100], money: 200 } });
+    const exitName = w1.map.exitRooms[0];
+    const synced = syncDungeonWorld(w1, { ...run, unlockedExits: [exitName], unlockedEntries: [w1.map.anchor, exitName] }, { time: 24 * 4 });
+    expect(synced.expiresAtDay).toBe(12);
+    expect(synced.unlockedEntries).toContain(exitName);
+
+    // 第 10 天仍在窗口内，可从已解锁出口潜入
+    const w10 = ensureDungeonWorld("白塔地宫", synced, { time: 24 * 9 });
+    expect(w10.seed).toBe(w1.seed);
+    const reEntry = startMapRun("白塔地宫", w10.seed, { world: w10, entryRoom: exitName });
+    expect(reEntry.current).toBe(exitName);
+
+    // 到第 12 天（>= expiresAtDay）重 roll 新图
+    const wExpired = ensureDungeonWorld("白塔地宫", synced, { time: 24 * 11 });
+    expect(wExpired.seed).not.toBe(w1.seed);
+    expect(wExpired.epoch).toBe(2);
+    expect(wExpired.unlockedExits).toEqual([]);
+  });
+
+  it("normalizeDungeonStore 向下兼容 null / 老格式 / 新包装", () => {
+    expect(normalizeDungeonStore(null)).toEqual({ active: null, worlds: {} });
+    const legacy = startMapRun("雪山茫野", "leg");
+    expect(normalizeDungeonStore(legacy).active.districtKey).toBe("雪山茫野");
+  });
+
+  it("商人银两购买清神藏香、焦黄塔道残图并支持典售回银", () => {
+    const w = ensureDungeonWorld("白塔地宫", null, { time: 0 });
+    const merchantRoom = Object.keys(w.map.rooms).find((n) => w.map.rooms[n].roomKind === "merchant");
+    let rs = startMapRun("白塔地宫", w.seed, { world: w, char: { hp: [100, 100], money: 200 } });
+    rs = { ...rs, current: merchantRoom, loot: { money: 10, exp: 0, pot: 0, items: [{ name: "破铁刀", quality: "白" }] } };
+    const ev = {
+      kind: "merchant",
+      options: [
+        { label: "买焦黄塔道残图（60两）", merchantBuy: "g_map" },
+        { label: "典售随身战利品换银两", merchantSell: true },
+      ],
+    };
+    rs.map.rooms[merchantRoom] = { ...rs.map.rooms[merchantRoom], roomEvent: ev };
+
+    const bought = routeRoomAction(rs, "买焦黄塔道残图（60两）", { rng: () => 0 });
+    expect(bought.runState.revealedExits).toHaveLength(1);
+    expect(bought.runState.loot.money).toBe(0);
+    expect(bought.runState.spentMoney).toBe(50);
+
+    const sold = routeRoomAction(bought.runState, "典售随身战利品换银两", { rng: () => 0 });
+    expect(sold.runState.loot.money).toBe(10);
+    expect(sold.runState.loot.items).toEqual([]);
+  });
+
+  it("奖励箱产出全品类且神兵严格唯一去重", () => {
+    const cfg = DUNGEON_DISTRICTS_ALL["白塔地宫"];
+    const first = rollChestRewards("boss", cfg, {
+      seed: "god1",
+      roomName: "明王石室",
+      playerFlags: ["white_pagoda_crypt_clue"],
+      playerSkills: [],
+      playerInv: [],
+    });
+    expect(first.divineDrop?.itemName).toBe("不动明王杵");
+    expect(first.items.some((i) => i.name === "不动明王杵")).toBe(true);
+
+    const dup = rollChestRewards("boss", cfg, {
+      seed: "god1",
+      roomName: "明王石室",
+      playerFlags: ["white_pagoda_crypt_clue", "divine_obtained_budongmingwang"],
+      playerSkills: [],
+      playerInv: [],
+    });
+    expect(dup.divineDrop).toBeNull();
+    expect(dup.items.some((i) => i.name === "不动明王杵")).toBe(false);
+    expect(dup.money).toBeGreaterThan(first.money);
+  });
+
+  it("applyMapBattleResult 接通小怪胜/逃/败与 BOSS 通关开匣", () => {
+    const w = ensureDungeonWorld("白塔地宫", null, { time: 0 });
+    let rs = startMapRun("白塔地宫", w.seed, { world: w, char: { hp: [100, 100], money: 50 }, flags: ["white_pagoda_crypt_clue"] });
+
+    // 逃跑退回 prevRoom
+    const fleeing = applyMapBattleResult({
+      ...rs,
+      status: "combat",
+      prevRoom: rs.map.anchor,
+      current: w.map.exitRooms[0],
+      activeBattle: { npc: { id: "e1", name: "巡廊盲僧" }, roomName: w.map.exitRooms[0] },
+    }, { outcome: "flee", playerHp: [72, 100] });
+    expect(fleeing.status).toBe("exploring");
+    expect(fleeing.current).toBe(rs.map.anchor);
+    expect(fleeing.hp[0]).toBe(72);
+
+    // 打赢守出口精英，自动解锁新入口
+    const winExit = applyMapBattleResult({
+      ...rs,
+      status: "combat",
+      current: w.map.exitRooms[1],
+      activeBattle: { npc: { id: "e2", name: "撬锁摸经贼" }, unlockExitRoom: w.map.exitRooms[1], roomName: w.map.exitRooms[1], reward: { money: 24, exp: 4, pot: 2 } },
+    }, { outcome: "win", playerHp: [88, 100] });
+    expect(winExit.unlockedEntries).toContain(w.map.exitRooms[1]);
+    expect(winExit.loot.money).toBe(24);
+
+    // 击败中心 BOSS，触发通关与神兵开匣
+    const winBoss = applyMapBattleResult({
+      ...winExit,
+      status: "combat",
+      current: "明王石室",
+      activeBattle: { npc: { id: "boss", name: "守塔首座·罗布桑" }, isBoss: true, roomName: "明王石室", reward: { money: 140, exp: 28, pot: 32 } },
+    }, { outcome: "win", playerHp: [65, 100] });
+    expect(winBoss.status).toBe("victory");
+    expect(winBoss.bossDefeated).toBe(true);
+    expect(winBoss.loot.items.some((i) => i.name === "不动明王杵")).toBe(true);
   });
 });
