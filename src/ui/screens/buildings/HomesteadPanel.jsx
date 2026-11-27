@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { random } from "../../../utils/rng.js";
 import ModalShell from "../../primitives/ModalShell.jsx";
+import ArtImage from "../../components/ArtImage.jsx";
+import { homeArtUrl } from "../../art/art.js";
 import {
   getHomestead, loadWineCellar, saveWineCellar,
   loadGarden, saveGarden, RECIPES, WINE_RECIPES, PLANT_SLOTS,
@@ -39,6 +41,8 @@ export default function HomesteadPanel({ roomName, inv, setInv, char, setChar, o
         <span style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
       </div>
 
+      {activeFeature && <ArtImage src={homeArtUrl(activeFeature)} alt={activeFeature} variant="panel" />}
+
       {!activeFeature && (
         <>
           <div style={{ fontSize: "var(--fs-xs)", color: "var(--ink-text-dim)", marginBottom: 12, lineHeight: 1.6, fontStyle: "italic" }}>{home.flavor}</div>
@@ -48,7 +52,8 @@ export default function HomesteadPanel({ roomName, inv, setInv, char, setChar, o
                 onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--ink-accent)"; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--ink-border)"; }}
               >
-                <div style={{ fontSize: "var(--fs-base)", marginBottom: 4 }}>{f.icon} <span style={{ color: "var(--ink-tier-text)", fontSize: "var(--fs-sm)" }}>{f.name}</span></div>
+                {homeArtUrl(f.id) && <div className="homestead-feature-art"><ArtImage src={homeArtUrl(f.id)} alt={f.name} variant="thumb" /></div>}
+                <div style={{ fontSize: "var(--fs-base)", marginBottom: 4 }}>{homeArtUrl(f.id) ? null : f.icon} <span style={{ color: "var(--ink-tier-text)", fontSize: "var(--fs-sm)" }}>{f.name}</span></div>
                 <div style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-text-dim)", lineHeight: 1.4 }}>{f.desc}</div>
               </div>
             ))}

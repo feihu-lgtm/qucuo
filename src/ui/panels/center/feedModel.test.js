@@ -90,3 +90,17 @@ describe("连续失败的行动折叠", () => {
     expect(foldFailedRuns(groups)).toEqual(groups);
   });
 });
+
+describe("进场横幅", () => {
+  it("据点变了才放横幅，同一据点内的内层走动不放", async () => {
+    const { createArrivalMarker } = await import("./feedModel.js");
+    const { districtOfRoomLine } = await import("../../art/art.js");
+    const arrive = createArrivalMarker(districtOfRoomLine);
+    expect(arrive({ t: "room", text: "    鱼定村" })).toBe("鱼定村");
+    expect(arrive({ t: "room", text: "    鱼定村·歇马居" })).toBeNull();
+    expect(arrive({ t: "room", text: "" })).toBeNull();
+    expect(arrive({ t: "desc", text: "  正文" })).toBeNull();
+    expect(arrive({ t: "room", text: "    天都镇（马车）" })).toBe("天都镇");
+    expect(arrive({ t: "room", text: "    鱼定村" })).toBe("鱼定村");
+  });
+});

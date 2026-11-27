@@ -150,7 +150,7 @@ export default function Placement({ value, onChange, accent, npc, apiCfg, why, r
         }}>
           <span style={{ fontSize: "var(--fs-2xs)", color: "var(--good)", border: "1px solid var(--skill-learned)",
           borderRadius: 0, padding: "0 4px", flexShrink: 0, }}>AI 荐位</span>
-          <span style={{ fontSize: "var(--fs-xs)", lineHeight: 1.6, color: "var(--map-title-text)" }}>{why}</span>
+          <span style={{ fontSize: "var(--fs-xs)", lineHeight: 1.6, color: "var(--note-paper-text)" }}>{why}</span>
           {rejected && (
             <span style={{ fontSize: "var(--fs-2xs)", color: "var(--qb-status-edge)" }}>
               · 它给的据点不在本作地图里，已退回不落地，请自己选

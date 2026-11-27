@@ -5,7 +5,7 @@ import {
   getInnerRoomNames, isInnerExitUnlocked,
 } from "../../domain/rules/map/innerMap.js";
 import { DIRS } from "../../utils/mudHelpers.js";
-import { MAP_UI } from "../mapUi.js";
+import { mapArtUrl } from "../art/art.js";
 import { useGameStore } from "../../store/gameStore.js";
 import { useSessionUi, setInteractMode, setMapBig } from "../../store/sessionUiStore.js";
 import ModalShell from "../primitives/ModalShell.jsx";
@@ -24,7 +24,7 @@ export default function BigMapModal({  act, autoTravelTo,
   const varTree = useGameStore(s => s.varTree);
   const view = hasInnerMap(room.name) ? mapView : "outer";
 
-  // 卷轴自带版式：chrome={false} 去掉外壳默认面板样式；手机上原本就不全屏，保持 mobile="none"。
+  // chrome={false} 去掉外壳默认面板样式，面板底色与描边在下面自己给；手机上原本就不全屏，保持 mobile="none"。
   return (
     <ModalShell
       onClose={() => setMapBig(false)}
@@ -34,9 +34,13 @@ export default function BigMapModal({  act, autoTravelTo,
       showClose={false}
       ariaLabel="大地图"
       panelStyle={{
-        background: `url("${MAP_UI.scroll}") center/100% 100% no-repeat`,
+        // 夜色精修：撤掉卷轴贴图。外层视图有舆图底卷（M01）就铺在节点底下，没有就是纯夜色底，节点与连线由代码画。
+        background: view === "outer" && mapArtUrl()
+          ? `var(--bg) url("${mapArtUrl()}") center/cover no-repeat`
+          : "var(--bg)",
+        border: "1px solid var(--border)",
         minWidth: 300, width: "70vw", maxWidth: 980, maxHeight: "86vh", overflowY: "auto",
-        padding: "14% 11% 9% 11%",
+        padding: "18px 22px",
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>

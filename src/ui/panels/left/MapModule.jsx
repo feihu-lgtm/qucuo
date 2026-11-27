@@ -68,7 +68,7 @@ export default function MapModule({ room, innerRoomName, questProgress, mapData,
             舆图·外 <span className="left-map-hint">⤢放大 · 点已探明据点前往</span>
           </span>
         </div>
-        <NineGridMap centerLabel={room.name} cells={outerCells} onGo={goOuter} accent="var(--accent)" textDim="var(--text-dim)" loading={loading} big={mapBig} />
+        <NineGridMap centerLabel={room.name} cells={outerCells} onGo={goOuter} loading={loading} big={mapBig} />
       </div>
       {innerState && (
         <div className="left-map-block">
@@ -77,7 +77,7 @@ export default function MapModule({ room, innerRoomName, questProgress, mapData,
               村图·内 <span className="left-map-hint">⤢放大 · 点相邻房间前往</span>
             </span>
           </div>
-          <NineGridMap centerLabel={innerState.curRoom} cells={innerState.cells} onGo={goInner} accent="var(--accent)" textDim="var(--text-dim)" loading={loading} big={mapBig} />
+          <NineGridMap centerLabel={innerState.curRoom} cells={innerState.cells} onGo={goInner} loading={loading} big={mapBig} />
         </div>
       )}
     </div>

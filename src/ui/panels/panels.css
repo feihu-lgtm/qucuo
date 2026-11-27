@@ -841,3 +841,136 @@
   color: var(--text-dim);
   line-height: 1.8;
 }
+
+/* ── 美术图（设计稿·夜色精修 §四）：横幅与小图同一张 2:1 素材，四边渐隐进底色 ── */
+.art {
+  position: relative;
+  margin: 0;
+}
+.art img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  object-fit: cover;
+}
+.art--banner img {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14%, #000 72%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 14%, #000 72%, transparent 100%);
+}
+.art--thumb img {
+  border-radius: 2px;
+  -webkit-mask-image: radial-gradient(120% 110% at 50% 50%, #000 55%, transparent 100%);
+  mask-image: radial-gradient(120% 110% at 50% 50%, #000 55%, transparent 100%);
+}
+.art--panel img {
+  -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 70%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0, #000 70%, transparent 100%);
+}
+.art-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 10%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-shadow: 0 0 12px var(--bg, #0c0b09);
+}
+.art-caption-name {
+  font-size: var(--fs-xl, 20px);
+  letter-spacing: 0.6em;
+  padding-left: 0.6em;
+  color: var(--text);
+}
+.art-caption-sub {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.2em;
+  color: var(--text-dim);
+}
+.art-caption-rule {
+  width: 140px;
+  height: 1px;
+  margin-top: 6px;
+  background: var(--border);
+  transform-origin: center;
+}
+.art--enter img { animation: art-up 0.6s ease-out both; }
+.art--enter .art-caption-name,
+.art--enter .art-caption-sub { animation: art-fade 0.5s ease-out 0.2s both; }
+.art--enter .art-caption-rule { animation: art-grow 0.4s ease-out 0.45s both; }
+@keyframes art-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes art-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes art-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .art--enter img, .art--enter .art-caption-name, .art--enter .art-caption-sub, .art--enter .art-caption-rule { animation: none; }
+}
+.narrative-arrival {
+  margin: 4px -32px 10px;
+}
+.left-location-art {
+  margin-bottom: 12px;
+}
+.building-art {
+  margin: 0 0 4px;
+}
+.homestead-feature-art {
+  margin: -10px -10px 8px;
+}
+
+/* ── 九宫格地图（舆图·外 / 村图·内）：代码画格子，不用贴图 ── */
+.ngm {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 5px;
+  width: 100%;
+}
+.ngm[data-big="true"] { gap: 8px; }
+.ngm-cell {
+  position: relative;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 4px;
+  text-align: center;
+  line-height: 1.2;
+  overflow: visible;
+  border-radius: 2px;
+  font-size: var(--fs-xs);
+  color: var(--text);
+}
+.ngm[data-big="true"] .ngm-cell { height: 62px; font-size: var(--fs-sm); }
+.ngm-cell[data-clickable="true"] { cursor: pointer; }
+.ngm-cell[data-state="explored"] {
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+  border: 1px solid var(--border);
+}
+.ngm-cell[data-state="explored"]:hover { border-color: var(--text-dim); }
+.ngm-cell[data-state="fog"] {
+  border: 1px dashed var(--border);
+  color: var(--text-dim);
+}
+.ngm-cell[data-state="fog"]:hover { color: var(--text); }
+.ngm-cell[data-state="blocked"] {
+  color: var(--text-dim);
+  opacity: 0.35;
+}
+.ngm-cell[data-state="current"] {
+  background: color-mix(in srgb, var(--text) 9%, transparent);
+  border: 1px solid var(--accent);
+}
+.ngm-cell[data-state="current"]::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  animation: ngm-ripple 2.6s ease-out infinite;
+  pointer-events: none;
+}
+.ngm-cell:focus-visible { outline: 1px solid var(--text-dim); outline-offset: 1px; }
+.ngm-name { overflow: hidden; text-overflow: ellipsis; }
+.ngm-mark { font-size: var(--fs-sm); }
+@keyframes ngm-ripple { 0% { opacity: 0.8; transform: scale(1); } 70%, 100% { opacity: 0; transform: scale(1.18); } }
+@media (prefers-reduced-motion: reduce) { .ngm-cell[data-state="current"]::after { animation: none; opacity: 0; } }
