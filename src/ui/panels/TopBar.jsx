@@ -46,33 +46,41 @@ function ShichenRing({ time }) {
   );
 }
 
-// 回合控制（停止/回滚）：桌面在中栏标题行，手机并入顶栏同一行
+// 回合控制（停止/回滚）：桌面在中栏标题行，手机并入顶栏同一行；一律图标，文字进悬停提示
 export function TurnControls({ theme, loading, stopRunning, rollbackBlocked, rollbackOneStep }) {
   return (
     <span className="mobile-center-toolbar-controls topbar-turn-controls">
-      {loading && <Button variant="chrome" onClick={stopRunning} className="mobile-touch-target">停止</Button>}
+      {loading && (
+        <Button variant="chrome" onClick={stopRunning} className="mobile-touch-target topbar-icon-btn" aria-label="停止" title="停止本回合生成">
+          <Icon name="停止" size={15} />
+        </Button>
+      )}
       <Button
         variant="chrome"
-        className={`mobile-touch-target${rollbackBlocked ? " topbar-btn-disabled" : ""}`}
+        className={`mobile-touch-target topbar-icon-btn${rollbackBlocked ? " topbar-btn-disabled" : ""}`}
         onClick={rollbackBlocked ? undefined : rollbackOneStep}
         aria-disabled={rollbackBlocked}
-        title="撤销上一步行动，还原到落子之前"
+        aria-label={rollbackBlocked ? "等待落盘" : "回滚"}
+        title={rollbackBlocked ? "等待落盘后才能回滚" : "撤销上一步行动，还原到落子之前"}
       >
         <Icon name="回滚" size={15} />
-        <span className="topbar-btn-label">{rollbackBlocked ? "等待落盘" : "回滚"}</span>
       </Button>
     </span>
   );
 }
 
-// 调试开关：桌面在中栏标题行，手机收进「☰ 菜单」
-export function DevControls({ theme, addLog }) {
+// 调试开关：桌面在中栏标题行（图标），手机收进「☰ 菜单」（菜单里铺开写字）
+export function DevControls({ theme, addLog, inMenu = false }) {
   const gm = useSessionUi(s => s.gm);
   const showDebug = useOverlay(OVERLAY.DEBUG);
   return (
     <>
-      <Button variant="chrome" active={showDebug} className="mobile-touch-target" onClick={() => toggleOverlay(OVERLAY.DEBUG)}>调试</Button>
-      <Button variant="chrome" active={gm} className="mobile-touch-target" onClick={() => { setGm(g => { const nv = !g; addLog([{ t: "sys", text: nv ? "  [/gamemode 1] 创造模式：无敌，战斗必胜，啥都能干" : "  [/gamemode 0] 生存模式：回归凡人之躯" }]); return nv; }); }}>/gamemode {gm ? "0" : "1"}</Button>
+      <Button variant="chrome" active={showDebug} className="mobile-touch-target topbar-icon-btn" onClick={() => toggleOverlay(OVERLAY.DEBUG)} aria-label="调试" title="调试面板">
+        {inMenu ? "调试" : <Icon name="调试" size={15} />}
+      </Button>
+      <Button variant="chrome" active={gm} className="mobile-touch-target topbar-icon-btn" aria-label={`/gamemode ${gm ? "0" : "1"}`} title={gm ? "创造模式开着：点一下回到生存模式（/gamemode 0）" : "切到创造模式：无敌，战斗必胜（/gamemode 1）"} onClick={() => { setGm(g => { const nv = !g; addLog([{ t: "sys", text: nv ? "  [/gamemode 1] 创造模式：无敌，战斗必胜，啥都能干" : "  [/gamemode 0] 生存模式：回归凡人之躯" }]); return nv; }); }}>
+        {inMenu ? `/gamemode ${gm ? "0" : "1"}` : <Icon name="创造模式" size={15} />}
+      </Button>
     </>
   );
 }
@@ -145,14 +153,20 @@ export default function TopBar({
           data-open={Boolean(!isMobile || mobileTopMenu)}
           data-mobile={Boolean(isMobile)}
         >
-          {isMobile && <DevControls theme={THEME_VARS} addLog={addLog} />}
+          {isMobile && <DevControls theme={THEME_VARS} addLog={addLog} inMenu />}
           {isMobile && <Button variant="chrome" className="qbtn" onClick={() => openOverlay(OVERLAY.TRACE)}>日志</Button>}
-          <Button variant="chrome" className="qbtn" onClick={() => openOverlay(OVERLAY.CARD_IMPORT)} title="角色入册：把外部角色卡导进曲措乡（快捷键 I）">入册</Button>
-          <Button variant="chrome" className="qbtn" onClick={() => openOverlay(OVERLAY.CODEX)} title="百物·武学总览：看全所有物品与武学的介绍、品阶、效果">图鉴</Button>
-          <Button variant="chrome" className="qbtn" onClick={() => openOverlay(OVERLAY.TRACE)}>日志</Button>
-          <Button variant="chrome" className="qbtn" onClick={() => openSettings("saves")}>存档</Button>
-          <Button variant="chrome" className="qbtn" onClick={() => openSettings(null)}>设置</Button>
-          <Button variant="chrome" className="qbtn" onClick={confirmMainMenu}>主菜单</Button>
+          {[
+            ["入册", "角色入册：把外部角色卡导进曲措乡（快捷键 I）", () => openOverlay(OVERLAY.CARD_IMPORT)],
+            ["图鉴", "百物·武学总览：看全所有物品与武学的介绍、品阶、效果", () => openOverlay(OVERLAY.CODEX)],
+            ["日志", "全流程日志", () => openOverlay(OVERLAY.TRACE)],
+            ["存档", "存档", () => openSettings("saves")],
+            ["设置", "设置", () => openSettings(null)],
+            ["主菜单", "返回主菜单", confirmMainMenu],
+          ].filter(([icon]) => !(isMobile && icon === "日志")).map(([icon, title, onClick]) => (
+            <Button key={icon} variant="chrome" className="qbtn topbar-icon-btn" onClick={onClick} aria-label={icon} title={title}>
+              {isMobile ? icon : <Icon name={icon} size={17} />}
+            </Button>
+          ))}
           {!isMobile && <span className="topbar-sep" aria-hidden="true" />}
           <Button
             variant="chrome"
@@ -214,15 +228,16 @@ export default function TopBar({
           {autoSaveError && (
             <span
               className="topbar-save-err"
+              role="status"
+              aria-label="存档失败"
               title={`自动存档失败：${autoSaveError}。当前进度可能无法保存，建议尽快手动导出或清理浏览器存储空间。`}
             >
-              存档失败
+              {isMobile ? "存档失败" : <Icon name="存档失败" size={16} />}
             </span>
           )}
           {!autoSaveError && lastAutoSave && (
-            <span className="topbar-save-ok">
-              <span className="topbar-save-dot" aria-hidden="true" />
-              已保存
+            <span className="topbar-save-ok" role="status" aria-label="已保存" title="已自动保存">
+              {isMobile ? "已保存" : <Icon name="已保存" size={16} />}
             </span>
           )}
           {!isMobile && <TurnStatusPill theme={THEME_VARS} docked />}

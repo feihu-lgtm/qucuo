@@ -249,7 +249,7 @@ const styles = {
     backgroundImage: `url('${BASE}start-bg.webp')`,
     backgroundSize: "cover", backgroundPosition: "center",
     display: "flex", alignItems: "center", justifyContent: "center",
-    fontFamily: "'Noto Serif SC','Songti SC','STSong',serif",
+    fontFamily: "var(--font-body)",
   },
   vignette: {
     position: "absolute", inset: 0, pointerEvents: "none",

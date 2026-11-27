@@ -98,8 +98,8 @@ export default function NpcsModule({ room, innerRoomName, varTree, char, addLog,
                 <NpcAvatar
                   name={n.name}
                   size="md"
-                  onClick={() => setActiveNpcMenu(n)}
-                  title="打开互动菜单：细看/切磋/偷窃/对话/送礼/拜师"
+                  onClick={() => setActiveNpcMenu({ ...n, zoom: true })}
+                  title="放大立绘，并打开互动菜单：细看/切磋/偷窃/对话/送礼/拜师"
                 />
                 <div className="npc-present-main">
                   <div className="npc-present-head">

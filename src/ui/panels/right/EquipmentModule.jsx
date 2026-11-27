@@ -4,6 +4,13 @@ import { QUALITY_COLOR } from "../../../domain/data/items/qualityColor.js";
 import { statLabel } from "../../format/itemStats.js";
 import { Icon } from "../../primitives/index.js";
 import ItemIcon from "../../components/ItemIcon.jsx";
+import { setActiveItemMenu } from "../../../store/sessionUiStore.js";
+
+// 点图标：打开物品菜单并放大实物图（可查看、卸下）；点图标以外的地方仍是一键穿脱。
+const openItem = (item) => (e) => {
+  e.stopPropagation();
+  setActiveItemMenu({ item, mode: "inventory", canConsume: false, zoom: true });
+};
 
 const SLOT_ICON = {
   [ITEM_CATEGORY.WEAPON]: "招式",
@@ -36,7 +43,9 @@ export default function EquipmentModule({ inv, setInv }) {
                 const qc = QUALITY_COLOR[item.quality] || "var(--text)";
                 return (
                   <div key={item.id} className="equip-slot" onClick={() => setInv(v => toggleEquip(v, item.id))}>
-                    <span className="equip-slot-ib"><ItemIcon item={item} size="md" fallbackIcon={iconName} /></span>
+                    <button type="button" className="equip-slot-ib is-clickable" onClick={openItem(item)} title="放大看看" aria-label={`放大看看${item.name}`}>
+                      <ItemIcon item={item} size="md" fallbackIcon={iconName} />
+                    </button>
                     <div className="equip-slot-body">
                       <div className="equip-slot-name">{item.name}</div>
                       <div className="equip-slot-meta">
@@ -55,7 +64,12 @@ export default function EquipmentModule({ inv, setInv }) {
                 return (
                   <div key={item.id} className="equip-spare-row" onClick={() => setInv(v => toggleEquip(v, item.id))}>
                     <div className="equip-spare-title">
-                      <span>{item.name}</span>
+                      <span>
+                        <button type="button" className="equip-spare-art" onClick={openItem(item)} title="放大看看" aria-label={`放大看看${item.name}`}>
+                          <ItemIcon item={item} size="xs" fallbackIcon={iconName} />
+                        </button>
+                        {item.name}
+                      </span>
                       <span className="equip-spare-meta">({item.quality || "白"}{stat ? `·${stat}` : ""})</span>
                     </div>
                     {eff && <div className="equip-spare-eff">{eff}</div>}

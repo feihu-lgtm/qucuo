@@ -524,6 +524,8 @@
   --lh-center-body: var(--lh-narrative);
   --lh-center-card: var(--lh-snug);
   --center-prose-indent: 2em;
+  /* 版心：正文组与独立行共用同一宽度（约 44 个正文字），左边界因此对齐。 */
+  --center-measure: calc(var(--fs-center-body) * 44);
   /* 夜色精修：正文不套框，回合之间只靠分隔行；每种颜色只负责一件事——
      系统行与行动行退到标签/次要色，人名金、旁白藕荷、任务青绿、扣减朱红字。 */
   --center-group-bg: transparent;

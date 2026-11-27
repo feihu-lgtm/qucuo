@@ -45,7 +45,7 @@ export default function QijuzhuScreen({ varTree, time = 0, narratorStage, onClos
   const rows = tab === "today" ? todayRows : lifetime;
   const maxCount = rows.length ? Math.max(...rows.map(r => r.count)) : 1;
 
-  const card = { width: "100%", maxWidth: 560, maxHeight: "86vh", background: "var(--bg-panel)", border: `1px solid ${border}`, borderRadius: 0, display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Songti SC','STSong','SimSun',serif", boxShadow: "0 20px 60px rgba(0,0,0,0.6)" };
+  const card = { width: "100%", maxWidth: 560, maxHeight: "86vh", background: "var(--bg-panel)", border: `1px solid ${border}`, borderRadius: 0, display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "var(--font-body)", boxShadow: "0 20px 60px rgba(0,0,0,0.6)" };
 
   // 遮罩原 rgba(4,4,8,0.9)，并入 --ink-overlay；面板自带版式，去壳后沿用原 card 样式。
   return (

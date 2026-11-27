@@ -364,7 +364,7 @@
 .narrative-group {
   border: 1px solid var(--center-group-border);
   border-radius: 0;
-  max-width: 44em;
+  max-width: var(--center-measure);
   margin: 0 auto 18px;
   background: var(--center-group-bg);
   overflow: hidden;
@@ -425,25 +425,88 @@
   min-width: 0;
 }
 
-.log-entry--prose {
+/* 中栏三档字：正文（段首缩进 2em）、事实行（不缩进，与正文同一左边界）、元信息（账目、时辰、进房说明）。
+   字体一律 --font-center；缩进只由 .log-para 给，原文里的前导空格在渲染时去掉。 */
+.log-entry--prose,
+.log-entry--fact,
+.log-entry--cmd,
+.log-entry--room {
   font-family: var(--font-center);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  margin-bottom: 4px;
+}
+.log-entry--prose {
   font-size: var(--fs-center-body);
   line-height: var(--lh-center-body);
 }
+.log-para {
+  text-indent: var(--center-prose-indent);
+}
+.log-para + .log-para {
+  margin-top: 2px;
+}
 .log-entry--fact {
-  font-family: var(--font-center);
   font-size: var(--fs-center-card);
   line-height: var(--lh-center-card);
+  text-indent: 0;
 }
 .log-entry--cmd {
-  font-family: var(--font-center);
   font-size: var(--fs-center-cmd);
   line-height: var(--lh-snug);
 }
 .log-entry--room {
-  font-family: var(--font-center);
   font-size: var(--fs-center-card);
   line-height: var(--lh-snug);
+  font-weight: bold;
+  text-align: center;
+  letter-spacing: 0.2em;
+  opacity: 0.9;
+}
+/* 人名在中栏一律人名金；可点的（新人物出现、细看抬头）带下划虚线提示。 */
+.log-npc-name {
+  color: var(--npc-name);
+}
+.log-npc-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  border-bottom: 1px dashed color-mix(in srgb, var(--npc-name) 45%, transparent);
+}
+.log-fact-note {
+  color: var(--text-dim);
+}
+.log-look-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-bottom: 6px;
+}
+.log-look-head .log-npc-name {
+  font-size: var(--fs-center-body);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+.log-look-brief {
+  color: var(--text-sub);
+}
+/* 细看：立绘落在卡片左侧，比对白书页像再大一档。 */
+.narrative-look {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+.narrative-look > .npc-ava {
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+.narrative-look-body {
+  flex: 1;
+  min-width: 0;
 }
 
 .narrative-standalone {
@@ -456,10 +519,12 @@
   color: var(--center-outside-text);
   font-size: var(--fs-center-meta);
 }
-.narrative-standalone .log-entry--fact,
-.narrative-standalone .log-entry--prose {
-  font-size: var(--fs-center-meta);
-  line-height: var(--lh-center-card);
+/* 独立行（开场提示、入队提示、版本行、来信）与正文组同版心、同左边界；字号跟随条目自身的档位。 */
+.narrative-standalone:not(.narrative-standalone--room) {
+  max-width: var(--center-measure);
+  margin-left: auto;
+  margin-right: auto;
+  padding: 2px 14px;
 }
 .narrative-standalone--room {
   display: block;
@@ -710,9 +775,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: var(--fs-sm);
-  letter-spacing: 5px;
-  color: var(--text);
+  color: var(--text-sub);
   padding-right: 12px;
   border-right: 1px solid var(--hairline);
   margin: 10px 0;
@@ -1254,27 +1317,24 @@
   border-radius: 50%;
   background: var(--accent);
 }
-.topbar-save-err {
-  font-size: var(--fs-xs);
-  color: var(--danger-text);
-  margin-left: 4px;
-  cursor: pointer;
-}
+/* 存档状态：桌面只留一枚图标（已保存绿、失败朱红），详情在悬停提示；手机菜单里照旧写字。 */
+.topbar-save-err,
 .topbar-save-ok {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: var(--fs-2xs);
-  color: var(--text-dim);
+  min-width: 22px;
+  justify-content: center;
+  font-size: var(--fs-xs);
   margin-left: 4px;
   white-space: nowrap;
+  cursor: default;
 }
-.topbar-save-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--good);
-  opacity: 0.85;
+.topbar-save-err {
+  color: var(--danger-text);
+  cursor: help;
+}
+.topbar-save-ok {
+  color: var(--text-dim);
 }
 .topbar-turn-controls {
   display: inline-flex;
@@ -1284,9 +1344,6 @@
 .topbar-btn-disabled {
   opacity: 0.45;
   cursor: not-allowed;
-}
-.topbar-btn-label {
-  margin-left: 3px;
 }
 .turn-status-float {
   position: fixed;
@@ -1320,6 +1377,13 @@
 }
 .topbar-status-pill.is-active .topbar-status-dot {
   background: var(--warn);
+}
+/* 顶栏停靠的回合状态：闲着时只剩一粒绿点（文字在悬停提示里），生成中与出错才把字亮出来。 */
+.topbar-actions .topbar-status-pill[data-state="idle"] {
+  padding: 2px 8px;
+}
+.topbar-actions .topbar-status-pill[data-state="idle"] .topbar-status-text {
+  display: none;
 }
 .status-light {
   display: inline-flex;
@@ -2463,6 +2527,38 @@
 .item-art--xs { width: 18px; height: 18px; }
 .item-art--md { width: 32px; height: 32px; }
 .item-art--lg { width: 46px; height: 46px; }
+.item-art--zoom { width: 180px; height: 180px; }
+/* 物品菜单抬头的实物图：点一下在 46px 与 180px 之间切换。 */
+.item-menu-art {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin: 0 0 10px;
+  padding: 6px 0;
+  background: none;
+  border: 1px solid var(--hairline);
+  cursor: zoom-in;
+}
+.item-menu-art[data-zoom="true"] {
+  cursor: zoom-out;
+  background: var(--bg);
+}
+.pack-row-art,
+.equip-spare-art,
+.equip-slot-ib.is-clickable {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
+  cursor: zoom-in;
+}
+.equip-spare-art {
+  margin-right: 6px;
+  vertical-align: middle;
+}
 .item-art-img {
   width: 100%;
   height: 100%;
@@ -2484,10 +2580,13 @@
   border-radius: 3px;
 }
 .center-portrait-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
   border-radius: 2px;
-  padding: 1px 7px;
+  padding: 3px 6px;
   font: inherit;
   font-size: var(--fs-xs);
   letter-spacing: 0.06em;
@@ -2509,6 +2608,7 @@
   margin-bottom: 6px;
 }
 .log-dlg-prose-line {
+  text-indent: var(--center-prose-indent);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: normal;
@@ -2675,6 +2775,24 @@
   font-size: var(--fs-2xs);
   color: var(--text-dim);
   padding-left: 28px;
+}
+/* 互动菜单的放大立绘：占满面板宽度、按原图比例（抠底透明图，不加底框），点一下收回成小头像。 */
+.npc-menu-portrait {
+  display: block;
+  width: 100%;
+  margin: 0 0 12px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--hairline);
+  cursor: zoom-out;
+}
+.npc-menu-portrait img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 62vh;
+  object-fit: contain;
 }
 .npc-menu-head {
   display: flex;

@@ -16,7 +16,7 @@ export default function TutorialOverlay({ onClose }) {
       onClick={onClose}
       // 整屏定位与层级在 tokens.css 的 .tutorial-overlay（top 档，原 z 500）。
       style={{ background: "rgba(6,6,12,0.72)", cursor: "pointer",
-        display: "flex", flexDirection: "column", fontFamily: "'Songti SC','STSong','SimSun',serif" }}
+        display: "flex", flexDirection: "column", fontFamily: "var(--font-body)" }}
     >
       {/* 顶部提示条 */}
       <div style={{ textAlign: "center", padding: "14px 0 8px", color: "var(--tutorial-title)", fontSize: "var(--fs-lg)", fontWeight: "bold", letterSpacing: "1px" }}>
