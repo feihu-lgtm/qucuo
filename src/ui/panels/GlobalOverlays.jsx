@@ -191,7 +191,9 @@ export default function GlobalOverlays({
     )},
     { show: activeNpcMenu, render: () => (
       <NpcActionMenu
+        key={activeNpcMenu.name}
         npc={activeNpcMenu}
+        initialZoom={Boolean(rawNpcMenu?.zoom)}
         inv={inv}
         onClose={() => setActiveNpcMenu(null)}
         onLook={handleNpcLook}
@@ -214,6 +216,7 @@ export default function GlobalOverlays({
     { show: activeItemMenu, render: () => (
       <ItemActionMenu
         item={activeItemMenu.item}
+        initialZoom={Boolean(activeItemMenu.zoom)}
         mode={activeItemMenu.mode}
         canConsume={activeItemMenu.canConsume}
         roomNpcs={(room.npcs || []).filter((npc) => isNpcVisibleInInnerRoom(room.name, innerRoomName, npc))}

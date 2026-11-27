@@ -78,7 +78,7 @@ describe("局内时间合并与叙事日志回合显示", () => {
     expect(html).toContain("narrative-skeleton");
   });
 
-  it("紧凑单行盒省去多余横线分割、长叙事缩进 2em、来信走素笺卡片且箱外弱化", () => {
+  it("紧凑单行盒省去多余横线分割、正文逐段落成 .log-para（缩进统一交给样式表）、来信走素笺卡片且箱外弱化", () => {
     mockState.log = [
       { t: "sys", text: "正在读档，请稍候。", standalone: true, turn: 1, day: 1 },
       { t: "cmd", text: "> 环顾四周", turn: 1, day: 1 },
@@ -104,8 +104,9 @@ describe("局内时间合并与叙事日志回合显示", () => {
     // 第一组紧凑单行不带 header--divided，第二组长段才带 header--divided
     expect(html).toMatch(/narrative-group-header--open"[^>]*>.*?环顾四周/);
     expect(html).toMatch(/narrative-group-header--divided"[^>]*>.*?细看雪山/);
-    expect(html).toContain("text-indent:0");
-    expect(html).toContain("text-indent:var(--center-prose-indent)");
+    // 长短正文一律逐段落成 .log-para，不再按字数决定缩不缩、也不在行内写 text-indent。
+    expect(html.match(/class="log-para"/g)?.length).toBe(2);
+    expect(html).not.toContain("text-indent");
     expect(html).toContain("log-letter-card");
     expect(html).toContain("✉ 元朵朵 来信");
   });

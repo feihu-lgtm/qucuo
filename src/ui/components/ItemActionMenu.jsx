@@ -7,14 +7,19 @@
 import React, { useState } from "react";
 import { QUCUO_SHOPS, hasOcShop } from "../../domain/data/shops/qucuoShops.js";
 import ModalShell from "../primitives/ModalShell.jsx";
+import ItemIcon from "./ItemIcon.jsx";
+import { itemArtUrl } from "../art/art.js";
 
 export default function ItemActionMenu({
-  item, mode = "inventory", roomNpcs = [],
+  item, mode = "inventory", roomNpcs = [], initialZoom = false,
   canConsume = false,
   onClose, onInspect, onConsume, onGive, onSell, onCollect, onEquip,
   awakenReady = false, onInscribe,
 }) {
   const [picker, setPicker] = useState(null); // null | "give" | "sell"
+  // 物品实物图：菜单抬头放一枚，点一下放大；从包袱/装备的图标点进来时直接以放大态打开。
+  const hasArt = Boolean(itemArtUrl(item));
+  const [zoom, setZoom] = useState(Boolean(initialZoom && hasArt));
   const name = typeof item === "object" ? item.name : item;
   const quality = typeof item === "object" ? item.quality : null;
   // 可装备判定：武器/护甲/饰品三类。右栏「装备」区本来就能点着穿脱，但玩家捡到一件甲
@@ -88,6 +93,18 @@ export default function ItemActionMenu({
 
   return (
     <ModalShell {...shellProps} ariaLabel={`${name} 的操作`}>
+      {hasArt && (
+        <button
+          type="button"
+          className="item-menu-art"
+          data-zoom={zoom}
+          onClick={() => setZoom((z) => !z)}
+          title={zoom ? "收起" : "放大看看"}
+          aria-label={zoom ? `收起${name}的图` : `放大${name}的图`}
+        >
+          <ItemIcon item={item} size={zoom ? "zoom" : "lg"} />
+        </button>
+      )}
       <div style={{ color: quality ? undefined : "var(--accent)", fontSize: "var(--fs-base)", marginBottom: 4 }}>
         {name}{quality ? <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginLeft: 6 }}>（{quality}）</span> : null}
       </div>

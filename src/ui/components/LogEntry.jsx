@@ -73,10 +73,17 @@ const DUEL_BANNER_RE = /^[\s\u3000]*──\s*(.+?)\s*──[\s\u3000]*$/;
 const SETTLE_BANNER_RE = /^[\s\u3000]*◈\s*.+?·\s*战斗结算[\s\u3000]*$/;
 const LETTER_LINE_RE = /^[\s\u3000]*「([^」]+)来信」([\s\S]*)$/;
 const NARRATOR_PREFIX_RE = /^[\s\u3000]*「旁白」/;
+const NEW_FACE_RE = /^※\s*新人物出现\s+(.+?)（(.*)）$/;
+
+// 正文统一排版：每段去掉前导空白，缩进只交给样式表的 text-indent（2em），不再叠加原文里的空格。
+function proseParagraphs(text) {
+  return String(text || "").split(/\n+/).map(stripLeadingSpace).filter((p) => p.trim());
+}
 
 export default function LogEntry({
   entry, color, onAction, isDayMode = false, onOpenLetters, onOpenJournal, onOpenSettings,
   dialoguePortraitMode = "gutter", knownSpeakers = EMPTY_SPEAKERS, onOpenNpc, narratorPortraitSrc = null, playerAvatar = null,
+  lookName = null,
 }) {
   if (entry.t === LOG_T.LOOT && (entry.item || entry.skill)) {
     return (
@@ -120,7 +127,7 @@ export default function LogEntry({
     return (
       <div className={`${baseCls} log-letter-card log-letter-card--with-ava`}>
         {dialoguePortraitMode !== "off" && (
-          <NpcAvatar name={sender} size="md" onClick={onOpenNpc ? () => onOpenNpc(sender) : undefined} title={sender} />
+          <NpcAvatar name={sender} size="lg" onClick={onOpenNpc ? () => onOpenNpc(sender) : undefined} title={sender} />
         )}
         <div className="log-letter-card-main">
           <div className="log-letter-card-head">
@@ -155,7 +162,7 @@ export default function LogEntry({
     }
     return (
       <div className={`${cls} log-dlg-gutter log-dlg-gutter--lotus`} style={{ color }}>
-        <NpcAvatar name="旁白" src={narratorPortraitSrc} size="md" lotus onClick={openNarrator} title="点名私聊旁白" />
+        <NpcAvatar name="旁白" src={narratorPortraitSrc} size="lg" lotus onClick={openNarrator} title="点名私聊旁白" />
         <div className="log-dlg-gutter-body">
           <div className="log-dlg-speaker-row">
             <span className="log-dlg-speaker is-lotus" onClick={openNarrator}>旁白</span>
@@ -223,7 +230,18 @@ export default function LogEntry({
     );
   }
 
-  const trimmedForDisplay = (isDesc || isRoom || isCmd)
+  // 细看卡片的头一行「名字 来历」：名字用人名色，来历用次要色，不当正文段落缩进。
+  if (lookName && isDesc && stripLeadingSpace(rawText).startsWith(lookName)) {
+    const brief = stripLeadingSpace(rawText).slice(lookName.length).trim();
+    return (
+      <div className={`${baseCls} log-entry--fact log-look-head`}>
+        <span className="log-npc-name">{lookName}</span>
+        {brief && <span className="log-look-brief">{brief}</span>}
+      </div>
+    );
+  }
+
+  const trimmedForDisplay = (isRoom || isCmd)
     ? rawText
     : stripLeadingSpace(rawText);
   const displayText = entry.streaming
@@ -252,7 +270,7 @@ export default function LogEntry({
               }
               return (
                 <div key={bi} className="log-dlg-gutter">
-                  <NpcAvatar name={block.speaker} size="md" onClick={openSp} title={`互动 · ${block.speaker}`} />
+                  <NpcAvatar name={block.speaker} size="lg" onClick={openSp} title={`互动 · ${block.speaker}`} />
                   <div className="log-dlg-gutter-body">
                     <div className="log-dlg-speaker-row">
                       <span className="log-dlg-speaker" onClick={openSp}>{block.speaker}</span>
@@ -265,14 +283,9 @@ export default function LogEntry({
                 </div>
               );
             }
-            const proseIndent = block.text.trim().length >= 42;
             return (
-              <div
-                key={bi}
-                className="log-dlg-prose-line"
-                style={{ textIndent: proseIndent ? "var(--center-prose-indent)" : "0" }}
-              >
-                {renderMixed(block.text, color, isDayMode)}
+              <div key={bi} className="log-dlg-prose-line log-para">
+                {renderMixed(stripLeadingSpace(block.text), color, isDayMode)}
                 {caret}
               </div>
             );
@@ -283,9 +296,41 @@ export default function LogEntry({
     }
   }
 
-  const shouldIndent = isDesc && (displayText.includes("\n") || displayText.trim().length >= 42);
-  const renderedContent = isDesc
-    ? renderMixed(displayText, color, isDayMode)
+  const caret = entry.streaming ? <span className="log-stream-caret" aria-hidden="true" /> : null;
+
+  // 正文：逐段落成 .log-para，段首缩进统一由样式表给。
+  if (isDesc) {
+    const paras = proseParagraphs(displayText);
+    return (
+      <div className={cls} style={{ color }}>
+        {paras.map((para, pi) => (
+          <div key={pi} className="log-para">
+            {renderMixed(para, color, isDayMode)}
+            {pi === paras.length - 1 && caret}
+          </div>
+        ))}
+        {paras.length === 0 && caret}
+        <ReceiptStrip receipts={entry.receipts} onAction={onAction} />
+      </div>
+    );
+  }
+
+  const newFace = entry.t === LOG_T.SYS ? displayText.trim().match(NEW_FACE_RE) : null;
+  const renderedContent = newFace
+    ? (
+      <>
+        ※ 新人物出现{" "}
+        <span
+          className="log-npc-name"
+          role={onOpenNpc ? "button" : undefined}
+          tabIndex={onOpenNpc ? 0 : undefined}
+          onClick={onOpenNpc ? () => onOpenNpc(newFace[1]) : undefined}
+        >
+          {newFace[1]}
+        </span>
+        <span className="log-fact-note">（{newFace[2]}）</span>
+      </>
+    )
     : isCmd
       ? (() => {
           const clean = displayText.replace(/^>\s*/, "");
@@ -296,22 +341,10 @@ export default function LogEntry({
         : displayText;
 
   return (
-    <div
-      className={cls}
-      style={{
-        whiteSpace: "pre-wrap",
-        overflowWrap: "anywhere",
-        wordBreak: "normal",
-        color,
-        marginBottom: 4,
-        fontWeight: isRoom ? "bold" : "normal",
-        textIndent: shouldIndent ? "var(--center-prose-indent)" : "0",
-        ...(isRoom ? { textAlign: "center", letterSpacing: "0.2em", opacity: 0.9 } : {}),
-      }}
-    >
+    <div className={cls} style={{ color }}>
       <span style={{ cursor: entry.action ? "pointer" : undefined }} onClick={entry.action ? () => onAction(entry.action) : undefined}>
         {renderedContent}
-        {entry.streaming && <span className="log-stream-caret" aria-hidden="true" />}
+        {caret}
       </span>
       <ReceiptStrip receipts={entry.receipts} onAction={onAction} />
     </div>

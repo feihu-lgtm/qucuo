@@ -32,7 +32,7 @@ export default function LoreScreen({ varTree, time = 0, turnToStr, onClose }) {
   const 领域 = varTree?.世界?.知识领域 || {};
   const facts = Object.values(领域.事实 || {}).sort((a, b) => (b.诞生回合 || 0) - (a.诞生回合 || 0));
 
-  const card = { width: "100%", maxWidth: 720, maxHeight: "86vh", background: "var(--bg-panel)", border: `1px solid ${border}`, borderRadius: 0, display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Songti SC','STSong','SimSun',serif", boxShadow: "0 20px 60px rgba(0,0,0,0.6)" };
+  const card = { width: "100%", maxWidth: 720, maxHeight: "86vh", background: "var(--bg-panel)", border: `1px solid ${border}`, borderRadius: 0, display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "var(--font-body)", boxShadow: "0 20px 60px rgba(0,0,0,0.6)" };
 
   // 遮罩原 rgba(4,4,8,0.9)，并入 --ink-overlay；面板自带版式，去壳后沿用原 card 样式。
   return (

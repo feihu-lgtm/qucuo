@@ -14,12 +14,16 @@ import React, { useState } from "react";
 import { QUCUO_SHOPS, hasOcShop } from "../../domain/data/shops/qucuoShops.js";
 import ModalShell from "../primitives/ModalShell.jsx";
 import NpcAvatar from "./NpcAvatar.jsx";
+import { npcArtUrl } from "../art/art.js";
 
 // 会伤和气的动作：标题用朱红字提醒（夜色精修：朱红只给要紧处，其余动作用正文色）。
 const DANGER_ACTIONS = new Set(["steal", "lethalDuel"]);
 
-export default function NpcActionMenu({ npc, inv, onClose, onTalk, onGift, onDuel, onSteal, onLook, onLearnSkill, onTrade, onInviteCompanion, companionUnlocked, flags = [], ocRoutes = [], onOcRecruit, onRecallCompanion, onGoldenEgg, nemesisActive = false, lethalBlockReason = null }) {
+export default function NpcActionMenu({ npc, inv, initialZoom = false, onClose, onTalk, onGift, onDuel, onSteal, onLook, onLearnSkill, onTrade, onInviteCompanion, companionUnlocked, flags = [], ocRoutes = [], onOcRecruit, onRecallCompanion, onGoldenEgg, nemesisActive = false, lethalBlockReason = null }) {
   const [showGiftPicker, setShowGiftPicker] = useState(false);
+  // 点头像放大立绘（人物栏点头像时直接以放大态打开）；没有立绘的人物只有印章，不放大。
+  const portraitUrl = npcArtUrl(npc.name);
+  const [zoom, setZoom] = useState(Boolean(initialZoom && portraitUrl));
   const isMerchant = !!QUCUO_SHOPS[npc.name] || hasOcShop(npc.name);
   // 伙伴候选（目前只有雪豹）：官方六件套之外单独一个"邀请入队"按钮，只在
   // 尚未解锁时出现——已经入队的伙伴角色不需要再邀请一次，六件套照常可用
@@ -68,8 +72,20 @@ export default function NpcActionMenu({ npc, inv, onClose, onTalk, onGift, onDue
 
   return (
     <ModalShell onClose={onClose} layer="dialog" backdrop="soft" mobile="sheet" showClose={false} ariaLabel={`与${npc.name}互动`} panelStyle={{ width: 340 }}>
+      {zoom && (
+        <button type="button" className="npc-menu-portrait" onClick={() => setZoom(false)} title="收起立绘" aria-label={`收起${npc.name}的立绘`}>
+          <img src={portraitUrl} alt={npc.name} />
+        </button>
+      )}
       <div className="npc-menu-head">
-        <NpcAvatar name={npc.name} size="lg" />
+        {!zoom && (
+          <NpcAvatar
+            name={npc.name}
+            size="lg"
+            onClick={portraitUrl ? () => setZoom(true) : undefined}
+            title={portraitUrl ? "放大立绘" : undefined}
+          />
+        )}
         <div className="npc-menu-head-text">
           <div className="npc-menu-title">{npc.name}{npc.intimate ? " ♥" : ""}</div>
           <div className="npc-menu-brief">{npc.brief}</div>

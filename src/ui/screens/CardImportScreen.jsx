@@ -264,7 +264,7 @@ export default function CardImportScreen({
   // 定位、层级与居中由 ModalShell 负责，这里只留暖色遮罩、模糊与字体。
   const shell = {
     background: "rgba(6,4,2,.82)", backdropFilter: "blur(3px)",
-    fontFamily: "'Noto Serif SC','Songti SC','STSong',serif",
+    fontFamily: "var(--font-body)",
   };
   // 【为什么是 100% 而不是 min(1120px,95vw)】原先写死 1120×800，在 1600 宽以上
   // 的屏幕上四边留一圈空遮罩，而这个界面右侧是长表单（审改页 16 个 Section，

@@ -10,6 +10,7 @@ import { LOG_T } from "../../../domain/data/log/logTypes.js";
 import { NPC_ART } from "../../../domain/data/art/artManifest.js";
 import { createArrivalMarker, createClockMarker, createMapNoteFilter, foldFailedRuns, groupReplies, isRuleHint, ledgerText } from "./feedModel.js";
 import ArtImage from "../../components/ArtImage.jsx";
+import NpcAvatar from "../../components/NpcAvatar.jsx";
 import { districtOfRoomLine, narratorArtUrl, placeArtUrl } from "../../art/art.js";
 
 // 对象级稳定 React Key：彻底避免在流式占位/插入地名/后台补写时因数组下标左移右移，
@@ -34,6 +35,13 @@ function getEntryRenderKey(entry, fallbackPrefix = "row") {
     return `stream:${entry.fillKey}`;
   }
   return `${fallbackPrefix}:${getStableUid(entry)}`;
+}
+
+// 细看一组：行动行是「看 某人」（npcLookBackfill 落的指令原文），且此人是认得出的人物。
+const LOOK_CMD_RE = /^>?\s*看[\s\u3000]+(.+?)\s*$/;
+function lookTargetOf(cmd, knownSpeakers) {
+  const name = cmd?.t === LOG_T.CMD ? String(cmd.text || "").match(LOOK_CMD_RE)?.[1] : null;
+  return name && knownSpeakers.includes(name) ? name : null;
 }
 
 const LETTER_ENTRY_RE = /^[\s\u3000]*「([^」]+)来信」/;
@@ -294,6 +302,8 @@ export default function NarrativeLogFeed({
         let trackedTurn = typeof turnEntry?.turn === "number" ? turnEntry.turn : null;
         const headerMark = turnEntry && (g.cmd || g.replies.length > 0) ? markClock(turnEntry) : null;
         const units = groupReplies(visibleReplies);
+        const lookName = lookTargetOf(g.cmd, knownSpeakers);
+        const lookPortrait = lookName && dialoguePortraitMode !== "off";
         const foldKey = `unfold:${cmdIdx}`;
         const foldOpen = collapsedGroups.has(foldKey);
         const toggleFold = () => setCollapsedGroups(prev => {
@@ -344,7 +354,8 @@ export default function NarrativeLogFeed({
             )}
             {!collapsed && (visibleReplies.length > 0 || (isActiveGroup && showSkeleton)) && (
               <div className={g.cmd ? "narrative-group-body narrative-group-body--indented" : "narrative-group-body"}>
-                {units.map((unit, ri) => {
+                {(() => {
+                  const rows = units.map((unit, ri) => {
                   const entry = unit.kind === "ledger" ? unit.entries[0] : unit.entry;
                   const entryTurn = typeof entry?.turn === "number" ? entry.turn : null;
                   const turnChanged = entryTurn !== null && trackedTurn !== null && entryTurn !== trackedTurn;
@@ -376,11 +387,20 @@ export default function NarrativeLogFeed({
                             onOpenNpc={handleOpenNpc}
                             narratorPortraitSrc={narratorPortraitSrc}
                             playerAvatar={playerAvatar}
+                            lookName={lookName}
                           />
                         )}
                     </div>
                   );
-                })}
+                });
+                  if (!lookPortrait) return rows;
+                  return (
+                    <div className="narrative-look">
+                      <NpcAvatar name={lookName} size="xl" onClick={() => handleOpenNpc(lookName)} title={`互动 · ${lookName}`} />
+                      <div className="narrative-look-body">{rows}</div>
+                    </div>
+                  );
+                })()}
                 {isActiveGroup && showSkeleton && <NarrativeSkeleton key={`skel-${groupKey}`} />}
               </div>
             )}

@@ -139,7 +139,7 @@ const styles = {
     textAlign: "center",
   },
   captionText: {
-    fontFamily: "'Noto Serif SC', 'Songti SC', serif",
+    fontFamily: "var(--font-body)",
     fontSize: "clamp(13px, 1.9vh, 17px)",
     lineHeight: 1.85,
     // 纸面上要墨色，不能再用原来那个浅米白——那是给"压在画面上"设计的

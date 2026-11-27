@@ -2,6 +2,7 @@
 import IntentConfirmBar from "../components/IntentConfirmBar.jsx";
 import { factionShopCoef } from "../../domain/rules/economy/factionRep.js";
 import { DevControls, TurnControls } from "./TopBar.jsx";
+import { Icon } from "../primitives/index.js";
 import { THEME_VARS, chromeBtn } from "../../utils/theme.js";
 import { useState, useEffect, lazy, Suspense } from "react";
 import { OVERLAY, closeOverlay, openOverlay, useOverlay } from "../../store/uiStore.js";
@@ -100,7 +101,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
     <div className={`center-panel-col${isMobile && mobileColumn !== "center" ? " mobile-col-hidden" : ""}`} data-mobile={Boolean(isMobile)}>
       <div className="mobile-hide panel-col-head center-header">
         <span className="center-view-head">
-          <span className="center-view-title">江湖</span>
+          <span className="center-view-title" title="江湖" aria-label="江湖"><Icon name="江湖" size={17} /></span>
           <span className="center-view-switch" role="group" aria-label="江湖栏视图">
             <button type="button" className="center-view-tab" data-on={centerView !== "journal"} aria-pressed={centerView !== "journal"} onClick={() => setCenterView("story")}>正文</button>
             <button type="button" className="center-view-tab" data-on={centerView === "journal"} aria-pressed={centerView === "journal"} onClick={() => setCenterView("journal")}>卷宗</button>
@@ -110,19 +111,21 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
           {centerView !== "journal" && !hideNarrative && (
             <span className="center-portrait-switch" role="group" aria-label="中栏头像">
               {[
-                ["gutter", "书页像"],
-                ["inline", "行内像"],
-                ["off", "纯文"],
-              ].map(([key, label]) => (
+                ["gutter", "书页像", "对白头像落在书页左侧"],
+                ["inline", "行内像", "对白头像缩成行首小像"],
+                ["off", "纯文", "不显示头像，只留文字"],
+              ].map(([key, label, hint]) => (
                 <button
                   key={key}
                   type="button"
                   className="center-portrait-tab"
                   data-on={dialoguePortraitMode === key}
                   aria-pressed={dialoguePortraitMode === key}
+                  aria-label={label}
+                  title={`${label}：${hint}`}
                   onClick={() => setDialoguePortraitMode(key)}
                 >
-                  {label}
+                  <Icon name={label} size={15} />
                 </button>
               ))}
             </span>
