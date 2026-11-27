@@ -109,7 +109,9 @@ describe("TopBar compact single-line header", () => {
 
     const panelsCss = readFileSync("src/ui/panels/panels.css", "utf-8");
     expect(panelsCss).toMatch(/\.topbar-actions\s*\{[^}]*flex-wrap:\s*wrap/);
+    expect(panelsCss).toMatch(/\.topbar-actions\[data-open="false"\]\s*\{[^}]*display:\s*none/);
     expect(panelsCss).toMatch(/\.topbar-actions\[data-mobile="false"\]\s*\{[^}]*flex-wrap:\s*nowrap/);
+    expect(panelsCss).toMatch(/\.topbar-actions\[data-mobile="true"\]\s*\{[^}]*overflow-y:\s*auto/);
     expect(panelsCss).toMatch(/\.topbar-brand\s*\{[^}]*flex:\s*1 1 auto;[^}]*overflow:\s*hidden/);
     expect(panelsCss).toMatch(/\.topbar-version-btn\s*\{[^}]*flex-shrink:\s*0/);
   });

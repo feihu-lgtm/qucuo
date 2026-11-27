@@ -1211,6 +1211,9 @@
   gap: 4px;
   flex-wrap: wrap;
 }
+.topbar-actions[data-open="false"] {
+  display: none;
+}
 .topbar-actions[data-mobile="false"] {
   flex-wrap: nowrap;
   flex-shrink: 0;
@@ -1218,6 +1221,9 @@
 .topbar-actions[data-mobile="true"] {
   width: 100%;
   min-width: 0;
+  max-height: calc(100dvh - 56px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .topbar-sep {
   width: 1px;
