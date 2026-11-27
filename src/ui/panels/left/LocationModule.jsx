@@ -16,7 +16,7 @@ export default function LocationModule({ room, innerRoomName, time }) {
     <div className="left-location">
       {artSrc && (
         <div className="left-location-art">
-          <ArtImage src={artSrc} alt={room.name} variant="thumb" />
+          <ArtImage key={artSrc} src={artSrc} alt={room.name} variant="thumb" />
         </div>
       )}
       <div className="left-location-name">

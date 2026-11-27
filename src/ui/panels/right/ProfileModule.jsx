@@ -6,6 +6,7 @@ import { bodyProfileFilled } from "../../../domain/rules/character/bodyProfile.j
 import { OVERLAY, openOverlay } from "../../../store/uiStore.js";
 import { Icon } from "../../primitives/index.js";
 import { npcArtUrl } from "../../art/art.js";
+import AnimatedNumber from "../../components/AnimatedNumber.jsx";
 
 export default function ProfileModule({ char, exp, pot, playerAvatar, companionState, slForm, setSnowLeopardForm, setSlFormState, slImgErr, setSlImgErr, pearlForm, setPearlForm, setPearlFormState, pearlImgErr, setPearlImgErr, inspectItem, inspecting }) {
   const [, setCompFormTick] = useState(0);
@@ -97,16 +98,16 @@ export default function ProfileModule({ char, exp, pot, playerAvatar, companionS
         <div className="profile-hp-block">
           <div className="profile-stat-line">
             <span className="profile-stat-label"><Icon name="气血" size={13} /> 气血</span>
-            <span className={`profile-stat-num${hpCur <= 30 ? " is-low" : ""}`}>{hpCur}/{char.hp?.[1] ?? 100}</span>
+            <span className={`profile-stat-num${hpCur <= 30 ? " is-low" : ""}`}><AnimatedNumber value={hpCur} />/{char.hp?.[1] ?? 100}</span>
           </div>
           <div className="night-bar"><div className="night-bar-fill night-bar-fill--accent" style={{ width: `${hpPct}%` }} /></div>
         </div>
         <div className="profile-stat-line">
-          <span className="profile-stat-label"><Icon name="经验" size={13} /> 经验 <span className="profile-val-num">{exp}</span></span>
-          <span className="profile-stat-label"><Icon name="潜能" size={13} /> 潜能 <span className="profile-val-num">{pot}</span></span>
+          <span className="profile-stat-label"><Icon name="经验" size={13} /> 经验 <AnimatedNumber className="profile-val-num" value={exp} /></span>
+          <span className="profile-stat-label"><Icon name="潜能" size={13} /> 潜能 <AnimatedNumber className="profile-val-num" value={pot} /></span>
         </div>
         <div className="profile-stat-line">
-          <span className="profile-stat-label"><Icon name="银两" size={13} /> 银两 <span className="profile-val-gold">{char.money || 0}</span> 两</span>
+          <span className="profile-stat-label"><Icon name="银两" size={13} /> 银两 <AnimatedNumber className="profile-val-gold" value={char.money || 0} /> 两</span>
         </div>
         <div className="profile-stat-line">
           <span className="profile-stat-label"><Icon name="信鸽" size={13} /> 信鸽 <span className="profile-val-gold">{char.pigeons || 0}</span> 只</span>
