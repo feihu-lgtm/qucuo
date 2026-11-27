@@ -44,7 +44,7 @@ export default async function mobileTabs({ page, game, ai }) {
   await choose("左");
   assert.equal(await left.isVisible(), true);
   assert.equal(await left.locator('[aria-current="true"]').innerText(), "此地");
-  assert.equal(await activeColumn(), "左 1/2");
+  assert.equal(await activeColumn(), "左 1/3");
   const content = await left.locator(".face-content").boundingBox();
   const touch = await page.context().newCDPSession(page);
   const y = content.y + Math.min(100, content.height / 2);
@@ -52,7 +52,7 @@ export default async function mobileTabs({ page, game, ai }) {
   await touch.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: 100, y }] });
   await touch.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
   await touch.detach();
-  await game.waitFor(page, async () => (await activeColumn()) === "左 2/2", { message: "touch face switch" });
+  await game.waitFor(page, async () => (await activeColumn()) === "左 2/3", { message: "touch face switch" });
   assert.equal(await left.locator('[aria-current="true"]').innerText(), "周遭");
 
   await page.waitForTimeout(550);
@@ -61,7 +61,7 @@ export default async function mobileTabs({ page, game, ai }) {
   await page.getByText(/现有信鸽.*每日可领/).waitFor({ state: "visible" });
   await page.getByText("关闭", { exact: true }).click();
   await choose("左");
-  assert.equal(await activeColumn(), "左 2/2");
+  assert.equal(await activeColumn(), "左 2/3");
 
   await choose("右");
   assert.equal(await right.isVisible(), true);
@@ -78,7 +78,7 @@ export default async function mobileTabs({ page, game, ai }) {
   await tabs.waitFor({ state: "visible" });
   assert.equal(await activeColumn(), rightLabel);
   await choose("左");
-  assert.equal(await activeColumn(), "左 2/2");
+  assert.equal(await activeColumn(), "左 2/3");
   await choose("中");
   const narrative = page.getByTestId("narrative-log");
   assert.equal(await narrative.evaluate(element => element.scrollHeight > element.clientHeight), true);

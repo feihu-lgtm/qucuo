@@ -1,22 +1,52 @@
 import { DIRS } from "../../../utils/mudHelpers.js";
 import { QUCUO_MAP } from "../../../domain/data/map/qucuoMap.js";
+import { placeArtUrl } from "../../art/art.js";
 
-export default function ExitsModule({ room, inSeaOfMind, seaGate, enterSeaOfMind, leaveSeaOfMind }) {
+export default function ExitsModule({
+  room, mapData, onGoOuter, loading = false,
+  inSeaOfMind, seaGate, enterSeaOfMind, leaveSeaOfMind,
+}) {
   const destMap = QUCUO_MAP[room.name]?.exits || {};
+  const exits = Array.isArray(room.exits) ? room.exits : Object.keys(destMap);
+
   return (
     <div className="left-exits">
       <div className="panel-sec-label">
-        出口 <span className="panel-sec-sub">在下方输入框打字移动</span>
+        邻近地点 <span className="panel-sec-sub">点击卡片前往或探索</span>
       </div>
-      <div className="exit-chips">
-        {room.exits.map(e => (
-          <span key={e} className="exit-chip">
-            <span className="exit-chip-dir">{DIRS[e] || e}</span>
-            {destMap[e] && <span className="exit-chip-dest">{destMap[e]}</span>}
-          </span>
-        ))}
-        {room.exits.length === 0 && <span className="panel-empty-dim">无路可走</span>}
-      </div>
+      {exits.length > 0 ? (
+        <div className="left-exit-grid">
+          {exits.map(dir => {
+            const dest = destMap[dir];
+            const explored = Boolean(dest && mapData?.[dest]);
+            const artSrc = explored ? placeArtUrl(dest) : null;
+            const dirLabel = DIRS[dir] || dir;
+            return (
+              <button
+                key={dir}
+                type="button"
+                className={`left-exit-card${exits.length === 1 ? " is-single" : ""}`}
+                data-explored={Boolean(explored)}
+                data-has-art={Boolean(artSrc)}
+                disabled={Boolean(loading)}
+                onClick={() => onGoOuter?.(dir)}
+                title={explored ? `往${dirLabel}前往「${dest}」` : `往${dirLabel}探索未知之地`}
+              >
+                {artSrc && (
+                  <>
+                    <img src={artSrc} alt={dest} className="left-thumb-img" loading="lazy" decoding="async" />
+                    <span className="left-thumb-scrim" aria-hidden="true" />
+                  </>
+                )}
+                <span className="left-thumb-dir">{dirLabel}</span>
+                <span className="left-thumb-name">{explored ? dest : "未探明"}</span>
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="panel-empty-dim">无路可走</div>
+      )}
 
       {(inSeaOfMind || seaGate?.ok) && (
         <div

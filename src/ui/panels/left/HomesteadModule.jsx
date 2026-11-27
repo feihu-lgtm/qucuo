@@ -8,7 +8,7 @@ export default function HomesteadModule({ innerRoomName }) {
   return (
     <div className="left-homestead">
       <div className="panel-sec-label">家园设施</div>
-      <Button variant="chrome" font="native" active={false} type="button" className="chip-btn" onClick={() => openOverlay(OVERLAY.HOMESTEAD)}>
+      <Button variant="chrome" active={false} type="button" className="chip-btn" onClick={() => openOverlay(OVERLAY.HOMESTEAD)}>
         {home.label || "家园"}
       </Button>
       <div className="panel-sub-note">{home.features.map(f => f.name).join("·")}</div>
