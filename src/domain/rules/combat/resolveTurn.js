@@ -203,6 +203,12 @@ export function resolveTurn(sideA, sideB) {
       // signature 状态招有 40% 概率心法不乱、硬吃伤害照常见效（伤害不免，只免打断）。
       if (loserMove.signature && random() < 0.4) {
         result.notes.push(`${loserMove.name}虽被正面抢攻，心法凝定未曾散乱`);
+        // 心法不散即招式见效：状态照施加、印记照叠、自益照发——否则"抵抗"只是
+        // 空耗气力白挨打，专属大招依旧永无出场（Review finding 实证）。
+        const st = rollStatusApply(loserMove);
+        if (st) result[`statusAppliedTo${winnerTag}`] = st;
+        markApply(loserMove, winnerTag, loserTag);
+        applySelfStatusMoveEffects(loserSide, loserTag, result);
       } else {
         result[`interrupted${loserTag}`] = true;
       }
