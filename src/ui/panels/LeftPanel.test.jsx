@@ -1,4 +1,5 @@
 import { createElement } from "react";
+import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import NpcAngerLine from "./NpcAngerLine.jsx";
@@ -105,6 +106,12 @@ describe("TopBar compact single-line header", () => {
     expect(html).toContain("天地 · 人间烟火");
     expect(html).toContain("点击查看版本历史目录");
     expect(html).toContain("已保存");
+
+    const panelsCss = readFileSync("src/ui/panels/panels.css", "utf-8");
+    expect(panelsCss).toMatch(/\.topbar-actions\s*\{[^}]*flex-wrap:\s*wrap/);
+    expect(panelsCss).toMatch(/\.topbar-actions\[data-mobile="false"\]\s*\{[^}]*flex-wrap:\s*nowrap/);
+    expect(panelsCss).toMatch(/\.topbar-brand\s*\{[^}]*flex:\s*1 1 auto;[^}]*overflow:\s*hidden/);
+    expect(panelsCss).toMatch(/\.topbar-version-btn\s*\{[^}]*flex-shrink:\s*0/);
   });
 });
 

@@ -1142,7 +1142,8 @@
   align-items: center;
   gap: 10px;
   min-width: 0;
-  flex-shrink: 1;
+  flex: 1 1 auto;
+  overflow: hidden;
   white-space: nowrap;
 }
 .topbar-ring {
@@ -1150,12 +1151,17 @@
   display: block;
 }
 .topbar-title {
+  flex-shrink: 0;
   font-size: var(--fs-md);
   letter-spacing: 3px;
   color: var(--text);
   white-space: nowrap;
 }
 .topbar-zone {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: var(--fs-xs);
   color: var(--text-sub);
   padding-left: 10px;
@@ -1167,12 +1173,20 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
   font-size: var(--fs-xs);
   color: var(--text-dim);
   white-space: nowrap;
   padding-left: 10px;
   border-left: 1px solid var(--hairline);
   letter-spacing: 0.5px;
+}
+.topbar-clock > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .topbar-shichen {
   color: var(--text-sub);
@@ -1195,8 +1209,15 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-wrap: wrap;
+}
+.topbar-actions[data-mobile="false"] {
   flex-wrap: nowrap;
   flex-shrink: 0;
+}
+.topbar-actions[data-mobile="true"] {
+  width: 100%;
+  min-width: 0;
 }
 .topbar-sep {
   width: 1px;
