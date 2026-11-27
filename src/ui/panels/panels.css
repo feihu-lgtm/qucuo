@@ -2860,3 +2860,22 @@
 }
 .game-meditate-button:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
 .game-meditate-button:disabled { opacity: 0.5; cursor: default; }
+
+/* 窄屏防挤：打坐钮收成纯图标（⊙），输入框保底宽度——320px 机上私语胶囊+双钮并存时
+   输入区不再坍缩到零宽（Review finding 实证） */
+@media (max-width: 480px) {
+  .game-meditate-button {
+    min-width: 34px;
+    padding: 4px 6px;
+    font-size: 0;
+    letter-spacing: 0;
+  }
+  .game-meditate-button::after {
+    content: "⊙";
+    font-size: var(--fs-sm);
+  }
+  .mobile-input-bar input.game-input,
+  .mobile-input-bar .game-input {
+    min-width: 48px;
+  }
+}
