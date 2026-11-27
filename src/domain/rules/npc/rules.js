@@ -197,7 +197,9 @@ export const residentNpcRule = {
     const passers = getRandomPassers(room.name, time, passerReserved).filter(notRecruited)
       .map((passer) => {
         const existing = existingByName.get(passer.name);
-        return buildRoomNpcWithCombat(passer, { existingNpc: existing?.randomPasser === dayIdx ? existing : undefined, luck, trade: npcTradeOf(state.npcState, passer) });
+        const npc = buildRoomNpcWithCombat(passer, { existingNpc: existing?.randomPasser === dayIdx ? existing : undefined, luck, trade: npcTradeOf(state.npcState, passer) });
+        if (passer.passerArt) npc.passerArt = passer.passerArt;
+        return npc;
       });
     // 不在今天这份名单里的过路人一律清掉：隔天的，或名额被新导入角色卡顶替、重抽后换下的
     const rosterNames = new Set(passers.map((npc) => npc.name));

@@ -46,6 +46,13 @@ describe("按字段查图", () => {
     expect(npcArtUrl("元朵朵", { 元朵朵: "data:image/png;base64,abc" })).toBe("data:image/png;base64,abc");
   });
 
+  it("uses generated role art without treating random names as curated characters", () => {
+    const npc = { name: "韩石头", passerArt: "passer-mountain-hunter" };
+    expect(npcArtUrl(npc)).toMatch(/art\/passer\/passer-mountain-hunter\.webp$/);
+    expect(npcArtUrl(npc.name)).toBeNull();
+    expect(npcArtUrl(npc, { 韩石头: "data:image/png;base64,abc" })).toBe("data:image/png;base64,abc");
+  });
+
   it("物品按类别与关键词归入 36 类实物图标", () => {
     expect(classifyItemArtKey({ name: "鱼定长枪", category: "weapon" })).toBe("weapon-spear");
     expect(classifyItemArtKey({ name: "青布长衫", category: "armor" })).toBe("armor-cloth");

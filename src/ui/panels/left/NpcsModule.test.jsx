@@ -35,11 +35,11 @@ function companions() {
   return stationCompanion(cs, "snowLeopard", { district: "喇嘛庙", roomId: "山门", roomName: "山门" });
 }
 
-function render(peoplePanel) {
+function render(peoplePanel, currentRoom = room) {
   mocked.game = { companionState: companions(), varTree, varTreeCache: null };
   mocked.ui = { pigeonTarget: null, peoplePanel };
   return renderToStaticMarkup(createElement(NpcsModule, {
-    room, innerRoomName: null, varTree, char: {},
+    room: currentRoom, innerRoomName: null, varTree, char: {},
     addLog: () => {}, inputRef: { current: null }, uiGreen: "var(--green-soft)", uiPink: "var(--pink)",
   }));
 }
@@ -104,6 +104,13 @@ describe("NpcsModule people lists", () => {
     const presentPart = html.split("不在此地")[0];
     expect(presentPart).toContain("元朵朵");
     expect(presentPart).toContain("才旦");
+  });
+
+  it("renders a daily passer with their role portrait instead of the name seal", () => {
+    const html = render({ present: true }, {
+      ...room, npcs: [{ name: "韩石头", brief: "无门无派的进山猎户", passerArt: "passer-mountain-hunter" }],
+    });
+    expect(html).toMatch(/<img[^>]+src="[^"]*art\/passer\/passer-mountain-hunter\.webp"[^>]+alt="韩石头"/);
   });
 
   it("collapses 不在此地 to a header with the count, and expands to list names", () => {

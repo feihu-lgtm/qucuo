@@ -34,6 +34,29 @@ describe("random passers", () => {
     expect(getRandomPassers("心灵之海", 0)).toEqual([]);
   });
 
+  it("shares role art across changing names and backfills today's existing passer", () => {
+    const days = Array.from({ length: 14 }, (_, day) => 24 * day + 9);
+    const villagers = days.flatMap((time) => getRandomPassers("鱼定村", time)
+      .filter((npc) => npc.brief === "鱼定村的赶集村民（男）"));
+    expect(new Set(villagers.map(({ name }) => name)).size).toBeGreaterThan(1);
+    expect(new Set(villagers.map(({ passerArt }) => passerArt))).toEqual(new Set(["passer-market-villager-male"]));
+
+    const time = days.find((hour) => getRandomPassers("鱼定村", hour).some((npc) => npc.id === villagers[0].id));
+    const state = {
+      char: { special: { 气运: 5 } }, companionState: {}, questProgress: {}, flags: [], importedVer: 0,
+      time, room: { name: "鱼定村", npcs: [] },
+    };
+    const originalRoom = residentNpcRule.run(state, { importedRegistry }).changes.room(state.room);
+    const npc = originalRoom.npcs.find(({ name, randomPasser }) =>
+      name === villagers[0].name && randomPasser === villagers[0].randomPasser);
+    const savedNpc = { ...npc, passerArt: undefined };
+    const room = { ...originalRoom, npcs: originalRoom.npcs.map((entry) => entry === npc ? savedNpc : entry) };
+    const restored = residentNpcRule.run({ ...state, room }, { importedRegistry }).changes.room(room);
+    const after = restored.npcs.find(({ id }) => id === savedNpc.id);
+    expect(after).toMatchObject({ name: npc.name, passerArt: "passer-market-villager-male" });
+    expect(after.carriedItems).toBe(savedNpc.carriedItems);
+  });
+
   it("injects today's passers with combat data and faction, and clears yesterday's", () => {
     const state = (time, npcs = []) => ({
       char: { special: { 气运: 5 } }, companionState: {}, flags: [], importedVer: 0, questProgress: {},

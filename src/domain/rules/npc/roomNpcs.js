@@ -56,7 +56,12 @@ export function injectNpcs(npcs, incoming) {
   const patched = list.map(o => {
     const full = byName.get(o?.name);
     if (!full) return o;
-    if (o.carriedItems) return o;   // 已有随身物就别动（可能带 stolen/dropped 标记）
+    if (o.carriedItems) {
+      // 旧存档里的当日过路人补立绘，但不能重置随身物和战斗数据。
+      return full.passerArt && full.id === o.id && o.passerArt !== full.passerArt
+        ? { ...o, passerArt: full.passerArt }
+        : o;
+    }
     const fill = Object.fromEntries(
       Object.entries(full).filter(([k, v]) => o[k] === undefined && v !== undefined),
     );
