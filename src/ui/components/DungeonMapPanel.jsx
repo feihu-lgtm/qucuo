@@ -39,8 +39,8 @@ function FogGrid({ runState, theme }) {
     Object.values(r?.exits || {}).some((target) => visited.has(target));
 
   return (
-    <div style={{ marginBottom: 10 }}>
-      <div style={{ fontSize: "var(--fs-2xs)", color: theme.textDim, marginBottom: 4 }}>
+    <div className="dungeon-map-fog">
+      <div className="dungeon-map-fog-hint">
         内层平面迷雾（{size}×{size} · @当前 / ?未知路 / 出已探出口 · 中心待探）
       </div>
       <div style={{
@@ -57,7 +57,7 @@ function FogGrid({ runState, theme }) {
           const y = Math.floor(idx / size);
           const entry = byCoord.get(`${x},${y}`);
           if (!entry) {
-            return <span key={idx} style={{ width: 18, height: 18, display: "inline-block", opacity: 0.12, background: "#000" }} />;
+            return <span key={idx} className="dungeon-map-fog-empty" />;
           }
           const { name, room: r } = entry;
           const isCur = name === runState.current;
@@ -101,7 +101,7 @@ function FogGrid({ runState, theme }) {
               title={isVis || isRev ? name : isAdj ? "???" : ""}
               style={{
                 width: 18, height: 18, display: "inline-flex", alignItems: "center", justifyContent: "center",
-                fontSize: "10px", lineHeight: 1, boxSizing: "border-box",
+                fontSize: "var(--fs-2xs)", lineHeight: 1, boxSizing: "border-box",
                 color, background: bg, border,
               }}
             >
@@ -131,57 +131,52 @@ export default function DungeonMapPanel({ room, runState, onMove, onAction, onTe
     setText("");
   };
 
-  const label = { fontSize: "var(--fs-xs)", letterSpacing: "1px", color: theme.accentDim, marginBottom: 5 };
-  const chip = {
-    display: "inline-flex", alignItems: "center", padding: "1px 7px", marginRight: 6,
-    fontSize: "var(--fs-xs)", border: `1px solid ${theme.border}`, color: theme.text, whiteSpace: "nowrap",
-  };
 
   return (
-    <div style={{ padding: "10px 12px", background: theme.bgPanel, border: `1px solid ${theme.border}`, color: theme.text, fontSize: "var(--fs-sm)", lineHeight: 1.6 }}>
+    <div className="dungeon-map-panel">
       {/* 1. 房名 */}
-      <div data-part="room-name" style={{ fontSize: "var(--fs-md)", color: theme.accent, letterSpacing: "2px", marginBottom: 6 }}>
+      <div data-part="room-name" className="dungeon-map-room-name">
         {room?.name || "无名之室"}
-        {room?.isTreasure && <span style={{ ...chip, marginLeft: 8, color: theme.gold }}>✦ 藏宝</span>}
+        {room?.isTreasure && <span className="dungeon-map-chip dungeon-map-chip-head">✦ 藏宝</span>}
         {room?.isExit && (
-          <span style={{ ...chip, marginLeft: 8, color: room.exitUnlocked ? theme.green : theme.gold }}>
+          <span className="dungeon-map-chip dungeon-map-chip-head">
             {room.exitUnlocked ? "◈ 已通出口" : "◇ 封堵出口"}
           </span>
         )}
-        {room?.isCheckpoint && <span style={{ ...chip, marginLeft: 8, color: theme.turquoise }}>◈ 检点</span>}
-        {room?.envTag && <span style={{ ...chip, marginLeft: 8, color: theme.textDim }}>{room.envTag}</span>}
+        {room?.isCheckpoint && <span className="dungeon-map-chip dungeon-map-chip-head">◈ 检点</span>}
+        {room?.envTag && <span className="dungeon-map-chip dungeon-map-chip-head">{room.envTag}</span>}
       </div>
 
       {/* 13x13 迷雾平面图（无 data-part，不影响现有契约顺序） */}
       {isGrid && <FogGrid runState={runState} theme={theme} />}
 
       {/* 2. 描述 */}
-      <div data-part="room-desc" style={{ color: theme.textDim, marginBottom: 12, whiteSpace: "pre-wrap" }}>
+      <div data-part="room-desc" className="dungeon-map-desc">
         {room?.desc || ""}
       </div>
 
       {/* 3. 房内实体：人物 / 地面物品 */}
       {(npcs.length > 0 || loot.length > 0) && (
-        <div data-part="room-entities" style={{ marginBottom: 12 }}>
+        <div data-part="room-entities" className="dungeon-map-entities">
           {npcs.length > 0 && (
-            <div style={{ marginBottom: 6 }}>
-              <div style={label}>此地之人</div>
-              {npcs.map(n => <span key={n} style={{ ...chip, color: theme.green }}>{n}</span>)}
+            <div className="dungeon-map-entity-group">
+              <div className="dungeon-map-label">此地之人</div>
+              {npcs.map(n => <span key={n} className="dungeon-map-chip">{n}</span>)}
             </div>
           )}
           {loot.length > 0 && (
             <div>
-              <div style={label}>地上之物</div>
-              {loot.map(n => <span key={n} style={{ ...chip, color: theme.gold }}>{n}</span>)}
+              <div className="dungeon-map-label">地上之物</div>
+              {loot.map(n => <span key={n} className="dungeon-map-chip">{n}</span>)}
             </div>
           )}
         </div>
       )}
 
       {/* 4. 六向按钮：有出口的亮，无出口的暗置；大平面未探之地显示 ??? */}
-      <div data-part="room-exits" style={{ marginBottom: options.length > 0 ? 12 : 14 }}>
-        <div style={label}>出口</div>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+      <div data-part="room-exits" className={options.length > 0 ? "dungeon-map-exits" : "dungeon-map-exits-end"}>
+        <div className="dungeon-map-label">出口</div>
+        <div className="dungeon-map-flexrow">
           {DIR_KEYS.map(dir => {
             const target = exits[dir];
             const enabled = Boolean(target);
@@ -212,9 +207,9 @@ export default function DungeonMapPanel({ room, runState, onMove, onAction, onTe
 
       {/* 5. 房间事件动作按钮 */}
       {options.length > 0 && (
-        <div data-part="room-actions" style={{ marginBottom: 14 }}>
-          <div style={label}>可行之事</div>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <div data-part="room-actions" className="dungeon-map-actions">
+          <div className="dungeon-map-label">可行之事</div>
+          <div className="dungeon-map-flexrow">
             {options.map((o, i) => (
               <Button variant="chrome" font="native" key={i} type="button" onClick={() => onAction?.(o.label)}>
                 {o.label}
@@ -225,23 +220,20 @@ export default function DungeonMapPanel({ room, runState, onMove, onAction, onTe
       )}
 
       {/* 6. 自由文本输入：parseIntent / AI 意图兜底 */}
-      <div data-part="room-input" style={{ display: "flex", gap: 6 }}>
+      <div data-part="room-input" className="dungeon-map-inputrow">
         <input
           value={text}
           onChange={e => setText(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter") submit(); }}
           placeholder="输入动作（如：推开石门 / 查看角落）"
-          style={{
-            flex: 1, height: 24, padding: "0 8px", fontSize: "var(--fs-xs)", boxSizing: "border-box",
-            background: "transparent", border: `1px solid ${theme.border}`, color: theme.text, outline: "none",
-          }}
+          className="dungeon-map-input"
         />
         <Button variant="chrome" font="native" active={Boolean(text.trim())} type="button" onClick={submit}>行</Button>
       </div>
 
       {/* 底栏：runState 摘要（可选） */}
       {runState && (
-        <div data-part="run-state" style={{ marginTop: 10, fontSize: "var(--fs-2xs)", color: theme.textDim }}>
+        <div data-part="run-state" className="dungeon-map-runstate">
           {`第 ${runState.step ?? 0} 步`}{runState.hp != null && ` · 气血 ${Array.isArray(runState.hp) ? runState.hp[0] : runState.hp}`}
           {Array.isArray(runState.loot) && runState.loot.length > 0 && ` · 得物 ${runState.loot.length} 件`}
         </div>

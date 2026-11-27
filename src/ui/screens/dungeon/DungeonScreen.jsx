@@ -19,13 +19,13 @@ import {
   routeRoomText,
   selectDungeonNode,
   startMapRun,
-  syncDungeonWorld,
 } from "../../../domain/rules/dungeon/engine.js";
 import { settleDungeonRun, settleMapRun } from "../../../features/dungeon/logic.js";
 import { applyResult } from "../../../features/run.js";
 import DungeonMapPanel from "../../components/DungeonMapPanel.jsx";
 import { narrateDungeonEvent } from "../../../app/calls/screenCalls.js";
 import { gameActions, gameStore } from "../../../store/gameStore.js";
+import { persistDungeonWorld, persistActiveDungeonMapRun, resetDungeonWorldRun } from "../../../store/dungeonWrites.js";
 
 const DuelScreen = lazy(() => import("../DuelScreen.jsx"));
 
@@ -66,22 +66,12 @@ export default function DungeonScreen({
   useEffect(() => {
     if (!mapDistrictKey || !currentWorld) return;
     if (dungeonStore.worlds?.[mapDistrictKey]?.seed !== currentWorld.seed) {
-      gameActions.setDungeonRun({
-        active: dungeonStore.active,
-        worlds: { ...dungeonStore.worlds, [mapDistrictKey]: currentWorld },
-      });
+      persistDungeonWorld(dungeonStore, mapDistrictKey, currentWorld);
     }
   }, [mapDistrictKey, currentWorld?.seed]);
 
   const persistActiveMapRun = (nextMapRun) => {
-    if (!mapDistrictKey || !nextMapRun) return;
-    const latest = normalizeDungeonStore(gameStore?.getState?.()?.dungeonRun);
-    const baseWorld = latest.worlds?.[mapDistrictKey] || currentWorld;
-    const synced = baseWorld ? syncDungeonWorld(baseWorld, nextMapRun, { time: gameStore?.getState?.()?.time ?? currentTime }) : baseWorld;
-    gameActions.setDungeonRun({
-      active: nextMapRun.status === "exploring" || nextMapRun.status === "combat" ? nextMapRun : null,
-      worlds: synced ? { ...latest.worlds, [mapDistrictKey]: synced } : latest.worlds,
-    });
+    persistActiveDungeonMapRun(mapDistrictKey, nextMapRun, { currentWorld, fallbackTime: currentTime });
   };
 
   const oldRunUntouched = run.clearedNodes === 0 && !run.usedItems.length
@@ -179,11 +169,7 @@ export default function DungeonScreen({
       excludedNames: companionNames,
       forceReset: true,
     });
-    const latest = normalizeDungeonStore(gameStore?.getState?.()?.dungeonRun);
-    gameActions.setDungeonRun({
-      active: null,
-      worlds: { ...latest.worlds, [mapDistrictKey]: fresh },
-    });
+    resetDungeonWorldRun(mapDistrictKey, fresh);
     setWorldVersion((v) => v + 1);
   };
 
@@ -272,12 +258,8 @@ export default function DungeonScreen({
   return (
     <Overlay onClose={handleHeaderClose} inline={inline}>
       <Header name={building?.name || run.dungeonName} onClose={handleHeaderClose} />
-      <div style={{ padding: 14 }} data-world-v={worldVersion}>
-        <div style={{
-          display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8,
-          fontSize: "var(--fs-sm)", color: "var(--text-dim)", marginBottom: 10,
-          borderBottom: `1px solid var(--border)`, paddingBottom: 8,
-        }}>
+      <div className="dungeon-screen-body" data-world-v={worldVersion}>
+        <div className="dungeon-screen-statbar">
           {mapRun ? (
             <>
               <span>{mapRun.districtKey}·内层（第 {mapRun.step} 步）</span>
@@ -313,10 +295,7 @@ export default function DungeonScreen({
                 </button>
               )}
               {mapRun.log.length > 0 && (
-                <div style={{
-                  marginTop: 12, paddingTop: 8, borderTop: `1px solid var(--border)`,
-                  fontSize: "var(--fs-xs)", color: "var(--text-dim)", lineHeight: 1.6,
-                }}>
+                <div className="dungeon-screen-log">
                   {mapRun.log.slice(-5).map((line, i) => (
                     <div key={i}>· {line}</div>
                   ))}
@@ -324,21 +303,17 @@ export default function DungeonScreen({
               )}
             </>
           ) : (
-            <div style={{ fontSize: "var(--fs-sm)", lineHeight: 1.8 }}>
-              <div style={{ color: "var(--accent)", marginBottom: 6 }}>
+            <div className="dungeon-screen-result">
+              <div className="dungeon-screen-result-title">
                 {mapRun.status === "victory" ? "打通内层地宫！" : mapRun.status === "retreated" ? "已稳妥撤回外城。" : "负伤被逐出地宫……"}
               </div>
               <div>带出：银两 {mapRun.loot.money} 两 · 潜能 {mapRun.loot.pot} · 物事 {mapRun.loot.items.length} 件</div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+              <div className="dungeon-screen-result-actions">
                 {mapRun.status === "defeated" && mapRun.checkpointSnapshot && (
                   <button
                     type="button"
                     onClick={handleMapRestoreCheckpoint}
-                    style={{
-                      padding: "4px 14px", fontSize: "var(--fs-sm)",
-                      border: `1px solid var(--accent-dim)`, color: "var(--accent)",
-                      background: "transparent", cursor: "pointer",
-                    }}
+                    className="dungeon-screen-btn-checkpoint"
                   >
                     从检查点重来（{mapRun.checkpointSnapshot.current}）
                   </button>
@@ -356,16 +331,12 @@ export default function DungeonScreen({
         ) : (
           <>
             {mapDistrictKey && oldRunUntouched && (
-              <div style={{ marginBottom: 10, display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+              <div className="dungeon-screen-entrybar">
                 {savedActiveRun && (
                   <button
                     type="button"
                     onClick={resumeSavedMap}
-                    style={{
-                      padding: "4px 14px", fontSize: "var(--fs-sm)",
-                      border: `1px solid var(--gold)`, color: "var(--gold)",
-                      background: "transparent", cursor: "pointer",
-                    }}
+                    className="dungeon-screen-btn-resume"
                   >
                     继续上次进度（{savedActiveRun.current}）
                   </button>
@@ -385,17 +356,13 @@ export default function DungeonScreen({
                   <button
                     type="button"
                     onClick={resetWorldMap}
-                    style={{
-                      padding: "4px 12px", fontSize: "var(--fs-xs)",
-                      border: `1px solid var(--border)`, color: "var(--text-dim)",
-                      background: "transparent", cursor: "pointer",
-                    }}
+                    className="dungeon-screen-btn-reset"
                   >
                     重探新脉（换一张新图）
                   </button>
                 )}
                 {currentWorld && (
-                  <span style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)" }}>
+                  <span className="dungeon-screen-hint">
                     当前地宫余 {daysLeft} 日不变 · 潜入冒险者 {currentWorld.adventurers?.length || 0} 人
                   </span>
                 )}
@@ -414,10 +381,7 @@ export default function DungeonScreen({
         )}
 
         {!mapRun && run.log.length > 0 && (
-          <div style={{
-            marginTop: 12, paddingTop: 8, borderTop: `1px solid var(--border)`,
-            fontSize: "var(--fs-xs)", color: "var(--text-dim)", lineHeight: 1.6,
-          }}>
+          <div className="dungeon-screen-log">
             {run.log.slice(-5).map((line, i) => (
               <div key={i}>· {line}</div>
             ))}

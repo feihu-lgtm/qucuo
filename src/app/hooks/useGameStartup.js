@@ -38,7 +38,7 @@ export function useGameStartup({ initialLoadSlotId, initialOpenSettings }) {
     if (reconciledRef.current) return;
     reconciledRef.current = true;
     void reconcileProseLineageAfterLoad(restored?.snap || {}, { epoch: getGameEpoch() }).catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
   return { restored };
 }
