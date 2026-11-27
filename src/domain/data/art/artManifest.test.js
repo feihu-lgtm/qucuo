@@ -41,10 +41,17 @@ describe("美术素材登记表", () => {
   it("NPC 头像、物品图标、任务插图登记表均非空且对应 .webp 文件全部存在", () => {
     expect(NPC_ART.length).toBeGreaterThanOrEqual(260);
     expect(ITEM_ART.length).toBe(36);
-    expect(QUEST_ART.length).toBe(81);
+    expect(QUEST_ART.length).toBeGreaterThanOrEqual(81);
     for (const name of NPC_ART) expect(existsSync(webpFile("npc", name)), name).toBe(true);
     for (const key of ITEM_ART) expect(existsSync(webpFile("item", key)), key).toBe(true);
     for (const id of QUEST_ART) expect(existsSync(webpFile("quest", id)), id).toBe(true);
+  });
+
+  it("覆盖率硬门禁：public/art/npc 与 quest 目录里每张图都必须登记——有图未登记即缺口", () => {
+    const npcFiles = readdirSync("public/art/npc").filter((f) => f.endsWith(".webp")).map((f) => f.slice(0, -5));
+    const questFiles = readdirSync("public/art/quest").filter((f) => f.endsWith(".webp")).map((f) => f.slice(0, -5));
+    for (const f of npcFiles) expect(NPC_ART.includes(f), `npc/${f} 有图未登记`).toBe(true);
+    for (const f of questFiles) expect(QUEST_ART.includes(f), `quest/${f} 有图未登记`).toBe(true);
   });
 });
 
