@@ -153,7 +153,7 @@ export default function StartScreen({ onStart, onStartImportSelf, onLoadSlot, on
       <div className="start-screen-title" style={styles.titleBlock}>
         <img src={`${((import.meta.env && import.meta.env.BASE_URL) || "/")}title_tianducuo_v3.webp`}
           alt="天都曲措" className="start-screen-title-image" style={styles.titleImg} />
-        <div style={styles.subtitle(theme)}>—— 三曲交汇处的江湖 ——</div>
+        <div style={styles.subtitle(theme)}>—— 三条河流中的江湖 ——</div>
       </div>
 
       <nav className="start-screen-menu" style={styles.menu}>
@@ -223,7 +223,7 @@ export default function StartScreen({ onStart, onStartImportSelf, onLoadSlot, on
             title={`当前版本「${CURRENT_VERSION.codename}」，点击查看版本历史`}
             style={styles.cornerVersionBtn(theme, hovered === "version")}
           >
-            版本 {CURRENT_VERSION.version || "v0.2.0"} · {CURRENT_VERSION.time}
+            版本 {CURRENT_VERSION.version} · {CURRENT_VERSION.time}
           </button>
         </div>
       </div>

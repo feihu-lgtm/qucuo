@@ -6,8 +6,12 @@
 //   供 TopBar/StartScreen/存档头等处直接引用；
 // - 完整 VERSION_HISTORY 走 loadVersionHistory() 动态 import，点开版本历史弹窗时才下载，
 //   485KB 不进首屏主包。
-// 发新版本时：新条目加在 version-history.json 数组最前面，同时把它的 codename/time 抄进
-// version-current.json（docsTree.test.js 有两者一致性断言，漏抄测试会挂）。
+// 发新版本时：自 v0.3.0 起每次面向玩家的发版必须升级语义化版本号（修复升 patch、
+// 新功能升 minor、大改版升 major），不得复用旧版本号。
+// 推荐使用一键脚本：
+//   npm run version:bump -- patch --codename "..." --note "..."
+// 会自动同步 package.json、package-lock.json、version-current.json 与
+// version-history.json（repoGuards.test.js 校验三者一致且版本号严格递增）。
 //
 // time 字段一律为东八区（UTC+8）时间，手写字符串，组件不做任何时区换算。
 //

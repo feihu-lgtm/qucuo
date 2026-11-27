@@ -19,6 +19,9 @@ Read this file first before modifying any code. Source code and CI gates are the
 5. **AI 调用链说明同步**
    `docs/AI调用链架构说明.md` 是 AI 调用线的活文档。改动 AI 调用入口、回合管线、事实落盘、状态写入口、提示词冰山、结构化输出契约、判官/场记板/十二律时，必须在同一 PR 更新该文档。CI 的 `npm run docs-gate` 是硬门禁：触碰调用链关键文件而未同 PR 更新文档会失败。
 
+6. **版本号持续递增（自 v0.3.0 起）**
+   每次面向玩家的发版或更新版本记录时，必须递增语义化版本号（修复升 `patch`、新功能升 `minor`、大改版升 `major`），不得复用上一条版本号。使用 `npm run version:bump -- patch --codename "<标题>" --note "<条目>"` 同步更新 `package.json`、`package-lock.json`、`src/utils/version-current.json` 与 `src/utils/version-history.json`。`repoGuards.test.js` 会校验三处版本号一致且顶部版本严格大于上一条。
+
 ## 2. Layer Boundaries
 
 Import direction flows strictly downward:

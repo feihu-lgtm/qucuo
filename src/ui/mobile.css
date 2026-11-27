@@ -723,7 +723,7 @@
       max-height: 18dvh;
       margin-bottom: 6px !important;
       object-fit: contain;
-      object-position: left center;
+      object-position: center center;
     }
 
     .start-screen-menu-item {
@@ -770,7 +770,7 @@
       width: min(380px, 100%) !important;
       max-height: 35dvh;
       object-fit: contain;
-      object-position: left center;
+      object-position: center center;
     }
 
     .start-screen-menu {
