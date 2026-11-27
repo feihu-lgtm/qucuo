@@ -25,19 +25,10 @@ export function systemAffectionDelta(tree, npc, baseDelta, { charm = 5, time = 0
   }
   if (delta > 0) delta = Math.min(delta, 100 - base);
   if (delta <= 0) return { delta, before: base, tree, note: "好感无实质变化" };
-  const { daily } = AFFECTION_RULES.mvu;
-  const dayStamp = Math.floor((Number(time) || 0) / 24);
-  const last = tree?.世界?.好感日增;
-  const gained = last?.dayStamp === dayStamp ? { ...last.gained } : {};
-  const already = Object.hasOwn(gained, npc) ? Number(gained[npc]) || 0 : 0;
-  const remaining = Math.max(0, daily - already);
-  if (!remaining) return { delta: 0, before: base, tree, note: `${npc}今日好感已涨满 ${daily} 点` };
-  const preCap = delta;
-  delta = Math.min(delta, remaining);
-  const withAffection = writePath(tree, ["角色", npc, "好感度"], base + delta);
-  const next = writePath(withAffection, ["世界", "好感日增"], { dayStamp, gained: { ...gained, [npc]: already + delta } });
-  // dailyCapped：日涨 +12 上限吃掉了部分增量——上屏行据此括注「日涨封顶」。
-  return { delta, before: base, tree: next, note: null, dailyCapped: delta < preCap };
+  // 用户钦定：日涨封顶彻底拆除——正增量不再按日限涨、不再写 世界.好感日增 账
+  // （usePrivateTalk 旁白账本另有自用读写，与本系统结算无关）。魅力修正保留。
+  const next = writePath(tree, ["角色", npc, "好感度"], base + delta);
+  return { delta, before: base, tree: next, note: null };
 }
 
 // 钉值语义（邀同行初始好感）：直接写到目标值，无日涨上限——这是开局定性，不是渐进涨幅。

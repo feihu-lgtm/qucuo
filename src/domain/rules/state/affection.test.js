@@ -3,11 +3,11 @@ import { describe, expect, it } from "vitest";
 import { systemAffectionDelta, systemAffectionPin, hasNoAffectionTrack } from "./affection.js";
 
 describe("systemAffectionDelta 系统好感结算", () => {
-  it("基础增量落账并记日涨账", () => {
+  it("基础增量落账（日涨封顶已拆——不再写好感日增账）", () => {
     const { delta, tree } = systemAffectionDelta({}, "才旦", 4, { charm: 5, time: 0 });
     expect(delta).toBe(4);
     expect(tree.角色.才旦.好感度).toBe(4);
-    expect(tree.世界.好感日增.gained.才旦).toBe(4);
+    expect(tree.世界?.好感日增).toBeUndefined();
   });
 
   it("魅力修正：高魅力放大正增量", () => {
@@ -27,20 +27,17 @@ describe("systemAffectionDelta 系统好感结算", () => {
     expect(delta).toBe(2);
   });
 
-  it("每日 +12 上限：当日已涨 11 只剩 1 点额度", () => {
-    const tree = { 世界: { 好感日增: { dayStamp: 0, gained: { 甲: 11 } } } };
-    const { delta, note } = systemAffectionDelta(tree, "甲", 5, { charm: 5, time: 0 });
-    expect(delta).toBe(1);
-    const full = systemAffectionDelta({ 世界: { 好感日增: { dayStamp: 0, gained: { 甲: 12 } } } }, "甲", 5, { charm: 5, time: 0 });
-    expect(full.delta).toBe(0);
-    expect(full.note).toContain("涨满");
-    void note;
-  });
-
-  it("跨天重置额度", () => {
-    const tree = { 世界: { 好感日增: { dayStamp: 0, gained: { 甲: 12 } } } };
-    const { delta } = systemAffectionDelta(tree, "甲", 5, { charm: 5, time: 24 });
+  it("日涨封顶已拆：同一天连涨超 12 不受限、满账残留不拦（用户钦定行为变更）", () => {
+    const tree = { 角色: { 甲: { 好感度: 10 } }, 世界: { 好感日增: { dayStamp: 0, gained: { 甲: 11 } } } };
+    const { delta, note, tree: out } = systemAffectionDelta(tree, "甲", 5, { charm: 5, time: 0 });
     expect(delta).toBe(5);
+    expect(out.角色.甲.好感度).toBe(15);
+    expect(note).toBeNull();
+    const full = systemAffectionDelta({ 角色: { 甲: { 好感度: 10 } }, 世界: { 好感日增: { dayStamp: 0, gained: { 甲: 12 } } } }, "甲", 5, { charm: 5, time: 0 });
+    expect(full.delta).toBe(5);
+    expect(full.note).toBeNull();
+    // 不再写好感日增账
+    expect(out.世界.好感日增.gained.甲).toBe(11);
   });
 });
 

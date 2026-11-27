@@ -438,16 +438,10 @@ export function materializeFacts(state, facts, compiledWarrants) {
               // （judgePhase 拒止扣好感同一条），不新写措辞；日涨封顶括注一句。
               // 心账落条不上屏——记忆层不混数值层。
               const sign = result.delta > 0 ? "+" : "";
-              const capNote = result.dailyCapped ? "（日涨封顶）" : "";
-              logs.push({ t: "affection", text: `  💗 ${fact.npc} 好感度 ${sign}${result.delta}（${result.before} → ${next}）${capNote}` });
+              logs.push({ t: "affection", text: `  💗 ${fact.npc} 好感度 ${sign}${result.delta}（${result.before} → ${next}）` });
               patches.push({ op: "set", path: ["varTree", "角色", fact.npc, "好感度"], value: next, factId: fact.id });
             }
-            if (fact.affectionDelta > 0) {
-              const gained = result.tree?.世界?.好感日增;
-              if (gained) {
-                patches.push({ op: "set", path: ["varTree", "世界", "好感日增"], value: gained, factId: fact.id });
-              }
-            }
+
           }
           if (result.note) logs.push({ t: "sys", text: `  ${result.note}` });
         }
