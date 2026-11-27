@@ -34,32 +34,17 @@ function renderInnerCells(roomName, innerRoomName, ctx) {
   return { curRoom, curExits, rawExits, cells };
 }
 
-export default function MapModule({ room, innerRoomName, questProgress, mapData, flags, autoTravelTo, act, inv, char, varTree }) {
+export function OuterMapModule({ room, questProgress, mapData, flags, autoTravelTo, act, onGoOuter }) {
   const loading = useSessionUi(s => s.loading);
   const mapBig = useSessionUi(s => s.mapBig);
-  const innerAvailable = hasInnerMap(room.name);
-
-  const { exitByDir, cells: outerCells } = renderOuterCells(room.name, mapData);
+  const { exitByDir, cells: outerCells } = renderOuterCells(room.name, mapData || {});
   const outerPassable = passableExits(exitByDir, { layer: "outer", questProgress, flags });
-  const goOuter = (dir) => {
+  const fallbackGo = (dir) => {
     if (loading) return;
     const dest = exitByDir[dir];
-    if (dest && mapData[dest] && outerPassable[dir]) { autoTravelTo(dest); return; }
+    if (dest && mapData?.[dest] && outerPassable[dir]) { autoTravelTo(dest); return; }
     setInteractMode("action"); act(DIRS[dir] || dir, [], { forceLayer: "outer" });
   };
-
-  const innerState = innerAvailable
-    ? renderInnerCells(room.name, innerRoomName, { questProgress, flags, inv, char, varTree })
-    : null;
-  const innerPassable = innerState
-    ? passableExits(innerState.curExits, { layer: "inner", districtName: room.name, questProgress, flags, inv, char, varTree })
-    : {};
-  const goInner = (dir) => {
-    if (loading || !innerState) return;
-    if (innerState.curExits[dir]) { setInteractMode("action"); act(DIRS[dir] || dir, [], { forceLayer: "inner" }); }
-    else if (!innerState.rawExits[dir]) showNotice(blockedNoticeText(dir, innerPassable));
-  };
-
   return (
     <div className="left-map-module">
       <div className="left-map-block">
@@ -67,17 +52,41 @@ export default function MapModule({ room, innerRoomName, questProgress, mapData,
           <span className="left-map-title">舆图·外</span>
           <button type="button" className="left-map-zoom" onClick={() => { setMapView("outer"); setMapBig(true); }}>放大</button>
         </div>
-        <NineGridMap centerLabel={room.name} cells={outerCells} onGo={goOuter} loading={loading} big={mapBig} />
+        <NineGridMap centerLabel={room.name} cells={outerCells} onGo={onGoOuter || fallbackGo} loading={loading} big={mapBig} />
       </div>
-      {innerState && (
-        <div className="left-map-block">
-          <div className="left-map-head">
-            <span className="left-map-title">村图·内</span>
-            <button type="button" className="left-map-zoom" onClick={() => { setMapView("inner"); setMapBig(true); }}>放大</button>
-          </div>
-          <NineGridMap centerLabel={innerState.curRoom} cells={innerState.cells} onGo={goInner} loading={loading} big={mapBig} />
-        </div>
-      )}
     </div>
+  );
+}
+
+export function InnerMapModule({ room, innerRoomName, questProgress, flags, act, inv, char, varTree }) {
+  const loading = useSessionUi(s => s.loading);
+  const mapBig = useSessionUi(s => s.mapBig);
+  if (!hasInnerMap(room.name)) return null;
+  const innerState = renderInnerCells(room.name, innerRoomName, { questProgress, flags, inv, char, varTree });
+  const innerPassable = passableExits(innerState.curExits, { layer: "inner", districtName: room.name, questProgress, flags, inv, char, varTree });
+  const goInner = (dir) => {
+    if (loading) return;
+    if (innerState.curExits[dir]) { setInteractMode("action"); act(DIRS[dir] || dir, [], { forceLayer: "inner" }); }
+    else if (!innerState.rawExits[dir]) showNotice(blockedNoticeText(dir, innerPassable));
+  };
+  return (
+    <div className="left-map-module">
+      <div className="left-map-block">
+        <div className="left-map-head">
+          <span className="left-map-title">村图·内</span>
+          <button type="button" className="left-map-zoom" onClick={() => { setMapView("inner"); setMapBig(true); }}>放大</button>
+        </div>
+        <NineGridMap centerLabel={innerState.curRoom} cells={innerState.cells} onGo={goInner} loading={loading} big={mapBig} />
+      </div>
+    </div>
+  );
+}
+
+export default function MapModule(props) {
+  return (
+    <>
+      <OuterMapModule {...props} />
+      <InnerMapModule {...props} />
+    </>
   );
 }

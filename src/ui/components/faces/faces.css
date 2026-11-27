@@ -9,8 +9,8 @@
 
 .face-bar {
   flex-shrink: 0;
-  height: 44px;
-  padding: 0 16px;
+  height: 40px;
+  padding: 0 14px;
   display: flex;
   flex-wrap: nowrap;
   align-items: flex-end;

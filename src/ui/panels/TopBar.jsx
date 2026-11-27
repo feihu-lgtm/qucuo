@@ -31,7 +31,7 @@ function ShichenRing({ time }) {
   const y = 13 - 10 * Math.cos(angle);
   const large = frac > 0.5 ? 1 : 0;
   return (
-    <svg width="24" height="24" viewBox="0 0 26 26" className="topbar-ring" aria-hidden="true">
+    <svg width="18" height="18" viewBox="0 0 26 26" className="topbar-ring" aria-hidden="true">
       <circle cx="13" cy="13" r="10" fill="none" stroke="var(--border)" />
       {frac > 0 && (
         <path
@@ -77,12 +77,14 @@ export function DevControls({ theme, addLog }) {
   );
 }
 
-export function VersionHistoryButton({ theme }) {
-  const label = CURRENT_VERSION.version ? `${CURRENT_VERSION.version} · ${CURRENT_VERSION.time}` : CURRENT_VERSION.time;
-  return <Button variant="chrome" font="native" active={false} type="button" onClick={() => openOverlay(OVERLAY.VERSION_HISTORY)} title={`当前版本「${CURRENT_VERSION.codename}」· 点击查看版本历史目录`}>{label}</Button>;
+export function VersionHistoryButton({ theme, compact = false }) {
+  const fullLabel = CURRENT_VERSION.version ? `${CURRENT_VERSION.version} · ${CURRENT_VERSION.time}` : CURRENT_VERSION.time;
+  const label = compact ? (CURRENT_VERSION.version || CURRENT_VERSION.time) : fullLabel;
+  return <Button variant="chrome" active={false} type="button" className={compact ? "topbar-version-btn" : undefined} onClick={() => openOverlay(OVERLAY.VERSION_HISTORY)} title={`当前版本「${CURRENT_VERSION.codename}」(${CURRENT_VERSION.time}) · 点击查看版本历史目录`}>{label}</Button>;
 }
 
 export default function TopBar({
+  zoneName,
   dispatchCommand,
   autoSaveError, lastAutoSave,
   playerAvatarCustom, setPlayerAvatarCustom,
@@ -129,10 +131,12 @@ export default function TopBar({
         {!isMobile && (
           <div className="topbar-brand">
             <span className="topbar-title">天都·曲措</span>
-            <ShichenRing time={gameTime} />
+            {zoneName && <span className="topbar-zone">天地 · {zoneName}</span>}
             <span className="topbar-clock">
-              第{gameDay}日　<span className="topbar-shichen">{shichen}</span>　第{gameTime}回合
+              <ShichenRing time={gameTime} />
+              <span>第{gameDay}日　<span className="topbar-shichen">{shichen}</span>　第{gameTime}回合</span>
             </span>
+            <VersionHistoryButton theme={THEME_VARS} compact />
           </div>
         )}
         {/* 顶栏功能入口：桌面常显；手机仅在展开菜单时显示（换行铺开） */}

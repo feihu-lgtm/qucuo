@@ -54,7 +54,7 @@
   --quality-purple: #a98bd0;
   --quality-orange: #d9925a;
   --quality-red: #e0605a;
-  --font-body: "Songti SC", "STSong", "SimSun", serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
+  --font-body: "Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", "SimSun", "NSimSun", serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
   /* 字号阶梯（唯一来源）：UI 里任何 font-size 都只能取这几档，不再写裸 px。
      档位与原来的高频字面量对齐，所以替换后观感基本不变；9~10px 归到 2xs。 */
   --fs-2xs: 10px;   /* 角标、状态、表格小字（原 8.5/9/9.5/10） */

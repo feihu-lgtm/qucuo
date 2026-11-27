@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compareSemver, nextSemver, parseSemver, shanghaiTime } from "./bumpVersion.mjs";
+import { compareSemver, nextSemver, parseCliArgs, parseSemver, shanghaiTime } from "./bumpVersion.mjs";
 
 describe("scripts/bumpVersion.mjs", () => {
   it("parses and compares semver with or without leading v", () => {
@@ -24,6 +24,12 @@ describe("scripts/bumpVersion.mjs", () => {
     expect(() => parseSemver("v0.3.0-beta")).toThrow();
     expect(() => nextSemver("v0.3.0", "v0.3.0")).toThrow();
     expect(() => nextSemver("v0.3.0", "v0.2.9")).toThrow();
+  });
+
+  it("rejects option flags swallowed as option values", () => {
+    expect(() => parseCliArgs(["patch", "--codename", "--help"])).toThrow(/不能是选项/);
+    expect(() => parseCliArgs(["patch", "--codename", "标题", "--note"])).toThrow(/缺少值/);
+    expect(() => parseCliArgs(["patch", "--codename", "标题", "--time", "--note"])).toThrow(/不能是选项/);
   });
 
   it("formats Shanghai time as YYYY-MM-DD HH:MM", () => {

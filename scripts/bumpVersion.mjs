@@ -83,7 +83,18 @@ export function shanghaiTime(date = new Date()) {
   return `${parts.year}-${parts.month}-${parts.day} ${hour}:${parts.minute}`;
 }
 
-function parseCliArgs(argv) {
+function requireOptionValue(argv, index, flag) {
+  if (index + 1 >= argv.length) {
+    throw new Error(`参数 ${flag} 缺少值`);
+  }
+  const value = argv[index + 1];
+  if (value.startsWith("-")) {
+    throw new Error(`参数 ${flag} 的值不能是选项 "${value}"`);
+  }
+  return value;
+}
+
+export function parseCliArgs(argv) {
   let bump = "patch";
   let bumpSet = false;
   let codename = "";
@@ -91,12 +102,15 @@ function parseCliArgs(argv) {
   const notes = [];
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg === "--codename" && i + 1 < argv.length) {
-      codename = argv[++i];
-    } else if (arg === "--note" && i + 1 < argv.length) {
-      notes.push(argv[++i]);
-    } else if (arg === "--time" && i + 1 < argv.length) {
-      time = argv[++i];
+    if (arg === "--codename") {
+      codename = requireOptionValue(argv, i, "--codename");
+      i += 1;
+    } else if (arg === "--note") {
+      notes.push(requireOptionValue(argv, i, "--note"));
+      i += 1;
+    } else if (arg === "--time") {
+      time = requireOptionValue(argv, i, "--time");
+      i += 1;
     } else if (arg === "--help" || arg === "-h") {
       return { help: true };
     } else if (!arg.startsWith("-") && !bumpSet) {

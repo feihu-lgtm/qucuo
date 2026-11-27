@@ -100,7 +100,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
     <div className={`center-panel-col${isMobile && mobileColumn !== "center" ? " mobile-col-hidden" : ""}`} data-mobile={Boolean(isMobile)}>
       <div className="mobile-hide panel-col-head center-header">
         <span className="center-view-head">
-          <span>江湖</span>
+          <span className="center-view-title">江湖</span>
           <span className="center-view-switch" role="group" aria-label="江湖栏视图">
             <button type="button" className="center-view-tab" data-on={centerView !== "journal"} aria-pressed={centerView !== "journal"} onClick={() => setCenterView("story")}>正文</button>
             <button type="button" className="center-view-tab" data-on={centerView === "journal"} aria-pressed={centerView === "journal"} onClick={() => setCenterView("journal")}>卷宗</button>
@@ -127,7 +127,9 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
               ))}
             </span>
           )}
+          {centerView !== "journal" && !hideNarrative && <span className="center-tool-sep" aria-hidden="true" />}
           <TurnControls theme={THEME_VARS} loading={loading} stopRunning={turn.stopRunning} rollbackBlocked={turn.rollbackBlocked} rollbackOneStep={turn.rollbackOneStep} />
+          <span className="center-tool-sep" aria-hidden="true" />
           <DevControls theme={THEME_VARS} addLog={addLog} />
         </span>
       </div>

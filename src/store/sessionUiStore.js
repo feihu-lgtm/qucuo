@@ -48,7 +48,7 @@ export const sessionUiStore = createStore(() => ({
   apiCfg: loadApiCfg(),
   uiScale: (() => { const s = lsGet("wuxia_mud_ui_scale"); return s ? parseFloat(s) : 1; })(),
   // 夜色精修：正文默认宋体；像素字体保留为设置里的可选项（玩家主动选过才用）。
-  font: lsGet("wuxia_mud_ui_font") === "pixel" ? "pixel" : "song",
+  font: lsGet("wuxia_mud_ui_font_v2") === "pixel" ? "pixel" : "song",
   isDayMode: lsGet("wuxia_mud_day_mode") === "1",
   nsfwOn: true,
   gm: false,
@@ -82,7 +82,7 @@ setDomDataset("theme", sessionUiStore.getState().isDayMode ? "day" : "night");
 sessionUiStore.subscribe((state, prev) => {
   if (state.apiCfg !== prev.apiCfg) { try { saveConfig(state.apiCfg); } catch { /* ignore */ } }
   if (state.uiScale !== prev.uiScale) lsSet("wuxia_mud_ui_scale", String(state.uiScale));
-  if (state.font !== prev.font) { lsSet("wuxia_mud_ui_font", state.font); setDomDataset("font", state.font); }
+  if (state.font !== prev.font) { lsSet("wuxia_mud_ui_font_v2", state.font); setDomDataset("font", state.font); }
   if (state.isDayMode !== prev.isDayMode) {
     lsSet("wuxia_mud_day_mode", state.isDayMode ? "1" : "0");
     setDomDataset("theme", state.isDayMode ? "day" : "night");

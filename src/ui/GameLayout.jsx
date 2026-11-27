@@ -144,6 +144,7 @@ export default function GameLayout({ layout }) {
       style={{ "--ui-scale": uiScale, display: "flex", flexDirection: "column", height: `${100 / uiScale}vh`, width: `${100 / uiScale}vw`, zoom: uiScale, background: "var(--bg)", color: "var(--text)", fontFamily: "var(--font-body)", fontSize: "var(--fs-md)", overflow: "hidden", transition: "background 1.2s ease, color 1.2s ease" }}
     >
       <TopBar
+        zoneName={ui.zoneName}
         dispatchCommand={turn.dispatchCommand}
         autoSaveError={autosave.autoSaveError} lastAutoSave={autosave.lastAutoSave}
         playerAvatarCustom={ui.playerAvatarCustom} setPlayerAvatarCustom={ui.setPlayerAvatarCustom}

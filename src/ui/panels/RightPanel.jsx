@@ -40,7 +40,6 @@ export default function RightPanel(props) {
       className={`right-panel-col${isMobile && mobileColumn !== "right" ? " mobile-col-hidden" : ""}`}
       data-mobile={Boolean(isMobile)}
     >
-      <div className="panel-col-head">侠客</div>
       <FacePanel faces={faces} theme={THEME_VARS} label="侠客" isMobile={isMobile}
         renderModule={renderModule} isModuleVisible={isModuleVisible} isKeyboardBlocked={isKeyboardBlocked} />
     </div>
