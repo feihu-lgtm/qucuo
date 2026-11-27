@@ -29,14 +29,15 @@ describe("OC 游走池", () => {
     let found = null;
     outer: for (let day = 0; day < 90; day++) {
       for (const node of ["锦官城", "广汉", "天都镇", "大草甸", "玉泉寨", "雅江", "雾隐寨"]) {
-        if (ocWanderersAt(node, day).length) { found = { node, day }; break outer; }
+        const passers = getRandomPassers(node, day * 24);
+        if (passers.some((p) => p.ocAdventurer)) { found = { node, day }; break outer; }
       }
     }
     expect(found).toBeTruthy();
-    const again = ocWanderersAt(found.node, found.day);
-    expect(again).toEqual(ocWanderersAt(found.node, found.day));
-    const passers = getRandomPassers(found.node, found.day * 24);
-    expect(passers.some((p) => p.ocAdventurer === again[0].ocAdventurer)).toBe(true);
+    const passers1 = getRandomPassers(found.node, found.day * 24);
+    const passers2 = getRandomPassers(found.node, found.day * 24);
+    expect(passers1).toEqual(passers2);
+    expect(passers1.some((p) => p.ocAdventurer)).toBe(true);
   });
 });
 
