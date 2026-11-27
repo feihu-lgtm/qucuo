@@ -163,6 +163,18 @@ export function settleNpcDuel(state, npc, {
   addChange(changes, working, "pot", updateField("pot", add("pot", potGain)));
   logs.push({ t: "item", text: `  ✦ 与${tierLabel}高手切磋${outcome === "win" ? "获胜" : outcome === "lose" ? "落败" : "罢手"}，长了见识，潜能 +${potGain}` });
 
+  // 气头上切磋定案（用户亲定产品逻辑）：不论胜负，一场打过气就消了——
+  // 清除生气状态，积怒不再递减升级为强制恶斗（「打两次」根因：旧账不清，3 回合后 escalated 又触发一场）。
+  if (npc.name && state.varTree?.角色?.[npc.name]?.生气状态?.active) {
+    addChange(changes, working, "varTree", (prev) => {
+      const chars = { ...(prev?.角色 || {}) };
+      const attrs = chars[npc.name] || {};
+      chars[npc.name] = { ...attrs, 生气状态: { ...attrs.生气状态, active: false, resolvedBy: "combat" } };
+      return { ...(prev || {}), 角色: chars };
+    });
+    logs.push({ t: "sys", text: `  一场打过，${npc.name}胸口的恶气也撒了出去，不再与你计较。` });
+  }
+
   if (npc.name && !npc.tag) {
     const affGain = duelAffGain(outcome);
     addChange(changes, working, "varTree", (prev) => applyWrite(

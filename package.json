@@ -1,7 +1,13 @@
 {
   "name": "wuxia-mud",
   "private": true,
+<<<<<<< HEAD
   "version": "0.5.2",
+||||||| 67e36c78
+  "version": "0.5.1",
+=======
+  "version": "0.6.1",
+>>>>>>> origin/main
   "type": "module",
   "scripts": {
     "dev": "vite",
