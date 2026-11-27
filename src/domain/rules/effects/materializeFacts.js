@@ -431,7 +431,15 @@ export function materializeFacts(state, facts, compiledWarrants) {
           socialTreeCursor = result.tree;
           if (result.delta !== 0) {
             const next = result.tree?.角色?.[fact.npc]?.好感度;
+            // 好感增减主栏上屏（设计缺口补）：报数为主零文学修饰，与内功/外功 stat 行
+            // 同口径；日涨封顶吃掉部分括注。心账落条不上屏——记忆层不混数值层。
             if (Number.isFinite(next)) {
+              // 好感增减主栏上屏（设计缺口补）：沿用游戏内现成好感行格式
+              // （judgePhase 拒止扣好感同一条），不新写措辞；日涨封顶括注一句。
+              // 心账落条不上屏——记忆层不混数值层。
+              const sign = result.delta > 0 ? "+" : "";
+              const capNote = result.dailyCapped ? "（日涨封顶）" : "";
+              logs.push({ t: "affection", text: `  💗 ${fact.npc} 好感度 ${sign}${result.delta}（${result.before} → ${next}）${capNote}` });
               patches.push({ op: "set", path: ["varTree", "角色", fact.npc, "好感度"], value: next, factId: fact.id });
             }
             if (fact.affectionDelta > 0) {

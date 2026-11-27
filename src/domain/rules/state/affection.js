@@ -32,10 +32,12 @@ export function systemAffectionDelta(tree, npc, baseDelta, { charm = 5, time = 0
   const already = Object.hasOwn(gained, npc) ? Number(gained[npc]) || 0 : 0;
   const remaining = Math.max(0, daily - already);
   if (!remaining) return { delta: 0, before: base, tree, note: `${npc}今日好感已涨满 ${daily} 点` };
+  const preCap = delta;
   delta = Math.min(delta, remaining);
   const withAffection = writePath(tree, ["角色", npc, "好感度"], base + delta);
   const next = writePath(withAffection, ["世界", "好感日增"], { dayStamp, gained: { ...gained, [npc]: already + delta } });
-  return { delta, before: base, tree: next, note: null };
+  // dailyCapped：日涨 +12 上限吃掉了部分增量——上屏行据此括注「日涨封顶」。
+  return { delta, before: base, tree: next, note: null, dailyCapped: delta < preCap };
 }
 
 // 钉值语义（邀同行初始好感）：直接写到目标值，无日涨上限——这是开局定性，不是渐进涨幅。

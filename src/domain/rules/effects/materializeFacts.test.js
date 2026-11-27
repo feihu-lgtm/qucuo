@@ -617,3 +617,58 @@ describe("D2 旁观者「见」补好感建档", () => {
     expect((out.patches || []).some((pp) => pp.path.join(".").includes("心账"))).toBe(true);
   });
 });
+
+describe("好感增减主栏上屏（设计缺口补）", () => {
+  const mkState = (npcs, affs, charm = 5) => {
+    const base = baseState();
+    base.varTree = { 角色: affs, 世界: {} };
+    base.char = { ...base.char, special: { 魅力: charm } };
+    base.room = { ...base.room, npcs };
+    return base;
+  };
+  const statLines = (out) => out.logs.filter((l) => l.t === "affection").map((l) => l.text);
+
+  it("搭话类（恩+2）：上屏行格式「  才旦 好感 10→12（+2）」", () => {
+    const out = materializeFacts(mkState([{ name: "才旦" }], { 才旦: { 好感度: 10 } }), [
+      { id: "T1", op: "MUTATE_SOCIAL", npc: "才旦", affectionDelta: 2, ledgerKind: "恩", reason: "闲谈相投" },
+    ], {});
+    expect(statLines(out)).toContain("  💗 才旦 好感度 +2（10 → 12）");
+  });
+  it("送礼类（恩+4）：格式一致", () => {
+    const out = materializeFacts(mkState([{ name: "卓玛" }], { 卓玛: { 好感度: 20 } }), [
+      { id: "G1", op: "MUTATE_SOCIAL", npc: "卓玛", affectionDelta: 4, ledgerKind: "恩", reason: "赠礼" },
+    ], {});
+    expect(statLines(out)).toContain("  💗 卓玛 好感度 +4（20 → 24）");
+  });
+  it("辱骂类（怨-4）：负数格式「  罗琦 好感 40→36（-4）」", () => {
+    const out = materializeFacts(mkState([{ name: "罗琦" }], { 罗琦: { 好感度: 40 } }), [
+      { id: "H1", op: "MUTATE_SOCIAL", npc: "罗琦", affectionDelta: -4, ledgerKind: "怨", reason: "言语冲撞" },
+    ], {});
+    expect(statLines(out)).toContain("  💗 罗琦 好感度 -4（40 → 36）");
+  });
+  it("亲密类（闺房温存+3）：雪豹格式一致", () => {
+    const out = materializeFacts(mkState(
+      [{ name: "雪豹", beast: true, companionCandidate: true }], { 雪豹: { 好感度: 85 } }), [
+      { id: "I1", op: "MUTATE_SOCIAL", npc: "雪豹", affectionDelta: 3, ledgerKind: "恩", reason: "闺房温存" },
+    ], {});
+    expect(statLines(out)).toContain("  💗 雪豹 好感度 +3（85 → 88）");
+  });
+  it("日涨封顶：实际增量被封顶吃掉时括注「日涨封顶」", () => {
+    const base = mkState([{ name: "才旦" }], { 才旦: { 好感度: 10 } });
+    // 当日已涨 11 点——再签 +6 只剩 1 点额度
+    base.varTree.世界.好感日增 = { dayStamp: Math.floor(42 / 24), gained: { 才旦: 11 } };
+    const out = materializeFacts(base, [
+      { id: "D1", op: "MUTATE_SOCIAL", npc: "才旦", affectionDelta: 6, ledgerKind: "恩" },
+    ], { time: 42 });
+    const line = statLines(out).find((t) => t.includes("才旦 好感度"));
+    expect(line).toContain("+1（10 → 11）");
+    expect(line).toContain("日涨封顶");
+  });
+  it("心账落条（恩/怨/见）本身不额外出上屏行——只有数值行", () => {
+    const out = materializeFacts(mkState([{ name: "才旦" }], { 才旦: { 好感度: 10 } }), [
+      { id: "T1", op: "MUTATE_SOCIAL", npc: "才旦", affectionDelta: 2, ledgerKind: "恩", reason: "闲谈相投" },
+    ], {});
+    const npcLines = out.logs.filter((l) => l.text.includes("才旦") && !l.text.includes("好感"));
+    expect(npcLines.filter((l) => l.t === "affection")).toHaveLength(0);
+  });
+});
