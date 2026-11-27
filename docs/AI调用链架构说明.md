@@ -72,7 +72,7 @@ WO-15 起这就是线上主回路：**旧状态提取层（turn.extraction/extra
 | 雪豹灵性确定性结算 | 已落地 | 挠痒/自由喂食/送药/送礼肉食全部由系统判定发旗（resolveSnowInteraction 自由文本保守识别：否定/假设/询问不误触发、无肉不触发、flag 幂等），filterSnowModelFlags 剥除模型输出全部 snow 旗——无双通道。 |
 | settle 社交好感硬结算 | 已落地 | 送礼/送银/求教/邀同行的好感增量由 feature 确定性写入（系统账本语义：魅力修正/每日 +12 上限/0-100 clamp/无好感轨道跳过），模型只写叙事不写好感 MVU。 |
 | 天机落账卡 UI | 已落地/动作结构化直写 | `EffectReceiptCard` 消费 `receipts` 渲染落账条；按钮派发结构化 action（itemId/skillId/factId/op/kind），经 NarrativeLogFeed 原样透传进 `act`，useTurn 在 intent 识别前的系统边界按 id 寻址确定性幂等执行（features/receipts/logic，equip/activate 为 explicit-on 语义），行动识别关闭同样生效，写账走 applyResult 统一边界。例外：`viewPact` 无结构化面板入口，保留文本指令。 |
-| 化形同伴档案与初入队调度 | 已落地 | `companionProfiles` 收拢雪豹（白栖雪）与珍珠（夏明珠）的三字人名、武功、12 项体貌与受 `nsfwOn` 硬门控的私密细节；`inviteCompanion` 初次入队写入人形化态、化形旗标与 `varTree` 形态并钉好感；`companion_transform`（初入队化形演出）与 `companion_dossier`（全随行化形同伴档案注入 `buildNpcContext`）两块文本单源住 `src/copy/*.txt` 并接入统一提示词总控台。 |
+| 化形同伴档案与初入队调度 | 已落地 | `companionProfiles` 收拢雪豹（白栖雪）与珍珠（夏明珠）的三字人名、武功、12 项体貌与受 `nsfwOn` 硬门控的私密细节；`inviteCompanion` 初次入队写入人形化态、化形旗标与 `varTree` 形态并钉好感；`companion_transform`（初入队化形演出）与 `companion_dossier`（全随行化形同伴档案注入 `buildNpcContext`）两块文本单源住 `src/copy/*.txt` 并接入统一提示词总控台。档案里的当前形态以存档 `companionState[key].form` 为准（入队化形与 `switchCompanionForm` 写入），浏览器本地的外貌形态偏好只给没有 `form` 字段的老档兜底；人物面原先的手动外貌切换已随重复伙伴头像一并移除。 |
 
 ## 4. 目标链路分层
 
