@@ -19,7 +19,12 @@ export function fixateNpcs({ p, room, innerRoomName, narrativeText, varTree, tim
   // 入册的驻场角色同样有固定归属，一并纳入幽灵过滤——否则玩家在鱼定村
   // 入册的人，AI 可能在锦官城凭空刷出来一个同名的。
   const _residentNames = new Set([...getAllResidentNpcNames(), ...getImportedResidentNames()]);
-  const _companionNames = new Set(COMPANION_SLOTS.map(s => s.label));
+  const _companionNames = new Set();
+  for (const s of COMPANION_SLOTS) {
+    if (s?.label) _companionNames.add(s.label);
+    if (s?.humanName) _companionNames.add(s.humanName);
+    for (const alias of s?.aliases || []) _companionNames.add(alias);
+  }
   const _currentNames = new Set((room.npcs || []).map(n => n.name));
   p.room.npcs = p.room.npcs.filter(n => {
     if (!n?.name) return false;

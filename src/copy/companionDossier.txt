@@ -1,0 +1,6 @@
+【@beastName（化名@humanName）·随行同伴全档案】
+身份称呼：三字人名为「@humanName」（原唤「@beastName」@nativeSuffix），@title，@age岁成年女子，此生只认主角一人。叙事时人物开口自称或对话写其名可自然兼顾「@humanName」与「@beastName」。
+当前形态：@formText
+性格与癖好：@personality@habitLine
+武功来历：@kungfuSummary
+@bodyBlock@nsfwNote

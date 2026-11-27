@@ -1,6 +1,7 @@
 import { definePrompt, getPromptDef } from "../registry.js";
 import { estimatePromptTokens } from "../buildPrompt.js";
 import { buildPrivateTalkPayload } from "../privateTalkPayload.js";
+import { loadCopy } from "../../../../copy/loadCopy.js";
 
 let mainTurnAssembler = null;
 
@@ -19,7 +20,7 @@ export function registerUnifiedCalls() {
     reviewDesc: "单调用校验 JSON 骨架 + MVU 变量与礼物/地图硬约束；双调用主叙事只产散文并剥除 <deal>",
     matrixBlocks: [
       "engine_identity", "length", "voice", "preset_scenario", "preset_genrules", "preset_wenfeng",
-      "npc_lore", "catalog", "isolation", "map_law", "schema", "user_ctx", "user_recall",
+      "npc_lore", "companion_transform", "companion_dossier", "catalog", "isolation", "map_law", "schema", "user_ctx", "user_recall",
       "reunion", "target_ledger", "user_prose", "nsfw_rules", "gm_rule",
     ],
     assemble: (ctx) => {
@@ -64,6 +65,22 @@ export function registerUnifiedCalls() {
     },
   });
 
+
+  definePrompt("block", "companion_transform", {
+    label: "灵兽初化人形入队演出",
+    category: "npc",
+    slot: "inChat",
+    editable: "static",
+    text: () => loadCopy("companionTransform.txt"),
+  });
+
+  definePrompt("block", "companion_dossier", {
+    label: "化形同伴全档案（人名/武功/体貌/私密门控）",
+    category: "npc",
+    slot: "inChat",
+    editable: "static",
+    text: () => loadCopy("companionDossier.txt"),
+  });
 
   definePrompt("block", "intent.classify.sys", {
     label: "意图分类系统指令",

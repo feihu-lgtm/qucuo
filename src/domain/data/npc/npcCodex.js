@@ -6,6 +6,7 @@ import { NPC_POOL } from "./npcPool.js";
 import { ADVENTURER_POOL } from "../dungeon/adventurers.js";
 import { ADVENTURER_POOL_IP } from "../dungeon/adventurersIP.js";
 import { NPC_ART } from "../art/artManifest.js";
+import { COMPANION_PROFILES } from "./companionProfiles.js";
 
 const ART_SET = new Set(NPC_ART);
 const COMPANION_REGION = new Set(["雪豹", "珍珠", "明日香"]);
@@ -104,6 +105,23 @@ export function getNpcCodexEntries() {
 
   for (const name of NPC_ART) {
     upsert(name, { region: COMPANION_REGION.has(name) ? "同行伙伴" : "曲措众生" });
+  }
+
+  for (const profile of Object.values(COMPANION_PROFILES)) {
+    const prev = byName.get(profile.beastName);
+    if (!prev) continue;
+    byName.set(profile.beastName, {
+      ...prev,
+      humanName: profile.humanName,
+      title: profile.title,
+      aliases: [...profile.aliases],
+      kungfu: profile.kungfu,
+      nsfwProfile: profile.nsfwProfile,
+      bodyProfile: profile.bodyProfile,
+      bio: profile.fullBio,
+      brief: profile.brief,
+      carry: profile.carry.map((c) => c.name),
+    });
   }
 
   cachedEntries = [...byName.values()].sort((a, b) => {

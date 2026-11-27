@@ -9,6 +9,7 @@ import {
 import * as ENGINE from "./enginePrompts.js";
 import { NSFW_RULES } from "./modePrimer.js";
 import { getActivePreset } from "./presetSystem.js";
+import { loadCopy } from "../../../copy/loadCopy.js";
 
 const DEFAULT_PROSE_RULE = "【成文铁律·逐段自查（本条最优先，落笔前先过一遍）】每写完一段，先在心里核两样再往下写：其一，这一段每个句子都要是完整句——主谓宾齐全、该带的定状补都补上，不许出现半截话、掐头去尾、省略到看不明白的残句；其二，这一段凡涉及到的，时间、地点、人物、起因、经过、结果都要交代到实处（这一段确实用不上的那几样可以不写，但只要沾边就得写全，不许用『那人』『某处』『后来』这类含糊词一笔带过）。宁可句子写得实、写得满，也绝不为省字丢主语宾语或掐断句子。";
 
@@ -50,6 +51,8 @@ const BLOCK_CATALOG_META = {
   preset_genrules: { name: "世界与行动通用铁律", category: "style", slot: "sys", editable: "static" },
   preset_wenfeng: { name: "文体铁律与禁用句式", category: "style", slot: "sys", editable: "static" },
   npc_lore: { name: "在场人物档案（性格/生平/关系）", category: "npc", slot: "inChat", editable: "toggle" },
+  companion_transform: { name: "灵兽初化人形入队演出", category: "npc", slot: "inChat", editable: "static", defaultMode: "green" },
+  companion_dossier: { name: "化形同伴全档案（人名/武功/体貌/私密门控）", category: "npc", slot: "inChat", editable: "static", defaultMode: "green" },
   catalog: { name: "曲措乡物件志（物品白名单）", category: "world", slot: "inChat", editable: "toggle" },
   isolation: { name: "NPC 认知隔离硬规则", category: "npc", slot: "sys", editable: "engine" },
   map_law: { name: "地图与出口铁律", category: "world", slot: "sys", editable: "engine" },
@@ -119,6 +122,8 @@ function resolveMainStaticText(id, actionView, { presetScenario } = {}) {
   }
   if (id === "gift_settle_law") return giftSettleLawExample();
   if (id === "gift_narrative_law") return giftNarrativeLawExample();
+  if (id === "companion_transform") return loadCopy("companionTransform.txt");
+  if (id === "companion_dossier") return loadCopy("companionDossier.txt");
   return null;
 }
 
@@ -237,6 +242,20 @@ export function getCallControlMatrix(
       { id: "target_ledger", lit: !view.gm, off: "创造模式可略过旧账", kind: "dynamic" },
       { id: "reunion", lit: view.scope !== "move", off: "纯移动不挂载久别重逢", kind: "gated" },
       { id: "body_gate", lit: view.scope === "full" || view.scope === "talk", off: "移动与普通结算外貌灭灯", kind: "gated" },
+      {
+        id: "companion_transform",
+        lit: view.id === "settle",
+        off: "仅同伴初次入队化形结算回合触发",
+        kind: "static",
+        summary: "雪豹（白栖雪）与珍珠（夏明珠）初次入队化形叙事指令，支持原文编辑与开关。",
+      },
+      {
+        id: "companion_dossier",
+        lit: view.scope !== "move",
+        off: "纯移动与无化形随行同伴时不挂",
+        kind: "static",
+        summary: "向主叙事注入随行化形同伴的三字人名、性格、武功与受 ■ 模式门控的体貌明细。",
+      },
     ].filter((e) => !seen.has(e.id));
 
     const combined = [...baseList, ...extras];

@@ -397,7 +397,10 @@ function runOne(action) {
       return { kind: action.kind, ok, text: `你已${off ? "卸下" : "装备"}「${itemLabel}」——系统已结算，叙事须照此写。` };
     }
     if (isInvite) {
-      return { kind: action.kind, ok, text: `${itemLabel}已应允同行——系统已结算，叙事须照此写。` };
+      const tf = result?.settleOptions?.firstTransform && result?.settleOptions?.humanName
+        ? `且当场褪去兽身化为成年女子「${result.settleOptions.humanName}」`
+        : "";
+      return { kind: action.kind, ok, text: `${itemLabel}已应允同行${tf}——系统已结算，叙事须照此写。` };
     }
     const logLine = (settled.logs || []).map((l) => l.text?.trim()).filter(Boolean)[0];
     return { kind: action.kind, ok, text: `${logLine || `「${itemLabel}」已结算`}——系统已结算，叙事须照此写。` };
