@@ -29,6 +29,8 @@ export default function TurnStatusPill({ theme, mobile, docked }) {
       </Button>
     );
   }
+  const failed = status.phase === PHASE.ERROR;
+  const busy = running && !failed;
   return (
     <div className={mobile || docked ? undefined : "turn-status-float"} style={mobile
       ? { display: "flex", justifyContent: "flex-end", padding: "3px 10px", flexShrink: 0 }
@@ -36,15 +38,11 @@ export default function TurnStatusPill({ theme, mobile, docked }) {
       : undefined /* 悬浮态的定位与层级在 tokens.css 的 .turn-status-float（--z-hud） */}>
       <button type="button" title={label} aria-label={`全流程日志：${label}`}
         onClick={() => openOverlay(OVERLAY.TRACE)}
-        style={{
-          // 与顶栏其它入口同一副骨架（高度/圆角/字距都取 --ctl-* 与 --fs-xs），
-          // 这样「日志」和回合计时并排时像同一组控件，而不是一颗凸出来的圆药丸。
-          ...chromeBtn(theme, { active }), height: "var(--ctl-h)", borderRadius: "var(--radius-none)",
-          maxWidth: "100%",
-          background: active ? `color-mix(in srgb, ${theme.accent} 14%, transparent)` : "transparent",
-          fontFamily: "inherit",
-        }}>
-        <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{label}</span>
+        className={`topbar-status-pill${active ? " is-active" : ""}`}
+        data-state={failed ? "error" : busy ? "busy" : "idle"}
+      >
+        <span className="topbar-status-dot" aria-hidden="true" />
+        <span className="topbar-status-text">{label}</span>
       </button>
     </div>
   );

@@ -9,57 +9,78 @@
 
 .face-bar {
   flex-shrink: 0;
-  padding: 8px 10px;
+  height: 44px;
+  padding: 0 16px;
   display: flex;
   flex-wrap: nowrap;
-  align-items: center;
+  align-items: flex-end;
   gap: 8px;
-  border-bottom: 1px solid;
+  border-bottom: 1px solid var(--hairline);
 }
 
 .face-labels {
-  position: relative;
-  height: 22px;
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  height: 100%;
   flex: 1 1 auto;
   min-width: 0;
-  overflow: hidden;
-  perspective: 400px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
   color: var(--text-dim);
 }
+.face-labels::-webkit-scrollbar { display: none; }
 
 .face-label {
-  position: absolute;
-  left: 33.333%;
-  width: 33.333%;
-  height: 22px;
-  text-align: center;
-  font-size: 12px;
-  line-height: 22px;
+  flex: 0 0 auto;
+  height: 100%;
+  display: inline-flex;
+  align-items: flex-end;
+  padding-bottom: 10px;
+  box-sizing: border-box;
+  font-size: var(--fs-base);
+  letter-spacing: 1px;
+  line-height: 1.2;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transition: transform 250ms ease, opacity 250ms ease;
+  border-bottom: 2px solid transparent;
+  transition: color 160ms ease, border-color 160ms ease;
 }
 
-.face-label-current { color: var(--text); font-size: 14px; transform: translateX(0) rotateY(0); opacity: 1; }
-.face-label-previous { transform: translateX(-100%) rotateY(-15deg) scale(.96); opacity: .85; }
-.face-label-next { transform: translateX(100%) rotateY(15deg) scale(.96); opacity: .85; }
-.face-label-hidden { transform: rotateY(180deg) scale(.65); opacity: 0; visibility: hidden; }
+.face-label-current {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+.face-label-previous,
+.face-label-next,
+.face-label-hidden {
+  color: var(--text-dim);
+}
+.face-label-previous:hover,
+.face-label-next:hover,
+.face-label-hidden:hover {
+  color: var(--text);
+}
 .face-label button {
-  display: block;
-  width: 100%;
-  height: 22px;
+  display: inline-flex;
+  align-items: center;
   padding: 0;
   border: 0;
   background: transparent;
   color: inherit;
   font: inherit;
+  letter-spacing: inherit;
   cursor: pointer;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.face-label button:hover { text-decoration: underline; }
-.face-controls { display: flex; gap: 8px; flex-shrink: 0; margin-left: auto; }
+.face-label button:hover { color: var(--text); }
+.face-controls {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
+  align-self: center;
+}
 .face-bar button { flex-shrink: 0; }
 
 .face-bar button,
@@ -122,21 +143,20 @@
   font-size: 12.5px;
   line-height: 1.8;
   word-break: break-word;
-  backface-visibility: hidden;
-  animation-duration: 250ms;
+  animation-duration: 180ms;
   animation-timing-function: ease-out;
 }
 
-.face-forward { animation-name: face-forward; transform-origin: left center; }
-.face-backward { animation-name: face-backward; transform-origin: right center; }
+.face-forward { animation-name: face-forward; }
+.face-backward { animation-name: face-backward; }
 
 .face-modules {
   min-height: 100%;
   box-sizing: border-box;
-  padding: 10px 16px;
+  padding: 14px 18px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 14px;
 }
 
 .face-modules > * { flex-shrink: 0; min-width: 0; }
@@ -162,13 +182,13 @@
 .face-module-option input { accent-color: var(--accent); }
 
 @keyframes face-forward {
-  from { transform: rotateY(24deg); opacity: .5; }
-  to { transform: rotateY(0); opacity: 1; }
+  from { opacity: .65; transform: translateX(6px); }
+  to { opacity: 1; transform: none; }
 }
 
 @keyframes face-backward {
-  from { transform: rotateY(-24deg); opacity: .5; }
-  to { transform: rotateY(0); opacity: 1; }
+  from { opacity: .65; transform: translateX(-6px); }
+  to { opacity: 1; transform: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

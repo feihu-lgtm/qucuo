@@ -10,30 +10,29 @@ export default function LocationModule({ room, innerRoomName, time }) {
   const inner = hasInnerMap(room.name) && innerRoomName ? innerRoomName : null;
   const innerRoom = inner ? getInnerRoom(room.name, inner) : null;
   const isAnchor = inner && inner === getDistrictAnchor(room.name);
-  const label = { color: "var(--text-dim)", fontSize: "var(--fs-xs)", fontWeight: "normal", marginRight: 6, letterSpacing: 0 };
   // 小图固定用外层据点图，与江湖栏进场横幅同一张、同一构图；内层走动不换图（理由见 ui/art/art.js）。
   const artSrc = placeArtUrl(room.name);
   return (
-    <div>
+    <div className="left-location">
       {artSrc && (
         <div className="left-location-art">
           <ArtImage src={artSrc} alt={room.name} variant="thumb" />
         </div>
       )}
-      <div style={{ color: "var(--text)", fontWeight: "bold", fontSize: "var(--fs-base)", marginBottom: 2, letterSpacing: "1px" }}>
-        <span style={label}>外层</span>{room.name}
+      <div className="left-location-name">
+        <span className="left-location-tag">外层</span>{room.name}
       </div>
       {inner && (
-        <div style={{ color: "var(--text)", fontSize: "var(--fs-md)", marginBottom: 4, letterSpacing: "1px" }}>
-          <span style={label}>内层</span>{inner}
-          {isAnchor && <span style={{ ...label, marginLeft: 6 }}>（进出口）</span>}
+        <div className="left-location-inner">
+          <span className="left-location-tag">内层</span>{inner}
+          {isAnchor && <span className="left-location-anchor">（进出口）</span>}
         </div>
       )}
-      <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", lineHeight: 1.5, marginBottom: 10 }}>
+      <div className="left-location-clock">
         <div>游戏 {getTimeStr(time)} · 第{time}回合</div>
         <div>现实 <LiveClockText /></div>
       </div>
-      <div style={{ color: "var(--text)", fontSize: "var(--fs-sm)", marginBottom: 14, lineHeight: "var(--lh-narrative)" }}>{innerRoom?.desc || room.desc}</div>
+      <div className="left-location-desc">{innerRoom?.desc || room.desc}</div>
     </div>
   );
 }

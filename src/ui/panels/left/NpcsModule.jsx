@@ -57,10 +57,10 @@ export default function NpcsModule({ room, innerRoomName, varTree, char, addLog,
         setInputCapsule({ kind: "pigeon", name }); setTimeout(() => inputRef.current?.focus(), 0);
       }}
       title={(char.pigeons || 0) > 0 ? `飞鸽传书（现有信鸽 ${char.pigeons} 只，寄一封耗一只·只送信）` : "需先去驿站买信鸽"}
-      style={{ fontSize: "var(--fs-2xs)", color: (char.pigeons || 0) <= 0 ? "var(--text-dim)" : (pigeonTarget === name ? "var(--accent)" : "var(--accent-dim)"), cursor: "pointer", flexShrink: 0 }}>飞鸽</span>
+      style={{ fontSize: "var(--fs-2xs)", color: (char.pigeons || 0) <= 0 ? "var(--text-dim)" : (pigeonTarget === name ? "var(--accent)" : "var(--text-sub)"), cursor: "pointer", flexShrink: 0 }}>飞鸽</span>
   );
   const pigeonBadge = (
-    <span style={{ fontSize: "var(--fs-2xs)", color: (char.pigeons || 0) > 0 ? "var(--accent-dim)" : "var(--text-dim)", flexShrink: 0 }} title={`现有信鸽 ${char.pigeons || 0} 只`}>
+    <span style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", flexShrink: 0 }} title={`现有信鸽 ${char.pigeons || 0} 只`}>
       信鸽 {char.pigeons || 0}
     </span>
   );
@@ -84,7 +84,7 @@ export default function NpcsModule({ room, innerRoomName, varTree, char, addLog,
   return (
     <div style={{ marginBottom: 10 }}>
       {dbgPeople}
-      {header("此地 · 在场", present.length, "present", "var(--accent-dim)",
+      {header("此地 · 在场", present.length, "present", "var(--text-dim)",
         <span style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>{pactsEntry}{lettersEntry}{pigeonBadge}</span>)}
       {peoplePanel.present && (present.length === 0
         ? <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", marginBottom: 8, paddingLeft: 16 }}>空无一人</div>
@@ -93,18 +93,18 @@ export default function NpcsModule({ room, innerRoomName, varTree, char, addLog,
             const attrs = varTree.角色?.[n.name] || {};
             const hasAffection = known && typeof attrs.好感度 === "number";
             return (
-              <div key={i} style={{ marginBottom: 6, paddingBottom: 6, borderBottom: i < present.length - 1 ? `1px solid var(--border)` : "none" }}>
+              <div key={i} style={{ marginBottom: 6, paddingBottom: 6, borderBottom: i < present.length - 1 ? `1px solid var(--hairline)` : "none" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <span style={{ color: uiGreen, flex: 1 }}>
                     {(() => {
                       const cls = adventurerClass(n);
                       return cls ? <span className={cls}>{n.name}</span> : n.name;
                     })()}
-                    <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", marginLeft: 6 }}>{n.brief}</span>
+                    <span style={{ color: "var(--text-sub)", fontSize: "var(--fs-xs)", marginLeft: 6 }}>{n.brief}</span>
                   </span>
                   {hasAffection ? (
                     <span style={{ fontSize: "var(--fs-xs)", flexShrink: 0, textAlign: "right", whiteSpace: "nowrap" }} title={`好感度 ${attrs.好感度}/100`}>
-                      <span style={{ color: uiPink }}>{npcAffectionLabel(attrs.好感度)}</span>
+                      <span style={{ color: "var(--note)" }}>{npcAffectionLabel(attrs.好感度)}</span>
                       <span style={{ color: "var(--text-dim)", marginLeft: 4 }}>{attrs.好感度}</span>
                     </span>
                   ) : (
@@ -112,7 +112,7 @@ export default function NpcsModule({ room, innerRoomName, varTree, char, addLog,
                   )}
                 </div>
                 <span onClick={() => setActiveNpcMenu(n)} title="打开互动菜单：细看/切磋/偷窃/对话/送礼/拜师"
-                  style={{ fontSize: "var(--fs-2xs)", color: "var(--accent)", cursor: "pointer", display: "block", marginTop: 2 }}>◈ 角色面板</span>{known && <NpcAngerLine angerState={attrs.生气状态} />}
+                  style={{ fontSize: "var(--fs-2xs)", color: "var(--text-sub)", cursor: "pointer", display: "block", marginTop: 2 }}>角色面板</span>{known && <NpcAngerLine angerState={attrs.生气状态} />}
               </div>
             );
           })}</div>)}
@@ -120,7 +120,7 @@ export default function NpcsModule({ room, innerRoomName, varTree, char, addLog,
         <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", marginBottom: 8, paddingLeft: 16 }}>路人 {crowd.join("、")}</div>
       )}
       {nearby.length > 0 && (
-        <div style={{ paddingTop: 6, borderTop: `1px solid var(--border)` }}>
+        <div style={{ paddingTop: 6, borderTop: `1px solid var(--hairline)` }}>
           {header("在附近（本据点别处）", nearby.length, "nearby", "var(--text-dim)")}
           {peoplePanel.nearby && nearby.map((n) => {
             // D6 Review 修：只有真有好感档案（认识过的人）才开得了详情页——
@@ -142,8 +142,8 @@ export default function NpcsModule({ room, innerRoomName, varTree, char, addLog,
         </div>
       )}
       {absent.length > 0 && (
-        <div style={{ paddingTop: 6, borderTop: `1px solid var(--border)` }}>
-          {header("不在此地", absent.length, "absent", "var(--text)")}
+        <div style={{ paddingTop: 6, borderTop: `1px solid var(--hairline)` }}>
+          {header("不在此地", absent.length, "absent", "var(--text-dim)")}
           {peoplePanel.absent && absent.map(name => {
             const known = isNpcKnown(varTree, name);
             const attrs = varTree.角色?.[name] || {};
@@ -161,7 +161,7 @@ export default function NpcsModule({ room, innerRoomName, varTree, char, addLog,
                   {pigeonEntry(name)}
                   {hasAff ? (
                     <span style={{ fontSize: "var(--fs-2xs)", flexShrink: 0, whiteSpace: "nowrap" }} title={`好感度 ${attrs.好感度}/100`}>
-                      <span style={{ color: uiPink }}>{npcAffectionLabel(attrs.好感度)}</span>
+                      <span style={{ color: "var(--note)" }}>{npcAffectionLabel(attrs.好感度)}</span>
                       <span style={{ color: "var(--text-dim)", marginLeft: 4 }}>{attrs.好感度}</span>
                     </span>
                   ) : (

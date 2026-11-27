@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import GroundItemStrip from "../../components/GroundItemStrip.jsx";
+import { Icon } from "../../primitives/index.js";
 import { useGameStore } from "../../../store/gameStore.js";
 import {
   useSessionUi, setInput, setInputCapsule,
@@ -73,14 +74,11 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
   return (
     <>
       {(loading || pendingTalks > 0) && waitSecs > 0 && (
-        <div style={{
-          display: "flex", alignItems: "center", gap: 8, padding: "5px 14px",
-          borderTop: `1px solid var(--border)`, flexShrink: 0,
-          background: waitSecs >= 30 ? "var(--footer-stalled-bg)" : waitSecs >= 12 ? "var(--footer-slow-bg)" : "var(--bg-panel)",
-          fontSize: "var(--fs-sm)",
-          color: waitSecs >= 30 ? "var(--footer-stalled-text)" : waitSecs >= 12 ? "var(--warn)" : "var(--text-dim)",
-        }}>
-          <span>{waitSecs >= 30 ? "🐢" : "⏳"}</span>
+        <div
+          className="footer-wait-bar"
+          data-tone={waitSecs >= 30 ? "stalled" : waitSecs >= 12 ? "slow" : "idle"}
+        >
+          <span className="footer-wait-dot" aria-hidden="true" />
           <span>
             {waitSecs < 12 ? `思索中… 已等待 ${waitSecs}s`
               : waitSecs < 30 ? `有点慢，已等待 ${waitSecs}s（网络或模型繁忙，请再稍候）`
@@ -90,23 +88,19 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
       )}
 
       {availableQuestsHere.some(e => e.stage.playerHint) && (
-        <div style={{ padding: "6px 14px", borderTop: `1px solid var(--border)`, flexShrink: 0, background: "var(--footer-hint-bg)" }}>
+        <div className="footer-hint-bar">
           {availableQuestsHere.filter(e => e.stage.playerHint).map(entry => (
-            <div key={entry.quest.id} style={{ display: "flex", alignItems: "baseline", gap: 6, fontSize: "var(--fs-xs)", lineHeight: 1.6 }}>
-              <span style={{ color: "var(--footer-hint-title)", flexShrink: 0 }}>💡 {entry.quest.title}</span>
-              <span style={{ color: "var(--footer-hint-text)" }}>{entry.stage.playerHint}</span>
+            <div key={entry.quest.id} className="footer-hint-row">
+              <span className="footer-hint-title"><Icon name="任务" size={12} /> {entry.quest.title}</span>
+              <span className="footer-hint-text">{entry.stage.playerHint}</span>
             </div>
           ))}
         </div>
       )}
 
       {availableQuestsHere.some(e => !e.quest.hintOnly && !e.stage.choices?.length) && (
-        <div style={{
-          display: "flex", alignItems: "center", gap: 8, padding: "6px 14px",
-          borderTop: `1px solid var(--border)`, flexShrink: 0, flexWrap: "wrap", rowGap: 6,
-          background: "var(--footer-progress-bg)",
-        }}>
-          <span style={{ color: "var(--ember)", fontSize: "var(--fs-xs)", flexShrink: 0 }}>❢ 此处可推进</span>
+        <div className="footer-action-bar">
+          <span className="footer-progress-tag"><Icon name="任务" size={12} /> 此处可推进</span>
           {availableQuestsHere.filter(e => !e.quest.hintOnly && !e.stage.choices?.length).map(entry => (
             <span
               key={entry.quest.id}
@@ -114,26 +108,22 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
               title={entry.stage.playerHint ?? entry.stage.description}
               className="quest-progress-btn"
             >
-              ❢ {entry.quest.title}{entry.stage.giver !== null && entry.quest.giver ? `（${entry.quest.giver}）` : ""}
+              {entry.quest.title}{entry.stage.giver !== null && entry.quest.giver ? `（${entry.stage.giver}）` : ""}
             </span>
           ))}
         </div>
       )}
 
       {availableQuestsHere.some(e => e.stage.choices?.length) && (
-        <div style={{
-          display: "flex", alignItems: "center", gap: 8, padding: "6px 14px",
-          borderTop: `1px solid var(--border)`, flexShrink: 0, flexWrap: "wrap", rowGap: 6,
-          background: "var(--footer-choice-bg)",
-        }}>
-          <span style={{ color: "var(--clay)", fontSize: "var(--fs-xs)", flexShrink: 0 }}>◈ 行动抉择</span>
+        <div className="footer-action-bar">
+          <span className="footer-choice-tag">行动抉择</span>
           {availableQuestsHere.filter(e => e.stage.choices?.length).map(entry => (
-            <span key={entry.quest.id} style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-              <span style={{ color: "var(--text)", fontSize: "var(--fs-xs)" }}>{entry.quest.title}：</span>
+            <span key={entry.quest.id} className="footer-choice-group">
+              <span className="footer-choice-title">{entry.quest.title}：</span>
               {entry.stage.choices
                 .filter(choice => isQuestChoiceOpen(choice, { questProgress, flags, varTree, inv }))
                 .map(choice => {
-                  const icon = choice.resolve === "combat" ? "⚔ " : choice.resolve === "talk" ? "💬 " : "";
+                  const iconName = choice.resolve === "combat" ? "招式" : choice.resolve === "talk" ? "羁绊" : null;
                   return (
                     <span
                       key={choice.flag}
@@ -141,7 +131,7 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
                       title={choice.resolve === "combat" ? "会进入切磋，打赢才算数" : choice.resolve === "talk" ? "会进入对话，说赢才算数" : ""}
                       className="quest-choice-btn"
                     >
-                      {icon}{choice.label}
+                      {iconName && <Icon name={iconName} size={11} />}{choice.label}
                     </span>
                   );
                 })}
@@ -150,101 +140,84 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
         </div>
       )}
 
-      <GroundItemStrip items={groundItems} theme={THEME_VARS} onPickUp={screenHandlers.handleCollectGround} />
+      <GroundItemStrip items={groundItems} onPickUp={screenHandlers.handleCollectGround} />
 
-      <div className="mobile-input-bar" style={{
-        borderTop: `1px solid var(--border)`,
-        padding: "10px 16px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0,
-        position: "relative",
-      }}>
-        {/* W-INPUT @ 触发点：与输入框融为一体，点按或框首敲 @ 唤起浮层 */}
-        <span
-          role="button"
-          aria-label="指定对象或私聊旁白"
-          aria-expanded={atMenuOpen}
-          data-at-trigger="true"
-          onClick={() => setAtMenuOpen(v => !v)}
-          style={{
-            color: atMenuOpen || capsule ? "var(--accent)" : "var(--text-dim)",
-            flexShrink: 0, fontSize: "var(--fs-md)", cursor: "pointer", userSelect: "none",
-          }}
-        >@</span>
-        {atMenuOpen && (
-          <div
-            ref={atMenuRef}
-            role="menu"
-            data-at-menu="true"
-            style={{
-              position: "absolute", bottom: "100%", left: 10, zIndex: 30, marginBottom: 4,
-              display: "flex", flexDirection: "column", gap: 2, padding: 4,
-              minWidth: 168, maxWidth: "calc(100vw - 28px)", maxHeight: "min(60vh, 315px)",
-              overflowY: "auto", boxSizing: "border-box",
-              background: "var(--bg-panel)", border: `1px solid var(--border)`, color: "var(--text)",
-            }}
-          >
-            <button
-              type="button"
-              role="menuitem"
-              data-at-option="whisper"
-              onClick={() => pickCapsule({ kind: "whisper", name: narratorName })}
-              className="at-menu-item"
-            >◆ {narratorName}（旁白私语 · 不耗回合）</button>
-            {visibleNpcs.map(npc => (
-              <button
-                key={npc.name}
-                type="button"
-                role="menuitem"
-                data-at-option={`npc-${npc.name}`}
-                onClick={() => pickCapsule({ kind: "target", name: npc.name })}
-                className="at-menu-item"
-              >{npc.name}</button>
-            ))}
-          </div>
-        )}
-        {capsule && (
-          <span
-            data-input-capsule={capsule.kind}
-            style={{
-              flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 4,
-              padding: "1px 8px", fontSize: "var(--fs-xs)", whiteSpace: "nowrap",
-              color: "var(--accent)", border: `1px solid var(--accent)`,
-              background: "transparent",
-            }}
-          >
-            {capsuleLabel}
+      <div className="mobile-input-bar footer-input-bar">
+        <div className="footer-input-inner">
+          <div className="footer-input-box">
+            {/* W-INPUT @ 触发点：与输入框融为一体，点按或框首敲 @ 唤起浮层 */}
             <span
               role="button"
-              aria-label="取消指定"
-              data-capsule-clear="true"
-              onClick={() => setInputCapsule(null)}
-              style={{ cursor: "pointer", color: "var(--text-dim)" }}
-            >×</span>
-          </span>
-        )}
-        <input
-          className="game-input"
-          ref={inputRef} value={input} onChange={onInputChange} onKeyDown={onInputKeyDown}
-          onCompositionStart={() => { composingRef.current = true; }}
-          onCompositionEnd={() => { composingRef.current = false; }}
-          placeholder={
-            capsule?.kind === "pigeon" ? `提笔给「${capsule.name}」写信，写罢按回车放飞信鸽…` :
-            capsule?.kind === "whisper" ? (pendingTalks > 0 ? "旁白回话中…可先打字，待她说完再发" : `对${capsule.name || narratorName}说些什么…（不消耗回合）`) :
-            loading ? "..." :
-            "说话做事直接写，敲 @ 或 // 可私聊旁白与指定对象"
-          }
-          style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "var(--text)", fontFamily: "inherit", fontSize: "var(--fs-md)" }}
-        />
-        {/* 发送按钮：和回车同一个提交入口。手机上按回车不顺手，这里给一个看得见的按钮。
-            pointerdown 时 preventDefault，点按钮不让输入框失焦，iOS 键盘不会收起。 */}
-        <button
-          type="button"
-          className="game-send-button mobile-touch-target"
-          data-on={Boolean(input.trim())}
-          disabled={!input.trim()}
-          onPointerDown={(e) => e.preventDefault()}
-          onClick={() => turn.onKey.submit?.()}
-          aria-label={capsule?.kind === "pigeon" ? "放飞信鸽" : "发送"}
-        >{capsule?.kind === "pigeon" ? "放飞" : "发送"}</button>
+              aria-label="指定对象或私聊旁白"
+              aria-expanded={atMenuOpen}
+              data-at-trigger="true"
+              data-active={Boolean(atMenuOpen || capsule)}
+              className="footer-at-btn"
+              onClick={() => setAtMenuOpen(v => !v)}
+            >@</span>
+            {atMenuOpen && (
+              <div
+                ref={atMenuRef}
+                role="menu"
+                data-at-menu="true"
+                className="footer-at-menu"
+              >
+                <button
+                  type="button"
+                  role="menuitem"
+                  data-at-option="whisper"
+                  onClick={() => pickCapsule({ kind: "whisper", name: narratorName })}
+                  className="at-menu-item"
+                >{narratorName}（旁白私语 · 不耗回合）</button>
+                {visibleNpcs.map(npc => (
+                  <button
+                    key={npc.name}
+                    type="button"
+                    role="menuitem"
+                    data-at-option={`npc-${npc.name}`}
+                    onClick={() => pickCapsule({ kind: "target", name: npc.name })}
+                    className="at-menu-item"
+                  >{npc.name}</button>
+                ))}
+              </div>
+            )}
+            {capsule && (
+              <span data-input-capsule={capsule.kind} className="footer-capsule">
+                {capsuleLabel}
+                <span
+                  role="button"
+                  aria-label="取消指定"
+                  data-capsule-clear="true"
+                  onClick={() => setInputCapsule(null)}
+                  className="footer-capsule-clear"
+                >×</span>
+              </span>
+            )}
+            <input
+              className="game-input footer-input-field"
+              ref={inputRef} value={input} onChange={onInputChange} onKeyDown={onInputKeyDown}
+              onCompositionStart={() => { composingRef.current = true; }}
+              onCompositionEnd={() => { composingRef.current = false; }}
+              placeholder={
+                capsule?.kind === "pigeon" ? `提笔给「${capsule.name}」写信，写罢按回车放飞信鸽…` :
+                capsule?.kind === "whisper" ? (pendingTalks > 0 ? "旁白回话中…可先打字，待她说完再发" : `对${capsule.name || narratorName}说些什么…（不消耗回合）`) :
+                loading ? "..." :
+                "说话做事直接写，敲 @ 或 // 可私聊旁白与指定对象"
+              }
+            />
+          </div>
+          {/* 发送按钮：和回车同一个提交入口。手机上按回车不顺手，这里给一个看得见的按钮。
+              pointerdown 时 preventDefault，点按钮不让输入框失焦，iOS 键盘不会收起。 */}
+          <button
+            type="button"
+            className="game-send-button mobile-touch-target"
+            data-on={Boolean(input.trim())}
+            disabled={!input.trim()}
+            onPointerDown={(e) => e.preventDefault()}
+            onClick={() => turn.onKey.submit?.()}
+            aria-label={capsule?.kind === "pigeon" ? "放飞信鸽" : "发送"}
+          >{capsule?.kind === "pigeon" ? "放飞" : "发送"}</button>
+        </div>
       </div>
     </>
   );

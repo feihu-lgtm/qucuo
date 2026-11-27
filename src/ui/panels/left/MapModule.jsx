@@ -64,18 +64,16 @@ export default function MapModule({ room, innerRoomName, questProgress, mapData,
     <div className="left-map-module">
       <div className="left-map-block">
         <div className="left-map-head">
-          <span className="left-map-title" onClick={() => { setMapView("outer"); setMapBig(true); }} title="点击放大">
-            舆图·外 <span className="left-map-hint">⤢放大 · 点已探明据点前往</span>
-          </span>
+          <span className="left-map-title">舆图·外</span>
+          <button type="button" className="left-map-zoom" onClick={() => { setMapView("outer"); setMapBig(true); }}>放大</button>
         </div>
         <NineGridMap centerLabel={room.name} cells={outerCells} onGo={goOuter} loading={loading} big={mapBig} />
       </div>
       {innerState && (
         <div className="left-map-block">
           <div className="left-map-head">
-            <span className="left-map-title" onClick={() => { setMapView("inner"); setMapBig(true); }} title="点击放大">
-              村图·内 <span className="left-map-hint">⤢放大 · 点相邻房间前往</span>
-            </span>
+            <span className="left-map-title">村图·内</span>
+            <button type="button" className="left-map-zoom" onClick={() => { setMapView("inner"); setMapBig(true); }}>放大</button>
           </div>
           <NineGridMap centerLabel={innerState.curRoom} cells={innerState.cells} onGo={goInner} loading={loading} big={mapBig} />
         </div>

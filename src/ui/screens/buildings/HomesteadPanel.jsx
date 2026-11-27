@@ -33,10 +33,10 @@ export default function HomesteadPanel({ roomName, inv, setInv, char, setChar, o
       panelStyle={{ width: 520, maxWidth: "92vw" }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-        <span style={{ color: "var(--ink-accent)", fontSize: "var(--fs-base)" }}>
+        <span style={{ color: "var(--text)", fontSize: "var(--fs-base)", letterSpacing: "2px" }}>
           {activeFeature ? (
             <span style={{ cursor: "pointer" }} onClick={() => setActiveFeature(null)}>← 返回 · {home.label}</span>
-          ) : `🏠 ${home.label}`}
+          ) : home.label}
         </span>
         <span style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
       </div>
@@ -53,7 +53,7 @@ export default function HomesteadPanel({ roomName, inv, setInv, char, setChar, o
                 onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--ink-border)"; }}
               >
                 {homeArtUrl(f.id) && <div className="homestead-feature-art"><ArtImage src={homeArtUrl(f.id)} alt={f.name} variant="thumb" /></div>}
-                <div style={{ fontSize: "var(--fs-base)", marginBottom: 4 }}>{homeArtUrl(f.id) ? null : f.icon} <span style={{ color: "var(--ink-tier-text)", fontSize: "var(--fs-sm)" }}>{f.name}</span></div>
+                <div style={{ fontSize: "var(--fs-base)", marginBottom: 4 }}><span style={{ color: "var(--ink-tier-text)", fontSize: "var(--fs-sm)" }}>{f.name}</span></div>
                 <div style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-text-dim)", lineHeight: 1.4 }}>{f.desc}</div>
               </div>
             ))}
@@ -151,7 +151,7 @@ function WineFeature({ roomName, inv, setInv, addLog, runCommand }) {
             return (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: "1px solid var(--bg-slate)" }}>
                 <span style={{ flex: 1, fontSize: "var(--fs-sm)", color: ready ? "var(--ink-tier-text)" : "var(--ink-text-dim)" }}>
-                  🍶 {c.result} {ready ? "· 已成" : `· 还需${remain}分钟`}
+                  {c.result} {ready ? "· 已成" : `· 还需${remain}分钟`}
                 </span>
                 <span onClick={ready ? () => collect(i) : undefined} style={ready ? btnStyle : dimBtn}>{ready ? "取酒" : "等待"}</span>
               </div>
@@ -209,7 +209,7 @@ function GardenFeature({ roomName, inv, setInv, addLog, runCommand }) {
             return (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: "1px solid var(--bg-slate)" }}>
                 <span style={{ flex: 1, fontSize: "var(--fs-sm)", color: ready ? "var(--ink-tier-text)" : "var(--ink-text-dim)" }}>
-                  🌱 {g.yield} {ready ? "· 熟了" : `· 还需${remain}分钟`}
+                  {g.yield} {ready ? "· 熟了" : `· 还需${remain}分钟`}
                 </span>
                 <span onClick={ready ? () => harvest(i) : undefined} style={ready ? btnStyle : dimBtn}>{ready ? "收" : "等"}</span>
               </div>
@@ -246,7 +246,7 @@ function PigeonFeature({ addLog, runCommand }) {
       </div>
       {!sent ? (
         <span onClick={() => runCommand("homesteadLeisure", () => { setSent(true); addLog?.([{ t: "sys", text: "  【鸽子笼】你解下一只灰鸽，脚环上拴了纸条，往天上一抛。鸽子扑棱棱飞远了。" }]); })} style={btnStyle}>
-          🕊 放飞信鸽
+          放飞信鸽
         </span>
       ) : (
         <div style={{ color: "var(--ink-good)", fontSize: "var(--fs-sm)" }}>鸽子飞走了。笼里剩一只，咕咕叫着，不太高兴。</div>
@@ -270,7 +270,7 @@ function TelescopeFeature({ addLog, runCommand }) {
       </div>
       {!looked ? (
         <span onClick={() => runCommand("homesteadLeisure", () => { setLooked(true); addLog?.([{ t: "sys", text: `  【望远镜】你凑上去看了一眼——${sights[Math.floor(random() * sights.length)]}` }]); })} style={btnStyle}>
-          🔭 远眺
+          远眺
         </span>
       ) : (
         <div style={{ color: "var(--ink-good)", fontSize: "var(--fs-sm)" }}>看过了。风景不变，人变了。</div>

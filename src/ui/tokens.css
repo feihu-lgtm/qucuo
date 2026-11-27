@@ -28,16 +28,32 @@
      朱红只给主行动、当前所在、未读；青绿=增益与任务，金=人名银两贵重物，石青=说明。 */
   --bg: #0c0b09;
   --bg-panel: #13120f;
+  --bg-topbar: #0f0e0b;
+  --bg-item: #1b1915;
+  --bg-raise: #24211b;
+  --hairline: #25231f;
+  --card-border: #2c2924;
   --border: #3a362e;
   --text: #ece6d6;
+  --text-sub: #b9b19e;
   --text-dim: #8c8573;
+  --note: #b9a68a;
   --accent: #c8323a;
   --accent-dim: #8a4a48;
+  --danger-text: #e5675c;
+  --lotus: #c99bb2;
+  --btn-primary-text: #f6efe2;
   --start-menu-card-bg: rgba(10, 8, 5, 0.25);
   --good: #8fb57a;
   --warn: #cfa95a;
   --info: #7fa3b0;
   --muted: #8c8573;
+  --quality-white: #d8d2c4;
+  --quality-green: #8fb57a;
+  --quality-blue: #7fa7c9;
+  --quality-purple: #a98bd0;
+  --quality-orange: #d9925a;
+  --quality-red: #e0605a;
   --font-body: "Songti SC", "STSong", "SimSun", serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
   /* 字号阶梯（唯一来源）：UI 里任何 font-size 都只能取这几档，不再写裸 px。
      档位与原来的高频字面量对齐，所以替换后观感基本不变；9~10px 归到 2xs。 */
@@ -404,12 +420,12 @@
   --ink-wood-shade: #20170f;
   --ink-wood-warm: #5a3d1a;
 
-  /* 建筑屏共用外壳和按钮定色（原字面量，不随日间模式变）：--building-panel-bg 是区域主题缺 panelBg 时的底色。 */
+  /* 建筑屏共用外壳和按钮定色（原字面量，不随日间模式变）：--building-panel-bg 跟随夜色精修夜底。 */
   --building-disabled-bg: #1a1a1a;
   --building-disabled-edge: #2a2a2a;
   --building-disabled-text: #4a4a4a;
-  --building-desc: #4a4a4a;
-  --building-panel-bg: #14161f;
+  --building-desc: #6d6759;
+  --building-panel-bg: #0c0b09;
 
   /* 起居注定色（原字面量，不随日间模式变）：accent/panel 是区域主题缺值时的缺省色，routine 是只记数的日常举动。 */
   --qijuzhu-accent: #c4a86a;
@@ -542,15 +558,31 @@
   color-scheme: light;
   --bg: #eae7dd;
   --bg-panel: #f4f2e9;
+  --bg-topbar: #ece8de;
+  --bg-item: #f0ece2;
+  --bg-raise: #e5e0d4;
+  --hairline: rgba(42, 38, 32, 0.16);
+  --card-border: rgba(42, 38, 32, 0.22);
   --border: #2a2620;
   --text: #201d18;
+  --text-sub: #4e483c;
   --text-dim: #6d6759;
+  --note: #6a5a44;
   --accent: #a8202a;
   --accent-dim: #8a4a42;
+  --danger-text: #a8202a;
+  --lotus: #8a2a6a;
+  --btn-primary-text: #f6efe2;
   --good: #2e5a2e;
   --warn: #7a5c14;
   --info: #1e4a6a;
   --muted: #5a5448;
+  --quality-white: #3d3626;
+  --quality-green: #2e5a2e;
+  --quality-blue: #1e4a6a;
+  --quality-purple: #5a3a7a;
+  --quality-orange: #8a4a12;
+  --quality-red: #a8202a;
   --plate: #f4f2e9;
   --qc-hi: #201d18;
   /* 中栏与日志白昼调色板（与 :root / [data-theme="night"] 变量序列保持一致） */
@@ -588,15 +620,31 @@
   color-scheme: dark;
   --bg: #0c0b09;
   --bg-panel: #13120f;
+  --bg-topbar: #0f0e0b;
+  --bg-item: #1b1915;
+  --bg-raise: #24211b;
+  --hairline: #25231f;
+  --card-border: #2c2924;
   --border: #3a362e;
   --text: #ece6d6;
+  --text-sub: #b9b19e;
   --text-dim: #8c8573;
+  --note: #b9a68a;
   --accent: #c8323a;
   --accent-dim: #8a4a48;
+  --danger-text: #e5675c;
+  --lotus: #c99bb2;
+  --btn-primary-text: #f6efe2;
   --good: #8fb57a;
   --warn: #cfa95a;
   --info: #7fa3b0;
   --muted: #8c8573;
+  --quality-white: #d8d2c4;
+  --quality-green: #8fb57a;
+  --quality-blue: #7fa7c9;
+  --quality-purple: #a98bd0;
+  --quality-orange: #d9925a;
+  --quality-red: #e0605a;
   --plate: #13120f;
   --qc-hi: #ece6d6;
   --center-group-bg: transparent;
