@@ -3,6 +3,7 @@
 // 的 --qb-* 语义变量（值原样，见 tokens.css 斗蛐蛐一节）。
 
 import { QUALITY } from "../../../domain/rules/economy/equipment.js";
+import { npcArtUrl } from "../../art/art.js";
 import { resolveCardPortrait } from "../../../domain/rules/companion/portraits.js";
 import { QUALITY_COLOR } from "../../../domain/data/items/qualityColor.js";
 
@@ -20,6 +21,10 @@ export const PORTRAIT = (v) => {
   if (resolved) return resolved;
   return `${BASE}bidders/full/${v}.webp`;
 };
+
+// 立绘统一查图：优先 artManifest 登记的 npc/<name>.webp（302 张全库），
+// 落空再退 bidders/full 老八张，都没有返回 null 由调用方用品阶色占位。
+export const fighterArtUrl = (name, portrait) => npcArtUrl(name) || (portrait ? PORTRAIT(portrait) : null);
 
 // 品阶→档位色（复用装备那套 QUALITY_COLOR）；levelCap 0-5 直接映射 QUALITY 索引
 export const tierColor = (levelCap) => QUALITY_COLOR[QUALITY[Math.max(0, Math.min(5, levelCap))]] || "var(--ink-text)";
@@ -93,6 +98,13 @@ export const sx = {
   candidateGrid: { flex: 1, display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(108px,1fr))",
     gap: 12, overflowY: "auto", alignContent: "start", paddingBottom: 12,
     borderTop: "1px solid rgba(255,255,255,.1)", paddingTop: 14 },
+  candidateGridInner: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(108px,1fr))",
+    gap: 12, alignContent: "start" },
+  pickListScroll: { flex: 1, overflowY: "auto", borderTop: "1px solid rgba(255,255,255,.1)", paddingTop: 10 },
+  pickGroupWrap: { marginBottom: 14 },
+  pickGroupLabel: (isOc) => ({ fontSize: "var(--fs-xs)", letterSpacing: 3, color: isOc ? "var(--gold-light)" : "var(--qb-border)", margin: "4px 0 8px" }),
+  lastMoveTag: (color) => ({ marginTop: 3, fontSize: "var(--fs-xs)", fontWeight: "bold", letterSpacing: 1,
+    color, textShadow: "0 1px 3px var(--black)" }),
 
   battleWrap: { position: "relative", zIndex: 1, height: "100%", display: "flex", flexDirection: "column",
     padding: "14px clamp(16px,4vw,50px)", boxSizing: "border-box" },

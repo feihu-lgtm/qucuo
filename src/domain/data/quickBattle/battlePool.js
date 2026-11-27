@@ -5,6 +5,7 @@
 // 玩家存档状态，是一次性、无副作用的"沙盘推演"。
 
 import { NPC_POOL } from "../npc/npcPool.js";
+import { ADVENTURER_POOL_IP } from "../dungeon/adventurersIP.js";
 import { RESIDENT_NPCS } from "../npc/residentNpcs.js";
 import { ensureNpcCombatData } from "../../rules/npc/npcGeneration.js";
 import { getDefaultProfile } from "../../rules/combat/personalityProfile.js";
@@ -62,12 +63,36 @@ export function getAllBattleCandidates() {
     }
   }
 
+  // OC 冒险者（adventurersIP）：云无月/南宫煌/姬无双这批虹品角色，levelCap 4、
+  // personality/brief/kungfu.moves 俱全，buildBattleFighter 走 ensureNpcCombatData
+  // 直接可用（专属招式由 deriveSignatureMoveset 认 kungfu.moves 进 moveset）。
+  // 单列一组（pool:"oc"）供选人界面分组展示，不跟路人混排。
+  for (const adv of ADVENTURER_POOL_IP) {
+    list.push({
+      id: adv.id,
+      name: adv.name,
+      brief: adv.brief,
+      personality: adv.personality,
+      levelCap: adv.levelCap ?? 0,
+      beast: false,
+      portrait: null, // 立绘统一走 artManifest 的 npcArtUrl 按名查图，不再靠 bidders 老黄历
+      source: "OC冒险者",
+      region: "四方游走",
+      pool: "oc",
+      kungfu: adv.kungfu || null,
+    });
+  }
+
   // 按名字去重：才旦/李若由/苏宛等在游走池和驻场表里都有（同一个人两地行走），
   // 合并后会重复。保留后出现的那个——驻场表在 NPC_POOL 之后 push，通常带更权威的
   // levelCap 和 fullBio，留驻场版更合适。
   const seen = new Map();
-  for (const c of list) seen.set(c.name, c);
-  const deduped = [...seen.values()];
+  for (const c of list) {
+    const prev = seen.get(c.name);
+    // 同名撞车（基础池与 OC 池都有，如元朵朵）时留 OC 版——kungfu 专属招式更全
+    if (!prev || c.pool === "oc") seen.set(c.name, c);
+  }
+  const deduped = [...seen.values()].map((c) => ({ ...c, pool: c.pool || "base" }));
 
   // 按 levelCap 从高到低排（强者在前，方便玩家一眼看到有分量的角色），
   // 有立绘的同档位再往前提一点（卖相好的优先露脸），最后按名字稳定排序
@@ -90,6 +115,7 @@ export function buildBattleFighter(candidate) {
     id: `qb_${candidate.id}_${Math.random().toString(36).slice(2, 8)}`, // 每次开战独立id，不串场
     name: candidate.name,
     levelCap: candidate.levelCap,
+    ...(candidate.kungfu ? { kungfu: candidate.kungfu } : {}),
   };
   const combatNpc = ensureNpcCombatData(seedNpc, { levelCap: candidate.levelCap });
 
