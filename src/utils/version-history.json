@@ -1,5 +1,15 @@
 [
   {
+    "version": "v0.4.1",
+    "codename": "修复手机端顶栏菜单收起未隐藏与矮屏展开溢出",
+    "time": "2026-11-27 16:48",
+    "notes": [
+      "修复手机端顶栏菜单收起态仍占位与横屏矮屏展开溢出问题，版本递增至 v0.4.1。",
+      "①【手机端菜单收起隐藏】补上 .topbar-actions[data-open=\"false\"] { display: none; }，收起态不再遮挡游玩区域。",
+      "②【矮屏展开可滚动】给 .topbar-actions[data-mobile=\"true\"] 加上 max-height 与 overflow-y: auto，横屏矮屏也能点到最后一项菜单。"
+    ]
+  },
+  {
     "version": "v0.4.0",
     "codename": "全站切换宋体、顶栏单行压缩与江湖栏精修，左栏重构为「此地/周遭/人物」并接入地点与建筑缩略图",
     "time": "2026-11-27 16:30",
