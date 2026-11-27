@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import LogEntry, { NarrativeSkeleton, isNarrativePlaceholder } from "../../components/LogEntry.jsx";
 import { formatRealDateTime, getGameDay, getTimeStr } from "../../../utils/mudHelpers.js";
 import { useGameStore } from "../../../store/gameStore.js";
-import { openOverlay, OVERLAY } from "../../../store/uiStore.js";
+import { openOverlay, OVERLAY, showNotice } from "../../../store/uiStore.js";
 import {
   useSessionUi, setActiveNpcMenu, setCenterView, setCharacterPageTarget, setInputCapsule,
 } from "../../../store/sessionUiStore.js";
@@ -141,7 +141,10 @@ export default function NarrativeLogFeed({
     if (varTree?.角色?.[speakerName]?.好感度 != null) {
       setCharacterPageTarget(speakerName);
       openOverlay(OVERLAY.CHARACTER_PAGE);
+      return;
     }
+    // 既不在眼前、也还没有交情可翻人物页：给一句轻提示，免得点了没反应。
+    showNotice(`${speakerName}此刻不在眼前，找到其人才能细看`);
   };
   const feedRef = useRef(null);
   const nearBottomRef = useRef(true);
