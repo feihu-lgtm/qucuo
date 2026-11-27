@@ -29,14 +29,33 @@
 .npc-action-card {
   cursor: pointer;
   padding: 12px 10px;
-  border-radius: 0;
+  border-radius: 2px;
   text-align: center;
-  background: var(--bg);
-  border: 1px solid var(--border);
+  background: var(--bg-item);
+  border: 1px solid var(--hairline);
   opacity: 1;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+.npc-action-card:hover {
+  border-color: var(--border);
+  background: var(--bg-raise);
 }
 .npc-action-card[data-on="false"] {
   opacity: 0.4;
+}
+.npc-action-label {
+  color: var(--text);
+  font-size: var(--fs-md);
+  letter-spacing: 0.15em;
+  margin-bottom: 4px;
+}
+.npc-action-card[data-tone="danger"] .npc-action-label {
+  color: var(--log-err);
+}
+.npc-action-desc {
+  color: var(--text-dim);
+  font-size: var(--fs-2xs);
+  line-height: 1.5;
 }
 
 /* ui/components/NpcActionMenu.jsx */

@@ -15,6 +15,9 @@ import { QUCUO_SHOPS, hasOcShop } from "../../domain/data/shops/qucuoShops.js";
 import ModalShell from "../primitives/ModalShell.jsx";
 import NpcAvatar from "./NpcAvatar.jsx";
 
+// 会伤和气的动作：标题用朱红字提醒（夜色精修：朱红只给要紧处，其余动作用正文色）。
+const DANGER_ACTIONS = new Set(["steal", "lethalDuel"]);
+
 export default function NpcActionMenu({ npc, inv, onClose, onTalk, onGift, onDuel, onSteal, onLook, onLearnSkill, onTrade, onInviteCompanion, companionUnlocked, flags = [], ocRoutes = [], onOcRecruit, onRecallCompanion, onGoldenEgg, nemesisActive = false, lethalBlockReason = null }) {
   const [showGiftPicker, setShowGiftPicker] = useState(false);
   const isMerchant = !!QUCUO_SHOPS[npc.name] || hasOcShop(npc.name);
@@ -78,10 +81,10 @@ export default function NpcActionMenu({ npc, inv, onClose, onTalk, onGift, onDue
           <div
             key={a.key}
             className="mobile-action-choice npc-action-card"
-            onClick={a.onClick} data-on={Boolean(a.available)}
+            onClick={a.onClick} data-on={Boolean(a.available)} data-tone={DANGER_ACTIONS.has(a.key) ? "danger" : undefined}
           >
-            <div style={{ color: "var(--accent)", fontSize: "var(--fs-md)", marginBottom: 3 }}>{a.label}</div>
-            <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)" }}>{a.desc}</div>
+            <div className="npc-action-label">{a.label}</div>
+            <div className="npc-action-desc">{a.desc}</div>
           </div>
         ))}
       </div>
