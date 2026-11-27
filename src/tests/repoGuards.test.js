@@ -42,18 +42,23 @@ describe("npm 脚本引用的本地文件必须存在", () => {
 // 所以测试全绿、构建是坏的，推上去才发现。
 // 这条测试补上这个缺口：只要能 import 进来、且结构合法，语法就一定是对的。
 describe("version.js 语法与结构（防「测试全绿但构建坏了」）", () => {
-  it("懒加载历史可用、每条含 codename/time/notes[]，且 CURRENT_VERSION 指向最新一条", async () => {
+  it("懒加载历史可用、每条含 codename/time/notes[]，且 CURRENT_VERSION 指向最新一条并严格递增版本号", async () => {
     const { loadVersionHistory, CURRENT_VERSION } = await import("../utils/version.js");
+    const { compareSemver } = await import("../../scripts/bumpVersion.mjs");
+    const pkg = JSON.parse(readFileSync("package.json", "utf-8"));
     const VERSION_HISTORY = await loadVersionHistory();
-    expect(VERSION_HISTORY.length).toBeGreaterThan(0);
+    expect(VERSION_HISTORY.length).toBeGreaterThan(1);
     for (const e of VERSION_HISTORY.slice(0, 20)) {
       expect(typeof e.codename).toBe("string");
       expect(typeof e.time).toBe("string");
       expect(Array.isArray(e.notes)).toBe(true);
     }
+    expect(CURRENT_VERSION.version).toMatch(/^v\d+\.\d+\.\d+$/);
+    expect(`v${pkg.version}`).toBe(CURRENT_VERSION.version);
     expect(CURRENT_VERSION.codename).toBe(VERSION_HISTORY[0].codename);
     expect(CURRENT_VERSION.time).toBe(VERSION_HISTORY[0].time);
     expect(CURRENT_VERSION.version).toBe(VERSION_HISTORY[0].version);
+    expect(compareSemver(VERSION_HISTORY[0].version, VERSION_HISTORY[1].version)).toBe(1);
   });
 });
 

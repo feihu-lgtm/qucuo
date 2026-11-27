@@ -1,7 +1,7 @@
 {
   "name": "wuxia-mud",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -22,7 +22,8 @@
     "test:server": "node --test server/memory-hub/hubCore.test.mjs",
     "shadow:report": "node scripts/shadowCoverageReport.mjs",
     "shadow:sample": "vitest run src/tests/shadowSampling.test.js",
-    "release:report": "node scripts/releaseReport.mjs"
+    "release:report": "node scripts/releaseReport.mjs",
+    "version:bump": "node scripts/bumpVersion.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",

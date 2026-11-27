@@ -34,8 +34,11 @@ export const styles = {
   titleBlock: {
     position: "relative",
     zIndex: 1,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
     marginBottom: "48px",
-    textAlign: "left",
+    textAlign: "center",
   },
   titleImg: {
     display: "block",
@@ -67,10 +70,11 @@ export const styles = {
     backdropFilter: "blur(1px)",
   }),
   subtitle: (t) => ({ fontSize: "var(--fs-md)", letterSpacing: "4px",
+  paddingLeft: "4px",
   color: "var(--white)",
   opacity: 0.85,
   textShadow: "0 1px 4px rgba(0,0,0,0.7)",
-  textAlign: "left", }),
+  textAlign: "center", }),
   menu: {
     position: "relative",
     zIndex: 1,

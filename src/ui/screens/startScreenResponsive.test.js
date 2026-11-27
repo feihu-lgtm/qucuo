@@ -124,4 +124,12 @@ describe("StartScreen mobile layout", () => {
     expect(MOBILE_CSS).toContain(".start-screen-bottom-bar");
     expect(MOBILE_CSS).toContain(".start-screen-corner-status");
   });
+
+  it("renders centered subtitle '—— 三条河流中的江湖 ——' aligned with the title image", () => {
+    expect(SCREEN).toContain("—— 三条河流中的江湖 ——");
+    expect(SCREEN).not.toContain("三曲交汇处的江湖");
+    expect(STYLES).toMatch(/titleBlock:\s*\{[\s\S]*?alignItems:\s*"center"[\s\S]*?textAlign:\s*"center"/);
+    expect(STYLES).toMatch(/subtitle:\s*\([^)]*\)\s*=>\s*\(\{[\s\S]*?textAlign:\s*"center"/);
+    expect(MOBILE_CSS).not.toMatch(/\.start-screen-title-image[\s\S]*?object-position:\s*left/);
+  });
 });
