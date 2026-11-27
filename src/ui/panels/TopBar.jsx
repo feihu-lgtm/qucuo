@@ -51,7 +51,15 @@ export function TurnControls({ theme, loading, stopRunning, rollbackBlocked, rol
   return (
     <span className="mobile-center-toolbar-controls topbar-turn-controls">
       {onMeditate && (
-        <Button variant="chrome" onClick={onMeditate} className="mobile-touch-target topbar-icon-btn" aria-label="打坐" title="打坐运功：消耗 1 回合，恢复部分气血（也可输入「打坐」）">
+        // 生成中不收打坐：排进队列的回调会带着旧的 loading 回放、什么也不做，所以这时直接置灰。
+        <Button
+          variant="chrome"
+          onClick={loading ? undefined : onMeditate}
+          className={`mobile-touch-target topbar-icon-btn${loading ? " topbar-btn-disabled" : ""}`}
+          aria-disabled={loading}
+          aria-label="打坐"
+          title={loading ? "本回合生成中，结束后才能打坐" : "打坐运功：消耗 1 回合，恢复部分气血（也可输入「打坐」）"}
+        >
           <Icon name="打坐" size={15} />
         </Button>
       )}
