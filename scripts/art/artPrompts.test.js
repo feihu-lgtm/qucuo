@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { BATCHES, KINDS, STYLE_ANCHOR, renderPrompt } from "./artPrompts.mjs";
 import { DOC_PATH, buildDoc } from "./buildArtPrompts.mjs";
+import { BUILDING_TYPE } from "../../src/domain/data/buildings/qucuoBuildings.js";
+import { HOMESTEAD_FEATURES } from "../../src/domain/rules/map/homestead.js";
 
 const CJK = /[\u3400-\u9fff]/;
 
@@ -35,6 +37,13 @@ describe("art prompt templates", () => {
       expect(prompt).toContain("[SUBJECTS]");
       expect(prompt).toContain("[AVOID]");
     }
+  });
+
+  it("建筑图键名与游戏里的建筑类型、家园设施 id 一一对上，不多不少", () => {
+    const keys = BATCHES.filter((b) => b.kind === "building").flatMap((b) => b.cells.flatMap((cell) => cell.keys));
+    const homeIds = new Set(Object.values(HOMESTEAD_FEATURES).flatMap((home) => home.features.map((f) => f.id)));
+    const expected = [...new Set(Object.values(BUILDING_TYPE)), ...[...homeIds].map((id) => `home-${id}`)].sort();
+    expect([...keys].sort()).toEqual(expected);
   });
 
   it("仓库里的提示词全集与数据源一致（改了数据要重新生成）", () => {

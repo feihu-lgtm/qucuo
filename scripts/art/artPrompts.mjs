@@ -347,21 +347,23 @@ Water is slate water-blue (#7fa3b0) and is the only clearly colored element. Gra
     c("festival", "a festival ground at night with a wrestling stage, rows of lanterns and banners without writing."),
     c("dungeon", "the dark stone entrance of an underground palace sealed for centuries, a faint draft, broken carvings."),
   ]),
+  // 家园设施：键名 = "home-" + 设施 id（domain/rules/map/homestead.js 的 HOMESTEAD_FEATURES），
+  // 同一 id 在几处家园共用一张图；garden 在四处分别叫菜畦、松院、花坛、银杏院，画成通用小庭院。
   sheet("B09", "building", "家园（上）", BUILDING_FORMAT, BUILDING_AVOID, [
-    c("home-hearth", "a home kitchen hearth with embers still glowing."),
-    c("home-cellar", "a cool stone cellar, wine jars with moss on their rims."),
-    c("home-garden", "a tiny vegetable plot the size of a palm, three small beds of sprouts by a stone wall."),
-    c("home-coop", "a single small pigeon cage on a window ledge, one grey pigeon inside."),
+    c("home-cooking", "a home kitchen: a clay stove with embers still glowing in the firebox, an iron wok and a copper kettle on top, a chopping board beside it."),
+    c("home-wine", "a cool half-underground stone cellar behind a kitchen, clay wine jars sealed with cloth, moss on their rims."),
+    c("home-garden", "a small walled courtyard garden: a stone path, a few planted beds, one old tree with a bench beneath it, quiet and tended."),
+    c("home-fireplace", "a fireplace in a sitting room with pine logs crackling, warm light spilling across the floorboards, a dusty cushioned chair."),
   ]),
   sheet("B10", "building", "家园（中）", BUILDING_FORMAT, BUILDING_AVOID, [
-    c("home-telescope", "a brass telescope on a window sill facing a misty valley."),
-    c("home-fireplace", "a fireplace with pine logs crackling, warm light on the floor."),
-    c("home-practice", "a small practice yard with a wooden training post, its surface worn by fists."),
-    c("home-study", "a study with a few miscellaneous books and a lamp on a low desk."),
+    c("home-telescope", "a brass telescope on a tripod by an open window, facing a misty mountain valley."),
+    c("home-training", "a small practice yard with wooden training posts and a stone lock, the posts scarred by blades and fists, an old plum tree in bloom at the edge."),
+    c("home-study", "a simple study: a writing desk with brush, ink stone and paper, a shelf with a few books on inner cultivation, one lamp."),
+    c("home-library", "a library room in an old manor: tall shelves of thread-bound local gazetteers and rolled old maps, one volume open on the desk under a lamp."),
   ]),
   sheet("B11", "building", "家园（下）", BUILDING_FORMAT, BUILDING_AVOID, [
-    c("home-zither", "a zither table with one broken string."),
-    c("home-shrine", "a small household shrine with a cushion and a single stick of incense, ash falling."),
+    c("home-guqin", "a guqin zither on a low table beneath a window, three of its strings broken and curling loose."),
+    c("home-meditation", "a small household Buddhist hall: a white porcelain Guanyin figure, a censer of cold ash, a worn meditation cushion on the floor."),
     empty(), empty(),
   ]),
 
