@@ -5,6 +5,9 @@
 import ModalShell from "../../primitives/ModalShell.jsx";
 import { Button } from "../../primitives/index.js";
 import { useViewport } from "../../hooks/useViewport.js";
+import ArtImage from "../../components/ArtImage.jsx";
+import { buildingArtUrl } from "../../art/art.js";
+import { useSessionUi } from "../../../store/sessionUiStore.js";
 
 // ── 共用子组件 ──
 export function Overlay({ children, onClose, inline }) {
@@ -40,12 +43,23 @@ export function Overlay({ children, onClose, inline }) {
 
 // 建筑面板标题栏：吸顶（面板内容一长往下滚时，关闭按钮仍钉在滚动区顶部）。
 // 样式在 primitives.css 的 .building-header*，关闭按钮是 Button。
+// 标题栏下方接建筑头图：只认当前打开的那栋建筑（名字对得上才放，任务日志等也用 Header 的面板不会误挂图），
+// 图随面板内容滚走，标题栏留在顶上。查不到图就只有标题栏。
 export function Header({ name, onClose }) {
+  const activeBuilding = useSessionUi(s => s.activeBuilding);
+  const artSrc = activeBuilding && activeBuilding.name === name ? buildingArtUrl(activeBuilding) : null;
   return (
-    <div className="mobile-overlay-header building-header">
-      <span className="building-header-title">{name}</span>
-      <Button variant="settings" className="mobile-overlay-close building-header-close" onClick={onClose}>× 关闭</Button>
-    </div>
+    <>
+      <div className="mobile-overlay-header building-header">
+        <span className="building-header-title">{name}</span>
+        <Button variant="settings" className="mobile-overlay-close building-header-close" onClick={onClose}>× 关闭</Button>
+      </div>
+      {artSrc && (
+        <div className="building-art">
+          <ArtImage src={artSrc} alt={name} variant="panel" />
+        </div>
+      )}
+    </>
   );
 }
 

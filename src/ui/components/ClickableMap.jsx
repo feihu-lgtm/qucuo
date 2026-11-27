@@ -1,5 +1,4 @@
 import React from "react";
-import { MAP_UI } from "../mapUi.js";
 import { getMapDragUpdate } from "./mapDrag.js";
 import { makeNodeHitArea } from "./mapHitArea.js";
 import { getMapFitView } from "./mapViewFit.js";
@@ -153,8 +152,8 @@ export default function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = 
               onMouseEnter={() => setHover(n.name || n.dir)} onMouseLeave={() => setHover(null)}>
               {clickable && <rect data-map-node-hit-target="" {...hitArea} fill="transparent" pointerEvents="all" />}
               {!n.explored && (
-                <image href={MAP_UI.fog} x={cx - NW/2} y={cy - NH/2} width={NW} height={NH} preserveAspectRatio="none"
-                  style={{ filter: hov && clickable ? "brightness(1.25)" : "none" }} />
+                <rect x={cx - NW/2} y={cy - NH/2} width={NW} height={NH} fill="none"
+                  stroke={hov && clickable ? "var(--text-dim)" : "var(--border)"} strokeWidth={1} strokeDasharray="4 3" />
               )}
               {!n.explored ? (
                 <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle" fill={hov ? "var(--parchment)" : "var(--map-unknown)"} fontSize="20" fontWeight="bold" style={{ pointerEvents: "none", textShadow: "0 1px 2px var(--black)" }}>?</text>

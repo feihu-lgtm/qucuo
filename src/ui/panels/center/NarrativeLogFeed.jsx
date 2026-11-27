@@ -5,7 +5,9 @@ import { useGameStore } from "../../../store/gameStore.js";
 import { openOverlay, OVERLAY } from "../../../store/uiStore.js";
 import { setCenterView } from "../../../store/sessionUiStore.js";
 import { LOG_T } from "../../../domain/data/log/logTypes.js";
-import { createClockMarker, createMapNoteFilter, foldFailedRuns, groupReplies, isRuleHint, ledgerText } from "./feedModel.js";
+import { createArrivalMarker, createClockMarker, createMapNoteFilter, foldFailedRuns, groupReplies, isRuleHint, ledgerText } from "./feedModel.js";
+import ArtImage from "../../components/ArtImage.jsx";
+import { districtOfRoomLine, placeArtUrl } from "../../art/art.js";
 
 // 对象级稳定 React Key：彻底避免在流式占位/插入地名/后台补写时因数组下标左移右移，
 // 导致 React 错认兄弟节点、重播入场动画或把行跳飞。
@@ -162,6 +164,11 @@ export default function NarrativeLogFeed({
   };
 
   const markClock = createClockMarker();
+  const markArrival = createArrivalMarker(districtOfRoomLine);
+  let lastRoomEntry = null;
+  for (let i = log.length - 1; i >= 0; i -= 1) {
+    if (log[i]?.t === LOG_T.ROOM && String(log[i].text || "").trim()) { lastRoomEntry = log[i]; break; }
+  }
   const showMapLine = createMapNoteFilter();
   const openJournal = () => setCenterView("journal");
   const openSettings = () => openOverlay(OVERLAY.SETTINGS);
@@ -182,6 +189,10 @@ export default function NarrativeLogFeed({
               ? "var(--center-outside-text)"
               : colorFor(entry);
           const standaloneMark = (isRoom || !isLetter) && hasText ? markClock(entry) : null;
+          // 进场横幅：换外层据点时，在地名行处放据点头图；地名就是据点名时由横幅压字代替那一行。
+          const arrival = isRoom && hasText ? markArrival(entry) : null;
+          const arrivalSrc = arrival ? placeArtUrl(arrival) : null;
+          const lineIsDistrict = arrivalSrc && entry.text.trim() === arrival;
           const standaloneCls = isRoom
             ? "narrative-standalone narrative-standalone--room"
             : isLetter
@@ -192,7 +203,12 @@ export default function NarrativeLogFeed({
               key={getEntryRenderKey(entry, `standalone-${gi}`)}
               className={standaloneCls}
             >
-              <div className="narrative-standalone-main">
+              {arrivalSrc && (
+                <div className="narrative-arrival">
+                  <ArtImage src={arrivalSrc} alt={arrival} caption={arrival} animate={entry === lastRoomEntry} />
+                </div>
+              )}
+              {!lineIsDistrict && <div className="narrative-standalone-main">
                 <LogEntry
                   entry={entry}
                   color={entryColor}
@@ -202,7 +218,7 @@ export default function NarrativeLogFeed({
                   onOpenJournal={openJournal}
                   onOpenSettings={openSettings}
                 />
-              </div>
+              </div>}
               {isRoom && standaloneMark && (
                 <div className="narrative-room-time">
                   <TimeBadge entry={entry} mark={standaloneMark} />

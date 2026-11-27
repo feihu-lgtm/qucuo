@@ -218,14 +218,17 @@
   --gamble-top: #14120e;
   --gamble-za: #b07a4a;
 
-  /* 小地图定色（原字面量，不随日间模式变）：--map-locked 兼作标题框描边。 */
+  /* 大地图定色：卷轴贴图撤掉后底色是夜色，节点改为件色平块、宣纸白字、细线连线（夜色精修）。
+     --map-locked 兼作标题框描边。 */
   --map-locked: #8a6a3a;
-  --map-node-bg: #f2efe4;
-  --map-node-edge: #26221c;
-  --map-node-text: #201d18;
-  --map-path: #7a6448;
-  --map-title-text: #4a3520;
-  --map-unknown: #7a7a68;
+  --map-node-bg: #1b1915;
+  --map-node-edge: #3a362e;
+  --map-node-text: #ece6d6;
+  --map-path: #4a453b;
+  --map-title-text: #b9b19e;
+  --map-unknown: #8c8573;
+  /* 撕纸条底上的深色字（入册放置屏的 AI 荐位说明），原先借用 --map-title-text，地图改夜色后单列。 */
+  --note-paper-text: #4a3520;
 
   /* 墨拓定色（不随 data-theme="day" 切换）：原硬编码字面量本身就是定色——
      它们与随主题切换的 --text/--bg 等值相同但语义不同，日间模式下不能跟着变。 */

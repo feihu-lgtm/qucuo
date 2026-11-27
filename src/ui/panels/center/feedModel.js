@@ -128,3 +128,17 @@ export function foldFailedRuns(groups) {
   flush();
   return out;
 }
+
+// 6. 进场横幅——走进一个新的外层据点时，在那条地名行处放据点头图（同一据点内的内层走动不放）。
+//    有状态的判定器：按渲染顺序喂地名行，据点变了才返回据点名。读档后第一条地名行也算进场。
+export function createArrivalMarker(districtOf) {
+  let last = null;
+  return function arrivalOf(entry) {
+    if (entry?.t !== LOG_T.ROOM) return null;
+    const district = districtOf(entry.text);
+    if (!district) return null;
+    const changed = district !== last;
+    last = district;
+    return changed ? district : null;
+  };
+}

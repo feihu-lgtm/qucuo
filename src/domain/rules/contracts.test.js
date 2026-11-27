@@ -160,7 +160,8 @@ describe("代码引用的 stones 素材必须真的存在", () => {
   });
 
   it("素材库规模没有意外缩水（防误删整目录）", () => {
-    expect(files.length).toBeGreaterThanOrEqual(89);
+    // 夜色精修撤掉了 stones/mapui 下 5 张地图贴图（九宫格与大地图改由代码画），下限随之由 89 改为 84。
+    expect(files.length).toBeGreaterThanOrEqual(84);
   });
 });
 
