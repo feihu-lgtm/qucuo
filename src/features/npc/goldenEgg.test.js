@@ -76,12 +76,14 @@ describe("claimGoldenEgg", () => {
   it("物品档入 inv 且带 buyPrice/sellPrice（可卖回朵朵店）", () => {
     const state = { inv: [{ name: "旧物" }] };
     const res = claimGoldenEgg(state, duoduo, { rng: rngFor("it_candy") });
-    const item = res.changes.inv.at(-1);
+    // 函数式写入（异步落账不吞期间行囊变动）：对最新行囊 append
+    const nextInv = res.changes.inv(state.inv);
+    const item = nextInv.at(-1);
     expect(item.name).toBe("松子糖");
     expect(item.buyPrice).toBeGreaterThan(0);
     expect(item.sellPrice).toBeGreaterThan(0);
     expect(item.goldenEgg).toBe(true);
-    expect(res.changes.inv).toHaveLength(2);
+    expect(nextInv).toHaveLength(2);
     expect(res.logs.map((l) => l.text).join("")).toContain("已入行囊");
   });
 });

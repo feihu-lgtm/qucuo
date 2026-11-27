@@ -107,7 +107,9 @@ export function settlePoolEggPrize(state, { rng = Math.random } = {}) {
       logs.push({ t: "item", text: "  蛋壳里滚出一小锭银（奖池物件没寻着，折银十两）。" });
     } else {
       item.goldenEgg = true; // 来历标记，叙事/排查可认
-      changes.inv = applyWrite(state, set("inv", [...(state?.inv || []), item])).state.inv;
+      // Review 修：行囊必须函数式写入——异步回包落账时玩家可能已捡物/用物，
+      // 按开奖时刻快照整体替换会把期间的行囊变动吞掉（与 settleAiEggPrize 同口径）。
+      changes.inv = (prev) => [...(prev || []), item];
       logs.push({ t: "item", text: `  「${item.name}」已入行囊。` });
     }
   } else {
