@@ -4,6 +4,7 @@ import { gameActions, gameStore, getGameEpoch, isGameEpochStale } from "../../st
 import { applyResult } from "../../features/run.js";
 import { lookNpc, recognizeNpc, settleNpcDuel } from "../../features/npc/logic.js";
 import { isNpcLooked } from "../../domain/rules/npc/npcAwareness.js";
+import { isNpcAngry } from "../../domain/rules/combat/stealSystem.js";
 import { ensureNpcCombatData } from "../../domain/rules/npc/npcGeneration.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
 import { buildDuelNarrationPrompt, duelFactLogs, duelNarrationSlots, parseDuelNarration, phraseNarration } from "../../domain/rules/combat/duelBrief.js";
@@ -29,12 +30,16 @@ export function consumeDuelRequest(result, {
 }
 
 // 邀战只出一行系统提示（三五十字），不再整轮请 AI 写，点完立刻弹出切磋确认。
-export function duelInviteLine(npc) {
+// 气头上（pissed）不可能是心平气和地点头应下——按用户定案走「挑衅，他正在气头上，打将过来」方向。
+export function duelInviteLine(npc, { angry = false } = {}) {
+  if (angry) {
+    return `  你一句挑衅，${npc.name}正在气头上，哪里还按捺得住——喝骂一声，起身便打将过来！`;
+  }
   return `  你向${npc.name}抱拳邀战。${npc.name}略一打量，点头应下，拉开了架势。`;
 }
 
 export async function openDuelAfterNarration({ addLog, setDuelPending, isStale }, npc) {
-  addLog([{ t: "sys", text: duelInviteLine(npc) }]);
+  addLog([{ t: "sys", text: duelInviteLine(npc, { angry: isNpcAngry(gameStore.getState().varTree, npc?.name) }) }]);
   if (isStale()) return false;
   setDuelPending(npc);
   return true;
