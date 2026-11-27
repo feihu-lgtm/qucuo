@@ -304,7 +304,8 @@ export function buildNpcContext({ convo, preset, visibleNpcs, room, cmd, isTalk,
     const overrides = getPromptOverrides();
     for (const slot of followingLoreSlots) {
       const entry = companionState[slot.key];
-      const form = companionForms[slot.key] || entry?.form || "human";
+      // 存档里的形态（入队化形 / switchCompanionForm 写）为准；浏览器里的旧外貌偏好只给没有 form 字段的老档兜底。
+      const form = entry?.form || companionForms?.[slot.key] || "human";
       companionLore += formatCompanionDossierBlock(slot.key, {
         active: slot.key === activeKey,
         form,

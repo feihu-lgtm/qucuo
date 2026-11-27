@@ -156,6 +156,12 @@ describe("pure prompt builders", () => {
     const animal = buildNpcContext({ ...args, companionState: beast });
     const human = buildNpcContext({ ...args, companionState: beast, companionForms: { snowLeopard: "human" }, nsfwOn: true });
     expect(human.npcLoreBlockWithQuest).not.toBe(animal.npcLoreBlockWithQuest);
+    // 存档里写了形态就以存档为准：浏览器残留的 beast 偏好不再盖过已化形的人形同伴。
+    const savedHuman = { snowLeopard: { ...beast.snowLeopard, form: "human" } };
+    const stalePref = buildNpcContext({ ...args, companionState: savedHuman, companionForms: { snowLeopard: "beast" }, nsfwOn: true });
+    const noPref = buildNpcContext({ ...args, companionState: savedHuman, nsfwOn: true });
+    expect(stalePref.npcLoreBlockWithQuest).toBe(noPref.npcLoreBlockWithQuest);
+    expect(stalePref.npcLoreBlockWithQuest).toBe(human.npcLoreBlockWithQuest);
     const empty = buildNpcContext({ ...args, convo: [], preset: {}, room: { npcs: [] }, visibleNpcs: [], cmd: "", varTree: {} });
     expect(empty).toEqual({ lastAiText: "", npcLoreBlockWithQuest: "", reunionBlock: "" });
     expect(() => buildNpcContext({})).toThrow();
