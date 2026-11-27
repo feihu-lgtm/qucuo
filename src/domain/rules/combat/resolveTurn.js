@@ -197,7 +197,22 @@ export function resolveTurn(sideA, sideB) {
       result.notes.push(`${winnerMove.name}克中对方状态招式，威力倍增`);
     }
     result[`damageTo${loserTag}`] = damage;
-    if (loserMove.type === MOVE_TYPE.STATUS) result[`interrupted${loserTag}`] = true;
+    if (loserMove.type === MOVE_TYPE.STATUS) {
+      // 温和修正（斗蛐蛐实测高端局 3 回合终结：攻击克状态威力倍增+出手即打断，
+      // 恰恰所有专属大招都是状态招，AI 学着不敢用）——成名绝学有其底蕴：
+      // signature 状态招有 40% 概率心法不乱、硬吃伤害照常见效（伤害不免，只免打断）。
+      if (loserMove.signature && random() < 0.4) {
+        result.notes.push(`${loserMove.name}虽被正面抢攻，心法凝定未曾散乱`);
+        // 心法不散即招式见效：状态照施加、印记照叠、自益照发——否则"抵抗"只是
+        // 空耗气力白挨打，专属大招依旧永无出场（Review finding 实证）。
+        const st = rollStatusApply(loserMove);
+        if (st) result[`statusAppliedTo${winnerTag}`] = st;
+        markApply(loserMove, winnerTag, loserTag);
+        applySelfStatusMoveEffects(loserSide, loserTag, result);
+      } else {
+        result[`interrupted${loserTag}`] = true;
+      }
+    }
     if (controlCounter) {
       result.notes.push(`${loserMove.name}抢先运转不及，被${winnerMove.name}正面打断`);
     } else if (winnerMove.nullifyStatusOnHit) {

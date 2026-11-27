@@ -8,7 +8,7 @@ import {
 import { narrateTurn, hasApiKey } from "../../../app/calls/screenCalls.js";
 import { explainMove, moveTypeGist } from "../../../domain/rules/economy/itemEffectText.js";
 import TextBtn from "./TextBtn.jsx";
-import { PORTRAIT, UI, tierColor, tierName, sx } from "./qbShared.js";
+import { fighterArtUrl, UI, tierColor, tierName, sx } from "./qbShared.js";
 import { QUALITY_COLOR } from "../../../domain/data/items/qualityColor.js";
 
 export default function BattleScreen({ battle, setBattle, mode, onFinish, onQuit }) {
@@ -44,6 +44,7 @@ export default function BattleScreen({ battle, setBattle, mode, onFinish, onQuit
       return {
         ...b, allyTeam, foeTeam, logs: [...b.logs, roundLog], round: b.round + 1,
         lastHit: { key: b.round + 1, toFoe: out.result.damageToB, toMe: out.result.damageToA },
+        lastMoves: { ally: { name: myMove.name, quality: myMove.quality }, foe: { name: foeMove.name, quality: foeMove.quality } },
       };
     });
 
@@ -134,12 +135,14 @@ export default function BattleScreen({ battle, setBattle, mode, onFinish, onQuit
       {/* 对峙区（签名元素）：双方立绘 + 血槽 + 飘伤害 */}
       <div className="qb-arena" style={sx.arena}>
         <FighterPanel fighter={ally} side="ally" team={battle.allyTeam} curIdx={battle.allyIdx}
+          lastMove={battle.lastMoves?.ally}
           hit={battle.lastHit ? { key: battle.lastHit.key, dmg: battle.lastHit.toMe } : null} />
         <div className="qb-vs" style={sx.arenaVs}>
           <img src={UI("burst.webp")} alt="" style={{ width: 64, opacity: 0.7 }} />
           <div style={{ fontSize: "var(--fs-xl)", color: "var(--qb-versus)", fontWeight: "bold", letterSpacing: 2 }}>斗</div>
         </div>
         <FighterPanel fighter={foe} side="foe" team={battle.foeTeam} curIdx={battle.foeIdx}
+          lastMove={battle.lastMoves?.foe}
           hit={battle.lastHit ? { key: battle.lastHit.key, dmg: battle.lastHit.toFoe } : null} />
       </div>
 
@@ -229,7 +232,7 @@ export default function BattleScreen({ battle, setBattle, mode, onFinish, onQuit
 }
 
 // 单个上场者面板：立绘/名字 + 血槽 + 气力 + 后备队伍点 + 飘伤害
-function FighterPanel({ fighter, side, team, curIdx, hit }) {
+function FighterPanel({ fighter, side, team, curIdx, hit, lastMove }) {
   const cs = fighter.combatState;
   const hpRatio = cs.hp[0] / cs.hp[1];
   const enRatio = cs.energy[0] / 10;
@@ -242,8 +245,8 @@ function FighterPanel({ fighter, side, team, curIdx, hit }) {
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexDirection: side === "ally" ? "row" : "row-reverse" }}>
         <div className="qb-portrait" style={{ position: "relative", width: 76, height: 100, borderRadius: 0, overflow: "visible", flexShrink: 0 }}>
           <div style={{ width: "100%", height: "100%", borderRadius: 0, overflow: "hidden", border: `2px solid ${tierColor(fighter.levelCap)}`, background: "var(--qb-felt)" }}>
-            {fighter.portrait ? (
-              <img src={PORTRAIT(fighter.portrait)} alt={fighter.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center" }} />
+            {fighterArtUrl(fighter.name, fighter.portrait) ? (
+              <img src={fighterArtUrl(fighter.name, fighter.portrait)} alt={fighter.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center" }} />
             ) : (
               <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "var(--fs-xl)", color: tierColor(fighter.levelCap), fontWeight: "bold" }}>
                 {fighter.name.slice(0, 2)}
@@ -262,6 +265,11 @@ function FighterPanel({ fighter, side, team, curIdx, hit }) {
         <div className="qb-fighter-info" style={{ minWidth: 150, textAlign: side === "ally" ? "left" : "right" }}>
           <div style={{ fontSize: "var(--fs-lg)", color: "var(--qb-text)", fontWeight: "bold" }}>{fighter.name}</div>
           <div style={{ fontSize: "var(--fs-2xs)", color: tierColor(fighter.levelCap) }}>{tierName(fighter.levelCap)}品</div>
+          {lastMove && (
+            <div style={sx.lastMoveTag(QUALITY_COLOR[lastMove.quality] || "var(--parchment)")}>
+              「{lastMove.name}」
+            </div>
+          )}
           {/* 血槽 */}
           <div style={{ marginTop: 6 }}>
             <Bar ratio={hpRatio} color="var(--qb-hp)" bg="var(--qb-hp-track)" label={`气血 ${cs.hp[0]}/${cs.hp[1]}`} rtl={side === "foe"} />

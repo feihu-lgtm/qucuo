@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import TextBtn from "./TextBtn.jsx";
-import { MAX_TEAM, PORTRAIT, tierColor, tierName, sx } from "./qbShared.js";
+import { MAX_TEAM, fighterArtUrl, tierColor, tierName, sx } from "./qbShared.js";
 
 export default function PickScreen({ mode, candidates, allyIds, foeIds, setAllyIds, setFoeIds, onBack, onStart }) {
   const [tab, setTab] = useState("ally"); // 当前在给哪一队选人
@@ -49,20 +49,32 @@ export default function PickScreen({ mode, candidates, allyIds, foeIds, setAllyI
         （{curIds.length}/{cap}）· 点头像加入本队，再点一次移出 · 点上方队旗切换给哪队选
       </div>
 
-      {/* 候选名单 */}
-      <div className="qb-candgrid" style={sx.candidateGrid}>
-        {candidates.map(c => {
-          const inCur = curIds.includes(c.id);
-          const inOther = otherIds.includes(c.id);
-          return (
-            <CandidateCard
-              key={c.id} c={c}
-              picked={inCur} disabled={inOther}
-              accent={tab === "ally" ? "var(--blue)" : "var(--qb-foe)"}
-              onClick={() => !inOther && toggle(c.id)}
-            />
-          );
-        })}
+      {/* 候选名单：OC 冒险者单列一组（虹品卖相担当）打头，群雄随后——不混排 */}
+      <div style={sx.pickListScroll}>
+        {[
+          { key: "oc", label: "虹品群侠 · OC 冒险者", list: candidates.filter(c => c.pool === "oc") },
+          { key: "base", label: "江湖群雄", list: candidates.filter(c => c.pool !== "oc") },
+        ].filter(g => g.list.length > 0).map(g => (
+          <div key={g.key} style={sx.pickGroupWrap}>
+            <div style={sx.pickGroupLabel(g.key === "oc")}>
+              {g.label}（{g.list.length}）
+            </div>
+            <div className="qb-candgrid" style={sx.candidateGridInner}>
+              {g.list.map(c => {
+                const inCur = curIds.includes(c.id);
+                const inOther = otherIds.includes(c.id);
+                return (
+                  <CandidateCard
+                    key={c.id} c={c}
+                    picked={inCur} disabled={inOther}
+                    accent={tab === "ally" ? "var(--blue)" : "var(--qb-foe)"}
+                    onClick={() => !inOther && toggle(c.id)}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -110,8 +122,8 @@ function CandidateCard({ c, picked, disabled, accent, onClick }) {
       }}
     >
       {/* 有立绘用真图，没有的用品阶色底 + 大字名 */}
-      {c.portrait ? (
-        <img src={PORTRAIT(c.portrait)} alt={c.name}
+      {fighterArtUrl(c.name, c.portrait) ? (
+        <img src={fighterArtUrl(c.name, c.portrait)} alt={c.name}
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center" }} />
       ) : (
         <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: "6px",

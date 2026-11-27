@@ -63,15 +63,16 @@ describe("resolveNpcConflict", () => {
     const args = { sideA: [npc("巴桑")], sideB: [npc("格桑顿珠")], seed: 7 };
     const unchanged = structuredClone(args);
     const { log, ...result } = resolveNpcConflict(args);
+    // 数值随 2026-11-28 克制链温和修正重钉：signature 状态招 40% 抗击打后，
+    // 状态型角色不再出手即死，战局拖长翻盘属意内变化（专属大招有出场机会）。
     expect(result).toEqual({
-      winner: "B",
-      rounds: 10,
+      winner: "A",
+      rounds: 20,
       injuries: [
-        { id: "pool_resident_basang", name: "巴桑", severity: "重伤" },
         { id: "pool_resident_gesangdunzhu", name: "格桑顿珠", severity: "轻伤" },
       ],
       deaths: [],
-      finalHp: { pool_resident_basang: [0, 1245], pool_resident_gesangdunzhu: [435, 1165] },
+      finalHp: { pool_resident_basang: [893, 1245], pool_resident_gesangdunzhu: [70, 1165] },
     });
     setSeed(11);
     expect(resolveNpcConflict(args)).toEqual({ ...result, log });
@@ -84,7 +85,7 @@ describe("resolveNpcConflict", () => {
     const args = { sideA: [npc("厉天行"), npc("巴桑")], sideB: [npc("血刀门徒·初七"), npc("格桑顿珠")], seed: 7 };
     const [minion, named] = args.sideB;
     const lethal = resolveNpcConflict({ ...args, lethal: "minions" });
-    expect(lethal).toMatchObject({ winner: "A", rounds: 6 });
+    expect(lethal).toMatchObject({ winner: "A", rounds: 3 }); // 克制链修正后重钉（2026-11-28）
     expect(lethal.deaths).toEqual([{ id: minion.id, name: minion.name }]);
     expect(lethal.injuries).toContainEqual({ id: named.id, name: named.name, severity: "重伤" });
     const nonlethal = resolveNpcConflict(args);
