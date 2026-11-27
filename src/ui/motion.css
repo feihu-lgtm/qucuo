@@ -1,0 +1,266 @@
+/* ── 动效（设计稿·夜色精修 §六）────────────────────────────────────────────
+   原则：动效只在「发生了事情」的那一刻出现，平时界面是静的；没有盖章、弹跳、无限闪烁。
+   时长四档、缓动两条，全文件只取这几个令牌。系统设了「减少动态效果」时，tokens.css 末尾的
+   全局规则把所有动画与过渡压到 0.01ms，这里不再逐条重复。
+   本文件在 main.jsx 里最后引入，覆盖各处零散的旧动效。 */
+/* 时长与缓动令牌定义在 tokens.css（--motion-1…4、--ease-out、--ease-ink）。 */
+
+/* ── 1. 进场横幅：图从下方 8px 淡入并轻微推镜（1.06 → 1），地名字距由宽收紧、细线展开 ── */
+.art--enter img {
+  animation: motion-art-in var(--motion-3) var(--ease-out) both, motion-kenburns 7s var(--ease-ink) both;
+}
+.art--enter .art-caption-name {
+  animation: motion-caption-in 1.1s var(--ease-out) 0.18s both;
+}
+.art--enter .art-caption-sub {
+  animation: motion-fade var(--motion-3) ease-out 0.45s both;
+}
+.art--enter .art-caption-rule {
+  animation: motion-rule 0.7s var(--ease-out) 0.5s both;
+}
+/* 小图换据点时淡入（组件以图址为 key 重挂） */
+.art--thumb img {
+  animation: motion-fade var(--motion-3) ease-out both;
+}
+/* 建筑面板横幅：打开面板时推镜 */
+.art--panel img {
+  animation: motion-fade var(--motion-2) ease-out both, motion-kenburns 6s var(--ease-ink) both;
+}
+.art { overflow: hidden; }
+
+@keyframes motion-art-in {
+  from { opacity: 0; transform: translateY(8px); filter: blur(2px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+@keyframes motion-kenburns {
+  from { scale: 1.06; }
+  to { scale: 1; }
+}
+@keyframes motion-caption-in {
+  from { opacity: 0; letter-spacing: 1.2em; filter: blur(3px); }
+  to { opacity: 1; letter-spacing: 0.6em; filter: none; }
+}
+@keyframes motion-rule {
+  from { transform: scaleX(0); opacity: 0; }
+  to { transform: scaleX(1); opacity: 1; }
+}
+
+/* ── 2. 主栏：正文从轻微模糊中显出来（墨晕），其余行逐条浮现 ── */
+.log-entry:not(.log-streaming):not(.log-entry-streamed) {
+  animation: motion-rise var(--motion-2) var(--ease-out) both;
+}
+.log-entry--prose:not(.log-streaming):not(.log-entry-streamed) {
+  animation: motion-ink var(--motion-3) var(--ease-ink) both;
+}
+/* 同一回合里一起到的几行，按先后错开 70ms 浮现（新人物出现、地上之物、账目） */
+.narrative-group-body > .narrative-reply-slot:nth-child(2) .log-entry { animation-delay: 70ms; }
+.narrative-group-body > .narrative-reply-slot:nth-child(3) .log-entry { animation-delay: 140ms; }
+.narrative-group-body > .narrative-reply-slot:nth-child(4) .log-entry { animation-delay: 210ms; }
+.narrative-group-body > .narrative-reply-slot:nth-child(5) .log-entry { animation-delay: 280ms; }
+.narrative-group-body > .narrative-reply-slot:nth-child(6) .log-entry { animation-delay: 350ms; }
+.narrative-group-body > .narrative-reply-slot:nth-child(n+7) .log-entry { animation-delay: 420ms; }
+
+@keyframes motion-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes motion-ink {
+  from { opacity: 0; filter: blur(4px); transform: translateY(4px); }
+  60% { opacity: 1; }
+  to { opacity: 1; filter: none; transform: none; }
+}
+@keyframes motion-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 流式写字时的光标：一根细墨线缓缓呼吸，不再是闪烁的方块 */
+.log-stream-caret {
+  width: 2px;
+  margin-left: 4px;
+  background: var(--text);
+  animation: motion-breathe 1.2s ease-in-out infinite;
+}
+.log-streaming {
+  border-left-color: color-mix(in srgb, var(--text) 18%, transparent);
+}
+@keyframes motion-breathe {
+  0%, 100% { opacity: 0.9; }
+  50% { opacity: 0.2; }
+}
+
+/* 进房说明行：小字标签色 */
+.log-map-arrive {
+  color: var(--text-dim);
+  font-size: var(--fs-center-meta);
+  letter-spacing: 0.04em;
+  margin: 2px 0 6px;
+}
+
+/* 账目行：标签先到，各项依次浮现 */
+.narrative-ledger { animation: motion-fade var(--motion-2) ease-out both; }
+.narrative-ledger-item { animation: motion-rise var(--motion-2) var(--ease-out) both; }
+.narrative-ledger-item:nth-child(2) { animation-delay: 80ms; }
+.narrative-ledger-item:nth-child(3) { animation-delay: 160ms; }
+.narrative-ledger-item:nth-child(4) { animation-delay: 240ms; }
+.narrative-ledger-item:nth-child(n+5) { animation-delay: 320ms; }
+
+/* 报错：一句话淡入；次数变了，数字弹一下（组件以次数为 key 重挂） */
+.log-turn-error { animation: motion-fade var(--motion-2) ease-out both; }
+.log-turn-error-count {
+  display: inline-block;
+  animation: motion-count 420ms var(--ease-out) both;
+}
+@keyframes motion-count {
+  0% { transform: scale(1.5); opacity: 0; }
+  60% { transform: scale(0.94); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+/* 得物卡：从下方浮出，边线由暗转亮一次 */
+.effect-receipt-card,
+.log-entry--loot,
+.loot-card {
+  animation: motion-loot var(--motion-3) var(--ease-out) both;
+}
+@keyframes motion-loot {
+  0% { opacity: 0; transform: translateY(12px); box-shadow: 0 0 0 0 transparent; }
+  55% { opacity: 1; transform: none; box-shadow: 0 0 0 1px color-mix(in srgb, var(--warn) 55%, transparent); }
+  100% { opacity: 1; transform: none; box-shadow: 0 0 0 1px transparent; }
+}
+
+/* ── 3. 九宫格：走一步，格子从来的方向卷进来，所在格落定时一圈波纹 ── */
+.ngm[data-from] .ngm-cell { animation: motion-ngm 380ms var(--ease-ink) both; }
+.ngm[data-from="e"] { --ngm-x: 18px; --ngm-y: 0px; }
+.ngm[data-from="w"] { --ngm-x: -18px; --ngm-y: 0px; }
+.ngm[data-from="n"] { --ngm-x: 0px; --ngm-y: -18px; }
+.ngm[data-from="s"] { --ngm-x: 0px; --ngm-y: 18px; }
+.ngm[data-from="ne"] { --ngm-x: 13px; --ngm-y: -13px; }
+.ngm[data-from="nw"] { --ngm-x: -13px; --ngm-y: -13px; }
+.ngm[data-from="se"] { --ngm-x: 13px; --ngm-y: 13px; }
+.ngm[data-from="sw"] { --ngm-x: -13px; --ngm-y: 13px; }
+.ngm[data-from] .ngm-cell:nth-child(2),
+.ngm[data-from] .ngm-cell:nth-child(4),
+.ngm[data-from] .ngm-cell:nth-child(6),
+.ngm[data-from] .ngm-cell:nth-child(8) { animation-delay: 40ms; }
+.ngm[data-from] .ngm-cell:nth-child(1),
+.ngm[data-from] .ngm-cell:nth-child(3),
+.ngm[data-from] .ngm-cell:nth-child(7),
+.ngm[data-from] .ngm-cell:nth-child(9) { animation-delay: 80ms; }
+.ngm[data-from] .ngm-cell[data-state="current"] { animation: motion-settle 420ms var(--ease-out) both; }
+@keyframes motion-ngm {
+  from { opacity: 0; transform: translate(var(--ngm-x, 0px), var(--ngm-y, 0px)); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes motion-settle {
+  0% { transform: scale(0.92); opacity: 0.4; }
+  60% { transform: scale(1.03); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.ngm-cell {
+  transition: border-color var(--motion-1) ease, background-color var(--motion-1) ease, color var(--motion-1) ease, transform var(--motion-1) var(--ease-out);
+}
+.ngm-cell[data-state="explored"]:hover { transform: translateY(-1px); }
+.ngm-cell[data-state="explored"]:active { transform: translateY(0) scale(0.98); }
+
+/* ── 4. 浮层：遮罩淡入，面板从下方 10px 浮上并轻微放大 ── */
+.ui-modal-root {
+  animation: motion-fade 220ms ease-out both;
+}
+.ui-modal-root > .ui-modal-panel {
+  animation: motion-panel var(--motion-2) var(--ease-out) both;
+}
+@keyframes motion-panel {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ── 5. 标签页与切换：下划线滑入、底色过渡 ── */
+.center-view-tab,
+.journal-chip,
+.codex-chip,
+.chipb,
+.ui-btn,
+.npc-action-card,
+.left-map-zoom,
+.log-inline-link {
+  transition: color var(--motion-1) ease, background-color var(--motion-1) ease, border-color var(--motion-1) ease, transform var(--motion-1) var(--ease-out), opacity var(--motion-1) ease;
+}
+.ui-btn:active,
+.npc-action-card:active,
+.codex-chip:active,
+.journal-chip:active { transform: scale(0.97); }
+.npc-action-card:hover { transform: translateY(-2px); }
+
+/* 卷宗：切过去时整块淡入，展开详情时下滑 */
+.journal { animation: motion-fade var(--motion-2) ease-out both; }
+.journal-detail { animation: motion-rise var(--motion-2) var(--ease-out) both; }
+.journal-row { transition: background-color var(--motion-1) ease, border-color var(--motion-1) ease; }
+
+/* ── 6. 数值：滚动的同时按涨跌短暂着色，900ms 退回 ── */
+.anim-num {
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+  transition: color var(--motion-4) ease, text-shadow var(--motion-4) ease;
+}
+.anim-num[data-delta="up"] {
+  color: var(--good);
+  transition-duration: 80ms;
+}
+.anim-num[data-delta="down"] {
+  color: var(--log-err);
+  transition-duration: 80ms;
+}
+.night-bar-fill {
+  transition: width 0.6s var(--ease-out);
+}
+
+/* ── 7. 状态灯：推演中缓慢呼吸，结束即停 ── */
+.topbar-status-pill.is-active .topbar-status-dot {
+  animation: motion-breathe 1.6s ease-in-out infinite;
+}
+
+/* ── 8. 冒险者名：去掉五彩流光，改为一道很慢的金色墨光从字上扫过 ── */
+.adventurer-rainbow {
+  font-weight: 600;
+  background-size: 260% 100%;
+  animation: motion-sheen 7s ease-in-out infinite;
+}
+.adventurer-rainbow--prism,
+.adventurer-rainbow--sunset {
+  background-image: linear-gradient(100deg, var(--warn) 0%, var(--warn) 40%, #f3e6c4 50%, var(--warn) 60%, var(--warn) 100%);
+}
+.adventurer-rainbow--aurora {
+  background-image: linear-gradient(100deg, var(--info) 0%, var(--info) 40%, #e4eef2 50%, var(--info) 60%, var(--info) 100%);
+}
+.adventurer-rainbow--jade {
+  background-image: linear-gradient(100deg, var(--good) 0%, var(--good) 40%, #e6f0dc 50%, var(--good) 60%, var(--good) 100%);
+}
+@keyframes motion-sheen {
+  0%, 55% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ── 9. 无头像时的人物印：圆形墨印，取名字首字 ── */
+.npc-ava-seal {
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: radial-gradient(circle at 50% 40%, var(--bg-raise), var(--bg-item) 70%);
+  color: var(--text-sub);
+  font-family: var(--font-center);
+  box-sizing: border-box;
+}
+
+/* ── 10. 卡片悬停：图鉴人物卡、物品行轻轻抬起 ── */
+.codex-npc-card,
+.codex-item-row {
+  transition: transform var(--motion-1) var(--ease-out), border-color var(--motion-1) ease, background-color var(--motion-1) ease;
+}
+.codex-npc-card:hover { transform: translateY(-2px); }
+
+/* 主栏骨架（等待正文）：标签不用粉色 */
+.narrative-skeleton-tag { color: var(--text-dim); }
+.narrative-skeleton-bar {
+  background: linear-gradient(90deg, var(--border) 0%, color-mix(in srgb, var(--text) 30%, var(--border)) 45%, var(--border) 90%);
+  background-size: 220% 100%;
+}

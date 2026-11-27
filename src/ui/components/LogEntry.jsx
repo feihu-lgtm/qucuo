@@ -5,6 +5,8 @@ import NpcAvatar from "./NpcAvatar.jsx";
 import { LOG_T } from "../../domain/data/log/logTypes.js";
 import { parseDuelOpponent, splitNarrativeParagraphs } from "../panels/center/dialogueModel.js";
 
+const ARRIVE_LINE_RE = /^[\s\u3000]*你自「[^」]+」向[^，]+，来到此处。?$/;
+
 // 参照酒馆预设的视觉层级：叙述是底色，对话高亮跳出，心理*斜体*
 const DIALOGUE_COLOR = { night: "var(--log-dialogue)", day: "var(--log-dialogue)" };
 const QUOTE_COLOR = { night: "var(--warn)", day: "var(--warn)" };
@@ -169,12 +171,17 @@ export default function LogEntry({
   }
 
   // 接口/系统故障（带 kind）
+  // 进房的「你自某处向某方，来到此处」是一行说明，不是正文：小字、标签色，不缩进（旧档按文字认）。
+  if (entry.t === LOG_T.DESC && (entry.mapNote === "arrive" || ARRIVE_LINE_RE.test(rawText))) {
+    return <div className={`${baseCls} log-map-arrive`}>{stripLeadingSpace(rawText)}</div>;
+  }
+
   if (entry.t === LOG_T.ERR && entry.kind) {
     const count = Number(entry.count) || 1;
     return (
       <div className={`${baseCls} log-turn-error`}>
         <span className="log-turn-error-text">{stripLeadingSpace(rawText)}</span>
-        {count > 1 && <span className="log-turn-error-count">×{count}</span>}
+        {count > 1 && <span key={count} className="log-turn-error-count">×{count}</span>}
         <span className="log-turn-error-actions">
           {entry.retryable === false && onOpenSettings && (
             <button type="button" className="log-inline-link" onClick={onOpenSettings}>接口设置</button>

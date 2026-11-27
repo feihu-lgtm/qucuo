@@ -5,6 +5,7 @@ import "./ui/mobile.css";
 import "./ui/panels/panels.css";
 import "./ui/screens/screens.css";
 import "./ui/components/components.css";
+import "./ui/motion.css";
 import React, { lazy, Suspense, useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import StartScreen from "./ui/screens/StartScreen.jsx";

@@ -1,3 +1,4 @@
+import { useRef } from "react";
 // 固定九宫格视窗地图：玩家永远居中不动，走一步「世界卷一格」（周围八格内容刷新）。内外层通用。
 // props:
 //   centerLabel — 中心格显示（我当前所在地名）
@@ -9,15 +10,18 @@
 const LAYOUT = ["nw", "n", "ne", "w", "center", "e", "sw", "s", "se"];
 const DIR_CN = { n: "北", s: "南", e: "东", w: "西", ne: "东北", nw: "西北", se: "东南", sw: "西南" };
 const short = (nm) => (nm ? (nm.includes("·") ? nm.split("·").pop() : nm) : "");
+// 走一步时整格「卷」过去：记住刚点的方向，中心地名一变就以新地名为 key 重挂九宫格，
+// data-from 告诉样式表格子从哪一侧滑进来（motion.css 的 .ngm[data-from]）。
 
 export default function NineGridMap({ centerLabel, cells, onGo, loading, big = false }) {
   const clickable = !loading;
-  const go = (key) => { if (clickable) onGo(key); };
+  const lastDir = useRef(null);
+  const go = (key) => { if (clickable) { lastDir.current = key; onGo(key); } };
   const keyGo = (key) => (event) => {
-    if (clickable && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); onGo(key); }
+    if (clickable && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); go(key); }
   };
   return (
-    <div className="mobile-mini-map ngm" data-big={big}>
+    <div key={centerLabel || "center"} className="mobile-mini-map ngm" data-big={big} data-from={lastDir.current || undefined}>
       {LAYOUT.map((key) => {
         if (key === "center") {
           return (

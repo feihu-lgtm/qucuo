@@ -33,3 +33,10 @@ export function subscribeViewport(onChange) {
     window.removeEventListener("orientationchange", onChange);
   };
 }
+
+// 系统是否设了「减少动态效果」：数值滚动等用 JS 驱动的动效据此直接跳到终值（CSS 动效由 tokens.css 统一处理）。
+export function prefersReducedMotion() {
+  return typeof window !== "undefined"
+    && typeof window.matchMedia === "function"
+    && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}

@@ -489,6 +489,16 @@
   --loot-steal-banner-text: #06231c;
   --dur-fast: 120ms;
   --dur: 180ms;
+  /* 动效令牌（ui/motion.css）：时长四档、缓动两条，全站动效只取这几个。 */
+  --motion-1: 160ms;
+  --motion-2: 280ms;
+  --motion-3: 560ms;
+  --motion-4: 900ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-ink: cubic-bezier(0.22, 1, 0.36, 1);
+  /* 九宫格卷动的位移（由 .ngm[data-from] 按方向覆盖） */
+  --ngm-x: 0px;
+  --ngm-y: 0px;
   --dx: 0px;
   --dy: 0px;
   --plate: #13120f;
