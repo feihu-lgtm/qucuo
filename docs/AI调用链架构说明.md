@@ -366,6 +366,7 @@ flowchart LR
 - **额度识别**：4xx 报错只要措辞是 budget / exceeded / quota / 余额 / 额度，一律归为 `quota`，不可重试。
 - **回合失败**：`useTurn` 只经 `addTurnError` 落一句话（`presentError().line`），同因连续失败合并计数；分类、建议与脱敏原文写进追踪节点（`errorKind / errorDetail / hint`）。
 - **自动重试**：`runTurn` 的重试与截断重说改为 `turnMonitor.note`，只显示在状态灯上，不再写主栏日志。
+- **回滚连日志**：`playTurn` 回滚时除恢复 ROLLBACK_KEYS 外，按 tid 撤掉本回合新写进主栏的世界变化行（`domain/rules/log/rollbackLog.js`），玩家行动行、报错、来信保留；`log` 本身仍不进 ROLLBACK_KEYS。
 - **追踪顺序与缓冲**：`turnMonitor` 节点按真实发生顺序输出；前台、后台各留 40 棵树。主栏日志条目带 `tid`，卷宗据此把日志与追踪拼成同一回合。
 
 ## 6. 已确认的设计取舍

@@ -5,7 +5,7 @@ import { useGameStore } from "../../../store/gameStore.js";
 import { openOverlay, OVERLAY } from "../../../store/uiStore.js";
 import { setCenterView } from "../../../store/sessionUiStore.js";
 import { LOG_T } from "../../../domain/data/log/logTypes.js";
-import { createClockMarker, groupReplies, isRuleHint, ledgerText } from "./feedModel.js";
+import { createClockMarker, createMapNoteFilter, foldFailedRuns, groupReplies, isRuleHint, ledgerText } from "./feedModel.js";
 
 // 对象级稳定 React Key：彻底避免在流式占位/插入地名/后台补写时因数组下标左移右移，
 // 导致 React 错认兄弟节点、重播入场动画或把行跳飞。
@@ -131,6 +131,7 @@ export default function NarrativeLogFeed({
     }
   }
   if (current) groups.push(current);
+  const shownGroups = foldFailedRuns(groups);
 
   let lastCommandIndex = -1;
   for (let i = log.length - 1; i >= 0; i -= 1) {
@@ -161,13 +162,14 @@ export default function NarrativeLogFeed({
   };
 
   const markClock = createClockMarker();
+  const showMapLine = createMapNoteFilter();
   const openJournal = () => setCenterView("journal");
   const openSettings = () => openOverlay(OVERLAY.SETTINGS);
   const colorFor = (entry) => (isRuleHint(entry) ? "var(--text-dim)" : (clr[entry.t] || clr.desc));
 
   return (
     <div ref={feedRef} onScroll={handleScroll} data-testid="narrative-log" style={{ display: hidden ? "none" : "block", flex: 1, padding: "20px 32px", overflowY: "auto", overflowX: "hidden", fontFamily: "var(--font-center)", fontSize: "var(--fs-center-body)", lineHeight: "var(--lh-narrative)", letterSpacing: "0.3px" }}>
-      {groups.map((g, gi) => {
+      {shownGroups.map((g, gi) => {
         if (g.standalone) {
           const entry = g.standalone;
           const isRoom = entry.t === LOG_T.ROOM;
@@ -212,7 +214,9 @@ export default function NarrativeLogFeed({
         }
 
         const cmdIdx = g.cmd ? log.indexOf(g.cmd) : -1;
-        const replyCount = g.replies.length;
+        // 进房描写去重要按渲染顺序逐组过滤，折叠的组也要过，否则展开状态会改变去重结果。
+        const visibleReplies = g.replies.filter(showMapLine);
+        const replyCount = visibleReplies.length;
         const canCollapse = g.cmd && replyCount > 0;
         const collapsed = canCollapse && collapsedGroups.has(cmdIdx);
         const turnEntry = g.cmd || g.replies.find(entry => typeof entry?.turn === "number" || entry?.realTs != null);
@@ -228,10 +232,28 @@ export default function NarrativeLogFeed({
 
         let trackedTurn = typeof turnEntry?.turn === "number" ? turnEntry.turn : null;
         const headerMark = turnEntry && (g.cmd || g.replies.length > 0) ? markClock(turnEntry) : null;
-        const units = groupReplies(g.replies);
+        const units = groupReplies(visibleReplies);
+        const foldKey = `unfold:${cmdIdx}`;
+        const foldOpen = collapsedGroups.has(foldKey);
+        const toggleFold = () => setCollapsedGroups(prev => {
+          const next = new Set(prev);
+          if (next.has(foldKey)) next.delete(foldKey); else next.add(foldKey);
+          return next;
+        });
+        const foldedList = (g.foldedCmds || []).map((c, ci) => (
+          <div key={ci} className="narrative-folded-cmd">你　{String(c.text || "").replace(/^>\s*/, "")}</div>
+        ));
 
         return (
           <div key={groupKey} className="narrative-group">
+            {foldedList.length > 0 && (
+              <div className="narrative-folded">
+                <button type="button" className="log-inline-link" onClick={toggleFold}>
+                  {foldOpen ? "收起" : `另有 ${foldedList.length} 句行动未计入`}
+                </button>
+                {foldOpen && <div className="narrative-folded-list">{foldedList}</div>}
+              </div>
+            )}
             {g.cmd && (
               <div
                 className={collapsed
@@ -259,7 +281,7 @@ export default function NarrativeLogFeed({
                 <TimeBadge entry={turnEntry} mark={headerMark} />
               </div>
             )}
-            {!collapsed && (g.replies.length > 0 || (isActiveGroup && showSkeleton)) && (
+            {!collapsed && (visibleReplies.length > 0 || (isActiveGroup && showSkeleton)) && (
               <div className={g.cmd ? "narrative-group-body narrative-group-body--indented" : "narrative-group-body"}>
                 {units.map((unit, ri) => {
                   const entry = unit.kind === "ledger" ? unit.entries[0] : unit.entry;

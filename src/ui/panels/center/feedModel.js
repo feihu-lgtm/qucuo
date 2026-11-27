@@ -71,3 +71,60 @@ export function createClockMarker() {
     return { full: true, text: `第${clock.day}日·${clock.shichen}　第${clock.turn}回合` };
   };
 }
+
+// 4. 进房描写去重——同一间房的固定描写、同一据点的「远处」，再次进房时不重印。
+//    「你自某处向某方来到此处」和「四周」每次都留（这两行本身就是变化）。
+//    旧存档的行没有 mapNote，「远处：」按文字认出来。
+function mapNoteOf(entry) {
+  if (entry?.mapNote) return entry.mapNote;
+  if (entry?.t === LOG_T.SYS && /^[\s\u3000]*远处：/.test(entry.text || "")) return "far";
+  return null;
+}
+
+export function createMapNoteFilter() {
+  let lastFar = null;
+  const seenDesc = new Set();
+  return function shouldShow(entry) {
+    const note = mapNoteOf(entry);
+    const text = String(entry?.text || "").trim();
+    if (note === "far") {
+      if (text === lastFar) return false;
+      lastFar = text;
+      return true;
+    }
+    if (note === "roomDesc") {
+      if (!text || seenDesc.has(text)) return false;
+      seenDesc.add(text);
+      return true;
+    }
+    return true;
+  };
+}
+
+export function isMapNoise(entry) {
+  const note = mapNoteOf(entry);
+  return note === "far" || note === "near";
+}
+
+// 5. 连续失败的行动折叠——额度用尽时连发几十句，每句都没回音，最后只有一条「×N」报错。
+//    把这一串收成一组：显示最后一句行动和那条报错，前面的行动收进「另有 N 句未计入」。
+//    只折「一连串没有任何回复的行动 + 最后一组只有系统故障」这种形状，进行中的回合不受影响。
+export function foldFailedRuns(groups) {
+  const out = [];
+  let run = [];
+  const flush = () => { out.push(...run); run = []; };
+  for (const group of groups) {
+    const silent = group.cmd && !group.standalone && group.replies.length === 0;
+    const failedOnly = group.cmd && !group.standalone && group.replies.length > 0 && group.replies.every(isSystemFailure);
+    if (silent) { run.push(group); continue; }
+    if (failedOnly && run.length > 0) {
+      out.push({ ...group, foldedCmds: run.map((g) => g.cmd) });
+      run = [];
+      continue;
+    }
+    flush();
+    out.push(group);
+  }
+  flush();
+  return out;
+}

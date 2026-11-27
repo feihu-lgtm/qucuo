@@ -4,7 +4,7 @@
 // 所有文字出卷宗前都过一遍脱敏。
 import { LOG_T } from "../../../domain/data/log/logTypes.js";
 import { redactSecrets } from "../../../utils/apiErrors.js";
-import { createClockMarker, isLedgerEntry, isRuleHint, isSystemFailure, ledgerText } from "./feedModel.js";
+import { createClockMarker, isLedgerEntry, isMapNoise, isRuleHint, isSystemFailure, ledgerText } from "./feedModel.js";
 
 export const JOURNAL_FILTERS = [
   { id: "all", label: "全部" },
@@ -57,7 +57,7 @@ function logRows(group) {
     else if (isSystemFailure(entry)) {
       rows.push({ src: "error", label: "异常", text: clean(entry.text), meta: entry.count > 1 ? `×${entry.count}` : "", kind: entry.kind });
     } else if (isRuleHint(entry)) rows.push({ src: "hint", label: "提示", text: clean(entry.text) });
-    else if (entry.t === LOG_T.SYS && String(entry.text || "").trim()) rows.push({ src: "system", label: "系统", text: clean(entry.text) });
+    else if (entry.t === LOG_T.SYS && !isMapNoise(entry) && String(entry.text || "").trim()) rows.push({ src: "system", label: "系统", text: clean(entry.text) });
   }
   return rows;
 }

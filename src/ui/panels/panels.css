@@ -825,3 +825,19 @@
   font-size: var(--fs-2xs);
   letter-spacing: 0.1em;
 }
+
+/* ── 连续失败的行动折叠 ── */
+.narrative-folded {
+  margin: 4px 0 2px;
+  font-size: var(--fs-center-meta);
+  color: var(--text-dim);
+}
+.narrative-folded-list {
+  margin: 4px 0 2px 14px;
+  padding-left: 10px;
+  border-left: 1px solid var(--border);
+}
+.narrative-folded-cmd {
+  color: var(--text-dim);
+  line-height: 1.8;
+}

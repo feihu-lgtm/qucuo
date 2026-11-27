@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createClockMarker, groupReplies, isRuleHint, isSystemFailure, ledgerText } from "./feedModel.js";
+import { createClockMarker, createMapNoteFilter, foldFailedRuns, groupReplies, isRuleHint, isSystemFailure, ledgerText } from "./feedModel.js";
 
 describe("时辰戳只标变化", () => {
   it("换时辰写全，同一时辰只写回合号，时间没走不写", () => {
@@ -44,5 +44,49 @@ describe("报错分两种", () => {
     expect(isSystemFailure({ t: "err", kind: "quota" })).toBe(true);
     expect(isRuleHint({ t: "err", text: "潜能不足" })).toBe(true);
     expect(isSystemFailure({ t: "err", text: "潜能不足" })).toBe(false);
+  });
+});
+
+
+describe("进房描写去重", () => {
+  it("同一间房的固定描写与同一据点的远处只印第一次，到达与四周每次都留", () => {
+    const show = createMapNoteFilter();
+    const enter = () => [
+      { t: "desc", text: "  你自「马车行」向西，来到此处。", mapNote: "arrive" },
+      { t: "desc", text: "  村里的客栈，往来行商都在此落脚。", mapNote: "roomDesc" },
+      { t: "sys", text: "  四周：西·村口　东·马车行", mapNote: "near" },
+      { t: "sys", text: "  远处：西·鱼定土司　北·喇嘛庙", mapNote: "far" },
+    ];
+    expect(enter().filter(show)).toHaveLength(4);
+    expect(enter().filter(show).map((e) => e.mapNote)).toEqual(["arrive", "near"]);
+  });
+
+  it("旧存档没有标记的「远处」按文字认出来", () => {
+    const show = createMapNoteFilter();
+    expect(show({ t: "sys", text: "  远处：东·雅江" })).toBe(true);
+    expect(show({ t: "sys", text: "  远处：东·雅江" })).toBe(false);
+  });
+});
+
+describe("连续失败的行动折叠", () => {
+  const cmd = (text) => ({ t: "cmd", text: `> ${text}` });
+  const fail = { t: "err", kind: "quota", count: 3, text: "  天机不畅（接口额度已尽），本轮未计入。" };
+
+  it("一串没有回音的行动加最后一组系统故障，收成一组", () => {
+    const groups = [
+      { cmd: cmd("先前"), replies: [{ t: "desc", text: "  正文" }] },
+      { cmd: cmd("一"), replies: [] },
+      { cmd: cmd("二"), replies: [] },
+      { cmd: cmd("三"), replies: [fail] },
+    ];
+    const out = foldFailedRuns(groups);
+    expect(out).toHaveLength(2);
+    expect(out[1].cmd.text).toBe("> 三");
+    expect(out[1].foldedCmds.map((c) => c.text)).toEqual(["> 一", "> 二"]);
+  });
+
+  it("后面不是系统故障就原样保留，进行中的回合不折", () => {
+    const groups = [{ cmd: cmd("一"), replies: [] }, { cmd: cmd("二"), replies: [{ t: "desc", text: "  正文" }] }, { cmd: cmd("三"), replies: [] }];
+    expect(foldFailedRuns(groups)).toEqual(groups);
   });
 });
