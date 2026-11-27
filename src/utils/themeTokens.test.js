@@ -3,12 +3,12 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { NIGHT_VARS, THEME_VARS, getZoneName } from "./theme.js";
 
-// 路线图 U3：颜色只有 tokens.css 一套。迁移前 theme.js 的两套主题色（七个分区共用）
-// 与 ink() 的两个语义色冻结在下面，tokens.css 的变量必须与它们逐字段相等，
-// 保证把 zoneTheme.xxx / ink() 换成 CSS 变量没有改变任何颜色。测试文件不计入棘轮的色值计数。
-const FORMER_NIGHT = { accent: "#c8323a", accentDim: "#8a4a48", bg: "#0a0a09", bgPanel: "#111110", border: "#4a453c", text: "#e8e4d6", textDim: "#8f8a7c" };
+// 路线图 U3：颜色只有 tokens.css 一套。U3 迁移时冻结了迁移前的两套主题色；夜色精修换装（设计稿 §二）
+// 有意改了暗夜色板，下面的暗夜值随之更新为夜色精修色板，日间色板未动。
+// tokens.css 的变量必须与这里逐字段相等——改色板要同时改这里，防止误改。测试文件不计入棘轮的色值计数。
+const FORMER_NIGHT = { accent: "#c8323a", accentDim: "#8a4a48", bg: "#0c0b09", bgPanel: "#13120f", border: "#3a362e", text: "#ece6d6", textDim: "#8c8573" };
 const FORMER_DAY = { accent: "#a8202a", accentDim: "#8a4a42", bg: "#eae7dd", bgPanel: "#f4f2e9", border: "#2a2620", text: "#201d18", textDim: "#6d6759" };
-const FORMER_INK = { "--npc-name": { night: "#c07050", day: "#8a4a2a" }, "--npc-affection": { night: "#d68a8a", day: "#a8524a" } };
+const FORMER_INK = { "--npc-name": { night: "#cfa95a", day: "#8a4a2a" }, "--npc-affection": { night: "#c99bb2", day: "#a8524a" } };
 const TOKENS = readFileSync("src/ui/tokens.css", "utf-8");
 
 function block(selector) {

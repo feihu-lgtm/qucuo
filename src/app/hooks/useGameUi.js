@@ -184,7 +184,7 @@ export function useGameUi({
     panel: { display: "flex", flexDirection: "column", borderRight: `1px solid var(--border)`, minWidth: 0, overflow: "hidden" },
     label: {
       padding: isMobile ? "6px 14px" : "0 14px", minHeight: 38, boxSizing: "border-box", display: "flex", alignItems: "center", gap: 6,
-      color: "var(--accent-dim)", fontSize: "11px", letterSpacing: "2px",
+      color: "var(--text-dim)", fontSize: "11px", letterSpacing: "4px",
       borderBottom: "none", backgroundImage: `linear-gradient(180deg, transparent, transparent calc(100% - 1px), var(--border) calc(100% - 1px))`,
       flexShrink: 0,
     },

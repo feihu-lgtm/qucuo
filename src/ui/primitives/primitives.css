@@ -51,11 +51,14 @@
   white-space: nowrap;
   font-size: var(--fs-xs);
   letter-spacing: var(--ls-none);
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   border-radius: var(--radius-none);
   user-select: none;
   background: transparent;
   color: var(--text);
+}
+.ui-btn[data-variant="chrome"]:hover {
+  border-color: var(--border);
 }
 
 .ui-btn[data-variant="chrome"][aria-pressed="true"],

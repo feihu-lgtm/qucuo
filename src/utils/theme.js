@@ -70,7 +70,7 @@ export const NIGHT_VARS = Object.freeze({
 // 圆角阶：《长刀》线装书式的硬直角——全部归零，不再有 3/4/6/8 的圆角层级。
 export const RADIUS = { btn: 0, card: 0, modal: 0 };
 
-// 主界面统一按钮：一种底色/文字/边框；只有「当前开启」用朱红强调。
+// 主界面统一按钮：文字按钮，一种底色/文字；只有「当前开启」用朱红强调与细框。
 export function chromeBtn(theme, { active = false } = {}) {
   return {
     cursor: "pointer", display: "inline-flex", alignItems: "center", height: "var(--ctl-h)", padding: "0 var(--ctl-pad-x)",
@@ -78,6 +78,7 @@ export function chromeBtn(theme, { active = false } = {}) {
     borderRadius: "var(--radius-none)", userSelect: "none",
     color: active ? theme.accent : theme.text,
     background: active ? `color-mix(in srgb, ${theme.accent} 14%, transparent)` : "transparent",
-    border: `1px solid ${active ? theme.accent : theme.border}`,
+    // 夜色精修：主界面按钮是文字按钮，平时不描边（禁用清单「描边方框按钮」），只有开启态用朱红细框。
+    border: `1px solid ${active ? theme.accent : "transparent"}`,
   };
 }

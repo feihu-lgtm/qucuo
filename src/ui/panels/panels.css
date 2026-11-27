@@ -338,16 +338,14 @@
   min-width: 0;
 }
 
+/* 夜色精修：回合不再套框，正文收成一栏居中（约 44 字宽），回合之间留白。 */
 .narrative-group {
   border: 1px solid var(--center-group-border);
   border-radius: 0;
-  margin-bottom: 12px;
+  max-width: 44em;
+  margin: 0 auto 18px;
   background: var(--center-group-bg);
   overflow: hidden;
-  transition: border-color 180ms ease, background-color 180ms ease;
-}
-.narrative-group:hover {
-  border-color: color-mix(in srgb, var(--accent-dim) 60%, var(--border));
 }
 .narrative-group-header {
   display: flex;
@@ -365,11 +363,11 @@
   padding-bottom: 8px;
   border-bottom: 1px solid var(--center-group-divider);
 }
-.narrative-group-header:hover {
-  background: rgba(255, 255, 255, 0.02);
+.narrative-group-header:hover .narrative-group-arrow {
+  color: var(--text);
 }
 .narrative-group-arrow {
-  color: var(--accent-dim);
+  color: var(--text-dim);
   font-size: var(--fs-center-badge);
   flex-shrink: 0;
   width: 10px;
@@ -383,7 +381,7 @@
   margin-bottom: 0 !important;
 }
 .narrative-group-count {
-  color: var(--accent-dim);
+  color: var(--text-dim);
   font-size: var(--fs-center-badge);
   flex-shrink: 0;
 }
@@ -392,6 +390,10 @@
 }
 .narrative-group-body--indented {
   padding: 4px 14px 10px 32px;
+}
+/* 正文与行动行左对齐，不再缩进一级（框去掉后，缩进只会让正文显得悬空）。 */
+.narrative-group-body--indented {
+  padding-left: 14px;
 }
 .narrative-group-header--divided + .narrative-group-body,
 .narrative-group-header--divided + .narrative-group-body--indented {
