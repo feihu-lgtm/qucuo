@@ -9,6 +9,7 @@ const VAR_TREE = {
         fact_smith: { id: "fact_smith", 摘要: "铁匠铺新来了一批好钢。", 诞生回合: 12, 标签: "市井", 知晓者: { 才旦: { 途径: "目击", 得知回合: 12 } } },
         fact_secret: { id: "fact_secret", 摘要: "北库里藏着官银。", 诞生回合: 20, 知晓者: { 老孙: { 途径: "告知", 得知回合: 20 } } },
         fact_blank: { id: "fact_blank", 摘要: "", 诞生回合: 1, 知晓者: {} },
+        fact_alone: { id: "fact_alone", 摘要: "主角独自练拳有所精进。", 诞生回合: 30, 知晓者: {} },
       },
     },
     契约: {
@@ -34,6 +35,13 @@ describe("buildLivingClapboardEntries", () => {
     expect(entries.length).toBe(4); // 2 事实（空摘要不上板）+ 1 契约 + 1 宿敌（死者不上板）
     for (const e of entries) expect(CLAPBOARD_KINDS).toContain(e.kind);
     expect(entries.map((e) => e.kind).sort()).toEqual(["fact_index", "fact_index", "nemesis", "pact"]);
+  });
+
+  it("无人目击的事实不上板——空 witnesses 不泄成公共常识", () => {
+    const entries = buildLivingClapboardEntries({ varTree: VAR_TREE, time: 100 });
+    expect(entries.some((e) => e.id === "fact_fact_alone")).toBe(false);
+    // 有目击者的照常出列
+    expect(entries.some((e) => e.id === "fact_fact_secret")).toBe(true);
   });
 
   it("事实条目 witnesses=知晓者名单——不知情者在过滤层天然不可见", () => {

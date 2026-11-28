@@ -232,12 +232,22 @@ export const FIELDS = Object.freeze({
     "体感态势": (s) => renderDiegeticState({ char: s.char, inv: s.inv, time: s.time }),
   } },
   "clapboard.npcSoulFrames": { label: "在场活人切片", readOnly: true, refs: {
+    // WO-25B 预算闸：单人心账切片 160 字、全屋总预算 1600 封顶，人多房间不 token 膨胀。
+    // 在场名单优先取 visibleNpcsForAI——buildPresence 已把随行同伴并入并做过内层房过滤，
+    // 同伴随行在场却不上活人切片的缺口由此闭合；缺该键时（测试/直调）回退本地过滤口径。
     "在场活人切片": (s) => renderNpcSoulFrames({
-      visibleNpcs: (s.room?.npcs || []).filter((npc) =>
-        typeof s.innerRoomName !== "string" || isNpcVisibleInInnerRoom(s.room?.name, s.innerRoomName, npc)),
+      visibleNpcs: (Array.isArray(s.visibleNpcsForAI) ? s.visibleNpcsForAI : (s.room?.npcs || []))
+        // 移动轮 buildPresence 跳过内层房过滤（目的地内层未定），visibleNpcsForAI 会混入
+        // 出发据点别屋的人——状态渲染时玩家明明还在出发地内层房，别屋人不算在场。
+        // 故无论名单来源都再过一道内层房闸；随行同伴形影不离，凭 companion 旗标豁免。
+        .filter((npc) => npc?.companion
+          || typeof s.innerRoomName !== "string"
+          || isNpcVisibleInInnerRoom(s.room?.name, s.innerRoomName, npc)),
       varTree: s.varTree,
       time: s.time,
       clapboardEntries: s.clapboardEntries,
+      entriesBudget: 160,
+      totalBudget: 1600,
     }),
   } },
   "judge.verdict": {

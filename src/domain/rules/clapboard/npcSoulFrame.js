@@ -83,9 +83,11 @@ function warmthLine(npc, attrs) {
 // 为每位在场角色输出独立分块 { name, text }。
 // clapboardEntries 经 filterEntriesForViewer 按该角色视角过滤——raw_memory 条目的
 // 他人心理（rawText）在过滤层已被覆写成 publicText，想泄也泄不出去。
-export function buildNpcSoulFrames({ visibleNpcs = [], varTree = {}, time = 0, clapboardEntries = [], entriesBudget = 200 } = {}) {
-  return (Array.isArray(visibleNpcs) ? visibleNpcs : []).map((npc) => {
-    if (!npc?.name) return null;
+export function buildNpcSoulFrames({ visibleNpcs = [], varTree = {}, time = 0, clapboardEntries = [], entriesBudget = 200, totalBudget = Infinity } = {}) {
+  const frames = [];
+  let used = 0;
+  for (const npc of (Array.isArray(visibleNpcs) ? visibleNpcs : [])) {
+    if (!npc?.name) continue;
     const attrs = varTree?.角色?.[npc.name] || {};
     const lines = [];
     const persona = personaLine(npc);
@@ -104,8 +106,13 @@ export function buildNpcSoulFrames({ visibleNpcs = [], varTree = {}, time = 0, c
     const visible = filterEntriesForViewer(clapboardEntries, npc.name);
     const section = renderClapboardSection(visible, entriesBudget);
     if (section) lines.push(`其所知所见：${section}`);
-    return { name: npc.name, text: `【${npc.name}】${lines.join("；")}` };
-  }).filter(Boolean);
+    const frame = { name: npc.name, text: `【${npc.name}】${lines.join("；")}` };
+    // WO-25B 全屋总预算封顶：整块取舍不截半句——人多的房间按在场序装到预算耗尽。
+    if (used + frame.text.length > totalBudget) continue;
+    frames.push(frame);
+    used += frame.text.length;
+  }
+  return frames;
 }
 
 // 渲染成提示词段落（@在场活人切片 引用值）：一人一块，块间换行。

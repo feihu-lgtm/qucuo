@@ -32,6 +32,10 @@ function factEntries(facts, time) {
   for (const fact of Object.values(facts || {})) {
     if (!fact?.id || !fact.摘要) continue; // 还没填词的事实无实物可上板
     const witnesses = Object.keys(fact.知晓者 || {});
+    // 无目击者的事实不上板：witnesses 空在过滤层语义是「公共常识」——
+    // 独自修炼这类无人亲见的事若出列，会被当成众所周知泄给不相干的 NPC。
+    // 在场活人切片只服务 NPC 视角，无人知晓的事实本就无人可讲，跳过即正确。
+    if (!witnesses.length) continue;
     out.push(createClapboardEntry({
       id: `fact_${fact.id}`,
       kind: "fact_index",
