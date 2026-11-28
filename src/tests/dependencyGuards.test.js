@@ -72,6 +72,8 @@ const ENTRY_WHITELIST = new Set([
   // WO-25D/E 内核消费与 WO-25G 首批数据包接线后从此名单摘掉。
   "domain/rules/livingWorld/worldRegistry.js",
   "domain/data/livingWorld/index.js",
+  // WO-25D 世界状态求值与覆写裁决：纯函数先落库，WO-25E/F 脉冲与投影接线后从此名单摘掉。
+  "domain/rules/livingWorld/evalWorld.js",
 ]);
 
 function walkSource(dir, out = []) {
