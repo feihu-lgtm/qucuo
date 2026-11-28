@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { factionOfDistrict, factionRepDeltas, grantFactionRep, factionRepLabel, factionShopCoef, listFactionRep } from "./factionRep.js";
+import { factionOfDistrict, factionRepDeltas, grantFactionRep, applyFactionRep, factionRepLabel, factionShopCoef, listFactionRep } from "./factionRep.js";
 import { resolveStageRewards, stageRewardPatches } from "../quests/questRewards.js";
 import { applyPatches } from "../state/applyPatches.js";
 import { applyMvuCommands } from "../prompt/mvu.js";
@@ -105,5 +105,66 @@ describe("system-granted reputation", () => {
     expect(varTree.世界.势力声誉).toMatchObject({ 峨眉派: 60, 天龙教: -10, 五仙教: -10 });
     expect(applied).toEqual({ 峨眉派: 20, 天龙教: -10, 五仙教: -10 });
     expect(grantFactionRep(tree({ 峨眉派: 100 }), { 峨眉派: 20 }).applied).toEqual({});
+  });
+});
+
+describe("WO-25I 声誉联动张力", () => {
+  it("大幅帮助某势力后，它与其死对头的张力上升", async () => {
+    const { getTension } = await import("../conflict/tension.js");
+    const { BASE_TENSION, tensionKey } = await import("../../data/factions/npcFactions.js");
+    const base = BASE_TENSION[tensionKey("青城派", "天龙教")] ?? 0;
+    const before = { 世界: { 势力声誉: {}, tension: {} } };
+    // 拜入式系统直结：青城派 +20
+    const { applied, varTree } = grantFactionRep(before, { 青城派: 20 });
+    expect(applied.青城派).toBe(20);
+    expect(getTension(varTree.世界.tension, "青城派", "天龙教")).toBeGreaterThan(base);
+    expect(getTension(varTree.世界.tension, "青城派", "唐门")).toBeGreaterThan(BASE_TENSION[tensionKey("青城派", "唐门")] ?? 0);
+  });
+
+  it("涨 5 点掀 1 点张力、只涨联动跌不浇油", async () => {
+    const { getTension } = await import("../conflict/tension.js");
+    const { BASE_TENSION, tensionKey } = await import("../../data/factions/npcFactions.js");
+    const base = BASE_TENSION[tensionKey("青城派", "天龙教")] ?? 0;
+    const start = { 世界: { 势力声誉: {}, tension: {} } };
+    const small = grantFactionRep(start, { 青城派: 5 }).varTree;
+    expect(getTension(small.世界.tension, "青城派", "天龙教")).toBe(base + 1);
+    const down = grantFactionRep({ 世界: { 势力声誉: { 青城派: 30 }, tension: {} } }, { 青城派: -20 }).varTree;
+    expect(getTension(down.世界.tension, "青城派", "天龙教")).toBe(base);
+    // 声誉到顶不实涨 → 不升温
+    const capped = grantFactionRep({ 世界: { 势力声誉: { 青城派: 100 }, tension: {} } }, { 青城派: 20 }).varTree;
+    expect(getTension(capped.世界.tension, "青城派", "天龙教")).toBe(base);
+  });
+
+  it("applyFactionRep 同口径联动（限幅内实涨才计）", async () => {
+    const { getTension } = await import("../conflict/tension.js");
+    const { BASE_TENSION, tensionKey } = await import("../../data/factions/npcFactions.js");
+    const out = applyFactionRep({ 世界: { 势力声誉: {} } }, { 青城派: 10 });
+    expect(getTension(out.世界.tension, "青城派", "天龙教")).toBeGreaterThan(BASE_TENSION[tensionKey("青城派", "天龙教")] ?? 0);
+  });
+});
+
+describe("WO-25I Review 钉死", () => {
+  it("ripple:false 隐秘援助不升温（暗中出手不该搅动公开张力）", async () => {
+    const { getTension, BASE_TENSION, tensionKey } = await import("../../data/factions/npcFactions.js").then(async (m) => {
+      const t = await import("../conflict/tension.js");
+      return { getTension: t.getTension, BASE_TENSION: m.BASE_TENSION, tensionKey: m.tensionKey };
+    });
+    const key = tensionKey("青城派", "天龙教");
+    const base = BASE_TENSION[key] ?? 0;
+    const out = applyFactionRep({ 世界: { 势力声誉: {}, tension: {} } }, { 青城派: 20 }, { ripple: false });
+    expect(getTension(out.世界.tension, "青城派", "天龙教")).toBe(base);
+    // 公开援助对照：升温
+    const open = applyFactionRep({ 世界: { 势力声誉: {}, tension: {} } }, { 青城派: 20 });
+    expect(getTension(open.世界.tension, "青城派", "天龙教")).toBeGreaterThan(base);
+  });
+
+  it("同时帮冤家双方不双倍升温（同一对子按最高热度只调一次）", async () => {
+    const { getTension } = await import("../conflict/tension.js");
+    const { BASE_TENSION, tensionKey } = await import("../../data/factions/npcFactions.js");
+    const base = BASE_TENSION[tensionKey("青城派", "天龙教")] ?? 0;
+    // 青城+20 / 天龙+20 同时落账：pair 只按最高热度调一次（20→4点），不是 4+4=8
+    const both = grantFactionRep({ 世界: { 势力声誉: {}, tension: {} } }, { 青城派: 20, 天龙教: 20 }).varTree;
+    const heat = getTension(both.世界.tension, "青城派", "天龙教") - base;
+    expect(heat).toBe(4);
   });
 });

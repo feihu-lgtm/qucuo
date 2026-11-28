@@ -1,6 +1,7 @@
 import React from "react";
 import { random } from "../../../utils/rng.js";
 import { useGameStore } from "../../../store/gameStore.js";
+import { useTeahouseEventTexts } from "../../../app/hooks/teahouseEvents.js";
 import { Overlay, Header, Btn } from "./common.jsx";
 
 // 茶馆：花少量银两听掌柜说话，注入随机传闻
@@ -25,7 +26,10 @@ export default function TeahouseScreen({ building, char, flags, time, onClose, i
   const worldRumors = useGameStore((s) => s.varTree?.世界?.传闻);
   const dynamicTexts = (Array.isArray(worldRumors) ? worldRumors : [])
     .map((r) => String(r?.text || "").trim()).filter(Boolean).slice(-8);
-  const pool = [...dynamicTexts, ...dynamicTexts, ...RUMORS];
+  // WO-25I：已传到本据点的世界事件（事件录按地图跳数逐日扩散）混进茶馆风声——
+  // 距离近的先听到、远隔重山的后听到。新鲜时事权重同传闻账翻倍。
+  const eventTexts = useTeahouseEventTexts(6);
+  const pool = [...dynamicTexts, ...dynamicTexts, ...eventTexts, ...eventTexts, ...RUMORS];
 
   return (
     <Overlay onClose={onClose} inline={inline}>
