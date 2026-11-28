@@ -1,10 +1,10 @@
 [
   {
-    "version": "v0.11.2",
-    "codename": "活世界回响",
-    "time": "2026-11-29 01:03",
+    "version": "v0.12.0",
+    "codename": "路遇落账",
+    "time": "2026-11-29 01:09",
     "notes": [
-      "WO-25I 茶馆传闻接通世界事件跳数传播+备料输入带入局势风声+声望联动张力升温"
+      "WO-25P materializeFacts 路遇五组事实码与 roadEventWrites 落账"
     ]
   },
   {
