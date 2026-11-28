@@ -22,6 +22,8 @@ export function registerWorldPack(registry, pack) {
     throw new Error("registerWorldPack: pack 缺 id 或 registry 非法");
   }
   if (registry.packs.includes(pack.id)) return registry; // 幂等
+  // 第一阶段全量校验：任一冲突即整包拒收，绝不留下半截注册。
+  const toInsert = [];
   for (const table of LIVING_TABLES) {
     for (const entry of pack[table] || []) {
       if (!entry || typeof entry.id !== "string" || !entry.id) {
@@ -29,14 +31,25 @@ export function registerWorldPack(registry, pack) {
       }
       const dup = registry[table].find((existing) => existing.id === entry.id);
       if (dup) {
-        if (JSON.stringify(dup) === JSON.stringify(entry)) continue; // 同名同内容容忍
+        if (canonicalJson(dup) === canonicalJson(entry)) continue; // 同名同内容容忍
         throw new Error(`registerWorldPack: ${table} 重名 id「${entry.id}」（${pack.id} 与已注册包冲突）`);
       }
-      registry[table].push({ ...entry });
+      toInsert.push([table, entry]);
     }
   }
+  // 第二阶段写入（此时已无失败路径）
+  for (const [table, entry] of toInsert) registry[table].push({ ...entry });
   registry.packs.push(pack.id);
   return registry;
+}
+
+// 键序无关的规范化序列化：两个包各自声明同一条目时，属性书写顺序不同不算冲突。
+function canonicalJson(value) {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value).sort().map((k) => `${JSON.stringify(k)}:${canonicalJson(value[k])}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
 }
 
 // ── 静态校验 ─────────────────────────────────────────────────────────────
@@ -51,6 +64,10 @@ function walkPredicates(node, visit) {
   if (!node) return;
   if (Array.isArray(node)) {
     for (const child of node) walkPredicates(child, visit);
+    return;
+  }
+  if (typeof node === "string") {
+    visit({ type: "worldState", id: node }); // 简写："ws_x" 等价于 { type: "worldState", id: "ws_x" }
     return;
   }
   if (typeof node !== "object") return;
@@ -162,15 +179,6 @@ export function validateWorldPacks(registry) {
         errors.push(`roamingSquads「${sq.id}」引用未声明的 worldState「${pred.id}」`);
       }
     });
-    for (const wsId of [].concat(sq.when && Array.isArray(sq.when) ? sq.when : [])) {
-      if (typeof wsId === "string" && !wsIds.has(wsId)) errors.push(`roamingSquads「${sq.id}」引用未声明的 worldState「${wsId}」`);
-    }
-    // when 数组简写（["ws_x"]）也校验
-    if (Array.isArray(sq.when)) {
-      for (const wsId of sq.when) {
-        if (typeof wsId === "string" && !wsIds.has(wsId)) errors.push(`roamingSquads「${sq.id}」引用未声明的 worldState「${wsId}」`);
-      }
-    }
     for (const key of ["clearSituation", "addTargetSituation"]) {
       const ref = sq.onArrive?.[key] || sq.onDefeated?.[key];
       if (ref && !sitIds.has(ref)) errors.push(`roamingSquads「${sq.id}」${key} 引用未声明的 situation「${ref}」`);

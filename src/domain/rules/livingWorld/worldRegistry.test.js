@@ -99,6 +99,39 @@ describe("WO-25C worldRegistry", () => {
     expect(validateWorldPacks(registry).some((e) => e.includes("不连通"))).toBe(true);
   });
 
+  it("冲突拒收不留半截注册（整包原子）", () => {
+    const registry = createLivingWorldRegistry();
+    registerWorldPack(registry, validPack());
+    const bad = {
+      id: "pack_atomic",
+      worldStates: [
+        { id: "ws_new", label: "新状态", when: { type: "flag", flag: "f9" } }, // 新条目在前
+        { id: "ws_a", label: "冲突的甲", when: { type: "flag", flag: "fz" } }, // 重名冲突在后
+      ],
+    };
+    expect(() => registerWorldPack(registry, bad)).toThrow(/重名 id/);
+    expect(registry.packs).toEqual(["test_pack"]);
+    expect(registry.worldStates.find((w) => w.id === "ws_new")).toBeUndefined(); // 半截不残留
+  });
+
+  it("同名同内容属性键序不同不算冲突", () => {
+    const registry = createLivingWorldRegistry();
+    registerWorldPack(registry, validPack());
+    const reordered = {
+      id: "pack_reorder",
+      worldStates: [{ when: { type: "flag", flag: "f1" }, label: "状态甲", id: "ws_a" }], // 键序颠倒
+    };
+    expect(() => registerWorldPack(registry, reordered)).not.toThrow();
+  });
+
+  it("嵌套 not 下的字符串简写引用未声明 worldState 报错", () => {
+    const registry = createLivingWorldRegistry();
+    const pack = validPack();
+    pack.roamingSquads[0].when = { not: ["ws_typo"] };
+    registerWorldPack(registry, pack);
+    expect(validateWorldPacks(registry).some((e) => e.includes("ws_typo"))).toBe(true);
+  });
+
   it("未知谓词类型报错", () => {
     const registry = createLivingWorldRegistry();
     registerWorldPack(registry, {
