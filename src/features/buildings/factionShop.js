@@ -180,6 +180,30 @@ const FACTION_SHOPS = {
     hostileItems: ["玫瑰花酿", "祛瘴花茶"],
     coldItems: ["玫瑰花酿", "祛瘴花茶", "苗银花簪刺"],
   },
+  外姓护法堂: {
+    faction: "萨迦世家", idPrefix: "sajia_purchase",
+    outlets: { sectshop_sajia: "vault" },
+    nowhere: "须到丹霞城外姓护法堂才能买萨迦世家的法器。",
+    banned: "达尔巴把金铜飞轮往案上一扣：「萨迦不与死敌交易。」",
+    hostileClosed: {},
+    hostileQualities: ["白", "绿"],
+  },
+  四大八小盘道廊: {
+    faction: "噶举山人", idPrefix: "gaju_purchase",
+    outlets: { sectshop_gaju: "vault" },
+    nowhere: "须到焚风渡四大八小盘道廊才能买噶举山人的器物。",
+    banned: "楚臣合上木匣：「白门盘道廊不接你的来意，下山吧。」",
+    hostileClosed: {},
+    hostileQualities: ["白", "绿"],
+  },
+  掘藏奇珍阁: {
+    faction: "古象雄苯门", idPrefix: "benmen_purchase",
+    outlets: { sectshop_benmen: "vault" },
+    nowhere: "须到琼隆古墟掘藏奇珍阁才能买苯门的天铁秘物。",
+    banned: "阿旺把掘藏钢钎往门槛前一插：「黑门的东西，不给外贼。」",
+    hostileClosed: {},
+    hostileQualities: ["白", "绿"],
+  },
 };
 
 export const isFactionShop = (shopKey) => !!FACTION_SHOPS[shopKey];

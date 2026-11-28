@@ -209,7 +209,7 @@ describe("dealResult / 移动契约", () => {
         getGameState: () => ({ ...state, roomCache: { 鱼定土司: { npcs: [{ name: "管家" }], items: [{ name: "凳子" }] } } }) });
     commitRound(deps);
     expect(state.room.name).toBe("鱼定土司");
-    expect(state.room.exits).toEqual(["e"]);
+    expect(state.room.exits).toEqual(["e", "n"]);
     expect(state.room.desc).toBe("AI 写的场景");
     expect(state.room.npcs).toEqual([{ name: "管家" }]);
     expect(state.room.items).toEqual([{ name: "凳子" }]);

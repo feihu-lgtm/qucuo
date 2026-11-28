@@ -420,3 +420,4 @@ CI 有硬门禁：`npm run docs-gate` 会读取 PR 相对 base 的文件清单�
 | 夜班急修·决斗队列空转复发根治：U 链打字路径 runDeferred（execute/条件步触发两处）补传 autoProceedAfterLook——未端详 NPC 静默端详直拉邀战，不再走 act("look")+return 老路致邀战永不落地；useDuel/useIntentRouter 回归测试钉死（无修复则红） | 已开 PR 未合并 |
 | 银两账务叙事矛盾修复：MAIN_STATE_TEMPLATE VITALS 补喂 银两:@银两（fields char.money 注册 refs，此前主叙事从不喂玩家银两，哭穷摆阔全凭模型瞎编）+[银两铁律]入状态块（禁写系统未结算的收付钱/伙计结账情节）+intake outcome 指引消费类动作一律填破费（freeAct 查价链 deterministic 扣账通道命中率） | 待合 #621 |
 | 金鸟金蛋 AI 开奖补全：系统侧 rollEggSpecial 先掷（假阳具/女眷一次卡各 7.5%），命中则 prompt 明写必开照抄+reaction 定向（羞态/肉疼）且回包名字系统强校，AI 失败不退奖池改手写兜底守概率；未命中走 AI 自由开奖（sys copy 禁自造情趣/卡券）；开奖结果挂 result.fact 走 registerFact 记忆链（朵朵+在场 NPC 目击），AI/兜底两路同挂 | 已开 PR 未合并 |
+| 雪域三宗与打箭炉落地（#661 代码实现）：`FACTION_NAMES` 新增萨迦世家、噶举山人、古象雄苯门至 19 家，同步更新 `actCall` 黄金快照中的势力枚举文本；AI 调用链本次行为不变 | 待合 feat/snowland-three-sects |

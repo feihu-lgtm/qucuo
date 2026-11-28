@@ -99,6 +99,21 @@ export const HOSTILE_CLOSURES = [
     buildings: ["sanxing_sect_shop"],
     closed: "秘藏阁门前立起了杀戒铜牌，守阁弟子一言不发，只把青铜剑横在门前。",
   },
+  {
+    faction: "萨迦世家",
+    buildings: ["sect_entry_sajia", "wuguan_sajia", "sectshop_sajia", "bounty_sajia", "temple_sajia"],
+    closed: "三色花墙下的护院武僧横戟拦住去路：「花门大院有令，不迎仇敌入内。」",
+  },
+  {
+    faction: "噶举山人",
+    buildings: ["sect_entry_gaju", "wuguan_gaju", "sectshop_gaju", "hospital_gaju", "temple_gaju"],
+    closed: "白石山门前百幡低垂，盘道人冷声道：「焚风渡不留你这样的人。」",
+  },
+  {
+    faction: "古象雄苯门",
+    buildings: ["sect_entry_benmen", "wuguan_benmen", "sectshop_benmen", "library_benmen", "hospital_benmen", "temple_benmen"],
+    closed: "左旋经轮忽然卡死，黑石门卫拔出钢钎：「黑门之内，死敌止步。」",
+  },
 ];
 
 export function hostileClosureOf(buildingId, varTree) {

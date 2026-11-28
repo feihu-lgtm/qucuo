@@ -27,7 +27,7 @@ describe("美术素材登记表", () => {
     }
   });
 
-  it("21 个外层据点的头图都已入库", () => {
+  it("25 个外层据点的头图都已入库", () => {
     expect(Object.keys(PLACE_ART).sort()).toEqual(Object.keys(QUCUO_MAP).sort());
   });
 
@@ -65,8 +65,8 @@ describe("美术素材登记表", () => {
 
   it("每日过路人的身份模板与 WebP 立绘一一对应，随机性别各有一张", () => {
     const roles = new Set(["鱼定村", "散人", ...FACTIONS.map(({ name }) => name)].flatMap(passerRolesOf));
-    const keys = [...roles].flatMap(({ art, gender }) => gender
-      ? [`passer-${art}`] : [`passer-${art}-male`, `passer-${art}-female`]);
+    const keys = [...new Set([...roles].flatMap(({ art, gender }) => gender
+      ? [`passer-${art}`] : [`passer-${art}-male`, `passer-${art}-female`]))];
     expect(readdirSync("public/art/passer").sort()).toEqual(keys.map((key) => `${key}.webp`).sort());
   });
 });

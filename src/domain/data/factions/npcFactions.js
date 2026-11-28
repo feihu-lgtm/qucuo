@@ -17,6 +17,9 @@ export const FACTION = {
   WUXIAN: "五仙教",
   TIANLONG: "天龙教",
   SANXING: "三星派",
+  SAJIA: "萨迦世家",
+  GAJU: "噶举山人",
+  BENMEN: "古象雄苯门",
 };
 
 const F = FACTION;
@@ -37,6 +40,9 @@ const MEMBERS = {
   [F.TIANLONG]: ["resident_litianxing", "resident_xuedao_chuqi", "resident_xuedao_shisan", "resident_xuedao_niansan", "resident_licanglong", "resident_licangtian", "resident_helanzhao",
     "resident_jiwushuang", "resident_fanweili", "resident_rentianxiang", "resident_lingxianger", "resident_luona", "resident_luoshejun"],
   [F.SANXING]: ["resident_zongmuzhe", "resident_qingtong_jia", "resident_qingtong_yi", "resident_qingtong_bing"],
+  [F.SAJIA]: ["resident_sajia_wangdui", "resident_genqiu", "resident_suolangjianzan", "resident_daerba", "resident_awangbanzhida", "resident_zhuomajia", "resident_danbajianzan"],
+  [F.GAJU]: ["resident_fenfeng_duoji", "resident_renqing", "resident_chilie", "resident_canlian", "resident_randeng", "resident_mingkong", "resident_chuchen", "resident_baiyishaonian"],
+  [F.BENMEN]: ["resident_qiongbo", "resident_qionglong_gongbu", "resident_muyazhongba", "resident_agudunba", "resident_qionglong_awang", "resident_yongcuo", "resident_sangjijianzan"],
 };
 
 const NPC_FACTION = new Map(
@@ -67,6 +73,7 @@ const TENSION_PAIRS = [
   [F.YUDING, F.TIANLONG, 20], [F.LAMA, F.HUANXI, 20], [F.LAMA, F.TIANLONG, 20],
   [F.HEIFENG, F.TIANLONG, 20], [F.QINGCHENG, F.TANGMEN, 20], [F.EMEI, F.TANGMEN, 20],
   [F.TIANLONG, F.GUAN, 20],
+  [F.LAMA, F.BENMEN, 20], [F.SAJIA, F.BENMEN, 20],
 ];
 
 export const tensionKey = (a, b) => [a, b].sort().join("|");

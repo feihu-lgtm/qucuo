@@ -36,7 +36,7 @@ const GROUND_ITEMS_DISTRICT_LEGACY = {
     { name: "裂了缝的木鱼", category: "misc", quality: "白", desc: "蒲团边滚着一只裂了缝的木鱼，漆剥得斑斑驳驳，敲上去声音发闷，不知被哪位小僧遗在这。" },
     { name: "刻字玛尼石", category: "misc", quality: "白", desc: "经幡柱脚压着一块刻了六字真言的玛尼石，字口被风雨磨浅了，石面却被人摸得温润。" },
   ],
-  "白塔·塔基": [
+  "白塔·塔基石柱前院": [
     { name: "锈蚀旧箭镞", category: "weapon", quality: "绿", desc: "塔基石缝里卡着一枚锈蚀的旧箭镞，三棱的锋还透着冷意，不知是哪年守塔人留下的。" },
     { name: "剥落的灰泥块", category: "misc", quality: "白", desc: "檐下剥落一大块灰泥，里头夹着碎草筋，摔在阶上碎成几瓣，露出塔身里头早朽的木骨。" },
     { name: "锈死的铜铃", category: "misc", quality: "白", desc: "塔角悬的铜铃锈死了，风再大也不响，铃身一道裂口，像张着嘴却发不出声。" },
@@ -148,6 +148,18 @@ export const GROUND_ITEMS_INNER = {
   ],
   "天龙营·风沙客帐": [
     { name: "烧剩的胡杨炭", category: "misc", quality: "白", desc: "火塘边滚着两块烧剩的胡杨炭，还带点火星味。掌柜的说这炭一炉能烧整夜，烧透了才是真待客。" },
+  ],
+  "打箭炉·炉城东关": [
+    { name: "雅州边茶碎角", category: "misc", quality: "白", desc: "石关门槛下掉着一块茶砖磕碎的边角，茶梗紧实，沾着骡马帮的干泥。" },
+  ],
+  "丹霞城·丹霞外城街": [
+    { name: "红盐粗晶粒", category: "misc", quality: "白", desc: "纳租车辙旁散落着几粒发红的井盐晶块，是庄户交租时从麻袋缝里漏出来的。" },
+  ],
+  "焚风渡·焚风牛皮渡": [
+    { name: "渡口风干羊皮绳", category: "misc", quality: "白", desc: "渡口拴筏木桩上绕着一截换下来的旧羊皮绳，被河风吹得硬邦邦。" },
+  ],
+  "琼隆古墟·对转铁索桥": [
+    { name: "半枚碎黑铜钱", category: "misc", quality: "白", desc: "铁索桥石墩缝隙里卡着半枚逆旋纹旧铜钱，像是两个教派武士顶牛时撞掉的。" },
   ],
 };
 

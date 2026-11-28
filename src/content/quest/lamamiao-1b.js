@@ -158,8 +158,8 @@ export default { quest: {
       {
         id: "decide",
         giver: null,
-        requireLocation: { district: "白塔", inner: "塔基" },
-        playerHint: "回白塔塔基，决定这盏油灯与背后的情报怎么处置。",
+        requireLocation: { district: "白塔", inner: "塔基石柱前院" },
+        playerHint: "回白塔塔基石柱前院，决定这盏油灯与背后的情报怎么处置。",
         description: "风从塔顶吹下来，油灯的鎏金在你手里发烫。",
         completionFlag: ["flag_lamat1_return", "flag_lamat1_official", "flag_lamat1_smash"],
         choices: [

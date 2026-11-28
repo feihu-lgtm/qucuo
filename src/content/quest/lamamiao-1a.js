@@ -116,8 +116,8 @@ export default { quest: {
     stages: [
       {
         id: "pagoda",
-        requireLocation: { district: "白塔", inner: "塔基" },
-        playerHint: "在白塔塔基见守塔首座罗布桑。",
+        requireLocation: { district: "白塔", inner: "塔基石柱前院" },
+        playerHint: "在白塔塔基石柱前院见守塔首座罗布桑。",
         description: "罗布桑递给你一封乌金手信：「持此去雪山派，见何雨谢夫人。夹注里那枚玉佩若真是呼延大侠的，她认得。」",
         completionFlag: "quest_lama3_letter",
       },

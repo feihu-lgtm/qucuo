@@ -236,10 +236,10 @@ describe("inner movement logic", () => {
   it("plans auto-travel only through explored nodes and unlocked destinations", () => {
     const state = {
       ...makeState({ room: { name: "鱼定村" } }),
-      mapData: { 鱼定村: {}, 雅江: {} },
+      mapData: { 鱼定村: {}, 打箭炉: {}, 雅江: {} },
     };
 
-    expect(planAutoTravel(state, "雅江")).toEqual({ locked: false, path: ["e"] });
+    expect(planAutoTravel(state, "雅江")).toEqual({ locked: false, path: ["e", "e"] });
     expect(planAutoTravel(state, "黑风寨")).toEqual({ locked: true, path: null });
   });
 });

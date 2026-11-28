@@ -35,6 +35,10 @@ export const PLACE_ART = Object.freeze({
   "蜀南唐堡": "L19",
   "心灵之海": "L20",
   "第三新东京市": "L21",
+  "打箭炉": "L09",
+  "丹霞城": "L03",
+  "焚风渡": "L11",
+  "琼隆古墟": "L04",
 });
 
 export const BUILDING_ART = Object.freeze({

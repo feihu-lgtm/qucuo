@@ -16,7 +16,7 @@ describe("blocked direction notice", () => {
   it("omits an outer route whose destination is quest-locked", () => {
     const exits = passableExits(QUCUO_MAP["玉泉寨"].exits, { layer: "outer", questProgress: {}, flags: [] });
     expect(exits).not.toHaveProperty("w");
-    expect(exits).toEqual({ n: "大草甸", e: "贡措海" });
+    expect(exits).toEqual({ n: "大草甸", e: "贡措海", s: "焚风渡" });
   });
 
   it("omits an inner route whose destination is stat-locked", () => {
