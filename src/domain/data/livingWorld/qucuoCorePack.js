@@ -163,7 +163,7 @@ export const qucuoCorePack = {
       members: ["pool_zhang_shang", "pool_dao_scar"],
       combatPower: 40,
       onArrive: { clearSituation: "sit_herb_shortage", boostPower: 2 },
-      onDefeated: { addTargetSituation: "sit_herb_shortage", tensionDelta: 12 },
+      onDefeated: { addTargetSituation: "sit_road_blockade", tensionDelta: 12 },
     },
     {
       id: "sq_tusi_patrol",
@@ -184,7 +184,7 @@ export const qucuoCorePack = {
       when: { not: ["ws_heifeng_broken"] },
       members: ["pool_da_hu", "pool_young_xia"],
       combatPower: 42,
-      onDefeated: { addTargetSituation: "sit_road_blockade", tensionDelta: 12 },
+      onDefeated: { tensionDelta: 12 },
     },
     {
       id: "sq_xueshan_pilgrims",
