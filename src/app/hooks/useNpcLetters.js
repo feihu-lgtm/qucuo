@@ -9,6 +9,7 @@ import { pactLetterView } from "../../features/pigeon/pactLetter.js";
 import { createWebAi } from "../../engine/ports/ai.js";
 import { withAI } from "../../engine/ports/withAI.js";
 import "../../domain/rules/prompt/calls/sideCalls.js";
+import * as importedRegistry from "../../domain/rules/cards/importedRegistry.js";
 import { turnMonitor } from "../../infra/turnMonitor.js";
 import { OVERLAY, useOverlay } from "../../store/uiStore.js";
 import { playLetterChime } from "../../infra/sfx.js";
@@ -25,7 +26,7 @@ export function useNpcLetters({ apiCfg }) {
     const epoch = getGameEpoch();
     const isStale = () => isGameEpochStale(epoch);
     const state = gameStore.getState();
-    const npc = findNpcObject(state, letter.npcName);
+    const npc = findNpcObject(state, letter.npcName, importedRegistry);
     let text = null;
     try {
       const { ok, text: aiText } = await withAI("pigeon.inbound", {
