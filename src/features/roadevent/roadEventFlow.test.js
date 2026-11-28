@@ -314,3 +314,52 @@ describe("WO-25O 三轮复审修包回归（买卖/罚没分治）", () => {
     expect(settled.logs.some((l) => String(l.text).includes("习得武学"))).toBe(false); // 也不授
   });
 });
+
+describe("WO-25O 四轮复审修包回归（自愿/被迫分治）", () => {
+  it("香火钱换福报也是交易：付不起则声望一并不得，不留「先欠着」", async () => {
+    const { eligibleEvents } = await import("../../domain/rules/livingWorld/roadEvents.js");
+    const { settleRoadEventChoice } = await import("./settle.js");
+    const state = makeState();
+    state.char.money = 5;
+    const pool = ["天都镇", "打箭炉", "丹霞城", "焚风渡", "琼隆古墟"].flatMap((n) => eligibleEvents(state, n));
+    // win/alt 里 silver 负码+rep 正码（无 item/skill）——布施/香火型交易
+    const offering = pool.find((e) => ["win", "alt"].some((f) => /silver:-/.test(e[f] || "") && /rep:[^+\-|]+\+/.test(e[f] || "") && !/item:|skill:/.test(e[f] || "")));
+    if (!offering) throw new Error("池里应有布施型事件");
+    const field = /silver:-/.test(offering.win || "") && /rep:/.test(offering.win || "") ? "main" : "alt";
+    const roll = {
+      eventId: offering.id, destNode: "天都镇", day: 4, turn: 100,
+      cast: { kind: "passer", name: "行脚僧" }, situations: [],
+      options: [
+        { key: "main", label: "布施", check: offering.check, dc: offering.dc, rate: 100 },
+        { key: "alt", label: "添油", check: null, rate: 100 },
+        { key: "leave", label: "离开", check: null, rate: 100 },
+      ],
+    };
+    const settled = settleRoadEventChoice({ roll, optionKey: field, state, rng: () => 0 });
+    expect(settled.logs.some((l) => String(l.text).includes("囊中羞涩"))).toBe(true);
+    expect(settled.logs.some((l) => String(l.text).includes("银两"))).toBe(false);
+    expect(settled.logs.some((l) => String(l.text).includes("声望"))).toBe(false); // 福报也不白得
+  });
+
+  it("付得起则照常：代价照扣、好处照得", async () => {
+    const { eligibleEvents } = await import("../../domain/rules/livingWorld/roadEvents.js");
+    const { settleRoadEventChoice } = await import("./settle.js");
+    const state = makeState();
+    state.char.money = 500;
+    const pool = ["天都镇", "打箭炉"].flatMap((n) => eligibleEvents(state, n));
+    const buy = pool.find((e) => /silver:-/.test(e.win || "") && /item:/.test(e.win || ""));
+    if (!buy) throw new Error("池里应有买货事件");
+    const roll = {
+      eventId: buy.id, destNode: "天都镇", day: 4, turn: 100,
+      cast: { kind: "passer", name: "行脚货郎" }, situations: [],
+      options: [
+        { key: "main", label: "买下", check: buy.check, dc: buy.dc, rate: 100 },
+        { key: "alt", label: "看看", check: null, rate: 100 },
+        { key: "leave", label: "离开", check: null, rate: 100 },
+      ],
+    };
+    const settled = settleRoadEventChoice({ roll, optionKey: "main", state, rng: () => 0 });
+    expect(settled.logs.some((l) => String(l.text).includes("囊中羞涩"))).toBe(false);
+    expect(settled.logs.some((l) => String(l.text).includes("银两"))).toBe(true);
+  });
+});

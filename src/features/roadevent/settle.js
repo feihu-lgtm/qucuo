@@ -75,32 +75,29 @@ export function nameWarrantFacts(facts, idSeed = "") {
   });
 }
 
-// 囊中羞涩护栏——先辨「买卖」再轧账，两种银两负流水身份迥异：
-//   买货：silver 负流水与 warrant 货品（item/skill）同批签发——是交易，
-//         付不起就整笔不成立（代价与货品一并撤销，不付不收两讫）；
-//   罚没：silver 负流水不带货品（劫匪落败、赔偿之类）——是损失，
-//         与购买力无关，永远照扣（materializeFacts 钳到零，有多少损失多少，
-//         光棍被抢光了也认——绝不能因穷免罚）。
-function dropUnaffordablePurchase(facts, state) {
+// 囊中羞涩护栏——按「自愿/被迫」分治，不按事实形状配对（配对猜不准）：
+//   自愿交易（主选成功/次选）：银两负流水是代价，其余事实是换来的好处——
+//     付不起则整笔不成立，全部撤销（不付不得两讫：无论是货品/武学/声望/线索，
+//     香火钱换福报与买刀买艺同理，不存在「先欠着」）。
+//   被迫损失（主选失败）：劫匪落败、赔偿之流与购买力无关——永远照扣，
+//     materializeFacts 钳到零，光棍被抢光也认，绝不因穷免罚。
+function dropUnaffordablePurchase(facts, state, voluntary) {
   const list = facts || [];
-  const isWarrantGoods = (f) => f?.warrant && (f.op === "GRANT_ITEM" || f.op === "BESTOW_SKILL");
-  const hasGoods = list.some(isWarrantGoods);
+  if (!voluntary) return { facts: list, dropped: false };
   const cost = list
     .filter((f) => f?.op === "CHANGE_VITALS_SILVER" && (f.moneyDelta || 0) < 0)
     .reduce((sum, f) => sum + Math.abs(f.moneyDelta), 0);
-  if (!cost || !hasGoods) return { facts, dropped: false }; // 无交易或纯罚没，原样照走
+  if (!cost) return { facts: list, dropped: false };
   const silver = state?.char?.money ?? 0;
-  if (silver >= cost) return { facts, dropped: false };
-  return {
-    facts: list.filter((f) => !(f?.op === "CHANGE_VITALS_SILVER" && (f.moneyDelta || 0) < 0) && !isWarrantGoods(f)),
-    dropped: true,
-  };
+  if (silver >= cost) return { facts: list, dropped: false };
+  return { facts: [], dropped: true };
 }
 
 export function settleRoadEventChoice({ roll, optionKey, state, rng = Math.random, luck }) {
   const outcome = resolveRoadEvent(roll, optionKey, state, { rng, luck });
   const named = nameWarrantFacts(outcome.facts, `${roll.eventId}_${roll.turn}`);
-  const { facts, dropped } = dropUnaffordablePurchase(named, state);
+  const voluntary = !(optionKey === "main" && outcome.success === false);
+  const { facts, dropped } = dropUnaffordablePurchase(named, state, voluntary);
   const matResult = facts?.length ? materializeFacts(state, facts, {}) : null;
   const writesResult = buildRoadEventWritesResult(roadEventWrites(roll, outcome), state);
 
