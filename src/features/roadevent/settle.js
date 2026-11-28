@@ -75,19 +75,31 @@ export function nameWarrantFacts(facts, idSeed = "") {
   });
 }
 
-// 囊中羞涩护栏——按「自愿/被迫」分治，不按事实形状配对（配对猜不准）：
-//   自愿交易（主选成功/次选）：银两负流水是代价，其余事实是换来的好处——
-//     付不起则整笔不成立，全部撤销（不付不得两讫：无论是货品/武学/声望/线索，
-//     香火钱换福报与买刀买艺同理，不存在「先欠着」）。
-//   被迫损失（主选失败）：劫匪落败、赔偿之流与购买力无关——永远照扣，
-//     materializeFacts 钳到零，光棍被抢光也认，绝不因穷免罚。
-function dropUnaffordablePurchase(facts, state, voluntary) {
+// 囊中羞涩护栏——按「同批代价+好处」辨交易，不按自愿/被迫也不按货品形状：
+//   交易：银两负流水与任何非损失好处同批（买刀/学艺/香火换福报/讨价失败照价买——
+//     失败档里也有交易）。付不起全价则整笔不成立，全部撤销（不付不得两讫），
+//     落账重要度同步降级（见下 writes 处），不让被撤销的好处进编年史。
+//   纯代价：银两负流水不带好处（劫匪罚没/买路钱/赔偿）——与购买力无关，
+//     永远照扣钳到零：买路钱有多少被拿走多少，绝不因穷免罚。
+//   纯好处：无银两代价，护栏不碰。
+const LOSS_OPS = (f) => {
+  if (!f?.op) return false;
+  if (f.op === "CHANGE_VITALS_SILVER") return (f.moneyDelta || 0) < 0 || (f.hpDelta || 0) < 0 || (f.karmaDelta || 0) < 0 || (f.jieDelta || 0) < 0;
+  if (f.op === "FACTION_REP") return (f.delta || 0) < 0;
+  if (f.op === "MUTATE_SOCIAL") return (f.affectionDelta || 0) < 0;
+  if (f.op === "SHIFT_SPECIAL_STAT") return (f.delta || 0) < 0;
+  if (f.op === "APPLY_CONDITION") return !!f.negative;
+  if (f.op === "FACTION_TENSION") return (f.delta || 0) > 0; // 张力升温是坏事
+  return false;
+};
+function dropUnaffordablePurchase(facts, state) {
   const list = facts || [];
-  if (!voluntary) return { facts: list, dropped: false };
   const cost = list
     .filter((f) => f?.op === "CHANGE_VITALS_SILVER" && (f.moneyDelta || 0) < 0)
     .reduce((sum, f) => sum + Math.abs(f.moneyDelta), 0);
   if (!cost) return { facts: list, dropped: false };
+  const hasBenefit = list.some((f) => f?.op && f.op !== "CHANGE_VITALS_SILVER" && !LOSS_OPS(f));
+  if (!hasBenefit) return { facts: list, dropped: false }; // 纯代价：罚没/买路钱照扣
   const silver = state?.char?.money ?? 0;
   if (silver >= cost) return { facts: list, dropped: false };
   return { facts: [], dropped: true };
@@ -96,10 +108,12 @@ function dropUnaffordablePurchase(facts, state, voluntary) {
 export function settleRoadEventChoice({ roll, optionKey, state, rng = Math.random, luck }) {
   const outcome = resolveRoadEvent(roll, optionKey, state, { rng, luck });
   const named = nameWarrantFacts(outcome.facts, `${roll.eventId}_${roll.turn}`);
-  const voluntary = !(optionKey === "main" && outcome.success === false);
-  const { facts, dropped } = dropUnaffordablePurchase(named, state, voluntary);
+  const { facts, dropped } = dropUnaffordablePurchase(named, state);
   const matResult = facts?.length ? materializeFacts(state, facts, {}) : null;
-  const writesResult = buildRoadEventWritesResult(roadEventWrites(roll, outcome), state);
+  // 交易被撤销的 outcome 对世界记账也得是撤销后的样子——否则 major 判定
+  // 拿着已被丢弃的好处（同伴/高品武学）把一场没成交的买卖抬进编年史。
+  const writesOutcome = dropped ? { ...outcome, facts: [] } : outcome;
+  const writesResult = buildRoadEventWritesResult(roadEventWrites(roll, writesOutcome), state);
 
   const patchChanges = patchesToChanges(matResult?.patches);
   const changes = { ...(matResult?.changes || {}), ...(writesResult?.changes || {}) };

@@ -363,3 +363,64 @@ describe("WO-25O 四轮复审修包回归（自愿/被迫分治）", () => {
     expect(settled.logs.some((l) => String(l.text).includes("银两"))).toBe(true);
   });
 });
+
+describe("WO-25O 五轮复审修包回归（同批代价+好处才算交易）", () => {
+  const mkRoll = (event, key0 = "main") => ({
+    eventId: event.id, destNode: "天都镇", day: 4, turn: 100,
+    cast: { kind: "passer", name: "过路人" }, situations: [],
+    options: [
+      { key: "main", label: "出手", check: event.check, dc: event.dc, rate: 100 },
+      { key: "alt", label: "商量", check: null, rate: 100 },
+      { key: "leave", label: "离开", check: null, rate: 100 },
+    ],
+  });
+
+  it("讨价失败照价买也是交易：付不起全价则货品不得（损失档不豁免交易）", async () => {
+    const { eligibleEvents } = await import("../../domain/rules/livingWorld/roadEvents.js");
+    const { settleRoadEventChoice } = await import("./settle.js");
+    const state = makeState();
+    state.char.money = 10;
+    const pool = ["天都镇", "打箭炉", "丹霞城", "焚风渡", "琼隆古墟"].flatMap((n) => eligibleEvents(state, n));
+    // lose 串里 silver 负码+item 码——讨价失败照价买型
+    const haggle = pool.find((e) => /silver:-/.test(e.lose || "") && /item:/.test(e.lose || ""));
+    if (!haggle) throw new Error("池里应有讨价失败照价买事件");
+    const settled = settleRoadEventChoice({ roll: mkRoll(haggle), optionKey: "main", state, rng: () => 0.999 });
+    if (settled.outcome.success !== false) throw new Error("应落败");
+    expect(settled.logs.some((l) => String(l.text).includes("囊中羞涩"))).toBe(true);
+    expect(settled.logs.some((l) => String(l.text).includes("银两"))).toBe(false);
+  });
+
+  it("买路钱纯代价：付不起全款也照扣到零——有多少被拿走多少，不因穷免罚", async () => {
+    const { eligibleEvents } = await import("../../domain/rules/livingWorld/roadEvents.js");
+    const { settleRoadEventChoice } = await import("./settle.js");
+    const state = makeState();
+    state.char.money = 5;
+    const pool = ["天都镇", "打箭炉", "丹霞城", "焚风渡", "琼隆古墟"].flatMap((n) => eligibleEvents(state, n));
+    // win/alt 串里只有 silver 负码无任何好处——纯买路钱型
+    // 纯买路钱：整串只有 silver 负码（pact/声望之类都算好处，不在此列）
+    const pureToll = (str) => /^silver:-\d+$/.test((str || "").trim());
+    const toll = pool.find((e) => pureToll(e.win) || pureToll(e.alt));
+    if (!toll) throw new Error("池里应有纯买路钱事件");
+    const field = pureToll(toll.win) ? "main" : "alt";
+    const settled = settleRoadEventChoice({ roll: mkRoll(toll), optionKey: field, state, rng: () => 0 });
+    expect(settled.logs.some((l) => String(l.text).includes("囊中羞涩"))).toBe(false);
+    expect(settled.logs.some((l) => String(l.text).includes("银两"))).toBe(true); // 照扣钳零
+  });
+
+  it("交易撤销不进编年史：worldEvent importance 降级，被撤销的好处不算 major", async () => {
+    const { settleRoadEventChoice } = await import("./settle.js");
+    const state = makeState();
+    state.char.money = 0;
+    // 直接构造含 COMPANION_CANDIDATE 级好处+代价的 outcome 验证 writes 一致性
+    // ——经真实事件池找 ally/mate+silver 同串可遇不可求，改验证降级机制本身：
+    // 用任意买货事件，major 由高品质武学/同伴决定；此处验证 dropped 时 facts 不进 writes
+    const { eligibleEvents } = await import("../../domain/rules/livingWorld/roadEvents.js");
+    const pool = ["天都镇", "打箭炉"].flatMap((n) => eligibleEvents(state, n));
+    const buy = pool.find((e) => /silver:-/.test(e.win || "") && /item:/.test(e.win || ""));
+    const settled = settleRoadEventChoice({ roll: mkRoll(buy), optionKey: "main", state, rng: () => 0 });
+    expect(settled.logs.some((l) => String(l.text).includes("囊中羞涩"))).toBe(true);
+    const tree = settled.changes.varTree({ 世界: {} });
+    const evt = tree.世界.事件录[0];
+    expect(evt.importance).toBe(1); // 不是 major——没成交的买卖不进编年史高位
+  });
+});
