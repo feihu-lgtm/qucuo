@@ -66,7 +66,7 @@ export default function TradingScreen({ shopName, shopItems = [], playerInv, pla
         <span className="mobile-overlay-close mobile-only-close" onClick={onClose} aria-label="关闭交易">×</span>
       </div>
       {buildingArtSrc && (
-        <div className="building-art" style={{ flexShrink: 0, alignSelf: "center", width: "min(100%, 360px)" }}>
+        <div className="building-art building-art--centered">
           <ArtImage key={buildingArtSrc} src={buildingArtSrc} alt={shopName} variant="panel" />
         </div>
       )}
