@@ -11,6 +11,8 @@ import { stationedFavorDecayRule, followFavorDriftRule } from "../../domain/rule
 import { npcLetterRule } from "../../features/pigeon/inbound.js";
 import { pactWatchRule } from "../../features/pigeon/pactWatch.js";
 import { nemesisDailyRule } from "../../domain/rules/nemesis/nemesisDaily.js";
+import { livingWorldPulseRule } from "../../domain/rules/livingWorld/worldPulse.js";
+import { buildDefaultRegistry } from "../../domain/data/livingWorld/index.js";
 import { huntedNoticeRule } from "../../domain/rules/nemesis/huntedOrders.js";
 import { fakeDeadReturnRule } from "../../domain/rules/nemesis/fakeDeadReturn.js";
 import {
@@ -75,6 +77,7 @@ export function useWorldRulesRunner({
         npcLetterRule,
         pactWatchRule,
         nemesisDailyRule,
+        livingWorldPulseRule,
         huntedNoticeRule,
         fakeDeadReturnRule,
         collectGroundItemsRule,
@@ -100,6 +103,7 @@ export function useWorldRulesRunner({
         }),
         ctx: {
           importedRegistry,
+          livingWorldRegistry: buildDefaultRegistry(),
           get roomMap() { return gameStore.getState().roomCache || {}; },
           get companionState() {
             return gameStore.getState().companionState;
