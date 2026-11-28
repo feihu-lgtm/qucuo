@@ -190,7 +190,7 @@ export const snowlandSectsPack = {
       faction: "雪山派",
       role: "patrol",
       route: ["雪山派", "后山平台", "白塔"],
-      members: ["pool_bidder_xueshan", "pool_lai_fang"],
+      members: ["pool_gui_yin"],
       combatPower: 50,
       onArrive: { clearSituation: "sit_wolf_howling" },
       onDefeated: { addTargetSituation: ["sit_wolf_howling"], tensionDelta: 9 },
