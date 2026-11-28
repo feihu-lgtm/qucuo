@@ -349,7 +349,9 @@ export function buildNpcContext({ convo, preset, visibleNpcs, room, cmd, isTalk,
     ? `\n\n【在场人物衣着状态】（这些人被扒得几乎不剩行头，叙事要照实反映）\n${attireLines.join("\n")}`
     : "";
   const reunionBlock = buildReunionBlock(
-    detectReunions(varTree, room.npcs, time, REUNION_GAP_THRESHOLD)
+    detectReunions(varTree, room.npcs, time, REUNION_GAP_THRESHOLD),
+    100,
+    { varTree }, // WO-25J：重逢提示优先锚定 事件录 真实经历
   );
   return { lastAiText, npcLoreBlockWithQuest: npcLoreBlock + companionLore + questStatusBlock + partyListBlock + attireBlock, reunionBlock };
 }

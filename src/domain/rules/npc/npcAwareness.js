@@ -9,6 +9,8 @@
 // knownNpcs 是一个 Set 结构（存在 varTree.世界.已认识人物 里，用数组形式持久化，
 // 因为 varTree 最终要被 JSON 序列化进存档，Set 不能直接存）。
 
+import { getNpcRecentEvents } from "../livingWorld/projectWorld.js";
+
 export function isNpcKnown(varTree, npcName) {
   const known = varTree.世界?.已认识人物 || [];
   return known.includes(npcName);
@@ -127,12 +129,25 @@ export function detectReunions(varTree, npcsInRoom, currentTurn, gapThreshold = 
 }
 
 // 把久别重逢对象拼成提示 AI 补写中间变化的 prompt 块。没有则返回空串。
-export function buildReunionBlock(reunions, turnsPerDay = 100) {
+// WO-25J：state 传入时优先附此人近期真实卷入的 WorldEvent 摘要（1-2 条）——
+// 重逢补写锚定真事，不再泛泛「合理变化」；无真实事件才退回原通用补写提示。
+export function buildReunionBlock(reunions, turnsPerDay = 100, state = null) {
   if (!reunions || !reunions.length) return "";
   const lines = reunions.map(r => {
     const days = Math.floor(r.gap / turnsPerDay);
     const 时长 = days >= 1 ? `约${days}天` : "有好一阵子";
-    return `- ${r.name}：距上次与主角同框已${时长}（${r.gap}回合）`;
+    let line = `- ${r.name}：距上次与主角同框已${时长}（${r.gap}回合）`;
+    if (state) {
+      const events = getNpcRecentEvents(state, r.name, 2).filter((ev) => typeof ev?.text === "string" && ev.text);
+      if (events.length) {
+        line += `；其近日真实经历：${events.map((ev) => ev.text.replace(/。\s*$/, "")).join("；")}（补写须与这些既成事实衔接，不得矛盾）`;
+      }
+    }
+    return line;
   }).join("\n");
-  return `\n\n【久别重逢·补写记忆断层】以下人物已较久未与主角照面，本轮重新出现。不要当作时间静止：先在心里为其补写这段时间里合理、克制、与其处境相称的变化（境遇的推移、心境的转变、外部关系或身体状态的细微变化等），再让这些变化自然体现在其言行与叙事中。变化应符合人物一贯设定与世界逻辑，不必刻意戏剧化，也不要凭空拔高其与主角的关系。\n${lines}`;
+  const hasRealEvents = state && reunions.some((r) => getNpcRecentEvents(state, r.name, 1).length > 0);
+  const 补写指令 = hasRealEvents
+    ? "附了真实经历的人物，其这些日子的变化直接由所列事件延展（伤势的恢复、心境的余波、卷入风波的后话），不必另行虚构；未附经历的人物再按惯例补写。"
+    : "先在心里为其补写这段时间里合理、克制、与其处境相称的变化（境遇的推移、心境的转变、外部关系或身体状态的细微变化等），再让这些变化自然体现在其言行与叙事中。";
+  return `\n\n【久别重逢·补写记忆断层】以下人物已较久未与主角照面，本轮重新出现。不要当作时间静止：${补写指令}变化应符合人物一贯设定与世界逻辑，不必刻意戏剧化，也不要凭空拔高其与主角的关系。\n${lines}`;
 }
