@@ -1,9 +1,9 @@
 // 生成 docs/路遇随机事件全集.md：20 类的手写提示词与 400 件事件的情节核、来人、检定、得失，供审阅。
-// 数据只改 scripts/roadEvents/ 下的源文件，改完跑 `npm run road:doc`。
+// 数据只改 src/domain/data/roadEvents/ 下的源文件（WO-25N 已迁入 src），改完跑 `npm run road:doc`。
 import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { ROAD_EVENTS, ROAD_EVENT_CATEGORIES, CATEGORY_KEYS, ROAD_EVENT_RULES } from "../../src/domain/data/roadEvents/index.js";
-import { parseCast } from "./roadEvents.js";
+import { parseCast } from "../../src/domain/rules/livingWorld/roadEvents.js";
 
 export const DOC_PATH = "docs/路遇随机事件全集.md";
 

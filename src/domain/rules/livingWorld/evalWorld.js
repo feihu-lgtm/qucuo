@@ -52,6 +52,8 @@ export function evalPredicate(pred, state, ctx = {}) {
       return world.据点归属?.[pred.district] === pred.faction;
     }
     case "flag": {
+      // WO-25N 兼容双账：顶层 state.flags 数组（运行时真账）与 varTree.世界.旗号（旧账面）。
+      if ((state?.flags || []).includes(pred.flag)) return true;
       return Boolean(world.旗号?.[pred.flag]);
     }
     case "questDone": {
@@ -74,6 +76,20 @@ export function evalPredicate(pred, state, ctx = {}) {
     }
     case "worldState": {
       return Boolean(ctx.activeStates?.has(pred.id));
+    }
+    // ── WO-25N 路遇扩展谓词 ──
+    case "statGte": {
+      // 六维门槛：读主角特殊属性，缺档按 5 计（与路遇 statOf 同口径）。
+      const v = state?.char?.special?.[pred.stat];
+      return (Number.isFinite(v) ? v : 5) >= (pred.value ?? 0);
+    }
+    case "rumorKnown": {
+      // 有传闻人物在册（T 类传闻回收只在有传闻时触发）。
+      return Object.keys(world.传闻人物 || {}).length > 0;
+    }
+    case "knownEventsHere": {
+      // 本据点已传到的风声不少于 min 条（读调用方给的据点投影）。
+      return (ctx.snapshot?.events || []).length >= (pred.min ?? 1);
     }
     default:
       return false;

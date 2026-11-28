@@ -65,6 +65,8 @@ function canonicalJson(value) {
 const VALID_PREDICATES = new Set([
   "npcStatus", "factionTensionGte", "factionPowerLte", "factionRepGte",
   "districtOwner", "flag", "questDone", "season", "situationActive", "worldState",
+  // WO-25N 路遇扩展谓词（docs/路遇随机事件设计.md §九）
+  "statGte", "rumorKnown", "knownEventsHere",
 ]);
 
 // 收集 when 树（支持 all/any/not 嵌套与数组简写）里全部谓词节点。

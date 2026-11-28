@@ -10,16 +10,17 @@
 //   resolveRoadEvent    第二段：掷检定，奖励码解析成事实。
 //   buildResolutionNote 第二段提示词：已定事实 + 天机券填空。
 //   roadEventWrites     结算后要落账的东西：flags、WorldEvent、游走册同步。
-// 现阶段放在 scripts/ 下供审阅与校验，接线时整体移入 src/domain（见 docs/路遇随机事件设计.md）。
+// WO-25N：已迁入 src/domain——触发前提求值走 WO-25D 的 evalWhen（evalWorld.js），
+// 据点投影走 WO-25F 的 getDistrictSnapshot（projectWorld.js），不再保留本地桩。
 import {
   ROAD_EVENTS, ROAD_EVENT_BY_ID, ROAD_EVENT_CATEGORIES, PLACE_TAGS, ROAD_EVENT_RULES, livingAffinity,
-} from "../../src/domain/data/roadEvents/index.js";
-import { calcDungeonCheckRate } from "../../src/domain/rules/dungeon/internal.js";
-import { QUALITY } from "../../src/domain/rules/economy/equipment.js";
-import { factionRepOf } from "../../src/domain/rules/economy/factionRep.js";
-import { factionTensionProxy, getTension } from "../../src/domain/rules/conflict/tension.js";
-import { WANDERING_OCS, wanderRangeOf } from "../../src/domain/rules/npc/ocWander.js";
-import { ocNearFaction, makeRoadPasser } from "../../src/domain/data/npc/randomPassers.js";
+} from "../../data/roadEvents/index.js";
+import { calcDungeonCheckRate } from "../dungeon/internal.js";
+import { QUALITY } from "../economy/equipment.js";
+import { WANDERING_OCS, wanderRangeOf } from "../npc/ocWander.js";
+import { ocNearFaction, makeRoadPasser } from "../../data/npc/randomPassers.js";
+import { evalWhen } from "./evalWorld.js";
+import { getDistrictSnapshot } from "./projectWorld.js";
 
 export const SIX_STATS = Object.freeze(["根骨", "悟性", "体魄", "魅力", "智谋", "身法", "气运"]);
 export const ITEM_CATEGORY_CODE = Object.freeze({ 武器: "weapon", 护甲: "armor", 饰品: "accessory", 杂物: "misc" });
@@ -75,53 +76,6 @@ export function ocCandidates(slot, state, destNode) {
     .map((oc) => ({ oc, weight: roster[oc.name]?.at === destNode ? HERE_BONUS : 1 }));
 }
 
-// 活世界投影的最小读法。WO-25F 的 getDistrictSnapshot 落地后，由调用方直接传 snapshot 进来。
-export function roadSnapshot(state, destNode) {
-  const w = world(state);
-  const today = dayOf(state?.time);
-  const situations = (w.据点局势?.[destNode] || []).filter((s) => s.expireDay == null || s.expireDay >= today).map((s) => s.id);
-  const squads = Object.entries(w.离线编队 || {}).filter(([, s]) => s?.at === destNode).map(([id, s]) => ({ id, ...s }));
-  const events = (w.事件录 || []).filter((e) => (e.knownDistricts || []).includes(destNode));
-  return { situations, squads, events };
-}
-
-// 蓝图谓词求值（与 WO-25C/WO-25D 的 evalPredicate 同口径，同时保留旧字段兼容；路遇自带三扩展谓词）。
-export function evalWhen(pred, state, ctx = {}) {
-  if (!pred) return true;
-  if (pred.all) return pred.all.every((p) => evalWhen(p, state, ctx));
-  if (pred.any) return pred.any.some((p) => evalWhen(p, state, ctx));
-  if (pred.not) return !pred.not.some((p) => evalWhen(p, state, ctx));
-  switch (pred.type) {
-    case "factionRepGte": return factionRepOf(state?.varTree || {}, pred.faction) >= pred.value;
-    case "factionTensionGte": {
-      const fac = pred.faction || pred.a;
-      const value = pred.b ? getTension(tensionOf(state), fac, pred.b) : factionTensionProxy(tensionOf(state), fac);
-      return value >= (pred.value ?? 0);
-    }
-    case "situationActive": {
-      const sid = pred.id || pred.situation;
-      const today = dayOf(state?.time);
-      if (pred.district) {
-        return (world(state).据点局势?.[pred.district] || []).some(
-          (s) => s.id === sid && (s.expireDay == null || s.expireDay >= today),
-        );
-      }
-      if (ctx.snapshot?.situations) return ctx.snapshot.situations.includes(sid);
-      return Object.values(world(state).据点局势 || {}).some((cards) =>
-        (cards || []).some((s) => s.id === sid && (s.expireDay == null || s.expireDay >= today)));
-    }
-    case "flag": return (state?.flags || []).includes(pred.flag) || Boolean(world(state).旗号?.[pred.flag]);
-    case "questDone": {
-      const qid = pred.quest || pred.questId;
-      return state?.questProgress?.[qid]?.status === "completed" || Boolean(world(state).任务册?.[qid]?.done);
-    }
-    case "statGte": return statOf(state, pred.stat) >= pred.value;
-    case "rumorKnown": return rumorNames(state).length > 0;
-    case "knownEventsHere": return (ctx.snapshot?.events || []).length >= (pred.min || 1);
-    default: throw new Error(`未知谓词：${pred.type}`);
-  }
-}
-
 function placeMatches(event, destNode) {
   const tags = PLACE_TAGS[destNode] || [];
   return event.where.some((w) => w === destNode || tags.includes(w));
@@ -133,7 +87,7 @@ function lastRoadDay(state, pick) {
   return last;
 }
 
-export function isEligible(event, state, destNode, snapshot = roadSnapshot(state, destNode)) {
+export function isEligible(event, state, destNode, snapshot = getDistrictSnapshot(state, destNode, null)) {
   if (!placeMatches(event, destNode)) return false;
   const time = state?.time ?? 0;
   if (event.time === "夜" && !isNight(time)) return false;
@@ -150,7 +104,7 @@ export function isEligible(event, state, destNode, snapshot = roadSnapshot(state
   return true;
 }
 
-export function eligibleEvents(state, destNode, snapshot = roadSnapshot(state, destNode)) {
+export function eligibleEvents(state, destNode, snapshot = getDistrictSnapshot(state, destNode, null)) {
   return ROAD_EVENTS.filter((e) => isEligible(e, state, destNode, snapshot));
 }
 
@@ -158,7 +112,8 @@ function weightOf(event, luck, snapshot) {
   let w = TIER_WEIGHT[event.tier] || 1;
   if (event.tier === 3) w *= 1 + Math.max(0, luck - 5) * 0.1;
   const living = livingAffinity(event.cat);
-  for (const s of snapshot.situations) w *= living.situations?.[s] ?? 1;
+  // getDistrictSnapshot 的 situations 是带 label/priceMod 的卡片对象，权重匹配取 id。
+  for (const s of snapshot.situations) w *= living.situations?.[s?.id ?? s] ?? 1;
   if ((living.squadRoles || []).some((r) => snapshot.squads.some((q) => q.role === r))) w *= 2;
   return w;
 }
@@ -197,7 +152,7 @@ function castFor(event, state, destNode, snapshot, rng) {
   return { kind: "role", faction, role: slot.role, gender: slot.gender, age: slot.age, name: passer?.gender === slot.gender ? passer.name : null, squadId: squad?.id || null };
 }
 
-export function rollRoadEvent(state, destNode, { rng = Math.random, luck = statOf(state, "气运"), snapshot = roadSnapshot(state, destNode) } = {}) {
+export function rollRoadEvent(state, destNode, { rng = Math.random, luck = statOf(state, "气运"), snapshot = getDistrictSnapshot(state, destNode, null) } = {}) {
   const pool = eligibleEvents(state, destNode, snapshot);
   if (!pool.length) return null;
   const event = pickWeighted(pool, (e) => weightOf(e, luck, snapshot), rng);
