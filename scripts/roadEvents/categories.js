@@ -44,6 +44,23 @@ export const ROAD_EVENT_RULES = `【路遇铁律】
 4. 天机券填空：已定事实里有待命名的兵刃或武学，请在尾章给出名字与一句描述，贴合来源人物与地域，不得超出所给品阶。
 5. 分寸：一次路遇写成一两段有画面的照面，不拔高成生死大戏；情爱只写到眼神、言语与举止为止，涉及的人物一律是成年人。`;
 
+// living：与活世界蓝图（#686）的对接——situations 为该类事件在对应局势卡生效时的权重倍数，
+// squadRoles 为该类事件优先取用的游走编队角色（编队停在本节点时，来人取编队成员）。
+const LIVING = {
+  A: { situations: { sit_caravan_gathering: 3, sit_road_blockade: 0.5 }, squadRoles: ["caravan"] },
+  B: { situations: { sit_herb_shortage: 2, sit_road_blockade: 1.5 } },
+  E: { situations: { sit_martial_alert: 1.5 }, squadRoles: ["disciples"] },
+  G: { squadRoles: ["disciples"] },
+  J: { situations: { sit_road_blockade: 3, sit_martial_alert: 0.5 }, squadRoles: ["raider"] },
+  K: { situations: { sit_road_blockade: 1.5 } },
+  M: { situations: { sit_pilgrim_crowd: 3 }, squadRoles: ["pilgrim"] },
+  N: { situations: { sit_martial_alert: 2 } },
+  O: { situations: { sit_martial_alert: 3 }, squadRoles: ["patrol"] },
+  P: { situations: { sit_caravan_gathering: 2, sit_grain_cheap: 1.5, sit_pilgrim_crowd: 1.5 } },
+  Q: { situations: { sit_herb_shortage: 2 } },
+  T: { situations: {} },
+};
+
 const cat = (key, name, where, options, prompt) => ({ key, name, where, options, prompt });
 
 export const ROAD_EVENT_CATEGORIES = Object.freeze({
@@ -130,3 +147,13 @@ export const ROAD_EVENT_CATEGORIES = Object.freeze({
 });
 
 export const CATEGORY_KEYS = Object.freeze(Object.keys(ROAD_EVENT_CATEGORIES));
+
+export function livingAffinity(catKey) {
+  return LIVING[catKey] || { situations: {}, squadRoles: [] };
+}
+
+// 局势卡 id 与蓝图 WO-25G 首批六张对应（伤药紧俏、茶马云集、山道封锁、粮米平价、江湖戒严、香客盈门）；
+// 除 sit_herb_shortage 外 id 由本表先行约定，WO-25G 落地时以其为准。
+export const SITUATION_IDS = Object.freeze([
+  "sit_herb_shortage", "sit_caravan_gathering", "sit_road_blockade", "sit_grain_cheap", "sit_martial_alert", "sit_pilgrim_crowd",
+]);

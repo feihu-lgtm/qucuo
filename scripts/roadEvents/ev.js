@@ -4,14 +4,18 @@
 //   id     类别字母 + 两位序号（A01…T20），类别取首字母。
 //   where  「|」分隔的地图节点名或地形标签（见 categories.js 的 PLACE_TAGS）。
 //   seed   手写情节核：只属于这一件事的人、物、处境，拼进说书人提示词。
-//   opts.cast   遇见谁：「势力:身份:性别:年纪」，auto = 按当地过路人权重抽。
-//               美人与同伴一律写明年纪；美人必须是成年人。
+//   opts.cast   遇见谁（人物一律从现有池子取，不新造具名人物）：
+//               「oc:性别|任[:亲密][:就近势力]」= 人物槽，从游走冒险者池抽（同伴、美人一律走这里）；
+//               「势力:身份:性别:年纪」= 身份由事件定，姓名性格由过路人姓名库生成；
+//               「传闻」= 从传闻人物里指定；auto = 无固定来人。
 //   opts.check  主行动检定的六维（根骨/悟性/体魄/魅力/智谋/身法/气运），null = 不检定必成。
 //   opts.dc     难度，默认 6；成功率按 calcDungeonCheckRate(六维, dc)。
 //   opts.win    主行动成功的奖励码；opts.lose 失败的代价；opts.alt 次行动的结果。
 //   opts.tier   稀有度 1 常见 / 2 少见 / 3 罕见（美人、同伴、紫橙武学多在 2–3）。
-//   opts.when   "昼" / "夜" / 缺省不限。
-//   opts.req    触发前提：{ rep: { 势力: 下限 }, stat: { 六维: 下限 }, flag, notFlag }。
+//   opts.time   "昼" / "夜" / 缺省不限。
+//   opts.when   触发前提，用活世界蓝图（#686）的谓词格式：all / any / not 组合，
+//               内置 factionRepGte、factionTensionGte、situationActive、flag、questDone，
+//               路遇另补 statGte（六维门槛）、rumorKnown（有传闻人物）、knownEventsHere（本地已有风声）。
 //   opts.once   true = 一辈子只遇一次（美人、同伴、名器线索）。
 //               主行动奖励含永久六维、武学、同伴、美人、兽伴时自动只遇一次，免得冷却过后反复刷。
 //
@@ -34,6 +38,9 @@
 //   clue                           来人捎一条传闻，点到新具名人物（mentionedNewNpcs）
 //   pact                           与来人立约（BIND_OR_SETTLE_PACT）
 //   scene                          此地场景留下改动（ALTER_WORLD_SCENE）
+//   tension:甲/乙+8                两家势力张力（adjustTension）
+//   situation:+sit_id / situation:-sit_id   给本据点挂上或撤下一张局势卡（据点局势）
+//   trigger:caravan_arrived:medicine        局势卡的化解触发词
 const ONCE_REWARD_RE = /(^|\|)(stat:|skill:|beast:|ally(\||$)|mate(\||$))/;
 
 export function ev(id, name, where, seed, opts = {}) {
@@ -50,8 +57,8 @@ export function ev(id, name, where, seed, opts = {}) {
     lose: opts.lose || "",
     alt: opts.alt || "",
     tier: opts.tier || 1,
-    when: opts.when || "",
-    req: opts.req || null,
+    time: opts.time || "",
+    when: opts.when || null,
     once: Boolean(opts.once) || ONCE_REWARD_RE.test(opts.win || ""),
   });
 }

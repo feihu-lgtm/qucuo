@@ -27,6 +27,9 @@ function codeText(code) {
     case "clue": return "传闻";
     case "pact": return "约定";
     case "scene": return "场景改动";
+    case "tension": return `张力${r.join(":")}`;
+    case "situation": return `局势${r[0]}`;
+    case "trigger": return `化解触发「${r.join(":")}」`;
     default: return code;
   }
 }
@@ -34,8 +37,9 @@ const codesText = (s) => (s ? s.split("|").map(codeText).join("、") : "—");
 const castText = (c) => {
   const cast = parseCast(c);
   if (!cast) return "—";
-  if (cast.rumor) return "传闻人物";
-  return `${cast.name ? `${cast.name}，` : ""}${cast.faction}·${cast.role}·${cast.gender}·${cast.age}`;
+  if (cast.kind === "rumor") return "传闻人物";
+  if (cast.kind === "oc") return `游走冒险者（${cast.gender || "不限男女"}${cast.romance ? "·亲密设定" : ""}${cast.nearFaction ? `·近${cast.nearFaction}` : ""}）`;
+  return `${cast.faction}·${cast.role}·${cast.gender}·${cast.age}`;
 };
 const cell = (s) => String(s).replace(/\|/g, "／").replace(/\n/g, " ");
 
@@ -45,7 +49,7 @@ export function buildDoc() {
     "",
     "> 本文件由 `scripts/roadEvents/buildRoadEventsDoc.mjs` 从 `scripts/roadEvents/` 的数据源生成，不要手改；改完数据跑 `npm run road:doc`。设计说明见 [路遇随机事件设计.md](路遇随机事件设计.md)。",
     "",
-    "每件事的「得失」一栏是系统定死的事实；说书人只照「路遇铁律 + 类别提示词 + 情节核 + 已定事实」写戏。稀有度 1 常见、2 少见、3 罕见；「一次」表示一辈子只遇一次。",
+    "每件事的「得失」一栏是系统定死的事实；说书人只照「路遇铁律 + 类别提示词 + 情节核 + 已定事实」写戏。来人一律从现有池子取：同伴与美人从游走冒险者里抽，样貌与性子照其档案写。稀有度 1 常见、2 少见、3 罕见；「一次」表示一辈子只遇一次。",
     "",
     "## 路遇铁律（拼在每段类别提示词之前）",
     "",
@@ -61,7 +65,7 @@ export function buildDoc() {
     parts.push("| 编号 | 名称 | 地头 | 来人 | 主行动检定 | 成功 | 失败 | 次行动 | 稀有度 | 情节核 |", "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
     for (const e of list) {
       const check = e.check ? `${e.check} ${e.dc}` : "必成";
-      const flags = [`${e.tier}`, e.once ? "一次" : "", e.when, e.req ? "有门槛" : ""].filter(Boolean).join("·");
+      const flags = [`${e.tier}`, e.once ? "一次" : "", e.time, e.when ? "有门槛" : ""].filter(Boolean).join("·");
       parts.push(`| ${e.id} | ${cell(e.name)} | ${cell(e.where.join("、"))} | ${cell(castText(e.cast))} | ${check} | ${cell(codesText(e.win))} | ${cell(codesText(e.lose))} | ${cell(codesText(e.alt))} | ${flags} | ${cell(e.seed)} |`);
     }
     parts.push("");

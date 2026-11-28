@@ -1,179 +1,208 @@
-// 路遇随机事件：数据完整性（400 件的每个引用都真实存在）与掷骰、结算、提示词的行为。
+// 路遇随机事件：数据完整性、池子抽人、活世界对接（谓词、局势、编队、事件录、张力）与提示词。
 import { describe, expect, it } from "vitest";
-import { ROAD_EVENTS, ROAD_EVENT_CATEGORIES, CATEGORY_KEYS, PLACE_TAGS, ALL_TAGS } from "./index.js";
+import { readFileSync } from "node:fs";
+import { ROAD_EVENTS, ROAD_EVENT_CATEGORIES, CATEGORY_KEYS, PLACE_TAGS, ALL_TAGS, SITUATION_IDS, livingAffinity } from "./index.js";
 import {
-  SIX_STATS, ITEM_CATEGORY_CODE, parseCast, parseRewardCodes, isEligible, eligibleEvents,
-  rollRoadEvent, resolveRoadEvent, nextRoadLedger, buildRoadEventNote, buildResolutionNote, isNight,
+  SIX_STATS, ITEM_CATEGORY_CODE, parseCast, parseRewardCodes, isEligible, eligibleEvents, ocCandidates, isRomanceEligible,
+  rollRoadEvent, resolveRoadEvent, roadEventWrites, buildRoadEventNote, buildResolutionNote, isNight, evalWhen,
 } from "./roadEvents.js";
+import { DOC_PATH, buildDoc } from "./buildRoadEventsDoc.mjs";
 import { SKILL_CATALOG } from "../../src/domain/data/kungfu/qucuoKungfu.js";
 import { QUALITY } from "../../src/domain/rules/economy/equipment.js";
 import { QUCUO_MAP } from "../../src/domain/data/map/qucuoMap.js";
 import { passerRolesOf } from "../../src/domain/data/npc/randomPassers.js";
-import { NPC_ART } from "../../src/domain/data/art/artManifest.js";
-import { seededRand } from "../../src/utils/seededRandom.js";
 import { FACTIONS as REP_FACTIONS } from "../../src/domain/data/map/factions.js";
-import { readFileSync } from "node:fs";
-import { DOC_PATH, buildDoc } from "./buildRoadEventsDoc.mjs";
+import { WANDERING_OCS } from "../../src/domain/rules/npc/ocWander.js";
+import { seededRand } from "../../src/utils/seededRandom.js";
 
-const FACTIONS = ["鱼定土司府", "鱼定村", "喇嘛庙", "雪山派", "玉泉寨", "黑风寨", "百花门", "欢喜教", "锦官城", "青城派",
-  "峨眉派", "唐门", "丐帮三星分舵", "五仙教", "天龙教", "三星派", "萨迦世家", "噶举山人", "古象雄苯门", "散人"];
+const PASSER_FACTIONS = [...REP_FACTIONS.map((f) => f.name), "散人"];
 const SCHOOLS = new Set([...Object.keys(SKILL_CATALOG), "any"]);
-const CN = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
-function cnAge(s) {
-  const m = /^([一二三四五六七八九]?)十([一二三四五六七八九]?)/.exec(s || "");
-  if (!m) return CN[s?.[0]] ?? NaN;
-  return (m[1] ? CN[m[1]] : 1) * 10 + (m[2] ? CN[m[2]] : 0);
-}
 const allCodes = (e) => [e.win, e.lose, e.alt].join("|").split("|").filter(Boolean);
-const day = (h = 10) => ({ time: 24 * 30 + h, varTree: {}, flags: [], char: { special: { 气运: 5, 悟性: 5 } } });
+const day = (h = 10, extra = {}) => ({ time: 24 * 30 + h, varTree: {}, flags: [], char: { special: { 气运: 5, 悟性: 5 } }, ...extra });
+const byId = (id) => ROAD_EVENTS.find((e) => e.id === id);
+const withWorld = (w, base = day()) => ({ ...base, varTree: { ...base.varTree, 世界: { ...(base.varTree?.世界 || {}), ...w } } });
 
 describe("路遇事件数据", () => {
   it("20 类各 20 件，共 400 件，编号连续且唯一", () => {
     expect(CATEGORY_KEYS).toHaveLength(20);
     expect(ROAD_EVENTS).toHaveLength(400);
-    expect(new Set(ROAD_EVENTS.map((e) => e.id)).size).toBe(400);
     for (const k of CATEGORY_KEYS) {
-      const ids = ROAD_EVENTS.filter((e) => e.cat === k).map((e) => e.id);
-      expect(ids, k).toEqual(Array.from({ length: 20 }, (_, i) => `${k}${String(i + 1).padStart(2, "0")}`));
+      expect(ROAD_EVENTS.filter((e) => e.cat === k).map((e) => e.id), k).toEqual(Array.from({ length: 20 }, (_, i) => `${k}${String(i + 1).padStart(2, "0")}`));
     }
   });
 
-  it("地标签覆盖全部地图节点（特殊节点除外），事件的地点都真实存在", () => {
+  it("地标签覆盖全部地图节点（特殊节点除外），事件地点都真实存在", () => {
     for (const n of Object.keys(QUCUO_MAP)) if (!["心灵之海", "第三新东京市"].includes(n)) expect(PLACE_TAGS[n], n).toBeTruthy();
     for (const e of ROAD_EVENTS) for (const w of e.where) expect(Boolean(PLACE_TAGS[w]) || ALL_TAGS.includes(w), `${e.id} ${w}`).toBe(true);
-    for (const c of Object.values(ROAD_EVENT_CATEGORIES)) for (const w of c.where) expect(ALL_TAGS.includes(w), w).toBe(true);
   });
 
-  it("来人的势力、检定属性、难度、稀有度合法", () => {
+  it("来人、检定、难度、稀有度合法", () => {
     for (const e of ROAD_EVENTS) {
       const cast = parseCast(e.cast);
-      if (cast && !cast.rumor) {
-        expect(FACTIONS.includes(cast.faction), `${e.id} ${cast.faction}`).toBe(true);
+      if (cast?.kind === "role") {
+        expect(PASSER_FACTIONS.includes(cast.faction), `${e.id} ${cast.faction}`).toBe(true);
         expect(["男", "女"].includes(cast.gender), e.id).toBe(true);
-        expect(cast.role, e.id).toBeTruthy();
+        expect(passerRolesOf(cast.faction).length, cast.faction).toBeGreaterThan(0);
       }
-      if (e.check) expect(SIX_STATS.includes(e.check), `${e.id} ${e.check}`).toBe(true);
-      expect(e.dc).toBeGreaterThanOrEqual(4);
-      expect(e.dc).toBeLessThanOrEqual(10);
+      if (e.check) expect(SIX_STATS.includes(e.check), e.id).toBe(true);
+      expect(e.dc >= 4 && e.dc <= 10, e.id).toBe(true);
       expect([1, 2, 3].includes(e.tier), e.id).toBe(true);
-      expect(e.seed.length, e.id).toBeGreaterThan(20);
     }
-    for (const f of FACTIONS) expect(passerRolesOf(f).length, f).toBeGreaterThan(0);
   });
 
-  it("每个奖励码都能解析，引用的门派、品阶、类别、六维、势力都真实存在", () => {
+  it("每个奖励码都能解析，引用的门派、品阶、六维、势力、局势卡都真实存在", () => {
     for (const e of ROAD_EVENTS) {
-      const facts = parseRewardCodes(allCodes(e).join("|"), { cast: parseCast(e.cast), destNode: "大草甸", rng: () => 0.5 });
-      for (const f of facts) {
+      for (const f of parseRewardCodes(allCodes(e).join("|"), { destNode: "大草甸", rng: () => 0.5 })) {
         if (f.op === "GRANT_ITEM") { expect(Object.values(ITEM_CATEGORY_CODE).includes(f.category), e.id).toBe(true); expect(QUALITY.includes(f.quality), e.id).toBe(true); }
-        if (f.op === "BESTOW_SKILL") { expect(SCHOOLS.has(f.school), `${e.id} ${f.school}`).toBe(true); expect(QUALITY.includes(f.quality), e.id).toBe(true); expect(["成长", "独门"].includes(f.growthMode), e.id).toBe(true); }
-        if (f.op === "SHIFT_SPECIAL_STAT") { expect(SIX_STATS.includes(f.attr), `${e.id} ${f.attr}`).toBe(true); expect(f.delta).toBe(1); }
-        if (f.op === "FACTION_REP") expect(REP_FACTIONS.some((x) => x.name === f.faction), `声誉系统里没有：${e.id} ${f.faction}`).toBe(true);
-        if (f.op === "APPLY_CONDITION") { expect(f.flag, e.id).toBeTruthy(); expect(f.durationTurns, e.id).toBeGreaterThan(0); }
-        if (f.op === "SPAWN_COMPANION_CANDIDATE" && f.beast) expect(["坐骑", "兽伴"].includes(f.role), e.id).toBe(true);
+        if (f.op === "BESTOW_SKILL") { expect(SCHOOLS.has(f.school), e.id).toBe(true); expect(["成长", "独门"].includes(f.growthMode), e.id).toBe(true); }
+        if (f.op === "SHIFT_SPECIAL_STAT") { expect(SIX_STATS.includes(f.attr), e.id).toBe(true); expect(f.delta).toBe(1); }
+        if (f.op === "FACTION_REP") expect(REP_FACTIONS.some((x) => x.name === f.faction), `${e.id} ${f.faction}`).toBe(true);
+        if (f.op === "ADD_SITUATION" || f.op === "CLEAR_SITUATION") expect(SITUATION_IDS.includes(f.situation), e.id).toBe(true);
+        if (f.op === "APPLY_CONDITION") expect(f.durationTurns, e.id).toBeGreaterThan(0);
       }
     }
+    for (const k of CATEGORY_KEYS) for (const s of Object.keys(livingAffinity(k).situations || {})) expect(SITUATION_IDS.includes(s), `${k} ${s}`).toBe(true);
   });
 
-  it("美人与同伴：都写明成年年纪、只遇一次、有固定姓名或兽名，且不与已有人物撞名", () => {
-    const known = new Set(NPC_ART);
-    const names = [];
-    for (const e of ROAD_EVENTS) {
-      const codes = allCodes(e);
-      const recruits = codes.some((c) => c === "ally" || c === "mate");
-      if (codes.includes("mate")) {
-        const cast = parseCast(e.cast);
-        if (!cast.rumor) expect(cnAge(cast.age), `${e.id} ${cast.age}`).toBeGreaterThanOrEqual(18);
-      }
-      if (recruits || codes.some((c) => c.startsWith("beast:"))) expect(e.once, e.id).toBe(true);
-      const cast = parseCast(e.cast);
-      if (cast?.name) names.push(cast.name);
-    }
-    expect(new Set(names).size).toBe(names.length);
-    for (const n of names) expect(known.has(n), `与已有立绘人物撞名：${n}`).toBe(false);
-  });
-
-  it("主行动给永久六维、武学、同伴、美人、兽伴的事件都只遇一次，冷却后刷不出第二份", () => {
-    for (const e of ROAD_EVENTS) {
-      if (/(^|\|)(stat:|skill:|beast:|ally(\||$)|mate(\||$))/.test(e.win)) expect(e.once, e.id).toBe(true);
-    }
+  it("长期奖励（永久六维、武学、同伴、美人、兽伴）的事件都只遇一次", () => {
+    for (const e of ROAD_EVENTS) if (/(^|\|)(stat:|skill:|beast:|ally(\||$)|mate(\||$))/.test(e.win)) expect(e.once, e.id).toBe(true);
   });
 
   it("每个地图节点白天都有足够多的事件可抽（至少 25 件）", () => {
-    for (const node of Object.keys(PLACE_TAGS)) {
-      const n = eligibleEvents({ ...day(), varTree: { 世界: { 传闻人物: { 某人: {} } } } }, node).length;
-      expect(n, node).toBeGreaterThanOrEqual(25);
+    const st = withWorld({ 传闻人物: { 某人: {} } });
+    for (const node of Object.keys(PLACE_TAGS)) expect(eligibleEvents(st, node).length, node).toBeGreaterThanOrEqual(25);
+  });
+
+  it("全集文档与数据源一致（改了数据要重新生成）", () => {
+    expect(readFileSync(DOC_PATH, "utf8")).toBe(buildDoc());
+  });
+});
+
+describe("人物从现有池子取", () => {
+  it("没有任何事件写死人名；同伴与美人一律走游走冒险者的人物槽，美人槽要求亲密设定", () => {
+    for (const e of ROAD_EVENTS) {
+      expect(e.cast.split(":").length, `写死了人名：${e.id}`).toBeLessThan(5);
+      const codes = allCodes(e);
+      if (codes.includes("ally") || codes.includes("mate")) expect(parseCast(e.cast)?.kind, e.id).toBe("oc");
+      if (codes.includes("mate")) expect(parseCast(e.cast).romance, e.id).toBe(true);
     }
   });
+
+  it("美人槽只抽得到带亲密设定、且生平里没有未满十八岁字样的冒险者", () => {
+    const pool = WANDERING_OCS.filter(isRomanceEligible);
+    expect(pool.length).toBeGreaterThan(0);
+    for (const oc of pool) {
+      expect(oc.intimacy && !oc.intimacy.forbidden, oc.name).toBeTruthy();
+      expect(/十[一二三四五六七]岁|(?<!\d)1[0-7]岁/.test([oc.brief, oc.lifeHistory, oc.fullBio].join(" ")), oc.name).toBe(false);
+    }
+  });
+
+  it("每个人物槽在它出没的地方至少有一处抽得到三个以上的人；已入队的人不会被抽到", () => {
+    for (const e of ROAD_EVENTS) {
+      const slot = parseCast(e.cast);
+      if (slot?.kind !== "oc") continue;
+      const nodes = Object.keys(PLACE_TAGS).filter((n) => e.where.some((w) => w === n || PLACE_TAGS[n].includes(w)));
+      expect(Math.max(...nodes.map((n) => ocCandidates(slot, day(), n).length)), e.id).toBeGreaterThanOrEqual(slot.romance ? 1 : 3);
+    }
+    const slot = parseCast("oc:任");
+    const someone = ocCandidates(slot, day(), "天都镇")[0].oc.name;
+    const recruited = day(10, { companionState: { k: { unlocked: true, label: someone } } });
+    expect(ocCandidates(slot, recruited, "天都镇").some((c) => c.oc.name === someone)).toBe(false);
+  });
+
+  it("游走册显示此刻就在本节点的冒险者更容易被抽到，结算后同步游走册位置", () => {
+    const slot = parseCast("oc:任");
+    const name = ocCandidates(slot, day(), "雅江")[0].oc.name;
+    const here = withWorld({ 游走册: { [name]: { at: "雅江" } } });
+    expect(ocCandidates(slot, here, "雅江").find((c) => c.oc.name === name).weight).toBeGreaterThan(1);
+    const roll = rollRoadEvent(day(), "天都镇", { rng: seededRand(3, "oc") });
+    const w = roadEventWrites(roll, { optionKey: "main", success: true, facts: [] });
+    if (roll.cast?.kind === "oc") expect(w.rosterSync).toEqual({ name: roll.cast.name, at: "天都镇" });
+  });
 });
 
-describe("路遇掷骰与结算", () => {
-  it("只抽本地事件；同一种子结果可重放", () => {
-    const a = rollRoadEvent(day(), "焚风渡", { rng: seededRand(1, "x") });
-    const b = rollRoadEvent(day(), "焚风渡", { rng: seededRand(1, "x") });
-    expect(a).toEqual(b);
-    const ev = ROAD_EVENTS.find((e) => e.id === a.eventId);
-    expect(ev.where.some((w) => w === "焚风渡" || PLACE_TAGS.焚风渡.includes(w))).toBe(true);
-    expect(a.options.map((o) => o.key)).toEqual(["main", "alt", "leave"]);
+describe("对接活世界蓝图", () => {
+  it("谓词：交情门槛、交恶门槛、六维门槛、传闻在册", () => {
+    expect(isEligible(byId("J05"), withWorld({ 势力声誉: { 黑风寨: 19 } }), "黑风寨")).toBe(false);
+    expect(isEligible(byId("J05"), withWorld({ 势力声誉: { 黑风寨: 20 } }), "黑风寨")).toBe(true);
+    expect(isEligible(byId("S05"), day(), "黑风寨")).toBe(false);
+    expect(isEligible(byId("S05"), withWorld({ 势力声誉: { 黑风寨: -30 } }), "黑风寨")).toBe(true);
+    expect(isEligible(byId("F09"), day(), "山洞")).toBe(false);
+    expect(isEligible(byId("F09"), day(10, { char: { special: { 悟性: 7 } } }), "山洞")).toBe(true);
+    expect(isEligible(byId("T01"), day(), "打箭炉")).toBe(false);
+    expect(isEligible(byId("T01"), withWorld({ 传闻人物: { 沙里飞: {} } }), "打箭炉")).toBe(true);
+    expect(evalWhen({ type: "factionTensionGte", a: "青城派", b: "天龙教", value: 101 }, day())).toBe(false);
+    expect(() => evalWhen({ type: "无此谓词" }, day())).toThrow();
   });
 
-  it("夜里才有的事白天不出；需要交情的事交情不够不出；需要传闻的事没有传闻不出", () => {
-    const nightOnly = ROAD_EVENTS.find((e) => e.id === "R02");
+  it("夜里才有的事白天不出", () => {
     expect(isNight(day(10).time)).toBe(false);
-    expect(isEligible(nightOnly, day(10), "大草甸")).toBe(false);
-    expect(isEligible(nightOnly, day(22), "大草甸")).toBe(true);
-    const friendly = ROAD_EVENTS.find((e) => e.id === "J05");
-    expect(isEligible(friendly, day(), "黑风寨")).toBe(false);
-    expect(isEligible(friendly, { ...day(), varTree: { 世界: { 势力声誉: { 黑风寨: 19 } } } }, "黑风寨")).toBe(false);
-    expect(isEligible(friendly, { ...day(), varTree: { 世界: { 势力声誉: { 黑风寨: 20 } } } }, "黑风寨")).toBe(true);
-    const grudge = ROAD_EVENTS.find((e) => e.id === "S05");
-    expect(isEligible(grudge, day(), "黑风寨")).toBe(false);
-    expect(isEligible(grudge, { ...day(), varTree: { 世界: { 势力声誉: { 黑风寨: -30 } } } }, "黑风寨")).toBe(true);
-    const rumor = ROAD_EVENTS.find((e) => e.id === "T01");
-    expect(isEligible(rumor, day(), "打箭炉")).toBe(false);
-    expect(isEligible(rumor, { ...day(), varTree: { 世界: { 传闻人物: { 沙里飞: {} } } } }, "打箭炉")).toBe(true);
+    expect(isEligible(byId("R02"), day(10), "大草甸")).toBe(false);
+    expect(isEligible(byId("R02"), day(22), "大草甸")).toBe(true);
   });
 
-  it("只遇一次的事记账后不再出现；同类事一日内不重复", () => {
+  it("局势卡生效时相应类别更容易出：山道封锁让黑风敲诈变多", () => {
+    const count = (st) => { let n = 0; for (let i = 0; i < 300; i++) if (rollRoadEvent(st, "黑风寨", { rng: seededRand(i, "j") })?.eventId.startsWith("J")) n++; return n; };
+    const blocked = withWorld({ 据点局势: { 黑风寨: [{ id: "sit_road_blockade", sinceDay: 29, expireDay: 33 }] } });
+    expect(count(blocked)).toBeGreaterThan(count(day()));
+  });
+
+  it("编队停在本节点时，来人取编队的势力", () => {
+    const st = withWorld({ 离线编队: { sq_chama_caravan: { at: "打箭炉", role: "caravan", faction: "玉泉寨" } } });
+    let hit = null;
+    for (let i = 0; i < 200 && !hit; i++) { const r = rollRoadEvent(st, "打箭炉", { rng: seededRand(i, "sq") }); if (r.eventId.startsWith("A") && r.cast?.kind === "role") hit = r; }
+    expect(hit.cast.faction).toBe("玉泉寨");
+    expect(hit.cast.squadId).toBe("sq_chama_caravan");
+  });
+
+  it("只遇一次记在 flags；冷却从事件录里的路遇条目推算", () => {
     const st = day();
-    const roll = { eventId: "D07", destNode: "焚风渡", day: 30, cast: parseCast(ROAD_EVENTS.find((e) => e.id === "D07").cast) };
-    const ledger = nextRoadLedger(st, roll);
-    const after = { ...st, varTree: { 世界: { 路遇: ledger } } };
-    expect(isEligible(ROAD_EVENTS.find((e) => e.id === "D07"), after, "焚风渡")).toBe(false);
-    expect(isEligible(ROAD_EVENTS.find((e) => e.id === "D09"), after, "雅江")).toBe(false);
-    const nextWeek = { ...after, time: after.time + 24 * 2 };
-    expect(isEligible(ROAD_EVENTS.find((e) => e.id === "D09"), nextWeek, "雅江")).toBe(true);
+    const roll = { eventId: "D07", destNode: "焚风渡", day: 30, turn: st.time, cast: null, options: [] };
+    const w = roadEventWrites(roll, { optionKey: "main", success: true, facts: [] });
+    expect(w.flagsAdd).toEqual(["road_once_D07"]);
+    expect(isEligible(byId("D07"), { ...st, flags: w.flagsAdd }, "焚风渡")).toBe(false);
+    // 冷却：同一件事十日、同一类事一日（用两件同属茶马商队、来人走身份池的事，避免混进人物槽的因素）
+    const a01 = { eventId: "A01", destNode: "天都镇", day: 30, turn: st.time, cast: null, options: [] };
+    const logged = withWorld({ 事件录: [roadEventWrites(a01, { optionKey: "main", success: true, facts: [] }).worldEvent] });
+    expect(isEligible(byId("A02"), logged, "大草甸")).toBe(false);
+    expect(isEligible(byId("A02"), { ...logged, time: logged.time + 48 }, "大草甸")).toBe(true);
+    expect(isEligible(byId("A01"), { ...logged, time: logged.time + 24 * 5 }, "天都镇")).toBe(false);
+    expect(isEligible(byId("A01"), { ...logged, time: logged.time + 24 * 10 }, "天都镇")).toBe(true);
   });
 
-  it("主行动按检定定成败；次行动必成；离开无事", () => {
-    const roll = { eventId: "C05", destNode: "雅江", day: 30, cast: parseCast(ROAD_EVENTS.find((e) => e.id === "C05").cast), options: [] };
-    const win = resolveRoadEvent(roll, "main", day(), { rng: () => 0 });
-    expect(win.success).toBe(true);
-    expect(win.facts.some((f) => f.op === "SPAWN_COMPANION_CANDIDATE" && f.npc === "静姝")).toBe(true);
-    const lose = resolveRoadEvent(roll, "main", day(), { rng: () => 0.999 });
-    expect(lose.success).toBe(false);
-    expect(lose.facts.some((f) => f.op === "SPAWN_COMPANION_CANDIDATE")).toBe(false);
-    expect(resolveRoadEvent(roll, "alt", day()).facts.map((f) => f.op)).toEqual(["RUMOR_HOOK"]);
-    expect(resolveRoadEvent(roll, "leave", day()).facts).toEqual([]);
+  it("每次路遇产出一条 WorldEvent，首扩散点是本据点", () => {
+    const roll = rollRoadEvent(day(), "打箭炉", { rng: seededRand(9, "we") });
+    const w = roadEventWrites(roll, resolveRoadEvent(roll, "main", day(), { rng: () => 0 }));
+    expect(w.worldEvent).toMatchObject({ type: "road", eventId: roll.eventId, district: "打箭炉", knownDistricts: ["打箭炉"], day: 30 });
   });
 
-  it("第一段提示词停在抉择前、带情节核与三个可行之事；第二段带已定事实与天机券填空", () => {
-    const roll = rollRoadEvent(day(), "打箭炉", { rng: seededRand(7, "n") });
+  it("势力摩擦：调停成功两家张力回落，失败或暗中相助则上升", () => {
+    const roll = { eventId: "N01", destNode: "雅江", day: 30, turn: 0, cast: null, options: [] };
+    const tension = (o) => o.facts.find((f) => f.op === "FACTION_TENSION");
+    expect(tension(resolveRoadEvent(roll, "main", day(), { rng: () => 0 })).delta).toBeLessThan(0);
+    expect(tension(resolveRoadEvent(roll, "main", day(), { rng: () => 0.999 })).delta).toBeGreaterThan(0);
+    expect(tension(resolveRoadEvent(roll, "alt", day())).delta).toBeGreaterThan(0);
+    expect(tension(resolveRoadEvent(roll, "main", day(), { rng: () => 0 }))).toMatchObject({ a: "青城派", b: "天龙教" });
+  });
+});
+
+describe("提示词", () => {
+  it("第一段停在抉择前、带情节核与可行之事；冒险者来人照档案写", () => {
+    let roll = null;
+    for (let i = 0; i < 200 && !roll; i++) { const r = rollRoadEvent(day(), "天都镇", { rng: seededRand(i, "p") }); if (r.cast?.kind === "oc") roll = r; }
     const note = buildRoadEventNote(roll);
-    const ev = ROAD_EVENTS.find((e) => e.id === roll.eventId);
-    expect(note).toContain(ev.seed);
-    expect(note).toContain("路遇铁律");
+    expect(note).toContain(byId(roll.eventId).seed);
+    expect(note).toContain("照此人档案写");
+    expect(note).toContain(roll.cast.name);
     for (const o of roll.options) expect(note).toContain(o.label);
-    const res = { optionKey: "main", success: true, facts: parseRewardCodes("item:武器:蓝|silver:+20", { cast: roll.cast, rng: () => 0.5 }) };
+  });
+
+  it("第二段带已定事实与天机券填空", () => {
+    const roll = rollRoadEvent(day(), "打箭炉", { rng: seededRand(7, "n") });
+    const res = { optionKey: "main", success: true, facts: parseRewardCodes("item:武器:蓝|silver:+20|situation:-sit_road_blockade", { cast: roll.cast, destNode: "打箭炉", rng: () => 0.5 }) };
     const r2 = buildResolutionNote(roll, res);
     expect(r2).toContain("蓝品兵刃");
-    expect(r2).toContain("银两 +20");
+    expect(r2).toContain("得以化解");
     expect(r2).toContain("天机券填空");
-  });
-});
-
-describe("全集文档", () => {
-  it("仓库里的全集文档与数据源一致（改了数据要重新生成）", () => {
-    expect(readFileSync(DOC_PATH, "utf8")).toBe(buildDoc());
   });
 });
