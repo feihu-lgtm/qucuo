@@ -24,6 +24,7 @@ export function registerWorldPack(registry, pack) {
   if (registry.packs.includes(pack.id)) return registry; // 幂等
   // 第一阶段全量校验：任一冲突即整包拒收，绝不留下半截注册。
   const toInsert = [];
+  const inPack = new Map(); // `${table}/${id}` -> canonicalJson，包内同表重名同样要卡
   for (const table of LIVING_TABLES) {
     for (const entry of pack[table] || []) {
       if (!entry || typeof entry.id !== "string" || !entry.id) {
@@ -34,6 +35,13 @@ export function registerWorldPack(registry, pack) {
         if (canonicalJson(dup) === canonicalJson(entry)) continue; // 同名同内容容忍
         throw new Error(`registerWorldPack: ${table} 重名 id「${entry.id}」（${pack.id} 与已注册包冲突）`);
       }
+      const key = `${table}/${entry.id}`;
+      const canon = canonicalJson(entry);
+      if (inPack.has(key)) {
+        if (inPack.get(key) === canon) continue; // 包内重复声明同内容，幂等去重
+        throw new Error(`registerWorldPack: ${pack.id} 包内 ${table} 重名 id「${entry.id}」且内容冲突`);
+      }
+      inPack.set(key, canon);
       toInsert.push([table, entry]);
     }
   }
@@ -61,7 +69,7 @@ const VALID_PREDICATES = new Set([
 
 // 收集 when 树（支持 all/any/not 嵌套与数组简写）里全部谓词节点。
 function walkPredicates(node, visit) {
-  if (!node) return;
+  if (node === null || node === undefined) return;
   if (Array.isArray(node)) {
     for (const child of node) walkPredicates(child, visit);
     return;
@@ -175,8 +183,8 @@ export function validateWorldPacks(registry) {
     collectFactions(sq, factions);
     for (const f of factions) if (!factionNames.has(f)) errors.push(`roamingSquads「${sq.id}」引用未知势力「${f}」`);
     walkPredicates(sq.when, (pred) => {
-      if (pred.type === "worldState" && pred.id && !wsIds.has(pred.id)) {
-        errors.push(`roamingSquads「${sq.id}」引用未声明的 worldState「${pred.id}」`);
+      if (pred.type === "worldState" && !wsIds.has(pred.id)) {
+        errors.push(`roamingSquads「${sq.id}」引用未声明的 worldState「${pred.id === undefined ? "(缺 id)" : pred.id}」`);
       }
     });
     for (const key of ["clearSituation", "addTargetSituation"]) {

@@ -132,6 +132,34 @@ describe("WO-25C worldRegistry", () => {
     expect(validateWorldPacks(registry).some((e) => e.includes("ws_typo"))).toBe(true);
   });
 
+  it("包内同表重名 id 内容冲突报错、同内容幂等去重", () => {
+    const registry = createLivingWorldRegistry();
+    expect(() => registerWorldPack(registry, {
+      id: "pack_inner_dup",
+      worldStates: [
+        { id: "ws_d", label: "丁一", when: { type: "flag", flag: "f1" } },
+        { id: "ws_d", label: "丁二", when: { type: "flag", flag: "f2" } },
+      ],
+    })).toThrow(/包内/);
+    const registry2 = createLivingWorldRegistry();
+    registerWorldPack(registry2, {
+      id: "pack_inner_same",
+      worldStates: [
+        { id: "ws_d", label: "丁", when: { type: "flag", flag: "f1" } },
+        { id: "ws_d", label: "丁", when: { type: "flag", flag: "f1" } },
+      ],
+    });
+    expect(registry2.worldStates).toHaveLength(1);
+  });
+
+  it("空字符串引用报错不被吞", () => {
+    const registry = createLivingWorldRegistry();
+    const pack = validPack();
+    pack.roamingSquads[0].when = [""];
+    registerWorldPack(registry, pack);
+    expect(validateWorldPacks(registry).some((e) => e.includes("未声明的 worldState"))).toBe(true);
+  });
+
   it("未知谓词类型报错", () => {
     const registry = createLivingWorldRegistry();
     registerWorldPack(registry, {
