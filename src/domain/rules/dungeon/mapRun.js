@@ -254,7 +254,9 @@ export function rollChestRewards(chestTier, config, {
         out.notes.push(`★ 镇宫神兵「${da.itemName}」认主出鞘！`);
       } else {
         out.items.push({ name: da.clueItem, category: "misc", quality: "蓝" });
-        out.notes.push(`暗匣留有线索信物「${da.clueItem}」，循此可问神兵旧案`);
+        // #668：名器是双轨设计——首通只出线索，凭线索/通关记录再打通一回才出名器。
+        // 旧文案「循此可问神兵旧案」让人以为要去找人问，实际再闯一回即可，这里写明。
+        out.notes.push(`暗匣留有线索信物「${da.clueItem}」——镇宫名器「${da.itemName}」尚未出世：再打通一回本宫（打通后可「重探新脉」换图再闯），首领宝匣便会交出它`);
       }
     }
   }
@@ -442,6 +444,52 @@ export function hydrateGridRoomEvent(runState, roomName, room, config) {
   }
 
   return null;
+}
+
+// 消耗账本是房间事件的唯一事实源（#669）：boss 击杀、开箱、拆机关、打通出口、
+// 清房（战斗得胜/交易/中立事件了结）都记在 runState 的账本里，并随 syncDungeonWorld
+// 落进 7 天世界。roomEvent 只是按账本水合出来的视图——任何时候视图与账本冲突，
+// 以账本为准重新水合。补给点不算消耗（歇脚后仍留着「记录存档」入口），冒险者遭遇
+// 由 adventurers[].met 自管，二者不进本判定。
+const CONSUMED_BY_KIND = {
+  boss: (rs) => Boolean(rs.bossDefeated),
+  chest: (rs, name) => (rs.openedChests || []).includes(name),
+  trap_chest: (rs, name) => (rs.openedChests || []).includes(name),
+  puzzle: (rs, name) => (rs.solvedPuzzles || []).includes(name),
+  exit: (rs, name, room) => Boolean(room?.exitUnlocked) || (rs.unlockedExits || []).includes(name),
+  combat: (rs, name) => (rs.clearedRooms || []).includes(name),
+  trade: (rs, name) => (rs.clearedRooms || []).includes(name),
+  neutral: (rs, name) => (rs.clearedRooms || []).includes(name),
+};
+
+export function isGridRoomConsumed(runState, roomName, room) {
+  const check = CONSUMED_BY_KIND[room?.roomKind];
+  return Boolean(check && check(runState || {}, roomName, room));
+}
+
+// 视图过期判定：账本已记消耗、视图却仍挂着未了结的事件（读档、检查点回滚、
+// 旧档里先挂事件后记账等情形）。冒险者遭遇不在此列。
+function isStaleGridEvent(runState, roomName, room) {
+  const ev = room?.roomEvent;
+  if (!ev || ev.resolved || ev.kind === "adv_encounter") return false;
+  return isGridRoomConsumed(runState, roomName, room);
+}
+
+/**
+ * 按账本校正整张 13×13 图上的房间事件视图：已消耗的房间重新水合（多半得到 null），
+ * 其余原样保留。旧 10 区图（无 roomKind）不动。
+ */
+export function reconcileGridRoomEvents(runState) {
+  if (!runState?.map?.rooms || !runState.map.gridSize) return runState;
+  const config = DUNGEON_DISTRICTS_ALL[runState.districtKey];
+  if (!config) return runState;
+  let rooms = null;
+  for (const [name, room] of Object.entries(runState.map.rooms)) {
+    if (!room?.roomKind || !isStaleGridEvent(runState, name, room)) continue;
+    rooms = rooms || { ...runState.map.rooms };
+    rooms[name] = { ...room, roomEvent: hydrateGridRoomEvent(runState, name, room, config) };
+  }
+  return rooms ? { ...runState, map: { ...runState.map, rooms } } : runState;
 }
 
 /**
@@ -645,9 +693,10 @@ export function moveRoom(runState, dir) {
   // 首访或新入大平面房（尚未挂 roomEvent）水合房间交互
   const existingTarget = next.map.rooms[target];
   if (existingTarget.roomKind) {
-    if (!existingTarget.roomEvent) {
+    const stale = isStaleGridEvent(next, target, existingTarget);
+    if (!existingTarget.roomEvent || stale) {
       const ev = hydrateGridRoomEvent(next, target, existingTarget, config);
-      if (ev) {
+      if (ev || stale) {
         next.map = {
           ...next.map,
           rooms: { ...next.map.rooms, [target]: { ...existingTarget, roomEvent: ev } },
@@ -810,6 +859,8 @@ export function applyMapBattleResult(runState, {
       if (chest.cardUnlocked) next.unlockedCards = [...new Set([...(next.unlockedCards || []), chest.cardUnlocked.flag])];
       if (chest.divineDrop) next.divineFlags = [...new Set([...(next.divineFlags || []), chest.divineDrop.flag])];
       if (chest.notes?.length) next.log = [...next.log, ...chest.notes];
+      // #667：通关画面要说清「首领已伏诛、地宫已打通、得了什么」，不能只剩件数。
+      next.victoryNotes = [`镇宫首领「${battle.npc?.name || config?.boss?.name || "首领"}」伏诛，地宫已打通`, ...(chest.notes || [])];
       return runEnd(next, "victory").runState;
     }
 
@@ -857,7 +908,9 @@ export function restoreCheckpoint(runState) {
   };
   const log = `退回${restored.current}，从头再来。`;
   next.log = [...(runState.log || []), log];
-  return { runState: next, log };
+  // 检查点只回滚位置、气血与随身收获；开过的箱、打过的房仍记在账本上，
+  // 快照里的旧事件视图按账本校正，免得同一只箱子回档后再开一次。
+  return { runState: reconcileGridRoomEvents(next), log };
 }
 
 export function serializeMapRun(runState) {
@@ -870,7 +923,7 @@ const OPTIONAL_RUN_KEYS = [
   "openedChests", "solvedPuzzles", "clearedRooms", "marketBought", "adventurers",
   "charMoney", "spentMoney", "playerFlags", "playerSkills", "playerInv",
   "learnedSkills", "unlockedCards", "divineFlags", "recruitedAdvIds", "usedItems",
-  "activeBattle", "bossDefeated",
+  "activeBattle", "bossDefeated", "victoryNotes",
 ];
 
 export function deserializeMapRun(data) {
@@ -895,7 +948,7 @@ export function deserializeMapRun(data) {
   for (const key of OPTIONAL_RUN_KEYS) {
     if (data[key] !== undefined) base[key] = data[key];
   }
-  return base;
+  return reconcileGridRoomEvents(base);
 }
 
 export function retreatRun(runState) {
