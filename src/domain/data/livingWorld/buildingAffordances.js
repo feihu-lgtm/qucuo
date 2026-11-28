@@ -33,7 +33,7 @@ export const DIMENSION_BY_TYPE = Object.freeze({
   jewelry: "leisure",
   hospital: "recovery",
   medicine: "recovery",
-  blackmarket: "recovery",
+  blackmarket: "work", // 黑市是见不得光的营生，不是疗伤处——健康商贩在此谋生活，病人也不靠它治
 });
 
 export const LIFE_DIMENSIONS = Object.freeze(["dine", "play", "work", "leisure", "recovery"]);

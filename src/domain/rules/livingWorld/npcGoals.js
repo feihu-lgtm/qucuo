@@ -174,10 +174,17 @@ export function resolveLifeSlice({ npc, varTree = {}, time = 0, buildings = [], 
     picked = pickVenue();
   }
   if (!picked) return null;
-  // recovery 叙事（带伤戒心/把脉将养）只给真正带伤的人：健康的医者伙计身处药庐医馆
-  // 是坐堂捣药谋生，不是躺着养伤的病人（Review 实证：健康玉真子在药园被写成伤员）。
+  // recovery 叙事（带伤戒心/把脉将养）只给真正带伤的人。健康者身处药庐医馆：
+  // 药医是坐堂捣药谋生（work），其余人等既不是病人也不是大夫——回退通用营生句，
+  // 不把兵器铺掌柜写成坐诊医师（Review 实证：唐三少/玄女被写成看诊大夫）。
   const injured = aiPackage === "injured_rest" || hpRatio < 0.7;
-  if (picked.dim === "recovery" && !injured) picked = { dim: "work", building: picked.building, healingWork: true };
+  if (picked.dim === "recovery" && !injured) {
+    if (aiPackage === "herbalist") {
+      picked = { dim: "work", building: picked.building, healingWork: true };
+    } else {
+      return null;
+    }
+  }
   const { dim, building } = picked;
   const moods = MOOD_BY_DIMENSION[dim] || ["惬意"];
   const mood = moods[Math.floor(rng() * moods.length) % moods.length];

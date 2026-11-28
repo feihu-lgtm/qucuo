@@ -322,3 +322,20 @@ describe("Review 回归：健康医者不被写成病人", () => {
     expect(slice.hook).toContain("身上有伤");
   });
 });
+
+describe("Review 回归：健康非药医不坐堂、黑市归谋生", () => {
+  const hospital = { id: "h1", name: "后山温泉", type: "hospital" };
+  it("健康非药医锚定 hospital：回退通用营生句（null），不写病人也不写大夫", () => {
+    const npc = { name: "玄女", brief: "雪山守护者" };
+    expect(resolveLifeSlice({ npc, varTree: {}, time: 100, buildings: [hospital], anchorBuilding: hospital })).toBeNull();
+  });
+  it("黑市归 work 维度：健康商贩锚定黑市是谋生不是疗伤", () => {
+    const bm = { id: "t1", name: "唐门暗器铺", type: "blackmarket" };
+    const npc = { name: "唐三少", brief: "暗器铺掌柜" };
+    const slice = resolveLifeSlice({ npc, varTree: {}, time: 100, buildings: [bm], anchorBuilding: bm });
+    expect(slice).not.toBeNull();
+    expect(slice.activity).toBe("work");
+    expect(slice.hook).not.toContain("身上有伤");
+    expect(slice.detail).not.toContain("看诊");
+  });
+});
