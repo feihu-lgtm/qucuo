@@ -33,6 +33,8 @@ export const LETTER_TUNE = {
   maxInbox: 60,
 };
 
+import { getNpcRecentEvents } from "../../domain/rules/livingWorld/projectWorld.js";
+import { purseTierOf } from "../../domain/rules/livingWorld/npcGoals.js";
 import { findNpcObject } from "../../domain/rules/npc/npcLookup.js";
 import * as importedRegistry from "../../domain/rules/cards/importedRegistry.js";
 export { findNpcObject };
@@ -53,11 +55,28 @@ export function pickLetterSender(state, rng = Math.random) {
       && Object.keys(npc).length > 1
       && !inbox.some((letter) => letter.npcName === name && state.time - letter.turn < LETTER_TUNE.senderCooldown));
   if (!candidates.length) return null;
-  const weighted = candidates.map((c) => ({ ...c, w: 1 + c.aff / 25 }));
+  // WO-25J：最近 3 天（72 格）卷入 事件录 的熟人写信权重翻倍——来信由头锚真事；
+  // 银囊窘迫是借钱飞鸽的引子，一并记进 hint 供生成与兜底消费。
+  const enriched = candidates.map((c) => {
+    const recentEvents = getNpcRecentEvents(state, c.name, 3)
+      .filter((ev) => Number.isFinite(ev?.turn) && state.time - ev.turn <= 72 && typeof ev.text === "string" && ev.text);
+    const poorPurse = purseTierOf(state.varTree, c.name, state.time) === 0;
+    return { ...c, recentEvents, poorPurse };
+  });
+  const weighted = enriched.map((c) => ({ ...c, w: (1 + c.aff / 25) * (c.recentEvents.length ? 2 : 1) * (c.poorPurse ? 1.5 : 1) }));
   const total = weighted.reduce((sum, c) => sum + c.w, 0);
   let roll = rng() * total;
-  for (const c of weighted) { roll -= c.w; if (roll <= 0) return c; }
-  return weighted[weighted.length - 1];
+  let picked = weighted[weighted.length - 1];
+  for (const c of weighted) { roll -= c.w; if (roll <= 0) { picked = c; break; } }
+  return {
+    name: picked.name,
+    npc: picked.npc,
+    aff: picked.aff,
+    hint: {
+      events: picked.recentEvents.slice(0, 2).map((ev) => ev.text.replace(/。\s*$/, "")),
+      poorPurse: picked.poorPurse,
+    },
+  };
 }
 
 // 抽签入队：到点掷一次；中了挑一个写信人按距离排到达时刻，鸽子正在路上。
@@ -76,6 +95,7 @@ export function queueInboundLetter(state, rng = Math.random) {
     npcName: picked.name,
     arriveTime: state.time + delay * 2,
     sentAt: state.time,
+    ...(picked.hint && (picked.hint.events?.length || picked.hint.poorPurse) ? { hint: picked.hint } : {}),
   };
   return {
     changes: {
@@ -137,11 +157,14 @@ export function inboundFallbackLine(state, letter, rng = Math.random) {
   const poor = /穷|破|落魄|乞|债|穷酸/.test(`${npc.brief || ""}${npc.personality || ""}`);
   const pool = attrs.生气状态 ? FALLBACK.grudge
     : flirty && aff >= 30 ? FALLBACK.flirty
-    : poor ? FALLBACK.poor
+    : poor || letter?.hint?.poorPurse ? FALLBACK.poor
     : aff >= 60 ? FALLBACK.warm
     : aff >= 30 ? FALLBACK.plain
     : FALLBACK.cold;
-  return pool[Math.floor(rng() * pool.length)];
+  const body = pool[Math.floor(rng() * pool.length)];
+  // WO-25J：近期真实事件作由头——兜底句也不再是空泛问候。
+  const evHead = letter?.hint?.events?.[0];
+  return evHead ? `前些日子${evHead}，一言难尽。${body}` : body;
 }
 
 // 落地成信：鸽子落下+信纸卡+入来信箱（未读）+回信鸽 +1 + 事实登记。

@@ -248,6 +248,8 @@ export const FIELDS = Object.freeze({
       clapboardEntries: s.clapboardEntries,
       entriesBudget: 160,
       totalBudget: 1600,
+      // WO-25J 此刻生活切片：在场者与玩家同据点，据点建筑清单喂给 npcGoals 分配活计
+      district: s.room?.name || null,
     }),
   } },
   "judge.verdict": {

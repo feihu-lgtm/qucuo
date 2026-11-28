@@ -6,6 +6,8 @@
 import { filterEntriesForViewer, renderClapboardSection } from "./clapboard.js";
 import { normalizeLedgerEntries } from "../memory/npcLedgerCore.js";
 import { deriveAppearance } from "../npc/npcContext.js";
+import { resolveLifeSlice, renderLifeSliceLine } from "../livingWorld/npcGoals.js";
+import { getBuildingsForLocation } from "../../data/buildings/qucuoBuildings.js";
 
 // 性情关键词 → 说话禁忌（ deterministic 映射：什么性子的人吃不住什么话）。
 const TABOO_RULES = [
@@ -83,7 +85,9 @@ function warmthLine(npc, attrs) {
 // 为每位在场角色输出独立分块 { name, text }。
 // clapboardEntries 经 filterEntriesForViewer 按该角色视角过滤——raw_memory 条目的
 // 他人心理（rawText）在过滤层已被覆写成 publicText，想泄也泄不出去。
-export function buildNpcSoulFrames({ visibleNpcs = [], varTree = {}, time = 0, clapboardEntries = [], entriesBudget = 200, totalBudget = Infinity } = {}) {
+export function buildNpcSoulFrames({ visibleNpcs = [], varTree = {}, time = 0, clapboardEntries = [], entriesBudget = 200, totalBudget = Infinity, district = null, buildings = null } = {}) {
+  // WO-25J 此刻生活：在场者同处玩家所在据点，建筑清单纯由据点查表（显式传参优先便于测试）。
+  const venueList = Array.isArray(buildings) ? buildings : (district ? getBuildingsForLocation(district) : []);
   const frames = [];
   let used = 0;
   for (const npc of (Array.isArray(visibleNpcs) ? visibleNpcs : [])) {
@@ -92,7 +96,10 @@ export function buildNpcSoulFrames({ visibleNpcs = [], varTree = {}, time = 0, c
     const lines = [];
     const persona = personaLine(npc);
     if (persona) lines.push(persona);
-    lines.push(livelihoodLine(npc, time));
+    // WO-25J：有生活切片时顶替笼统营生句（模版 A）；无合适场子回退旧通用句。
+    const slice = venueList.length ? resolveLifeSlice({ npc, varTree, time, buildings: venueList }) : null;
+    const sliceLine = slice ? renderLifeSliceLine(slice, time) : null;
+    lines.push(sliceLine || livelihoodLine(npc, time));
     lines.push(warmthLine(npc, attrs));
     // WO-25A 外观与伤势：显眼装束取 deriveAppearance（随身装备 live 源），
     // 伤势读 varTree.世界.人物动态[name].hpRatio（离线战力记账，无记录即无恙不展开）。
@@ -115,7 +122,13 @@ export function buildNpcSoulFrames({ visibleNpcs = [], varTree = {}, time = 0, c
   return frames;
 }
 
+// 生活常态约束（WO-25J 模版 A 配套短指令）：有人带「此刻生活」切片时追加在切片区末尾——
+// 字数短不进前缀缓存区，随动态切片同区出现，无人无切片零注入。
+const LIFE_CONSTRAINT = "[生活常态约束] 人物此刻各有营生、吃喝、消遣与心境，不是站在原地专等主角搭话的木桩。描写其出场或回应时，须自然接住其「此刻生活」里的动作、器物、菜酒或情绪余波；除非好感甚笃或有急事，不强行中断手里活计凑上来寒暄，主角开口或凑近时再顺势接茬。";
+
 // 渲染成提示词段落（@在场活人切片 引用值）：一人一块，块间换行。
 export function renderNpcSoulFrames(input) {
-  return buildNpcSoulFrames(input).map((f) => f.text).join("\n");
+  const body = buildNpcSoulFrames(input).map((f) => f.text).join("\n");
+  if (!body) return body;
+  return body.includes("此刻生活：") ? `${body}\n${LIFE_CONSTRAINT}` : body;
 }

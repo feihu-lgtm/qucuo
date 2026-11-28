@@ -68,6 +68,9 @@ ${gaveGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一件礼
         npcCtx.exposure ? `此刻${npcCtx.exposure}` : "",
         // 台账是写信人（NPC）视角：sold=他卖给主角、bought=他从主角手里收下。
         bought || sold ? `与主角的买卖往来：你卖给他 ${sold} 件、从他手里买走 ${bought} 件` : "",
+        // WO-25J：近期真实事件与银囊窘迫——写信由头锚定系统真账，不编空泛近况。
+        ctx.letter?.hint?.events?.length ? `你近日卷入的事：${ctx.letter.hint.events.join("；")}` : "",
+        ctx.letter?.hint?.poorPurse ? "你近来银囊窘迫，手头紧得很" : "",
       ].filter(Boolean).join("；") || "近况平平";
       const scope = { ...state, npcName, bio: npcCtx.bio, scenario: preset.scenario || "", promptRefOptions: { factLimit: 12 } };
       const facts = render("@事实摘要", scope);
