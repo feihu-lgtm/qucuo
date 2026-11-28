@@ -262,7 +262,7 @@ export default function DungeonScreen({
         <div className="dungeon-screen-statbar">
           {mapRun ? (
             <>
-              <span>{mapRun.districtKey}·内层（第 {mapRun.step} 步）</span>
+              <span>{mapRun.displayName || mapRun.districtKey}·内层（第 {mapRun.step} 步）</span>
               <span>气血 {mapRun.hp[0]}/{mapRun.hp[1]}</span>
               <span>银两可用 {availableSilverNow}两 · 物事 {mapRun.loot.items.length}</span>
             </>

@@ -132,7 +132,7 @@ export const ENV_TAG_HANDLERS = {
     tick: () => ok(),
   },
 
-  // 天龙营八部浮屠·禁武令：每宫按 seed 封一类指令，违者反噬扣当前 50% 血
+  // 天龙营摩呼罗迦蛇窟·试炼戒律：每宫按 seed 封一类指令，违者机括反震扣当前 50% 血
   tianlongSeal: {
     onEnter: (room, rs) => {
       const s = env(rs, "seal");
@@ -141,12 +141,33 @@ export const ENV_TAG_HANDLERS = {
       let h = 0;
       for (const ch of `${rs.seed || ""}|${room.envTag}`) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
       s.cmd = pool[h % pool.length];
-      return ok(`浮屠壁上的符箓亮起——此宫封「${s.cmd}」。`);
+      return ok(`石壁戒律铁牌翻出——此窟禁行「${s.cmd}」。`);
     },
     onAction: (action, rs) => {
       const s = env(rs, "seal");
       if (!s.cmd || action.cmd !== s.cmd) return ok();
-      return ok(`符箓骤亮如烙铁，禁武令反噬自身！`, { damagePct: 0.5 });
+      return ok("违背窟中铁律，暗壁机括反震伤身！", { damagePct: 0.5 });
+    },
+    tick: () => ok(),
+  },
+
+  // 鱼定土司内府禁库·更锣警戒：失败或战败惊动巡更铜锣，下一房遇敌率抬高；检查点清零
+  tusiWatch: {
+    onEnter: (room, rs) => {
+      const s = env(rs, "tusiWatch");
+      if (room.isCheckpoint) {
+        s.alert = 0;
+        return ok("暗廊铜锣暂歇，此间角落一时无人巡过。");
+      }
+      if (!s.alert) return ok();
+      s.alert = Math.max(0, s.alert - 1);
+      return ok("内院更锣余声未歇，巡捕营护院的脚步逼近了。", { encounterRateBonus: 0.3 });
+    },
+    onAction: (action, rs) => {
+      const s = env(rs, "tusiWatch");
+      if (action.result !== "fail" && action.type !== "battleLost") return ok();
+      s.alert = Math.min(3, (s.alert || 0) + 1);
+      return ok("惊动了廊下巡更铜锣，暗处火把晃动起来。");
     },
     tick: () => ok(),
   },

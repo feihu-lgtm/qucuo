@@ -34,4 +34,8 @@ export const yajiang = [
       id: "sect_entry_yajiang", name: "青城山山门", type: BUILDING_TYPE.SECT_ENTRY, sect: "青城派",
       desc: "石砌牌坊额书青城二字。不收富贵子弟捐纳——想入门，先去江边站桩，站住了再说。",
     },
+    {
+      id: "yajiang_chensha_dock", name: "沉沙古坞", type: BUILDING_TYPE.DUNGEON, dungeonId: "yajiang_chensha_dock",
+      desc: "安澜索桥下游悬崖底藏着的一处沉船旧坞，治水暗闸与盐帮沉银引起巴蜀群雄云集抢宝。",
+    },
 ];

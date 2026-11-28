@@ -233,7 +233,8 @@ function handleGridOption(runState, room, ev, option, { attrs, rng }) {
     const loss = tc.hpLoss || 15;
     next.hp = [Math.max(1, next.hp[0] - loss), next.hp[1]];
     next = adjustEnvMeter(next, config, 1);
-    const log = `触发${tc.title || "陷阱箱"}机关！毒针呛粉扑面（气血 -${loss}）。`;
+    const failMsg = tc.failText || config.texts?.trapFailText || "机括骤发伤身";
+    const log = `触发${tc.title || "陷阱箱"}机关！${failMsg}（气血 -${loss}）。`;
     next.log = [...next.log, log];
     return { runState: next, log };
   }
@@ -259,10 +260,13 @@ function handleGridOption(runState, room, ev, option, { attrs, rng }) {
     } else if (good.effect?.revealExit) {
       const rev = revealOneExit(next);
       next = rev.runState;
-      note += rev.revealedName ? ` 残图标出未探出口「${rev.revealedName}」位于 ${rev.coords}。` : " 塔内出口已尽数在握。";
+      note += rev.revealedName
+        ? ` 残图标出未探出口「${rev.revealedName}」位于 ${rev.coords}。`
+        : ` ${config.texts?.exitsAllRevealedText || "此地所有战术出口已尽数在握。"}`;
     } else if (good.effect?.blindBox) {
       const boxPool = [...(config.chestPools?.iron?.items || []), ...(config.chestPools?.stone?.items || [])];
-      const pick = boxPool[Math.floor(rng() * boxPool.length) % Math.max(1, boxPool.length)] || { name: "铁网僧袍", category: "armor", quality: "蓝" };
+      const fallback = config.texts?.blindBoxFallback || boxPool[0] || { name: "铁网僧袍", category: "armor", quality: "蓝" };
+      const pick = boxPool[Math.floor(rng() * boxPool.length) % Math.max(1, boxPool.length)] || fallback;
       next.loot = mergeLoot(next.loot, { items: [pick] });
       note += ` 当场拆封，开出「${pick.name}（${pick.quality}）」！`;
     } else {
@@ -342,7 +346,8 @@ function handleGridOption(runState, room, ev, option, { attrs, rng }) {
     }
     next = markEvent(next, { resolved: true, options: room.isCheckpoint ? [{ label: "记录存档", supplyAction: "save" }] : undefined });
     const meterNote = (room.isCheckpoint && config.envMeter) ? `并稳住了${config.envMeter.label}` : "";
-    const log = `在此歇息裹伤，恢复气血 ${nextHp[0] - runState.hp[0]} 点${meterNote}。`;
+    const healAction = config.texts?.supplyHealAction || "在此歇息裹伤";
+    const log = `${healAction}，恢复气血 ${nextHp[0] - runState.hp[0]} 点${meterNote}。`;
     next.log = [...next.log, log];
     return { runState: next, log };
   }
@@ -390,9 +395,13 @@ function handleGridOption(runState, room, ev, option, { attrs, rng }) {
       const rev = revealOneExit(next);
       next = rev.runState;
       next = withRoom(next, { ...room, residentNpcName: undefined, roomEvent: { ...ev, resolved: true, options: undefined } });
+      const cx = Math.floor((runState.map.gridSize || 13) / 2);
+      const centerHint = (config.texts?.centerHintText || "中心重地就在坐标 ({cx},{cy}) 一带。")
+        .replaceAll("{cx}", String(cx))
+        .replaceAll("{cy}", String(cx));
       const log = rev.revealedName
         ? `塞给「${adv?.name}」20 两银子，对方顺手点出了出口「${rev.revealedName}」方位 ${rev.coords}。`
-        : `塞给「${adv?.name}」20 两银子，对方提醒你：「中心石室就在坐标 (${Math.floor((runState.map.gridSize || 13) / 2)},${Math.floor((runState.map.gridSize || 13) / 2)}) 一带。」`;
+        : `塞给「${adv?.name}」20 两银子，对方提醒你：「${centerHint}」`;
       next.log = [...next.log, log];
       return { runState: next, log };
     }

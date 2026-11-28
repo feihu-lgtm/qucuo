@@ -55,8 +55,14 @@ export default { district: {
       库房: {
         x: -1, y: -2,
         desc: "存放贵重物什的库房，门上挂着一把沉甸甸的铜锁，虎胆三重门\"夜闯偷虎胆\"场景发生地。",
-        exits: { e: "议事厅" },
+        exits: { e: "议事厅", w: "内府禁库" },
         buildingId: "chest_yudingtusi",
+      },
+      内府禁库: {
+        x: -2, y: -2,
+        desc: "库房重柜背后掀开的向地深梯，黑漆铁门上铸着土司云雷纹，里面封存着三十年来不见天日的密契税册与私兵地牢。",
+        exits: { e: "库房" },
+        buildingId: "tusi_inner_vault",
       },
       桑杰朵杰书房: {
         x: 0, y: -3,

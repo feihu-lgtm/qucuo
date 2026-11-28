@@ -126,4 +126,8 @@ export const jinguan = [
       id: "jingguan_iron_dungeon", name: "北衙铁栅暗牢", type: BUILDING_TYPE.DUNGEON, dungeonId: "jingguan_iron_dungeon",
       desc: "营房地底盘旋十二级的玄铁死牢，深处锁着罚没物证与要犯密室。",
     },
+    {
+      id: "jingguan_ghost_market", name: "锦官鬼市", type: BUILDING_TYPE.DUNGEON, dungeonId: "jingguan_ghost_market",
+      desc: "暗巷地窖门下藏着的地下黑市与销赃暗坊，提暗灯做买卖、黑吃黑与暗桩搏杀全在此处。",
+    },
 ];

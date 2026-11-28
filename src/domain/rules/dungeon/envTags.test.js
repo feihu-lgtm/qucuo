@@ -90,4 +90,14 @@ describe("ENV_TAG_HANDLERS 十宫机制", () => {
     const r2 = ENV_TAG_HANDLERS.huanxiDesire.onAction({ type: "seduced" }, s); // +25 → 100
     expect(r2.effects.defeat).toBe(true);
   });
+
+  it("tusiWatch：失败/战败抬高更锣警戒与下房遇敌率，检查点清零", () => {
+    const s = rs();
+    ENV_TAG_HANDLERS.tusiWatch.onAction({ result: "fail" }, s);
+    expect(s.envTags.tusiWatch.alert).toBe(1);
+    const enter = ENV_TAG_HANDLERS.tusiWatch.onEnter(room(), s);
+    expect(enter.effects.encounterRateBonus).toBeGreaterThan(0);
+    ENV_TAG_HANDLERS.tusiWatch.onEnter(room({ isCheckpoint: true }), s);
+    expect(s.envTags.tusiWatch.alert).toBe(0);
+  });
 });

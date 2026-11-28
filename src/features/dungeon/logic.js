@@ -124,7 +124,7 @@ export function settleMapRun(state, mapRun, opts = {}) {
     hp: mapRun.hp,
     usedItems: mapRun.usedItems || [],
     floor: Math.max(1, Math.ceil((mapRun.step || 0) / 4)),
-    dungeonName: `${mapRun.districtKey}·内层`,
+    dungeonName: `${mapRun.displayName || mapRun.districtKey}·内层`,
     bossDefeated: mapRun.bossDefeated,
     clearFlag: mapRun.clearFlag,
   };

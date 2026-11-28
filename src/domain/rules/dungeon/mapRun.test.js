@@ -485,4 +485,39 @@ describe("7 天周期 · 选入口重进 · 银两黑市 · 奖励箱 · 战斗/
     expect(winBoss.bossDefeated).toBe(true);
     expect(winBoss.loot.items.some((i) => i.name === "不动明王杵")).toBe(true);
   });
+
+  it("八大 13×13 地宫全部可一键生成、进图、买清警报、抽唯一神兵并正常撤退", () => {
+    const gridEntries = Object.entries(DUNGEON_DISTRICTS_ALL).filter(([, cfg]) => cfg.gridSize === 13);
+    expect(gridEntries).toHaveLength(8);
+
+    for (const [dk, cfg] of gridEntries) {
+      const world = ensureDungeonWorld(dk, null, { time: 0 });
+      expect(Object.keys(world.map.rooms).length).toBeGreaterThanOrEqual(46);
+      expect(world.map.exitRooms).toHaveLength(6);
+      expect(world.adventurers.length).toBeGreaterThanOrEqual(7);
+      expect(world.adventurers.length).toBeLessThanOrEqual(9);
+
+      const rs = startMapRun(dk, world.seed, {
+        world,
+        char: { hp: [120, 120], money: 300 },
+        flags: [cfg.divineArm.clueFlag],
+      });
+      expect(rs.displayName).toBe(cfg.displayName);
+      expect(rs.current).toBe(cfg.anchor);
+
+      const firstBossRoll = rollChestRewards("boss", cfg, {
+        seed: `u-${cfg.id}`,
+        roomName: cfg.bossRoom,
+        playerFlags: [cfg.divineArm.clueFlag],
+      });
+      expect(firstBossRoll.divineDrop?.itemName).toBe(cfg.divineArm.itemName);
+
+      const dupBossRoll = rollChestRewards("boss", cfg, {
+        seed: `u-${cfg.id}`,
+        roomName: cfg.bossRoom,
+        playerFlags: [cfg.divineArm.clueFlag, cfg.divineArm.flag],
+      });
+      expect(dupBossRoll.divineDrop).toBeNull();
+    }
+  });
 });

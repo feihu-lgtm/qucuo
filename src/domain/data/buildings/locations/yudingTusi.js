@@ -28,4 +28,8 @@ export const yudingTusi = [
       repLocked: "看库的老差役把钥匙往怀里一揣：「偏仓只给府里的客卿用。等你在土司府说得上话（声誉 ≥ 40）再来。」",
       desc: "库房一角隔出来的杉木库箱，箱盖烙着土司府的云雷徽记，供受聘客卿与巡边差官暂存行囊军械。",
     },
+    {
+      id: "tusi_inner_vault", name: "鱼定土司内府禁库", type: BUILDING_TYPE.DUNGEON, dungeonId: "tusi_inner_vault",
+      desc: "高台黑宅之下藏匿三十年的私密暗仓，锁着超额税粮账册、伪造地契与管家私兵牢狱。",
+    },
 ];

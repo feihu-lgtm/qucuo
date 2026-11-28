@@ -20,6 +20,10 @@ export const DUNGEON_ID_TO_DISTRICT = Object.freeze({
   jingguan_iron_dungeon: "成都蜀王府地宫",
   gongcuo_submerged_vault: "雪山茫野",
   heifeng_wolf_cavern: "雅江悬棺裂谷",
+  dacaodian_duanan_post: "大草甸子虚幻境",
+  yajiang_chensha_dock: "雅江悬棺裂谷",
+  jingguan_ghost_market: "成都蜀王府地宫",
+  tusi_inner_vault: "鱼定土司内府禁库",
 });
 
 function settleLoot(loot, ratio) {
@@ -212,7 +216,7 @@ export function rollChestRewards(chestTier, config, {
         || (playerFlags || []).includes(config.clearFlag);
       if (clueReady) {
         out.divineDrop = { itemName: da.itemName, flag: da.flag };
-        out.items.push({ name: da.itemName, category: "weapon", quality: "红" });
+        out.items.push({ name: da.itemName, category: da.category || "weapon", quality: da.quality || "红" });
         out.notes.push(`★ 镇宫神兵「${da.itemName}」认主出鞘！`);
       } else {
         out.items.push({ name: da.clueItem, category: "misc", quality: "蓝" });
@@ -279,7 +283,7 @@ export function hydrateGridRoomEvent(runState, roomName, room, config) {
     return {
       kind: "loot",
       chestTier: room.chestTier || "wood",
-      desc: "死路角落静静卧着一只封蜡宝匣。",
+      desc: config.texts?.chestDesc || "死路角落静静卧着一只封蜡宝匣。",
       check: "智谋",
       dc: room.tier === 3 ? 6 : 4,
       outcome: "秘藏宝匣",
@@ -342,16 +346,20 @@ export function hydrateGridRoomEvent(runState, roomName, room, config) {
   }
 
   if (room.roomKind === "supply") {
+    const ckDesc = config.texts?.supplyCheckpointDesc || "一处避风干燥的隐蔽石室，可供歇脚存下进度。";
+    const normDesc = config.texts?.supplyNormalDesc || "一处僻静安全的落脚点，备有清水干粮，适合暂歇回气。";
+    const ckLabel = config.texts?.supplyHealLabel || "歇脚包扎（回血35%并稳环境）";
+    const normLabel = config.texts?.supplyNormalLabel || "饮水歇息回气";
     return {
       kind: "supply_station",
-      desc: room.isCheckpoint ? "一处避风干燥的石室，炭盆余烬犹存，可存下进度。" : "石缝间淌下清冽雪水，适合暂歇回气。",
+      desc: room.isCheckpoint ? ckDesc : normDesc,
       resolved: cleared,
       options: room.isCheckpoint
         ? [
-            { label: "烤火包扎（回血35%并清警戒）", supplyAction: "heal" },
+            { label: ckLabel, supplyAction: "heal" },
             { label: "记录存档", supplyAction: "save" },
           ]
-        : [{ label: "掬水洗伤回气", supplyAction: "heal" }],
+        : [{ label: normLabel, supplyAction: "heal" }],
     };
   }
 
@@ -428,8 +436,10 @@ export function startMapRun(districtKey, seed, opts = {}) {
     ? [...new Set([...world.visitedEver, startRoom])]
     : [startRoom];
 
+  const displayName = config.displayName || districtKey;
   const baseRun = {
     districtKey,
+    displayName,
     seed: baseSeed,
     map,
     current: startRoom,
@@ -442,7 +452,7 @@ export function startMapRun(districtKey, seed, opts = {}) {
     status: "exploring",
     step: 0,
     checkpoint: null,
-    log: [`踏入${districtKey}，落脚${startRoom}。`],
+    log: [`踏入${displayName}，落脚${startRoom}。`],
   };
 
   if (!config.gridSize && !world) {
@@ -822,7 +832,7 @@ export function serializeMapRun(runState) {
 }
 
 const OPTIONAL_RUN_KEYS = [
-  "prevRoom", "clearFlag", "unlockedExits", "unlockedEntries", "revealedExits",
+  "displayName", "prevRoom", "clearFlag", "unlockedExits", "unlockedEntries", "revealedExits",
   "openedChests", "solvedPuzzles", "clearedRooms", "marketBought", "adventurers",
   "charMoney", "spentMoney", "playerFlags", "playerSkills", "playerInv",
   "learnedSkills", "unlockedCards", "divineFlags", "recruitedAdvIds", "usedItems",
