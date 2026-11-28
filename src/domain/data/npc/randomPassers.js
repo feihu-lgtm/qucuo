@@ -113,7 +113,7 @@ const ROLES = {
 };
 
 // 每个节点：[势力, 权重] 与人数区间。势力腹地以自家人为主，商路要冲混杂。
-const NODE_PASSERS = {
+export const NODE_PASSERS = {
   鱼定村: { count: [2, 4], factions: [["鱼定村", 3], ["鱼定土司府", 2], ["玉泉寨", 1], ["喇嘛庙", 1], ["散人", 2]] },
   鱼定土司: { count: [1, 3], factions: [["鱼定土司府", 4], ["鱼定村", 1], ["散人", 1]] },
   喇嘛庙: { count: [1, 3], factions: [["喇嘛庙", 4], ["散人", 1]] },
@@ -143,7 +143,7 @@ const NODE_PASSERS = {
 // 77 名 OC 冒险者在全图游走可被偶遇：势力就近落点（本地派系回自家权重池，
 // 外来门派无处落脚的按散人游走），每天每节点至多撞见一位，seeded 可复现。
 const OC_POOL = [...ADVENTURER_POOL, ...ADVENTURER_POOL_IP];
-const OC_FACTION_NEAR = {
+export const OC_FACTION_NEAR = {
   锦官: "锦官城", 锦官城: "锦官城", 锦官派: "锦官城", 峨眉: "峨眉派", 青城: "青城派",
   唐门: "唐门", 天龙: "天龙教", 天龙门: "天龙教", 血刀: "天龙教", 丐帮: "丐帮三星分舵",
   三星堆: "三星派", 三星: "三星派", 五仙: "五仙教", 五仙教: "五仙教", 五毒: "五仙教", 五毒教: "五仙教",
@@ -152,7 +152,7 @@ const OC_FACTION_NEAR = {
   黑风: "黑风寨", 黑风寨: "黑风寨", 欢喜: "欢喜教", 欢喜教: "欢喜教", 鱼定: "鱼定土司府", 土司: "鱼定土司府",
   萨迦: "萨迦世家", 萨迦世家: "萨迦世家", 噶举: "噶举山人", 噶举山人: "噶举山人", 苯门: "古象雄苯门", 古象雄苯门: "古象雄苯门",
 };
-const ocNearFaction = (adv) => OC_FACTION_NEAR[adv.faction] || "散人";
+export const ocNearFaction = (adv) => OC_FACTION_NEAR[adv.faction] || "散人";
 // 每天每节点撞见 OC 的基础概率：稀有事件，不是天天有人撞大运
 const OC_WANDER_RATE = 0.14;
 
@@ -213,7 +213,7 @@ function isReserved(name) {
 
 // 一天的全图名单一起排，同一天各节点不重名；reserved 是调用方要避开的名字
 // （玩家认识的人、导入角色卡），名字撞上就重抽，免得好感度、认识记录串到别人身上。
-function passersAt(locationName, dayIdx, used, isTaken) {
+function passersAt(locationName, dayIdx, used, isTaken, ocPositions = null) {
   const cfg = NODE_PASSERS[locationName];
   const rng = seededRand(dayIdx, `passers|${locationName}`);
   const [lo, hi] = cfg.count;
@@ -245,8 +245,26 @@ function passersAt(locationName, dayIdx, used, isTaken) {
       passerArt: `passer-${role.art}${role.gender ? "" : gender === "男" ? "-male" : "-female"}`,
     });
   }
-  // OC 冒险者日刷游走：同名已被占（玩家认识/驻场/别处刷出）就让位
-  for (const oc of ocWanderersAt(locationName, dayIdx, isTaken)) {
+  // OC 冒险者游走：名册模式（ocPositions 持久游走册，大肥鱼跑路案后唯一正路）下
+  // 位置落盘不再按日重掷；旧日刷口径只留作无册兜底（路遇等瞬态场景沿用）。
+  const ocList = ocPositions
+    ? ADVENTURER_POOL_IP
+        // 名册 OC 是本尊唯一身：玩家认识他之后照样刷出（好感正主就是他），
+        // 不适用日抛龙套的撞名回避——Reviewer 实证：认识后 isTaken 永久排斥致其人间蒸发
+        .filter((adv) => !adv.homeDistrict && ocPositions[adv.name]?.at === locationName)
+        .map((adv) => ({
+          id: `oc_${adv.id}`,
+          name: adv.name,
+          brief: adv.brief,
+          personality: adv.personality,
+          faction: ocNearFaction(adv),
+          gender: adv.gender,
+          levelCap: adv.levelCap,
+          ocAdventurer: adv.id,
+          ocWanderer: true,
+        }))
+    : ocWanderersAt(locationName, dayIdx, isTaken);
+  for (const oc of ocList) {
     used.add(oc.name);
     out.push(oc);
   }
@@ -279,13 +297,13 @@ export function makeRoadPasser(faction, rng, isTaken = () => false) {
 }
 
 // 给定节点名 + 游戏时间 → 今天在此的随机过路人（纯函数，同日同地、同一组 reserved 结果一致）
-export function getRandomPassers(locationName, time, reserved = new Set()) {
+export function getRandomPassers(locationName, time, reserved = new Set(), ocPositions = null) {
   if (!NODE_PASSERS[locationName]) return [];
   const dayIdx = Math.floor(time / 24);
   const used = new Set();
   const isTaken = (name) => used.has(name) || isReserved(name) || reserved.has(name);
   for (const node of Object.keys(NODE_PASSERS)) {
-    const list = passersAt(node, dayIdx, used, isTaken);
+    const list = passersAt(node, dayIdx, used, isTaken, ocPositions);
     if (node === locationName) return list;
   }
   return [];
