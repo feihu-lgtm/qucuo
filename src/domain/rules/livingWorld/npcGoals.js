@@ -116,7 +116,7 @@ export function resolveLifeSlice({ npc, varTree = {}, time = 0, buildings = [], 
   if (aiPackage === "merchant") weight.work += 2;
   if (aiPackage === "patrol") { weight.work += 2; weight.leisure += 0.5; }
   if (aiPackage === "sect_steward") weight.leisure += 2;
-  if (aiPackage === "herbalist") { weight.work += 1; weight.recovery += 0.5; }
+  if (aiPackage === "herbalist") weight.work += 1; // 药医是坐堂谋生不是病人——recovery 权重只给真正带伤者（下方 hpRatio 两档）
   if (aiPackage === "bounty_hunter") weight.work += 1.5;
   if (aiPackage === "injured_rest") weight.recovery += 6;
   if (hpRatio < 0.7) weight.recovery += 3;
@@ -174,10 +174,14 @@ export function resolveLifeSlice({ npc, varTree = {}, time = 0, buildings = [], 
     picked = pickVenue();
   }
   if (!picked) return null;
+  // recovery 叙事（带伤戒心/把脉将养）只给真正带伤的人：健康的医者伙计身处药庐医馆
+  // 是坐堂捣药谋生，不是躺着养伤的病人（Review 实证：健康玉真子在药园被写成伤员）。
+  const injured = aiPackage === "injured_rest" || hpRatio < 0.7;
+  if (picked.dim === "recovery" && !injured) picked = { dim: "work", building: picked.building, healingWork: true };
   const { dim, building } = picked;
   const moods = MOOD_BY_DIMENSION[dim] || ["惬意"];
   const mood = moods[Math.floor(rng() * moods.length) % moods.length];
-  const detail = affordanceDetail(building);
+  const detail = picked.healingWork ? "坐堂捣药看诊，秤上药香正浓" : affordanceDetail(building);
   return Object.freeze({
     activity: dim,
     activityLabel: DIMENSION_LABEL[dim],

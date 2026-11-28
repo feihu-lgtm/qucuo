@@ -304,3 +304,21 @@ describe("Review 回归：锚定/窗内稳定/癖好同口径", () => {
     expect(tiersWith.size).toBeGreaterThanOrEqual(tiersWithout.size);
   });
 });
+
+describe("Review 回归：健康医者不被写成病人", () => {
+  it("满血药医锚定药庐：按坐堂谋生叙事，不带伤戒心", () => {
+    const npc = { name: "玉真子", brief: "药园主人，采药行医" };
+    const herb = { id: "herb1", name: "百草药园", type: "medicine" };
+    const slice = resolveLifeSlice({ npc, varTree: {}, time: 100, buildings: [herb], anchorBuilding: herb });
+    expect(slice).not.toBeNull();
+    expect(slice.detail).toContain("坐堂捣药");
+    expect(slice.hook).not.toContain("身上有伤");
+  });
+  it("带伤（hpRatio<0.7）锚定药庐仍是疗养病人叙事", () => {
+    const npc = { name: "伤号甲" };
+    const herb = { id: "herb1", name: "百草药园", type: "medicine" };
+    const varTree = { 世界: { 人物动态: { 伤号甲: { hpRatio: 0.5 } } } };
+    const slice = resolveLifeSlice({ npc, varTree, time: 100, buildings: [herb], anchorBuilding: herb });
+    expect(slice.hook).toContain("身上有伤");
+  });
+});
