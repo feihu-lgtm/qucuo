@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { qucuoCorePack } from "./qucuoCorePack.js";
 import { buildDefaultRegistry } from "./index.js";
-import { validateWorldPacks } from "../../rules/livingWorld/worldRegistry.js";
+import { validateWorldPacks, createLivingWorldRegistry, registerWorldPack } from "../../rules/livingWorld/worldRegistry.js";
 import { stepLivingWorld } from "../../rules/livingWorld/worldPulse.js";
 import { evalWorldStates, resolveDistrictOverride } from "../../rules/livingWorld/evalWorld.js";
 
@@ -13,11 +13,14 @@ describe("WO-25G qucuoCorePack", () => {
   it("静态校验 100% 通过（据点/势力/引用/路线连通全绿）", () => {
     const registry = buildDefaultRegistry();
     expect(validateWorldPacks(registry)).toEqual([]);
-    expect(registry.packs).toEqual(["qucuo_core"]);
-    expect(registry.worldStates).toHaveLength(6);
-    expect(registry.districtOverrides).toHaveLength(4);
-    expect(registry.situations).toHaveLength(6);
-    expect(registry.roamingSquads).toHaveLength(4);
+    expect(registry.packs).toContain("qucuo_core");
+    // 表量按核心包隔离口径点算（WO-25L 两大片区包并入后共享注册表扩容）
+    const solo = createLivingWorldRegistry();
+    registerWorldPack(solo, qucuoCorePack);
+    expect(solo.worldStates).toHaveLength(6);
+    expect(solo.districtOverrides).toHaveLength(4);
+    expect(solo.situations).toHaveLength(6);
+    expect(solo.roamingSquads).toHaveLength(4);
   });
 
   it("扩展包幂等注册不炸", () => {

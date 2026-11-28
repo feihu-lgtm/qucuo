@@ -11,6 +11,7 @@ import { snowMedicineGift, snowMeatGift } from "../quest/snowLeopard.js";
 import { buildShopInventory, buildOcShopInventory, rollShopStock } from "../../domain/data/shops/qucuoShops.js";
 import { affectionOf, buildCarryShelf, flattenShelf, sellCoefOf } from "../../domain/rules/npc/npcTradeFlow.js";
 import { getDistrictSnapshot } from "../../domain/rules/livingWorld/projectWorld.js";
+import { statAdjustPriceMod } from "../../domain/rules/economy/bargain.js";
 import { buildDefaultRegistry } from "../../domain/data/livingWorld/index.js";
 import { refreshDailyShop, dailyShopDayKey, promoForDay, isDailyShopNpc } from "../../domain/rules/npc/dailyShop.js";
 import { appeaseAngryNpc, recordNpcAttempt } from "./anger.js";
@@ -302,7 +303,12 @@ export function tradeWithNpc(state, npc) {
   const snap = state.room?.name
     ? getDistrictSnapshot({ time: state.time, varTree: state.varTree }, state.room.name, LIVING_WORLD_REGISTRY_EXCHANGE)
     : null;
-  const priceMod = snap && Object.keys(snap.priceMod || {}).length > 0 ? snap.priceMod : null;
+  // WO-25L 议价：智谋/魅力削局势溢价幅度 5%~15%（受统一区间钳制），打折不加深。
+  const rawPriceMod = snap && Object.keys(snap.priceMod || {}).length > 0 ? snap.priceMod : null;
+  const bargainStats = selectEffectiveStats(state).effectiveSpecialNow || {};
+  const priceMod = rawPriceMod
+    ? statAdjustPriceMod(rawPriceMod, { wit: bargainStats.智谋 ?? 5, charm: bargainStats.魅力 ?? 5 })
+    : null;
   const priceNotes = (snap?.situations || [])
     .filter((sit) => sit.priceMod)
     .map((sit) => {
