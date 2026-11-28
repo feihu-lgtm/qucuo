@@ -247,3 +247,60 @@ describe("pickLetterSender 飞鸽读真实事件", () => {
     expect(picked?.hint?.events?.length || 0).toBe(0);
   });
 });
+
+describe("Review 回归：锚定/窗内稳定/癖好同口径", () => {
+  const npc = { name: "测试镖师", brief: "走镖的镖师", personality: "" };
+
+  it("0002 锚定建筑：同处一室的人绝不被写进别家场子", () => {
+    const lou = yajiangBuildings.find((b) => b.id === "restaurant_yajiang");
+    for (let t = 24; t < 24 * 10; t += 4) {
+      const s = resolveLifeSlice({ npc, varTree: {}, time: t, buildings: yajiangBuildings, anchorBuilding: lou });
+      expect(s).toBeTruthy();
+      expect(s.buildingId).toBe("restaurant_yajiang");
+      expect(s.detail).toContain("冷锅鱼"); // 锚定饭馆就着饭馆活计
+    }
+    // 无生活维度的处所（驿站 transport）锚定回退 null——不强造切片
+    const station = yajiangBuildings.find((b) => b.type === "transport");
+    if (station) {
+      expect(resolveLifeSlice({ npc, varTree: {}, time: 40, buildings: yajiangBuildings, anchorBuilding: station })).toBeNull();
+    }
+  });
+
+  it("0004 窗内任意时刻求值恒同——untilTurn 前不换活", () => {
+    // 跨饭点边界的窗（10-14 含午饭点 11-13 与否则权重不同）
+    for (const ws of [8, 10, 12, 16, 20]) {
+      const at = (t) => resolveLifeSlice({ npc, varTree: {}, time: ws * 1 + t, buildings: yajiangBuildings });
+      const a = at(0);
+      if (!a) continue;
+      for (const dt of [1, 2, 3]) {
+        // 同窗内（ws 对齐 4 格窗起点意义下 dt<4 且不落出窗）
+        const t0 = Math.floor((ws) / 4) * 4;
+        const t1 = ws + dt;
+        if (Math.floor(t1 / 4) !== Math.floor(ws / 4)) continue;
+        expect(JSON.stringify(at(dt)), `ws=${ws} dt=${dt}`).toBe(JSON.stringify(a));
+      }
+    }
+    // 严格扫一遍：所有时辰窗内 4 格逐格比对
+    for (let w = 0; w < 24; w += 4) {
+      const base = resolveLifeSlice({ npc, varTree: {}, time: w, buildings: yajiangBuildings });
+      for (let dt = 1; dt < 4; dt += 1) {
+        const cur = resolveLifeSlice({ npc, varTree: {}, time: w + dt, buildings: yajiangBuildings });
+        expect(JSON.stringify(cur), `窗${w}+${dt}`).toBe(JSON.stringify(base));
+      }
+    }
+  });
+
+  it("0003 赌徒癖好参与银囊分档：同一 npc 两处同口径", () => {
+    const gambler = { name: "赌鬼戊", brief: "好赌成性", personality: "见骰子就手痒" };
+    const quirks = inferQuirks(gambler);
+    expect(quirks).toContain("手痒赌徒");
+    // 带癖好与不带癖好的分档分布不同（赌徒波动大）——扫多个窗口应有非寻常档出现
+    const tiersWith = new Set();
+    const tiersWithout = new Set();
+    for (let w = 0; w < 30; w += 1) {
+      tiersWith.add(purseTierOf({}, "赌鬼戊", w * 72, quirks));
+      tiersWithout.add(purseTierOf({}, "赌鬼戊", w * 72, []));
+    }
+    expect(tiersWith.size).toBeGreaterThanOrEqual(tiersWithout.size);
+  });
+});

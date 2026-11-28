@@ -6,7 +6,7 @@
 // 同一时辰窗内反复求值恒同，不需要自建账本，也不重复建第二套位置表。
 
 import {
-  DIMENSION_LABEL, LIFE_DIMENSIONS, PURSE_TIERS, TYPE_POOR_AFFINITY, venuesByDimension, affordable, affordanceDetail, signatureOf,
+  DIMENSION_LABEL, LIFE_DIMENSIONS, PURSE_TIERS, TYPE_POOR_AFFINITY, dimensionOf, venuesByDimension, affordable, affordanceDetail, signatureOf,
 } from "../../data/livingWorld/buildingAffordances.js";
 import { seededRand } from "../../../utils/seededRandom.js";
 
@@ -92,7 +92,9 @@ const HOOK_BY_DIMENSION = Object.freeze({
 // ── 生活切片分配（核心纯函数）──────────────────────────────────────
 // 输入人物档案 + 所在据点建筑清单 + 时间，确定性产出 7.2 节生活快照。
 // 时辰窗 4 格（4 小时）一片：窗内恒同，跨窗重掷。无合适场子返回 null（回退通用营生句）。
-export function resolveLifeSlice({ npc, varTree = {}, time = 0, buildings = [] } = {}) {
+// anchorBuilding：玩家与 NPC 同处一栋建筑内时强制锚定此建筑——所见即所在，
+// 绝不把在场者写进别家场子（Review 实证：玩家在老孙饭馆，切片说人「身处戏楼」）。
+export function resolveLifeSlice({ npc, varTree = {}, time = 0, buildings = [], anchorBuilding = null } = {}) {
   if (!npc?.name || !Array.isArray(buildings) || !buildings.length) return null;
   const dyn = varTree?.世界?.人物动态?.[npc.name] || {};
   const hpRatio = Number.isFinite(dyn.hpRatio) ? dyn.hpRatio : 1;
@@ -102,8 +104,11 @@ export function resolveLifeSlice({ npc, varTree = {}, time = 0, buildings = [] }
   const purse = PURSE_TIERS[purseTier];
 
   const venues = venuesByDimension(buildings);
-  const hour = ((Math.floor(time) % 24) + 24) % 24;
   const windowStart = Math.floor((time || 0) / 4) * 4;
+  // 时辰权重按整窗 4 小时的重叠判定，不取求值瞬间——同窗内早一刻晚一刻权重恒同，
+  // 切片在 untilTurn 之前绝不换活（Review 实证：跨过饭点边界窗内中途换场）。
+  const windowHours = [0, 1, 2, 3].map((i) => ((windowStart + i) % 24 + 24) % 24);
+  const anyHour = (pred) => windowHours.some(pred);
   const rng = seededRand(0, `lifeSlice|${npc.name}|${windowStart}`);
 
   // 维度权重：职业基准 + 时辰 + 癖好 + 伤势
@@ -115,14 +120,14 @@ export function resolveLifeSlice({ npc, varTree = {}, time = 0, buildings = [] }
   if (aiPackage === "bounty_hunter") weight.work += 1.5;
   if (aiPackage === "injured_rest") weight.recovery += 6;
   if (hpRatio < 0.7) weight.recovery += 3;
-  // 时辰：饭点吃吃喝喝，夜里不干活，午后消遣
-  if ((hour >= 6 && hour <= 8) || (hour >= 11 && hour <= 13) || (hour >= 17 && hour <= 20)) weight.dine += 2.5;
-  if (hour >= 21 || hour <= 5) { weight.work = 0.2; weight.dine += 0.5; weight.leisure += 1; }
-  if (hour >= 14 && hour <= 17) weight.play += 1;
+  // 时辰：饭点吃吃喝喝，夜里不干活，午后消遣（窗内任一小时命中即生效）
+  if (anyHour((h) => (h >= 6 && h <= 8) || (h >= 11 && h <= 13) || (h >= 17 && h <= 20))) weight.dine += 2.5;
+  if (anyHour((h) => h >= 21 || h <= 5)) { weight.work = 0.2; weight.dine += 0.5; weight.leisure += 1; }
+  if (anyHour((h) => h >= 14 && h <= 17)) weight.play += 1;
   // 癖好
   if (quirks.includes("饕客")) weight.dine += 2;
   if (quirks.includes("手痒赌徒") && purseTier >= 2) weight.play += 2.5;
-  if (quirks.includes("暗藏戏痴") && hour >= 15) weight.play += 1.5;
+  if (quirks.includes("暗藏戏痴") && anyHour((h) => h >= 15)) weight.play += 1.5;
   if (quirks.includes("茶馆百晓生")) weight.leisure += 2;
   if (quirks.includes("偷闲摸鱼")) { weight.leisure += 1.5; weight.work = Math.max(0.2, weight.work - 1); }
   if (quirks.includes("惜器爱美") && purseTier >= 2) weight.leisure += 1;
@@ -160,7 +165,14 @@ export function resolveLifeSlice({ npc, varTree = {}, time = 0, buildings = [] }
     return null;
   };
 
-  const picked = pickVenue();
+  let picked = null;
+  if (anchorBuilding) {
+    const dim = dimensionOf(anchorBuilding.type);
+    if (!dim) return null; // 驿站/库房这类无生活维度的处所回退通用营生句
+    picked = { dim, building: anchorBuilding };
+  } else {
+    picked = pickVenue();
+  }
   if (!picked) return null;
   const { dim, building } = picked;
   const moods = MOOD_BY_DIMENSION[dim] || ["惬意"];
