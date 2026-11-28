@@ -18,7 +18,18 @@ Always: no text, no letters, no calligraphy, no seal stamps, no signature, no wa
 
 export const REFERENCE_LINE = "Match the painting style of the attached reference image exactly.";
 
-const PORTRAIT_FORMAT = "[FORMAT] One square sheet, 1024x1024, divided into a 3x3 grid of nine equal square cells with thin near-black gutters between them. Each cell holds one chest-up portrait in three-quarter view, eyes looking slightly to the left, the top of the head about 15% below the top of the cell, shoulders cut by the bottom of the cell, all lit by the same soft light from the upper left. Every cell's background is flat near-black #0c0b09 and the figure's edges fade into it. Cells are numbered left to right, top to bottom.";
+// 人物画风锚：照 R01 定稿（#632/#633 高清抠底立绘）的实际效果写——清晰勾线、平涂、亮部足、
+// 主色加对比色。夜色锚写的是「低调、用色稀少」，用在人物上会跑出压暗、单一暖棕的图（#673、#679）。
+export const PORTRAIT_ANCHOR = `[STYLE ANCHOR · QUCUO PORTRAIT v2]
+Character portraits for a Chinese wuxia text adventure set in the Sichuan–Tibetan highlands, where Han and Tibetan people live side by side.
+Medium: hand-drawn character illustration with confident, clean ink linework and cel-style flat color with one or two soft shading steps; crisp, readable shapes.
+Color: rich, lively jewel tones. Each person has one main costume color and at least one clearly contrasting accent (for example crimson with turquoise, indigo with gold, white with copper, plum with amber), and warm natural skin tones that differ from person to person. Bright clean highlights on faces, hair, metal and beads, so the figure reads bright against the dark ground.
+Light: one soft key light from the upper left and a gentle rim light on the far side.
+Faces: full of character and clearly individual; age, face shape, build, skin, hair and expression follow each description exactly.
+Rendering: 2D illustration, no 3D render look, no photorealism, no muddy brown overall tint, no chibi.
+Always: no text, no letters, no calligraphy, no seal stamps, no signature, no watermark, no picture frame, no border, no UI elements.`;
+
+const PORTRAIT_FORMAT = "[FORMAT] One square sheet, 1024x1024, divided into a 3x3 grid of nine equal square cells with thin near-black gutters between them. Each cell holds one tight chest-up portrait: the head is large, about 40% of the cell width, the top of the hair close to the top edge of the cell, the shoulders filling the width of the cell, the body turned three-quarters. Each person holds or wears their signature object near the face or chest and has their own pose and expression; the nine people must look clearly different from each other in age, face, build, skin, hair and expression, never one repeated face. Every cell's background is flat near-black #0c0b09 so the figure can be cut out cleanly. Cells are numbered left to right, top to bottom.";
 const BEAST_FORMAT = "[FORMAT] One square sheet, 1024x1024, divided into a 3x3 grid of nine equal square cells with thin near-black gutters between them. Each cell holds one head-and-chest portrait of an animal in three-quarter view, eyes looking slightly to the left, the top of the head about 15% below the top of the cell, the chest cut by the bottom of the cell, all lit by the same soft light from the upper left. Every cell's background is flat near-black #0c0b09 and the animal's edges fade into it. Cells are numbered left to right, top to bottom.";
 const PORTRAIT_AVOID = "[AVOID] no names, labels or any text in the cells, no seal stamps, no frames around cells, no weapon pointed at the viewer, no blood, no nudity.";
 const PLACE_FORMAT = "[FORMAT] One landscape painting, 1536x1024, eye-level distant view. The subject sits in the middle band of the picture; the top 30% and bottom 30% are calm dark sky and dark ground so the picture can be cropped to a 2:1 banner. All edges fade into near-black #0c0b09.";
@@ -31,7 +42,7 @@ const ITEM_AVOID = "[AVOID] no hands or people, no text, no seal stamps, no glow
 export const KINDS = {
   map: { label: "舆图底卷", dir: "public/art/map", grid: [1, 1], out: "1024x1024", ref: "place" },
   place: { label: "地点头图", dir: "public/art/place", grid: [1, 1], out: "1024x512", ref: "place" },
-  npc: { label: "人物小像", dir: "public/art/npc", grid: [3, 3], out: "256x256", ref: "npc" },
+  npc: { label: "人物小像", dir: "public/art/npc", grid: [3, 3], out: "330x330 透明底", ref: "npc", anchor: "portrait" },
   building: { label: "建筑头图", dir: "public/art/building", grid: [2, 2], out: "768x384", ref: "place" },
   item: { label: "物品类别图", dir: "public/art/item", grid: [3, 3], out: "256x256", ref: "npc" },
 };
@@ -42,6 +53,7 @@ export const RUN_ORDER = [
   { step: "第二步·试每类第一批", ids: ["B01", "I01", "R14"], note: "从这一步起附样张，并在提示词最前面加一行参考句。" },
   { step: "第三步·成批", ids: ["L02-L25", "R02-R19", "B02-B20", "I02-I04"], note: "地点、建筑附 L01 样张；人物、物品附 R01 样张。L22-L25、B12-B20 是雪域四地（打箭炉、丹霞城、焚风渡、琼隆古墟），建筑按建筑 id 出专图。" },
   { step: "第四步·收尾", ids: ["M01"], note: "先确认舆图水系走向再跑，附 L01 样张。" },
+  { step: "第五步·雪域人物", ids: ["R20-R25"], note: "替换 #673 雪域少年 20 张与 #679 驻场人物 30 张。附 R01 定稿整张作样张；切出后抠成透明底、头顶贴近上边，存成 public/art/npc/<人名>.webp（有损）。" },
 ];
 
 const place = (id, key, subject, avoid, formatOverride) => ({
@@ -304,6 +316,76 @@ Water is slate water-blue (#7fa3b0) and is the only clearly colored element. Gra
     c("聂秋红", "a fiery heroine chasing a traitor across a thousand miles, quick-tempered and hard."),
   ]),
 
+  // 雪域人物（替换 #673 雪域少年 20 张、#679 驻场人物 30 张）：每格照 R01 句式写——
+  // 年龄段+族属与性别+身份、一处体貌记号、一个表情或动作、衣料主色加对比色、一件标志物，
+  // 全部取自游戏设定；同一张九宫格里老少、男女、胖瘦、汉藏、冷暖色错开排，防止同脸。
+  sheet("R20", "npc", "打箭炉（上）", PORTRAIT_FORMAT, PORTRAIT_AVOID, [
+    c("守关把总赵铁山", "a Han frontier garrison captain in his mid-forties, square heavy jaw, thick black moustache, mouth open mid-shout, a dented iron helmet pushed back, a dark indigo padded uniform under a red-lacquered lamellar vest, holding a blank tea-trade permit slip up to the light to check it."),
+    c("格桑央绒", "a young Khampa woman of about twenty-two, the bold heir of a tea-and-salt caravan, broad cheekbones, wind-reddened cheeks, a loud laughing mouth, thick braids threaded with red tassels, a sheepskin-lined leather caravan coat with crimson trim, a big red coral bead string, one hand raised to halt a caravan, the head of a black-and-tan mastiff at her side."),
+    c("炉城歌女拉姆", "a cheerful Tibetan folk singer in her early twenties, round bright face, laughing crescent eyes, one hand cupped beside her mouth mid-song, a turquoise-and-coral headdress, a sky-blue silk blouse under a black robe, a striped rainbow apron, one long braid over her shoulder."),
+    c("说书瞎子阿吉", "an old blind Han storyteller, eyes closed above a thin knowing smile, wispy white goatee, gaunt cheeks, a faded grey-green cotton gown, a small dark wooden clapper block lifted in one hand, head tilted as if listening to the room."),
+    c("马跃川", "a lean, quick young Han escort rider of about twenty, sharp narrow face with a laughing grin, a high topknot tied with a scarlet band, leather wrist guards, dust on his collar, a heavy broad-backed saber resting on his shoulder."),
+    c("锅庄大掌柜兰措", "a capable Tibetan woman in her forties who runs the biggest caravan inn, sharp knowing eyes and a half smile, hair coiled under a fox-fur hat, a deep plum silk robe with a gold brocade collar, a heavy amber and turquoise necklace, flicking through an account book with one finger."),
+    c("藏医老彭措", "a quiet old Tibetan doctor around seventy, small frame, nearly bald with a few white bristles, deep laugh lines, round brass-rimmed spectacles, a maroon robe with a sheepskin collar, holding up a small brass medicine spoon and a cloth pill pouch."),
+    c("康巴总教头·扎巴", "a massive broad-shouldered Khampa martial instructor in his mid-forties, flat broken nose, a red wool cord wound around his head, a calm heavy gaze, a sheepskin robe worn off one shoulder over a muscled arm, a thick leather wrestling belt, a heavy saber held point-down before him."),
+    c("炉城铁匠郭三", "a stocky Han blacksmith in his thirties, soot-streaked cheeks, eager wide-open eyes, sleeves rolled over scarred forearms, a scorched leather apron, gripping tongs that hold a glowing arrowhead up near his face."),
+  ]),
+  sheet("R21", "npc", "打箭炉（下）与丹霞城（上）", PORTRAIT_FORMAT, PORTRAIT_AVOID, [
+    c("调停客宗喀", "a composed Tibetan mediator in his fifties, long face, a neatly trimmed grey beard, measured narrow eyes, a plain slate-grey robe with three small cords of red, white and black tied at the chest, three folded agreements held between his fingers."),
+    c("朱弦", "a slim, fair-skinned young Han woman of about twenty-four, a gentle soft smile that does not reach her watchful eyes, hair in a neat low bun with a single plain iron pin, a dark teal travelling robe with a silver-grey sash, long pale fingers holding half of a bronze tally token."),
+    c("阿洛扎西", "a lanky Khampa youth of about twenty with a lazy half-lidded smile, messy shoulder-length hair under a crooked felt hat, leaning on one elbow, a coil of ox-sinew rope over his shoulder, a red coral string and a striped agate bead at his throat, battered leather caravan armor."),
+    c("收租管事·旺堆", "a pinch-faced Tibetan rent steward in his forties, thin moustache, tight-lipped frown, a small square hat, a red-white-blue striped estate sash over a plain brown robe, an abacus held up mid-click."),
+    c("白玛令仪", "a graceful young woman of about twenty-one, half Tibetan and half Han, delicate oval face, calm focused eyes, hair in two loops pinned with a paintbrush, a white robe with red and blue striped borders, a cinnabar-red brush lifted near her cheek and a roll of blank paper under her arm."),
+    c("雕版老匠人根秋", "a stubborn old woodblock carver around seventy, bushy white eyebrows in a deep frown, a short grey beard, fingertips stained cinnabar red and pine-soot black, a coarse indigo work smock, holding a carved birch printing block up to inspect it."),
+    c("赤桑多杰", "a heavy-boned young Tibetan guard of about twenty with a square face and bright fierce eyes, cropped hair, a thick neck, a red-white-blue striped robe over plain armor, a gilded bronze throwing wheel held up beside his head."),
+    c("昆·索朗坚赞", "a strict Tibetan noble official in his mid-thirties, thin straight nose, lips pressed together, neat short hair under a tall brocade hat, a deep crimson robe edged with red, white and blue bands, one hand raised palm-out as if posing a question."),
+    c("云丹梅朵", "a sharp young Tibetan noblewoman of about twenty-two, high cheekbones, one eyebrow raised in disbelief, a single heavy braid wound with gold thread, a blue-grey brocade robe with red and white stripes, a small brass balance scale held up between two fingers."),
+  ]),
+  sheet("R22", "npc", "丹霞城（下）与焚风渡（上）", PORTRAIT_FORMAT, PORTRAIT_AVOID, [
+    c("金轮护法·达尔巴", "a towering Tibetan guardian elder in his late fifties, huge bald head, thick grey beard, scars across both eyebrows, a crimson shawl over gold-trimmed armor, a pair of gilded bronze throwing wheels held against his chest."),
+    c("大轮法王·卓玛嘉", "a proud Tibetan woman martial grandmaster around forty, unmistakably a woman, strong straight brows, cool half-closed eyes and a faint disdainful smile, many fine braids gathered high with gold rings, a deep red and white striped robe, five small golden throwing wheels fanned in one hand."),
+    c("洛桑曲培", "a cheeky young monk of about fifteen with a shaved head and big ears, a wide grin, clapping his hands together mid-debate, a maroon robe with a red-white-blue striped shawl, a sutra book open on his forearm."),
+    c("昆·阿旺班智达", "a refined, thin Tibetan scholar in his fifties, gaunt elegant face, a wire-thin moustache, a faint amused smile, a yellow scholar's hat with long side flaps, a maroon robe, striking one palm with the other in debate."),
+    c("昆·法王丹巴坚赞", "a dignified old hierarch of about sixty-five, heavy-lidded unreadable eyes, deep lines, a long white beard, a tall red and gold ceremonial hat, layered red, white and blue brocade robes, a gilded ritual sceptre held calmly at his chest."),
+    c("摆渡老汉多吉", "a lean, sun-blackened old ferryman in his sixties, wiry neck, a gap-toothed grin, a sweat-stained dark cloth wrapped around his head, bare sinewy arms, a short wooden pole over his shoulder and a coracle rope coiled across his chest."),
+    c("牧场头人仁青", "a big, round-faced herder chief in his late thirties, ruddy cheeks, a kind simple smile, a thick neck, a white yak-hair felt coat with a fur collar, a heavy skin bag of butter hugged in both arms."),
+    c("仁杰洛布", "a slick young gold-trade gang leader of about twenty-one, a smirking sidelong look, one gold tooth, sun-bleached hair tied back, an open white yak-fur coat over a dark red shirt, a deerskin pouch of red-gold dust held up with a little spilling through his fingers."),
+    c("索央踏浪", "a quick-footed herd girl of about sixteen, freckled sun-browned face, cheeks puffed in a competitive pout, short choppy hair tied with a white ribbon, a white fur jacket, a copper short blade at her hip, one hand on the forehead of a white yak calf."),
+  ]),
+  sheet("R23", "npc", "焚风渡（下）与琼隆古墟（上）", PORTRAIT_FORMAT, PORTRAIT_AVOID, [
+    c("盘道人·白衣赤列", "a stern old gatekeeper monk in his sixties, gaunt face, long white hair loose over the shoulders, piercing eyes and a hard straight mouth, a snow-white single-layer cotton robe, one finger raised in challenge."),
+    c("拜火大迦叶·燃灯", "a fiery master in his mid-fifties, broad face, a burn scar along one eyebrow, a thick black beard streaked with grey, a white robe with copper-orange borders, firelight on his face, a short copper saber held across his chest."),
+    c("玉珍桑果", "a tall, strong young woman of about twenty-two, senior sister of a white-robed order, sharp fearless eyes, warm brown skin glowing as if with inner heat, hair cropped at the jaw, a thin white cotton robe tied at one shoulder, blowing a small bone whistle."),
+    c("拜火三迦叶·明空", "a silent ancient monk of about seventy-five, very thin, eyes closed, long white eyebrows hanging past his eyes, a white robe gone ivory with age, one ear turned forward as if listening to someone breathe."),
+    c("拜火二迦叶·灿莲", "a hot-tempered martial monk in his thirties, shaved head, flushed cheeks, eyebrows drawn together in impatience, rolling a white sleeve up over a muscled forearm, faint steam rising from the skin."),
+    c("寻访使·楚臣", "a much-travelled envoy in his forties, weather-cracked lips, crow's-feet from squinting at snowfields, a wide-brimmed felt hat, a white robe under a travel-worn fox-fur cape, a small copper reliquary box in his hands."),
+    c("转世法王·白衣少年", "a serene seventeen-year-old reincarnate master, slim and pale, a smooth youthful face, a faint distant smile, eyes lifted toward the moon, a single thin white cotton robe, one hand raised with the index finger pointing upward."),
+    c("多杰砾", "a hard-faced young treasure digger of about twenty-one, grey rock dust caked on his cheeks and hair, a cold sneer, a notch cut in one ear, black stone-plate armor, a long iron digging spike over his shoulder."),
+    c("逆行护法·琼波", "a stubborn bridge guardian in his thirties, jutting chin, arms crossed, eyebrows knitted, long black hair in one thick plait, a black felt robe with turquoise trim, a heavy dark bronze prayer wheel at his belt."),
+  ]),
+  sheet("R24", "npc", "琼隆古墟（下）", PORTRAIT_FORMAT, PORTRAIT_AVOID, [
+    c("天铁匠首·贡布", "a soot-blackened master smith in his forties, eyes blazing white against the soot, burly arms, a black leather apron studded with iron, a lump of dark meteoric iron held up, glinting silver."),
+    c("曲珍石燕", "a wiry teenage cliff scout of about seventeen, small sharp face, a mischievous grin, a smudge of charcoal on her nose, a black feathered cap, two tight braids, a black stone-plate vest, a sketchbook and a charcoal stick in her hands."),
+    c("九乘长老·木雅仲巴", "a rigid old elder in his sixties, back straight as a pillar, long narrow face, thin pressed lips, iron-grey hair in a tight topknot, a black robe with deep blue lining, a black bronze plaque held upright before his chest."),
+    c("央青阿若", "a smiling young stone appraiser of about twenty-three with knowing eyes, a long elegant neck, hair wrapped in a black-and-turquoise headcloth, turquoise earrings, a black robe with copper buttons, a polished black stone held out on her palm."),
+    c("铁钎掘藏师·阿旺", "a sharp-eyed treasure hunter in his forties, a layer of pale ancient dust on his clothes and eyebrows, a hooked nose, a canny half grin, a leather cap with a small lamp clip, rolled sheepskin scrolls tucked under one arm."),
+    c("平措乌金", "a chubby-cheeked boy of about sixteen with a stubborn pout, close-cropped hair, flour on his hands and sleeves, a black felt vest over a dark blue shirt, a small hard barley-dough yak figure with an extra pair of ears held up in his fingers."),
+    c("九算神婆·雍措", "an old diviner woman in her sixties, a sly crooked smile, one eye squinting, a wrinkled face, long grey hair braided with knotted cords, a heavy dark robe, a scorched sheep shoulder-blade held up to look through its cracks."),
+    c("象雄大宗主·桑吉坚赞", "a very still old patriarch around seventy, dark skin, deep-set eyes as dark as the night sky, a short white beard, a tall black hat with a small golden bird crest, layered black and deep blue robes, hands folded over a black bronze sceptre."),
+    c("金翅武师·阿古顿巴", "a martial instructor in his thirties wearing a black wooden great-bird mask over the upper face, a broad grin beneath it, a strong jaw, a black robe with gold feather trim, flicking a hard barley-dough pellet up with his thumb."),
+  ]),
+  sheet("R25", "npc", "白塔与焚风渡少年", PORTRAIT_FORMAT, PORTRAIT_AVOID, [
+    c("丹增云措", "a handsome young Khampa nobleman of about nineteen, an open, delighted face gazing up at the sky, long black hair tied with a gold band, a blue-and-white wool cloak over a maroon iron-mesh guardian robe, a short green bamboo staff, a white falcon perched on his raised forearm."),
+    c("卓嘎听雨", "a quick-witted girl of about seventeen with a playful wink, a small upturned nose, damp hair under a rain-darkened felt hood, a heavy white yak-wool cloak, a small bronze wind-bell hanging from a sword hilt held up beside her ear."),
+    c("达杰听风", "a sunburnt young rafter of about nineteen with a big goofy grin and a chipped front tooth, wet tousled hair, a thin white cotton robe hitched up and knotted, a copper blade on his back, a sleek river otter climbing onto his shoulder."),
+    c("沈照铃", "a lively young Han woman of about eighteen, quick bright eyes and a small smile, an ink smudge on her chin, hair half up with a pale green ribbon, a grey iron-mesh robe over a white inner shirt, one palm pressing a sheet of rubbing paper flat against the wind."),
+    c("洛丹嘉木", "a small novice monk of about fourteen with a shaved head, eyes closed and head tilted, listening, a sweet calm face, a maroon guardian robe with a brown wool shawl, a string of small bronze bells held up to his ear."),
+    empty(),
+    empty(),
+    empty(),
+    empty(),
+  ]),
+
   sheet("B01", "building", "客栈、饭馆、茶馆、驿站", BUILDING_FORMAT, BUILDING_AVOID, [
     c("inn", "a two-storey timber inn with a lantern over the door and a stable yard to the side."),
     c("restaurant", "a small eatery with steam rising from the kitchen, a wine banner without writing, benches outside."),
@@ -474,6 +556,11 @@ Water is slate water-blue (#7fa3b0) and is the only clearly colored element. Gra
   ]),
 ];
 
+// 景物（舆图、地点、建筑、物品）用夜色锚，人物用人物画风锚。
+export function anchorFor(kind) {
+  return KINDS[kind]?.anchor === "portrait" ? PORTRAIT_ANCHOR : STYLE_ANCHOR;
+}
+
 // 把一个批次拼成可整段复制给 GPT 的完整提示词。
 export function renderPrompt(batch, { withReference = false } = {}) {
   const [cols, rows] = KINDS[batch.kind].grid;
@@ -482,7 +569,7 @@ export function renderPrompt(batch, { withReference = false } = {}) {
     : ["[SUBJECTS]", ...batch.cells.map((cell, i) => `Cell ${i + 1}: ${cell.en}`)].join("\n");
   return [
     ...(withReference ? [REFERENCE_LINE] : []),
-    STYLE_ANCHOR,
+    anchorFor(batch.kind),
     batch.format,
     subjects,
     batch.avoid,
