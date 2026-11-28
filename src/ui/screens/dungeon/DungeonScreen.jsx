@@ -308,6 +308,16 @@ export default function DungeonScreen({
                 {mapRun.status === "victory" ? "打通内层地宫！" : mapRun.status === "retreated" ? "已稳妥撤回外城。" : "负伤被逐出地宫……"}
               </div>
               <div>带出：银两 {mapRun.loot.money} 两 · 潜能 {mapRun.loot.pot} · 物事 {mapRun.loot.items.length} 件</div>
+              {mapRun.loot.items.length > 0 && (
+                <div>物事：{mapRun.loot.items.map((i) => (typeof i === "string" ? i : i?.name)).filter(Boolean).join("、")}</div>
+              )}
+              {mapRun.status === "victory" && mapRun.victoryNotes?.length > 0 && (
+                <div className="dungeon-screen-log" data-part="victory-notes">
+                  {mapRun.victoryNotes.map((line, i) => (
+                    <div key={i}>· {line}</div>
+                  ))}
+                </div>
+              )}
               <div className="dungeon-screen-result-actions">
                 {mapRun.status === "defeated" && mapRun.checkpointSnapshot && (
                   <button
@@ -399,6 +409,7 @@ export default function DungeonScreen({
             playerInv={inv}
             playerMoveset={char?.moveset}
             playerSkills={skills}
+            kind="fight"
             onFinish={handleBattleFinish}
           />
         </Suspense>
@@ -414,6 +425,7 @@ export default function DungeonScreen({
             playerInv={inv}
             playerMoveset={char?.moveset}
             playerSkills={skills}
+            kind={mapRun.activeBattle.isBoss ? "boss" : "fight"}
             onFinish={handleMapBattleFinish}
           />
         </Suspense>

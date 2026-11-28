@@ -6,7 +6,16 @@ import { MoveButton } from "./MoveButton.jsx";
 import { TYPE_ICON, styles } from "./duelShared.js";
 import { THEME_VARS } from "../../../utils/theme.js";
 
+// 胜负标语与收尾按钮按战斗性质分档（#667）：切磋是点到为止；地宫遭遇战与镇宫首领战
+// 是真打，赢了即清场/通关——沿用「切磋已分胜负」会让玩家以为没打出结果。
+export const DUEL_WORDING = Object.freeze({
+  spar: { win: "◆ 切磋已分胜负", lose: "◆ 你落败了", end: "结束切磋", close: "关闭" },
+  fight: { win: "◆ 敌手已败，此处清场", lose: "◆ 你落败了", end: "收刀", close: "离开战圈" },
+  boss: { win: "◆ 镇宫首领伏诛——地宫已打通", lose: "◆ 你不敌镇宫首领", end: "收刀", close: "清点战利品" },
+});
+
 export default function DuelOpPanel({
+  kind = "spar",
   npc,
   selecting, phase, outcome, error, round, combatBuff,
   moveset, playerEnergy, playerDefenseBroken, onSelectMove, onInspect,
@@ -14,10 +23,11 @@ export default function DuelOpPanel({
   npcMovesetLocal, revealedNpcMoves,
   onContinue, onClose,
 }) {
+  const wording = DUEL_WORDING[kind] || DUEL_WORDING.spar;
   return (
     <div className="duel-op" style={styles.opSection}>
       <div style={styles.sectionLabel(THEME_VARS)}>
-        {selecting ? "◆ 请出招" : outcome ? (outcome === "win" ? "◆ 切磋已分胜负" : "◆ 你落败了") : "◆ 结算中"}
+        {selecting ? "◆ 请出招" : outcome ? (outcome === "win" ? wording.win : wording.lose) : "◆ 结算中"}
       </div>
 
       {selecting && (
@@ -98,10 +108,10 @@ export default function DuelOpPanel({
         <div style={styles.continueRow}><span onClick={onContinue} style={styles.continueBtn(THEME_VARS)}>下一回合 ▸</span></div>
       )}
       {phase === "result" && outcome && (
-        <div style={styles.continueRow}><span onClick={onContinue} style={styles.continueBtn(THEME_VARS)}>结束切磋</span></div>
+        <div style={styles.continueRow}><span onClick={onContinue} style={styles.continueBtn(THEME_VARS)}>{wording.end}</span></div>
       )}
       {phase === "over" && (
-        <div style={styles.continueRow}><span onClick={onClose} style={styles.continueBtn(THEME_VARS)}>关闭</span></div>
+        <div style={styles.continueRow}><span onClick={onClose} style={styles.continueBtn(THEME_VARS)}>{wording.close}</span></div>
       )}
     </div>
   );
