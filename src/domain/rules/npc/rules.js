@@ -192,6 +192,8 @@ export const residentNpcRule = {
         const npc = buildRoomNpcWithCombat(adv, { existingNpc: existing, luck, trade: npcTradeOf(state.npcState, adv) });
         // 新来者按册落座；已在房的老人保留 roam 走出来的实际座次（册子由 ocWander 回写同步）
         if (!existing && wanderPositions[adv.name]?.inner) npc.innerRoom = wanderPositions[adv.name].inner;
+        // 无活副本时按册上随身物快照补回——偷/卖/扔痕迹跨据点不重置（防重复扒窃）
+        if (!existing && wanderPositions[adv.name]?.carrySnapshot) npc.carriedItems = wanderPositions[adv.name].carrySnapshot.map((item) => ({ ...item }));
         return npc;
       });
     const advRosterNames = new Set(worldAdventurers.map((npc) => npc.name));
@@ -212,6 +214,10 @@ export const residentNpcRule = {
         const reuse = existing && (existing.randomPasser === dayIdx || existing.ocWanderer) ? existing : undefined;
         const npc = buildRoomNpcWithCombat(passer, { existingNpc: reuse, luck, trade: npcTradeOf(state.npcState, passer) });
         if (passer.passerArt) npc.passerArt = passer.passerArt;
+        // OC 游走者无活副本时按册上随身物快照补回（与冒险者层同一防扒口径）
+        if (!reuse && passer.ocWanderer && wanderPositions[passer.name]?.carrySnapshot) {
+          npc.carriedItems = wanderPositions[passer.name].carrySnapshot.map((item) => ({ ...item }));
+        }
         return npc;
       });
     // 不在今天这份名单里的过路人一律清掉：隔天的，或名额被新导入角色卡顶替、重抽后换下的

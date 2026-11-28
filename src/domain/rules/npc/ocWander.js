@@ -127,7 +127,7 @@ function pickDestination(adv, fromAt, rng) {
 export const ocWanderRule = {
   id: "npc.ocWander",
   deps: (state) => [state.time],
-  run(state, { companionState = state.companionState, firstRun, previousDeps }) {
+  run(state, { companionState = state.companionState, roomMap = {}, firstRun, previousDeps }) {
     const { time, room } = state;
     if (firstRun || time == null) return null;
     if (Object.is(time, previousDeps?.[0])) return null;
@@ -151,6 +151,16 @@ export const ocWanderRule = {
       if (present && entry.at === district && (present.innerRoom || null) !== (entry.inner || null)) {
         entry = { ...entry, inner: present.innerRoom || null };
         changed = true;
+      }
+      // 随身物快照入册：偷/卖/扔痕迹随人走——Reviewer 实证挪窝后新据点重建副本
+      // 装备重置，同一件固定物能被重复扒。快照来源优先在场活副本，其次原地缓存。
+      const carrier = present || (roomMap?.[entry.at]?.npcs || []).find((npc) => npc?.name === adv.name);
+      if (carrier?.carriedItems?.length) {
+        const snapshot = carrier.carriedItems.map((item) => ({ ...item }));
+        if (JSON.stringify(snapshot) !== JSON.stringify(entry.carrySnapshot || null)) {
+          entry = { ...entry, carrySnapshot: snapshot };
+          changed = true;
+        }
       }
       // 没落盘过的起点正式落盘
       if (!registry[adv.name]?.at) changed = true;

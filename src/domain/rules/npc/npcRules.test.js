@@ -258,3 +258,37 @@ describe("W-ROAM Review 修：子夜换名单不清驻足锁未过期者", () =>
     expect(npcs2.some((n) => n.name === "昨冒险")).toBe(false);
   });
 });
+
+describe("名册 Review 修：OC 本尊不受认识排斥 + 随身物快照防重复扒窃", () => {
+  const wanderBook = (entries) => ({ 世界: { 游走册: entries } });
+
+  it("玩家认识名册 OC 后她仍按册刷出——本尊唯一身不适用撞名回避", () => {
+    // 史燕（IP 池无固定落脚步点）册子在鱼定村；玩家已认识她（进 已认识人物）
+    const state = {
+      ...makeState(),
+      varTree: {
+        ...wanderBook({ 史燕: { at: "鱼定村", inner: null, since: 0 } }),
+        世界: {
+          游走册: { 史燕: { at: "鱼定村", inner: null, since: 0 } },
+          已认识人物: ["史燕"],
+        },
+      },
+    };
+    const out = residentNpcRule.run(state, { importedRegistry });
+    const npcs = out.changes.room(state.room).npcs;
+    expect(npcs.some((n) => n.name === "史燕"), "认识后仍须刷出").toBe(true);
+  });
+
+  it("挪动后新据点重建副本按册上快照补回随身物——已偷物不重置", () => {
+    const stolen = [{ name: "银簪子", stolen: true, slot: "equipment" }];
+    const state = {
+      ...makeState(),
+      varTree: wanderBook({ 史燕: { at: "鱼定村", inner: null, since: 0, carrySnapshot: stolen } }),
+    };
+    const out = residentNpcRule.run(state, { importedRegistry });
+    const npcs = out.changes.room(state.room).npcs;
+    const her = npcs.find((n) => n.name === "史燕");
+    expect(her, "册上在册须刷出").toBeTruthy();
+    expect(her.carriedItems.some((e) => e?.name === "银簪子" && e?.stolen)).toBe(true);
+  });
+});

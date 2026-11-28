@@ -249,7 +249,9 @@ function passersAt(locationName, dayIdx, used, isTaken, ocPositions = null) {
   // 位置落盘不再按日重掷；旧日刷口径只留作无册兜底（路遇等瞬态场景沿用）。
   const ocList = ocPositions
     ? ADVENTURER_POOL_IP
-        .filter((adv) => !adv.homeDistrict && ocPositions[adv.name]?.at === locationName && !isTaken(adv.name))
+        // 名册 OC 是本尊唯一身：玩家认识他之后照样刷出（好感正主就是他），
+        // 不适用日抛龙套的撞名回避——Reviewer 实证：认识后 isTaken 永久排斥致其人间蒸发
+        .filter((adv) => !adv.homeDistrict && ocPositions[adv.name]?.at === locationName)
         .map((adv) => ({
           id: `oc_${adv.id}`,
           name: adv.name,
