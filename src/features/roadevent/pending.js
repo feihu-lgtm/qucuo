@@ -14,6 +14,14 @@ export function clearRoadEventPending() {
   roadEventPendingStore.setState({ pending: null });
 }
 
+// epoch 护栏（读档/回滚换账即作废）：挂起时记的 epoch 与当前回合不一致
+// 说明那次照面在新账里从未发生。epoch 缺失（测试/旁路）时放行。
+export function isPendingFresh(pending, currentEpoch) {
+  if (!pending) return false;
+  if (pending.epoch == null || currentEpoch == null) return true;
+  return pending.epoch === currentEpoch;
+}
+
 export function getRoadEventPending() {
   return roadEventPendingStore.getState().pending;
 }

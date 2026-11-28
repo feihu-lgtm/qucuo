@@ -49,9 +49,31 @@ function patchesToChanges(patches) {
   return changes;
 }
 
+// 天机券暂定名（WO-25Q 的 AI 尾章填名上线前的兜底）：warrant 事实只有
+// category/quality/school 没有名字，materializeFacts 缺名即拒授——买货变
+// 「扣了银两没交货」。这里按品阶+品类确定性起名，事实不再落空；名字是
+// 通用档（「精铸兵刃」），Q 的两段式叙事会用 AI 具名顶替本通道。
+const QUALITY_PREFIX = { 白: "粗制", 绿: "青钢", 蓝: "精铸", 紫: "名贵", 橙: "稀世", 红: "传世" };
+const CATEGORY_NOUN = { weapon: "兵刃", armor: "护甲", accessory: "饰物", misc: "什物" };
+export function nameWarrantFacts(facts) {
+  return (facts || []).map((fact) => {
+    if (fact?.op === "GRANT_ITEM" && fact.warrant && !fact.itemName) {
+      const prefix = QUALITY_PREFIX[fact.quality] || "粗制";
+      const noun = CATEGORY_NOUN[fact.category] || "什物";
+      return { ...fact, itemName: `${prefix}${noun}` };
+    }
+    if (fact?.op === "BESTOW_SKILL" && fact.warrant && !fact.skillName) {
+      const school = fact.school && fact.school !== "散人" ? `${fact.school}流` : "佚名";
+      return { ...fact, skillName: `${school}${fact.quality || "白"}品武学` };
+    }
+    return fact;
+  });
+}
+
 export function settleRoadEventChoice({ roll, optionKey, state, rng = Math.random, luck }) {
   const outcome = resolveRoadEvent(roll, optionKey, state, { rng, luck });
-  const matResult = outcome.facts?.length ? materializeFacts(state, outcome.facts, {}) : null;
+  const facts = nameWarrantFacts(outcome.facts);
+  const matResult = facts?.length ? materializeFacts(state, facts, {}) : null;
   const writesResult = buildRoadEventWritesResult(roadEventWrites(roll, outcome), state);
 
   const patchChanges = patchesToChanges(matResult?.patches);

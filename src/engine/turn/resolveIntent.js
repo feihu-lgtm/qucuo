@@ -25,7 +25,8 @@ import {
   outerArrival as outerArrivalLogic,
 } from "../../features/map/logic.js";
 import { rollMovementEvents } from "../../features/map/encounter.js";
-import { getRoadEventPending, setRoadEventPending, clearRoadEventPending } from "../../features/roadevent/pending.js";
+import { getRoadEventPending, setRoadEventPending, clearRoadEventPending, isPendingFresh } from "../../features/roadevent/pending.js";
+import { rollRoadEvent, ROAD_EVENT_SHARE } from "../../domain/rules/livingWorld/roadEvents.js";
 import { matchRoadEventChoice, settleRoadEventChoice } from "../../features/roadevent/settle.js";
 import { resolveSnowInteraction } from "../../features/quest/snowLeopard.js";
 import { roadNameGuard } from "../../domain/rules/map/encounter.js";
@@ -76,7 +77,10 @@ export async function resolveIntent(cmd, env) {
   // 不存在跨 await 读旧快照的 stale 窗口。
   const pendingRoad = getRoadEventPending();
   if (pendingRoad?.roll) {
-    const choiceKey = matchRoadEventChoice(pendingRoad.roll, cmd);
+    // epoch 护栏：挂起后若读档/回滚换过账（gameEpoch 递增），那次照面在新账里
+    // 从未发生——挂起静默作废，绝不把旧账的奖惩落到新账上。
+    const fresh = isPendingFresh(pendingRoad, env.proseEpoch);
+    const choiceKey = fresh ? matchRoadEventChoice(pendingRoad.roll, cmd) : null;
     clearRoadEventPending();
     if (choiceKey) {
       turnMonitor.activate(_trace);
@@ -245,7 +249,17 @@ export async function resolveIntent(cmd, env) {
       },
     )
     : null;
-  if (arrivalResult?.cached) {
+  // WO-25O：格子预埋遭遇与现掷遭遇同权分流——预埋 encounter 命中时按
+  // ROAD_EVENT_SHARE 换路遇；换成就不能走纯前端捷径（照面要 AI 叙事），
+  // 本拍 fall through 进正常回合，由下面统一注入同一份 roadRoll。
+  let cachedForcedRoadRoll = null;
+  if (arrivalResult?.cached && arrivalResult.traceInfo?.encounter && !isTalk) {
+    const luckForRoad = char.special?.气运 ?? 5;
+    if (Math.random() < ROAD_EVENT_SHARE) {
+      cachedForcedRoadRoll = rollRoadEvent({ ...getGameState() }, lockedDestName, { rng: Math.random, luck: luckForRoad }) || null;
+    }
+  }
+  if (arrivalResult?.cached && !cachedForcedRoadRoll) {
     const traceInfo = arrivalResult.traceInfo;
     traceStep(_trace, "格子移动", "pass", `${room.name}→${lockedDestName} 格子命中，纯前端${traceInfo.hasSquareDesc ? "" : "（格子未就绪，兜底文本）"}`);
     if (traceInfo.item) {
@@ -260,11 +274,29 @@ export async function resolveIntent(cmd, env) {
     prerunSquares(); // 自愈：补齐未跑成的格子（全跑过则空转即返）
     return { proceed: false, summary: `到达 ${lockedDestName}（格子·纯前端）` };
   }
-  if (arrivalResult) applyLocal(arrivalResult, "格子移动");
+  if (arrivalResult && cachedForcedRoadRoll) {
+    // 路遇顶替格子预埋遭遇：预埋 NPC 不进房、预埋台词不上屏（格子仍 consume，
+    // 那位过路人叙事上化作了路遇的来人），其余移动/拾取/新面孔照常落账。
+    const baked = arrivalResult.traceInfo?.encounter;
+    if (baked && arrivalResult.changes?.room?.npcs) {
+      arrivalResult = {
+        ...arrivalResult,
+        changes: {
+          ...arrivalResult.changes,
+          room: {
+            ...arrivalResult.changes.room,
+            npcs: arrivalResult.changes.room.npcs.filter((npc) => npc?.id !== baked.id && npc?.name !== baked.name),
+          },
+        },
+        logs: (arrivalResult.logs || []).filter((l) => !(l?.t === "desc" && baked.line && String(l.text || "").includes(baked.line))),
+      };
+    }
+    applyLocal(arrivalResult, "格子移动");
+  } else if (arrivalResult) applyLocal(arrivalResult, "格子移动");
 
   const targetedRumor = findTargetedRumor(vt(), cmd);
 
-  const { pickupJudgment, encounterToDescribe, roadRoll } = rollMovementEvents({
+  const rolled = rollMovementEvents({
     isTalk,
     movingDir,
     lockedDestName,
@@ -273,10 +305,16 @@ export async function resolveIntent(cmd, env) {
     isTaken: roadNameGuard({ varTree: vt(), time, extraNames: (room?.npcs || []).map((npc) => npc.name) }),
     state: { ...getGameState() },
   });
+  let { pickupJudgment, encounterToDescribe, roadRoll } = rolled;
+  if (cachedForcedRoadRoll) {
+    // 格子预埋遭遇已在分流中换成路遇：现掷结果作废，统一走同一份 roadRoll
+    roadRoll = cachedForcedRoadRoll;
+    encounterToDescribe = null;
+  }
   if (encounterToDescribe) stopAutoTravel(encounterToDescribe);
   if (roadRoll) {
     stopAutoTravel({ label: "路遇" });
-    setRoadEventPending({ roll: roadRoll });
+    setRoadEventPending({ roll: roadRoll, epoch: env.proseEpoch ?? null });
   }
   else if (lockedDestName) intentRouterRef?.current?.fireEvent?.("arrive", { dest: lockedDestName, travelDone: !env.refs.autoTravelRef.current });
 

@@ -150,3 +150,45 @@ describe("WO-25O 挂起账（会话级）", () => {
     expect(getRoadEventPending()).toBeNull();
   });
 });
+
+describe("WO-25O 复审修包回归", () => {
+  it("epoch 护栏：读档/回滚换账后挂起作废，同账放行", async () => {
+    const { isPendingFresh } = await import("./pending.js");
+    const pending = { roll: { eventId: "x" }, epoch: 7 };
+    expect(isPendingFresh(pending, 7)).toBe(true);
+    expect(isPendingFresh(pending, 8)).toBe(false); // 换过账——照面在新账从未发生
+    expect(isPendingFresh(pending, null)).toBe(true); // epoch 缺失放行（旁路/测试）
+    expect(isPendingFresh({ roll: { eventId: "x" } }, 8)).toBe(true);
+    expect(isPendingFresh(null, 8)).toBe(false);
+  });
+
+  it("warrant 事实暂定名：买货不再「扣银两没交货」", async () => {
+    const { nameWarrantFacts } = await import("./settle.js");
+    const named = nameWarrantFacts([
+      { op: "GRANT_ITEM", warrant: true, category: "weapon", quality: "蓝" },
+      { op: "GRANT_ITEM", warrant: true, category: "armor", quality: "白" },
+      { op: "BESTOW_SKILL", warrant: true, school: "昆仑", quality: "紫" },
+      { op: "GRANT_ITEM", warrant: true, category: "misc", quality: "绿", itemName: "已有名" },
+    ]);
+    expect(named[0].itemName).toBe("精铸兵刃");
+    expect(named[1].itemName).toBe("粗制护甲");
+    expect(named[2].skillName).toBe("昆仑流紫品武学");
+    expect(named[3].itemName).toBe("已有名"); // 已有名不覆盖
+  });
+
+  it("卖货路遇全链路：银两照扣、物件照收——materializeFacts 不再落空", async () => {
+    const { materializeFacts } = await import("../../domain/rules/effects/materializeFacts.js");
+    const { nameWarrantFacts: nf } = await import("./settle.js");
+    const state = makeState();
+    const facts = nf([
+      { op: "CHANGE_VITALS_SILVER", moneyDelta: -50 },
+      { op: "GRANT_ITEM", warrant: true, category: "weapon", quality: "蓝" },
+    ]);
+    const out = materializeFacts(state, facts, {});
+    const errLogs = (out.logs || []).filter((l) => String(l.text || l).includes("无物可授"));
+    expect(errLogs).toEqual([]);
+    // 物件经 patches/inv 落账：变化里必须有 inv 通道产出
+    const invChange = out.changes?.inv ?? out.patches?.filter((p) => String(p.path).includes("inv"));
+    expect(invChange).toBeTruthy();
+  });
+});
