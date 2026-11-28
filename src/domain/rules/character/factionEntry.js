@@ -116,6 +116,30 @@ export const FACTION_ENTRIES = {
     intro: "石案上码着一排未开眼的青铜面具，艾草炭火噼啪作响。入墟为徒，先亲手磨亮自己的面具，再向神树递三记问心剑——树顶那双纵目会替你看清自己。",
     joinLabel: "磨亮面具、递三记问心剑，拜入三星派",
   },
+  萨迦世家: {
+    sect: "萨迦世家", master: "昆·索朗坚赞", buildingId: "sect_entry_sajia",
+    minRep: 40, repBonus: 20, flag: "萨迦世家弟子",
+    token: "萨迦三色护法牌", gifts: ["萨迦金铜飞轮", "三色花纹法袍"],
+    trial: null,
+    intro: "红白蓝三色花墙正门下，昆·索朗坚赞端坐石案之后：「我萨迦半门派半衙门，重契约、讲因明。先论理，后论剑，你可愿受这三色门规？」",
+    joinLabel: "立约因明，拜入萨迦世家",
+  },
+  噶举山人: {
+    sect: "噶举山人", master: "盘道人·白衣赤列", buildingId: "sect_entry_gaju",
+    minRep: 40, repBonus: 20, flag: "噶举山人弟子",
+    token: "白幡口传信物", gifts: ["噶举单层白布衣", "辟寒火珠"],
+    trial: null,
+    intro: "百幡白石山门前焚风猎猎。白衣赤列隔着青铜火盆抬眼看你：「噶举不留纸质秘籍，只讲师徒口耳相传。踏进此门，先答一声你心里认谁为师。」",
+    joinLabel: "答礼受戒，拜入噶举山人",
+  },
+  古象雄苯门: {
+    sect: "古象雄苯门", master: "九乘长老·木雅仲巴", buildingId: "sect_entry_benmen",
+    minRep: 40, repBonus: 20, flag: "古象雄苯门弟子",
+    token: "左旋雍仲黑铜牌", gifts: ["黑木琼鸟面具", "天铁掘藏钢钎"],
+    trial: null,
+    intro: "左旋雍仲正门十八具黑铜经轮逆时针缓缓转动。木雅仲巴抚着黑石方柱：「世人皆顺转而行，唯我古象雄逆流不屈。拨动左旋经轮，便认了这黑石山门。」",
+    joinLabel: "逆转经轮，拜入古象雄苯门",
+  },
 };
 
 export const SECT_MEMBER_FLAGS = {

@@ -17,6 +17,10 @@ import { xuedao } from "./xuedao.js";
 import { tianlong } from "./tianlong.js";
 import { sanxing } from "./sanxing.js";
 import { baihua } from "./baihua.js";
+import { sajia } from "./sajia.js";
+import { dajianlu } from "./dajianlu.js";
+import { gaju } from "./gaju.js";
+import { benmen } from "./benmen.js";
 
 export const SKILL_CATALOG = {
   玉泉: yuquan,
@@ -37,4 +41,8 @@ export const SKILL_CATALOG = {
   天龙: tianlong,
   三星: sanxing,
   百花: baihua,
+  萨迦: sajia,
+  打箭炉: dajianlu,
+  噶举: gaju,
+  苯门: benmen,
 };
