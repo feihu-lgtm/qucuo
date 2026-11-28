@@ -4,7 +4,7 @@ import { ENV_TAG_HANDLERS } from "./envTags.js";
 const room = (extra = {}) => ({ desc: "x", exits: {}, ...extra });
 const rs = () => ({ seed: "test-run", envTags: {} });
 
-describe("ENV_TAG_HANDLERS 十宫机制", () => {
+describe("ENV_TAG_HANDLERS 名册七宫机制", () => {
   it("baitaPrayerWheel：失败后下房遇敌率抬高", () => {
     const s = rs();
     ENV_TAG_HANDLERS.baitaPrayerWheel.onAction({ type: "checkFailed", result: "fail" }, s);
@@ -39,13 +39,6 @@ describe("ENV_TAG_HANDLERS 十宫机制", () => {
     expect(r.effects.statMod.命中).toBe(-10);
   });
 
-  it("xueshanWindchill：露天积失温，避风清零", () => {
-    const s = rs();
-    const r = ENV_TAG_HANDLERS.xueshanWindchill.onEnter(room({ openAir: true }), s);
-    expect(r.effects.statMod.全属性).toBeLessThan(0);
-    ENV_TAG_HANDLERS.xueshanWindchill.onEnter(room({ shelter: true }), s);
-    expect(s.envTags.chill.level).toBe(0);
-  });
 
   it("wuxianVenom：战区激活后每回合出体质检定", () => {
     const s = rs();
@@ -74,22 +67,7 @@ describe("ENV_TAG_HANDLERS 十宫机制", () => {
     expect(ENV_TAG_HANDLERS.tianlongSeal.onAction({ cmd: "攻击x" }, s).effects.damagePct).toBeUndefined();
   });
 
-  it("tangGear：破坏总齿轮后陷阱 DC 下降", () => {
-    const s = rs();
-    const r = ENV_TAG_HANDLERS.tangGear.onAction({ type: "sabotage", target: "gear" }, s);
-    expect(r.effects.trapDcBonus).toBe(-15);
-    expect(ENV_TAG_HANDLERS.tangGear.tick(s).effects.trapDcBonus).toBe(-15);
-  });
 
-  it("huanxiDesire：滞留与媚术累积到顶判负", () => {
-    const s = rs();
-    for (let i = 0; i < 30; i++) ENV_TAG_HANDLERS.huanxiDesire.tick(s); // +2/tick → 60
-    expect(s.envTags.desire.value).toBe(60);
-    const r1 = ENV_TAG_HANDLERS.huanxiDesire.onAction({ type: "charmHit" }, s); // +25 → 85
-    expect(r1.effects.defeat).toBeUndefined();
-    const r2 = ENV_TAG_HANDLERS.huanxiDesire.onAction({ type: "seduced" }, s); // +25 → 100
-    expect(r2.effects.defeat).toBe(true);
-  });
 
   it("tusiWatch：失败/战败抬高更锣警戒与下房遇敌率，检查点清零", () => {
     const s = rs();

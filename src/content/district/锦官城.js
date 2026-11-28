@@ -323,7 +323,7 @@ export default { district: {
             { type: "questStarted", questId: "jinguancheng_guan2_guitu" },
           ] },
         ] },
-        buildingId: "jingguan_iron_dungeon",
+        // 名册外 legacy 地宫入口已清退（2026-11 名册归一）：本房保留为纯任务空间
       },
     },
   }
