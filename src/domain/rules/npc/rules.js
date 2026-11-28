@@ -208,7 +208,11 @@ export const residentNpcRule = {
       ...importedNpcs.map((npc) => npc.name),
       ...advRosterNames,
     ]);
-    const passers = getRandomPassers(room.name, time, passerReserved, wanderPositions).filter(notRecruited)
+    const passers = getRandomPassers(room.name, time, passerReserved, wanderPositions)
+      .filter(notRecruited)
+      // 名册 OC 是本尊、不再吃撞名回避——已入队/留守的同伴必须显式滤掉，
+      // 不然房间里同时存在「世界版陌生人」和「留守队友」两个同名身（与冒险者层同一道闸）
+      .filter((passer) => !isCompanionUnlockedByName(companionState, passer.name))
       .map((passer) => {
         const existing = existingByName.get(passer.name);
         const reuse = existing && (existing.randomPasser === dayIdx || existing.ocWanderer) ? existing : undefined;

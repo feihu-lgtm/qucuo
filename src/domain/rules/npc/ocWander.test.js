@@ -115,4 +115,12 @@ describe("OC 冒险者名册游走（大肥鱼跑路案）", () => {
     );
     expect(result === null || result.changes?.varTree).toBeTruthy();
   });
+
+  it("挂名常驻身份的 OC（姬无双/樊未离）不是游走者——驻所之外不刷第二身", () => {
+    expect(WANDERING_OCS.some((a) => a.name === "姬无双")).toBe(false);
+    expect(WANDERING_OCS.some((a) => a.name === "樊未离")).toBe(false);
+    const pos = positionsWithFallback(null, 100 * 24);
+    expect(pos.姬无双).toBeUndefined();
+    expect(pos.樊未离).toBeUndefined();
+  });
 });

@@ -26,6 +26,7 @@
 import { ADVENTURER_POOL } from "../../data/dungeon/adventurers.js";
 import { ADVENTURER_POOL_IP } from "../../data/dungeon/adventurersIP.js";
 import { NODE_PASSERS, ocNearFaction } from "../../data/npc/randomPassers.js";
+import { getAllResidentNpcNames } from "../../data/npc/residentNpcs.js";
 import { QUCUO_MAP } from "../../data/map/qucuoMap.js";
 import { getBuildingsForLocation } from "../../data/buildings/qucuoBuildings.js";
 import { getDistrictAnchor, getPublicInnerRoomNames, hasInnerMap } from "../map/innerMap.js";
@@ -41,9 +42,12 @@ export const OC_MOVE_CHANCE = 0.05;
 const FOODIE_RE = /吃|馋|酒|饭|肉|饕|食/;
 const EATERY_RE = /楼|客栈|食|酒|茶|饭|厨|锅庄/;
 
-// 全部游走 OC：两池合册，有固定落脚据点（homeDistrict）的不在游走之列
+// 全部游走 OC：两池合册，有固定落脚据点（homeDistrict）的不在游走之列；
+// 挂名常驻身份的（姬无双/樊未离——驻场表里的永久居民）也不是游走者，
+// 否则驻所之外还会刷出第二个游走身（Review 实证：姬无双在大草甸分身）。
+const RESIDENT_NAMES = new Set(getAllResidentNpcNames());
 export const WANDERING_OCS = Object.freeze(
-  [...ADVENTURER_POOL, ...ADVENTURER_POOL_IP].filter((adv) => !adv.homeDistrict),
+  [...ADVENTURER_POOL, ...ADVENTURER_POOL_IP].filter((adv) => !adv.homeDistrict && !RESIDENT_NAMES.has(adv.name)),
 );
 
 const ACTIVE_DISTRICTS = Object.freeze(
