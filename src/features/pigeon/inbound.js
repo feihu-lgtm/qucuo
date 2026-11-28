@@ -131,7 +131,7 @@ export function inboundFallbackLine(state, letter, rng = Math.random) {
   }
   const name = letter.npcName;
   const attrs = state.varTree?.角色?.[name] || {};
-  const npc = findNpcObject(state, name);
+  const npc = findNpcObject(state, name, importedRegistry);
   const aff = Number(attrs.好感度) || 0;
   const flirty = /媚|浪|婊|撩|妖/.test(`${npc.personality || ""}${npc.archetypeLabel || ""}${npc.brief || ""}`);
   const poor = /穷|破|落魄|乞|债|穷酸/.test(`${npc.brief || ""}${npc.personality || ""}`);
