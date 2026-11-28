@@ -113,7 +113,7 @@ export function flattenShelf(sections) {
  * 同一 itemId 先发生者优先：条目已 stolen/dropped 则货架本就不会出它——
  * 这里再拦一次，防 UI 快照滞后重复点击。
  */
-export function buyFromNpcCarry(npc, targetItem, { affection = 0, money = 0 } = {}) {
+export function buyFromNpcCarry(npc, targetItem, { affection = 0, money = 0, priceMod = null } = {}) {
   // 货架条目自带 id，itemKey 精确命中优先；只有调用方没给 id（老档/手写货架）
   // 才退到按 name 匹配——否则同名两件货会买错件。
   const live = (npc?.carriedItems || []).find(i => itemKey(i) === itemKey(targetItem))
@@ -123,7 +123,9 @@ export function buyFromNpcCarry(npc, targetItem, { affection = 0, money = 0 } = 
   // 三态互斥：归宿已定的（stolen/dropped）无权再被买——同一 itemId 先发生者优先。
   if (live.stolen || live.dropped) return { ok: false, logs: [{ t: "sys", text: `  「${live.name}」已经不在 ${npc?.name || "对方"} 身上了。` }] };
   const entry = normalizeCarryEntry(npc, live);
-  const quote = quoteBuy(entry, affection);
+  // WO-25H：实收价必须与货架展示价同口径——物价倍率一份不少叠进来，
+  // 不然加价局买得起却收原价（倒找差价），降价局按高价收还多扣钱。
+  const quote = quoteBuy(entry, affection, priceMod);
   if (quote.mode === "mount") return { ok: false, logs: [{ t: "sys", text: `  ${npc.name}把「${entry.name}」往身后一护——这不算货。` }] };
   if (quote.mode === "beloved") return { ok: false, logs: [{ t: "sys", text: `  ${npc.name}摇摇头，抱紧了「${entry.name}」——挚爱之物，给再多钱也不卖。` }] };
   if (quote.mode === "notForSale") return { ok: false, logs: [{ t: "sys", text: `  ${npc.name}笑着摆手：「这个不卖。」` }] };

@@ -331,6 +331,7 @@ export function tradeWithNpc(state, npc) {
       // 节气日给 UI 一个「大促」标识——折扣已在生成时折进 price，不再二次减价。
       promo: refreshed ? refreshed.promo : (isDailyShopNpc(npc) ? promoForDay(dailyShopDayKey()) : null),
       priceNotes,
+      priceMod,
       items: [...items, ...display],
     },
     // 日更刷新落账：换货后的 room + 记了刷新日的 npcState + 吆喝日志。
