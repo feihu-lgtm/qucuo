@@ -84,7 +84,7 @@ describe("WO-25K 微互动筛选与结算", () => {
     expect(picked.outcome).toContain("阿乙");
     const patch = picked.writeWorld(st.varTree.世界);
     expect(patch.知识领域.事实.f1.知晓者.阿乙).toBeTruthy();
-    expect(patch.知识领域.事实.f1.知晓者.阿乙.途径).toContain("阿甲");
+    expect(patch.知识领域.事实.f1.知晓者.阿乙.途径).toBe("传闻"); // 与同框传播同口径，会按忘却回合数淡忘
     // 原知情者不受影响
     expect(patch.知识领域.事实.f1.知晓者.阿甲.途径).toBe("亲见");
   });
@@ -144,5 +144,21 @@ describe("WO-25K 微互动筛选与结算", () => {
     const picked = pickPairVignette(fired);
     expect(picked.cooldownWrite.lastTurn).toBe(t);
     expect(picked.line).toContain("低声搭上了话");
+  });
+});
+
+describe("Review 回归：faction 在册优先", () => {
+  it("双方在册 faction 不同——档案同提一派也不算同门", () => {
+    const a = { name: "甲", brief: "常在峨眉山下行脚", personality: "满口峨眉掌故", faction: "丐帮" };
+    const b = { name: "乙", brief: "峨眉脚下讨生活", personality: "爱说峨眉旧事", faction: "天龙教" };
+    expect(scorePair(a, b, {}).reasons).not.toContain("同门");
+  });
+  it("在册 faction 相同算同门；无在册数据退回关键词", () => {
+    const a = { name: "甲", brief: "行脚僧", faction: "喇嘛庙" };
+    const b = { name: "乙", brief: "云游僧", faction: "喇嘛庙" };
+    expect(scorePair(a, b, {}).reasons).toContain("同门");
+    const c = { name: "丙", brief: "青城派弃徒", personality: "" };
+    const d = { name: "丁", brief: "青城剑修", personality: "" };
+    expect(scorePair(c, d, {}).reasons).toContain("同门");
   });
 });

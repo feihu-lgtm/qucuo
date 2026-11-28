@@ -31,6 +31,13 @@ function sectsOf(npc) {
   return SECT_KEYS.filter((k) => text.includes(k));
 }
 
+// 同门判定：双方在册 faction 俱全时以在册为准（档案提及某派不等于出身该派——
+// Review 实证：两人档案都提到同一派便被误认为同门）；缺在册数据才退回关键词。
+function sameSect(a, b) {
+  if (a?.faction && b?.faction) return a.faction === b.faction ? [a.faction] : [];
+  return sectsOf(a).filter((k) => sectsOf(b).includes(k));
+}
+
 // 玩家视野房（内层房优先，外层取据点锚点视野）内的非同伴 NPC：同伴/敌对/随行不入选。
 export function collectPairCandidates(state) {
   const district = state.room?.name;
@@ -54,7 +61,7 @@ export function scorePair(a, b, world) {
   if (edge) { score += 3; reasons.push("旧识"); }
   const sharedQuirks = inferQuirks(a).filter((q) => inferQuirks(b).includes(q));
   if (sharedQuirks.length) { score += 2 * sharedQuirks.length; reasons.push("同好"); }
-  const sharedSects = sectsOf(a).filter((s) => sectsOf(b).includes(s));
+  const sharedSects = sameSect(a, b);
   if (sharedSects.length) { score += 2; reasons.push("同门"); }
   // 知识不对称：一方知晓、另一方不知情的事实——传闻同步的素材
   let rumor = null;
@@ -89,7 +96,7 @@ function settleOutcome(best, time) {
         if (!cur) return {};
         facts[rumor.fact.id] = {
           ...cur,
-          知晓者: { ...(cur.知晓者 || {}), [rumor.to]: { 途径: `听${rumor.from}说的`, 得知回合: time } },
+          知晓者: { ...(cur.知晓者 || {}), [rumor.to]: { 途径: "传闻", 得知回合: time } },
         };
         return { 知识领域: { ...(w.知识领域 || {}), 事实: facts } };
       },

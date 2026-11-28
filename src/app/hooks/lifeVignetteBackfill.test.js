@@ -82,3 +82,13 @@ describe("lifeVignetteBackfill 护栏", () => {
     expect(lifeVignetteBackfill(vignette, {})).toBe(false);
   });
 });
+
+describe("Review 回归：户外房间不借别家场子的活计", () => {
+  it("无锚定建筑时 activityDetail 为空（回退通用句），心境银囊仍带", async () => {
+    // 村口有鸽子笼建筑——改用无建筑的外层房场景：innerRoomName 为 null
+    const h = harness({ innerRoomName: null }, { triggerInnerRoomName: null });
+    await new Promise((r) => setTimeout(r, 30));
+    const ctx = h.ask.mock.calls[0][0];
+    expect(ctx.npcA.activityDetail).toBe("");
+  });
+});

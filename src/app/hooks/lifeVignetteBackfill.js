@@ -32,13 +32,17 @@ function sliceBitsOf(state, name, buildings, anchor) {
   const slice = resolveLifeSlice({
     npc, varTree: state.varTree, time: state.time, buildings, anchorBuilding: anchor,
   });
+  // Review 修：活计细节只在切片场子就是玩家所在建筑时成立——户外房间（无锚定建筑）
+  // 的切片是从全据点抽的别家场子，把「在饭馆吃饭」写进村口泥地是穿帮；此时只取
+  // 心境/银囊/癖好这些与场子无关的切面，活计回退通用句。
+  const detailHere = anchor && slice?.buildingId && slice.buildingId === anchor.id ? slice.detail : "";
   return {
     name,
     brief: npc?.brief || "",
     quirks: slice?.quirks?.join("、") || "",
     purse: slice?.purse || "",
     mood: slice?.mood || "",
-    activityDetail: slice?.detail || "",
+    activityDetail: detailHere,
   };
 }
 
