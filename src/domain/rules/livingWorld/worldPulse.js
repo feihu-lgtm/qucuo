@@ -27,7 +27,6 @@ import { evalWhen, evalWorldStates } from "./evalWorld.js";
 import { getRngState, setRngState, setSeed } from "../../../utils/rng.js";
 
 export const EVENT_CAP = 80;
-export const CONFLICT_TENSION_THRESHOLD = 70; // 动态张力达到此线无条件开战
 export const ENCOUNTER_TENSION_THRESHOLD = 60; // 同节点遭遇战敌对线（BASE 敌对对子 60 即算 hostile）
 export const POWER_RECOVER_PER_DAY = 2; // 稳态微恢复：每日向满血 100 回 2 点
 export const POWER_BASELINE = 100;
