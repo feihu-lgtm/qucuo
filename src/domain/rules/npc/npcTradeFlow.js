@@ -47,17 +47,29 @@ export function carryBasePrice(entry) {
  * - 其余 → 底价。
  * @returns {{mode:"normal"|"cherish"|"geai"|"beloved"|"notForSale"|"mount", price:number|null}}
  */
-export function quoteBuy(entry, affection = 0) {
+export function quoteBuy(entry, affection = 0, priceMod = null) {
   const cherish = entry?.cherish ?? 0;
   const base = carryBasePrice(entry);
+  // WO-25H 活世界物价倍率：具体品类优先，缺省落 all 兜底；钳制已在投影层做过。
+  // 局势卡品类键是 medicine/food/incense/all，货目 category 是 weapon/armor/accessory/misc
+  // ——消耗品按效果归口：回血药归 medicine、其余入口吃食归 food，皆不中落 all。
+  let mod = 1;
+  if (priceMod) {
+    const cat = entry?.category;
+    if (cat && priceMod[cat] != null) mod = priceMod[cat];
+    else if (entry?.consumable?.hpRestore && priceMod.medicine != null) mod = priceMod.medicine;
+    else if (entry?.consumable && priceMod.food != null) mod = priceMod.food;
+    else mod = priceMod.all ?? 1;
+  }
+  const modded = (v) => Math.max(1, Math.round(v * mod));
   if (entry?.slot === "mount") return { mode: "mount", price: null };
   if (cherish >= 80) {
-    if (affection >= 60) return { mode: "geai", price: Math.max(1, Math.round(base * 2)) };
+    if (affection >= 60) return { mode: "geai", price: modded(base * 2) };
     return { mode: "beloved", price: null };
   }
   if (entry?.sellable === false) return { mode: "notForSale", price: null };
-  if (cherish >= 50) return { mode: "cherish", price: Math.max(1, Math.round(base * 3)) };
-  return { mode: "normal", price: Math.max(0, Math.round(base)) };
+  if (cherish >= 50) return { mode: "cherish", price: modded(base * 3) };
+  return { mode: "normal", price: Math.max(0, Math.round(base * mod)) };
 }
 
 /** 卖出报价：玩家行囊件的 sellPrice × sellCoef，取整；0 价为不收。 */
@@ -71,12 +83,12 @@ export function quoteSell(npc, item, affection = 0) {
  * 货架换源（§2.1）：carriedItems → normalizeCarryEntry → 三档分区。
  * 已记归宿的（stolen/dropped）不上架；每件附报价与可买标记。
  */
-export function buildCarryShelf(npc, affection = 0) {
+export function buildCarryShelf(npc, affection = 0, priceMod = null) {
   const sections = { equipment: [], bag: [], mount: [] };
   for (const raw of npc?.carriedItems || []) {
     if (raw?.stolen || raw?.dropped) continue;
     const entry = normalizeCarryEntry(npc, raw);
-    const quote = quoteBuy(entry, affection);
+    const quote = quoteBuy(entry, affection, priceMod);
     const buyable = quote.price != null;
     const shelfEntry = {
       ...entry,
@@ -101,7 +113,7 @@ export function flattenShelf(sections) {
  * 同一 itemId 先发生者优先：条目已 stolen/dropped 则货架本就不会出它——
  * 这里再拦一次，防 UI 快照滞后重复点击。
  */
-export function buyFromNpcCarry(npc, targetItem, { affection = 0, money = 0 } = {}) {
+export function buyFromNpcCarry(npc, targetItem, { affection = 0, money = 0, priceMod = null } = {}) {
   // 货架条目自带 id，itemKey 精确命中优先；只有调用方没给 id（老档/手写货架）
   // 才退到按 name 匹配——否则同名两件货会买错件。
   const live = (npc?.carriedItems || []).find(i => itemKey(i) === itemKey(targetItem))
@@ -111,7 +123,9 @@ export function buyFromNpcCarry(npc, targetItem, { affection = 0, money = 0 } = 
   // 三态互斥：归宿已定的（stolen/dropped）无权再被买——同一 itemId 先发生者优先。
   if (live.stolen || live.dropped) return { ok: false, logs: [{ t: "sys", text: `  「${live.name}」已经不在 ${npc?.name || "对方"} 身上了。` }] };
   const entry = normalizeCarryEntry(npc, live);
-  const quote = quoteBuy(entry, affection);
+  // WO-25H：实收价必须与货架展示价同口径——物价倍率一份不少叠进来，
+  // 不然加价局买得起却收原价（倒找差价），降价局按高价收还多扣钱。
+  const quote = quoteBuy(entry, affection, priceMod);
   if (quote.mode === "mount") return { ok: false, logs: [{ t: "sys", text: `  ${npc.name}把「${entry.name}」往身后一护——这不算货。` }] };
   if (quote.mode === "beloved") return { ok: false, logs: [{ t: "sys", text: `  ${npc.name}摇摇头，抱紧了「${entry.name}」——挚爱之物，给再多钱也不卖。` }] };
   if (quote.mode === "notForSale") return { ok: false, logs: [{ t: "sys", text: `  ${npc.name}笑着摆手：「这个不卖。」` }] };

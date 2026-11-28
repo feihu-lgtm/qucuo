@@ -10,6 +10,8 @@ import { buildDistantViewBlock } from "../../domain/rules/memory/daySummary.js";
 import { buildPactInjectBlock } from "../../domain/rules/judge/pactLines.js";
 import { buildNemesisInjectBlock } from "../../domain/rules/nemesis/nemesisLines.js";
 import { buildPrepMaterialBlock } from "../../domain/rules/prep/prepConsumption.js";
+import { getDistrictSnapshot } from "../../domain/rules/livingWorld/projectWorld.js";
+import { buildDefaultRegistry } from "../../domain/data/livingWorld/index.js";
 import { targetLedger } from "../../domain/rules/prompt/materials/index.js";
 import { embeddingReady } from "../ports/embeddingService.js";
 import { buildExtractionCfg } from "../../domain/rules/prompt/structuredCallCfg.js";
@@ -206,6 +208,9 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
   // 空数组也是权威在场名册（Review 修）：内层房真无人时 visibleNpcNames=[] 是事实，
   // 落 fallback 会把据点全名册当在场——别房的宿敌/契约人被写进正文背景。
   // fallback 只服务完全没传 visibleNpcNames 的直通测试路径。
+  // WO-25H 【此地局势与风声】：11 号位动态区末尾（prepPart 之前）最多 3 行——
+  // 活跃局势卡 promptHint + 已传到此地的世界事件；全空零注入保持空档形状完全一致。
+  const livingPart = buildLivingSituationBlock(d) ? `\n\n${buildLivingSituationBlock(d)}` : "";
   const pactPresentNames = Array.isArray(d.visibleNpcNames)
     ? d.visibleNpcNames
     : (d.room?.npcs || []).map((n) => n?.name);
@@ -226,7 +231,7 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
   // 正文却自由判成相反结果（本单要消灭的穿帮）。普通非判官 settle 仍不收尾章税。
   const inChatContent = d.isSettle
     ? rulesPrefix + dynPrefix + (d.snowLeopardContext || "") + (d.settleNpc ? reunionPart : "") + ledgerSuffix + angrySettleNote + (d.judgeRuleBlock ? "\n\n" + d.judgeRuleBlock : "") + "\n\n" + steerSuffix
-    : rulesPrefix + dynPrefix + d.ctx + distantBlock + recallPart + ledgerSuffix + reunionPart + infoDomainPart + pactNemesisPart + prepPart + sealRulePart + "\n\n" + steerSuffix;
+    : rulesPrefix + dynPrefix + d.ctx + distantBlock + recallPart + ledgerSuffix + reunionPart + infoDomainPart + pactNemesisPart + livingPart + prepPart + sealRulePart + "\n\n" + steerSuffix;
   const latestUserContent = cmdSuffix + (extraNudge || "");
 
   // 10 号位 Chat History / 11 号位 In-Chat Injection / 12 号位 User's Latest Message。
@@ -528,3 +533,24 @@ setMainTurnAssembler((ctx) => buildMainCallPayload(ctx.extraNudge, ctx.narrative
   activePreset: getActivePreset(),
   effectivePreset: getActivePreset(),
 }));
+
+// ── WO-25H 活世界注册表（模块级单例，纯数据装配）──────────────────────────
+const LIVING_WORLD_REGISTRY = buildDefaultRegistry();
+
+// 【此地局势与风声】最多 3 行确定性文本：活跃局势卡 promptHint 优先，
+// 余量补已传播到本据点的世界事件摘要；全空返回 ""（调用方零注入）。
+export function buildLivingSituationBlock(d) {
+  const district = d?.room?.name;
+  if (!district) return "";
+  const snap = getDistrictSnapshot({ time: d.time, varTree: d.varTree }, district, LIVING_WORLD_REGISTRY);
+  const lines = [];
+  for (const sit of (snap.situations || []).slice(0, 2)) {
+    lines.push(sit.promptHint || `此地正逢「${sit.label}」。`);
+  }
+  for (const ev of (snap.events || [])) {
+    if (lines.length >= 3) break;
+    lines.push(`风声：${ev.text}`);
+  }
+  if (lines.length === 0) return "";
+  return `【此地局势与风声】\n${lines.slice(0, 3).join("\n")}`;
+}
