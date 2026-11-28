@@ -55,24 +55,48 @@ function patchesToChanges(patches) {
 // 通用档（「精铸兵刃」），Q 的两段式叙事会用 AI 具名顶替本通道。
 const QUALITY_PREFIX = { 白: "粗制", 绿: "青钢", 蓝: "精铸", 紫: "名贵", 橙: "稀世", 红: "传世" };
 const CATEGORY_NOUN = { weapon: "兵刃", armor: "护甲", accessory: "饰物", misc: "什物" };
-export function nameWarrantFacts(facts) {
-  return (facts || []).map((fact) => {
-    if (fact?.op === "GRANT_ITEM" && fact.warrant && !fact.itemName) {
-      const prefix = QUALITY_PREFIX[fact.quality] || "粗制";
-      const noun = CATEGORY_NOUN[fact.category] || "什物";
-      return { ...fact, itemName: `${prefix}${noun}` };
+export function nameWarrantFacts(facts, idSeed = "") {
+  return (facts || []).map((fact, index) => {
+    if (!fact?.op) return fact;
+    // 路遇事实天生无 id——materializeFacts 的兜底武学 id 取 `kf_fallback_${fact.id||"x"}`，
+    // 无 id 则件件同号「kf_fallback_x」，第二次奇遇武学被当已习得静默吞掉。
+    // 按事件+回合+序号补确定性 id：同事实重放幂等，不同事实永不撞号。
+    const withId = fact.id || !idSeed ? fact : { ...fact, id: `roadfact_${idSeed}_${index}` };
+    if (withId.op === "GRANT_ITEM" && withId.warrant && !withId.itemName) {
+      const prefix = QUALITY_PREFIX[withId.quality] || "粗制";
+      const noun = CATEGORY_NOUN[withId.category] || "什物";
+      return { ...withId, itemName: `${prefix}${noun}` };
     }
-    if (fact?.op === "BESTOW_SKILL" && fact.warrant && !fact.skillName) {
-      const school = fact.school && fact.school !== "散人" ? `${fact.school}流` : "佚名";
-      return { ...fact, skillName: `${school}${fact.quality || "白"}品武学` };
+    if (withId.op === "BESTOW_SKILL" && withId.warrant && !withId.skillName) {
+      const school = withId.school && withId.school !== "散人" ? `${withId.school}流` : "佚名";
+      return { ...withId, skillName: `${school}${withId.quality || "白"}品武学` };
     }
-    return fact;
+    return withId;
   });
+}
+
+// 囊中羞涩护栏：路遇买货类事件的代价是 silver 负流水+warrant 货品同批签发，
+// materializeFacts 扣银只钳到零不拒交易——30 两买 50 两的刀照样交货。
+// 结算前轧账：负流水总额超过囊中银两，整笔交易不成立（扣银与货品一并撤销，
+// 不付不收两讫）；声望/人情等旁支事实不受影响。
+function dropUnaffordablePurchase(facts, state) {
+  const cost = (facts || [])
+    .filter((f) => f?.op === "CHANGE_VITALS_SILVER" && (f.moneyDelta || 0) < 0)
+    .reduce((sum, f) => sum + Math.abs(f.moneyDelta), 0);
+  if (!cost) return { facts, dropped: false };
+  const silver = state?.char?.money ?? 0;
+  if (silver >= cost) return { facts, dropped: false };
+  return {
+    facts: (facts || []).filter((f) => !(f?.op === "CHANGE_VITALS_SILVER" && (f.moneyDelta || 0) < 0)
+      && !(f?.op === "GRANT_ITEM" && f.warrant)),
+    dropped: true,
+  };
 }
 
 export function settleRoadEventChoice({ roll, optionKey, state, rng = Math.random, luck }) {
   const outcome = resolveRoadEvent(roll, optionKey, state, { rng, luck });
-  const facts = nameWarrantFacts(outcome.facts);
+  const named = nameWarrantFacts(outcome.facts, `${roll.eventId}_${roll.turn}`);
+  const { facts, dropped } = dropUnaffordablePurchase(named, state);
   const matResult = facts?.length ? materializeFacts(state, facts, {}) : null;
   const writesResult = buildRoadEventWritesResult(roadEventWrites(roll, outcome), state);
 
@@ -96,7 +120,9 @@ export function settleRoadEventChoice({ roll, optionKey, state, rng = Math.rando
     : outcome.success
       ? `路遇结算：${option?.label || ""}——检定成功。`
       : `路遇结算：${option?.label || ""}——检定失败。`;
-  const logs = [{ t: "sys", text: `  ${verdict}` }, ...(matResult?.logs || []).map((l) => (l?.text ? l : { t: "sys", text: String(l) }))];
+  const logs = [{ t: "sys", text: `  ${verdict}` },
+    ...(dropped ? [{ t: "sys", text: "  囊中羞涩，这笔交易终究没能谈成。" }] : []),
+    ...(matResult?.logs || []).map((l) => (l?.text ? l : { t: "sys", text: String(l) }))];
   if (matResult?.receipts?.length) {
     logs[logs.length - 1] = { ...logs[logs.length - 1], receipts: matResult.receipts };
   }

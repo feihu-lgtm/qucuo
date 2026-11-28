@@ -279,16 +279,43 @@ export async function resolveIntent(cmd, env) {
     // 那位过路人叙事上化作了路遇的来人），其余移动/拾取/新面孔照常落账。
     const baked = arrivalResult.traceInfo?.encounter;
     if (baked && arrivalResult.changes?.room?.npcs) {
+      // 顶替要顶干净——预埋过路人的痕迹全部抹掉：
+      // ①room.npcs 不进房 ②台词不上屏 ③「新人物出现」公告不上屏
+      // ④曾经出现人物/上次同框回合不入账（此人压根没照面，不能进相遇史）
+      // ⑤time+1 剥离——本拍走正常叙事回合，commitRound 会统一推进，双加就跳两格
+      const bakedName = baked.name;
+      const originalVarTree = arrivalResult.changes.varTree;
+      const strippedChanges = { ...arrivalResult.changes };
+      delete strippedChanges.time; // 正常叙事回合 commitRound 统一推进，剥掉防双加
       arrivalResult = {
         ...arrivalResult,
         changes: {
-          ...arrivalResult.changes,
+          ...strippedChanges,
           room: {
             ...arrivalResult.changes.room,
-            npcs: arrivalResult.changes.room.npcs.filter((npc) => npc?.id !== baked.id && npc?.name !== baked.name),
+            npcs: arrivalResult.changes.room.npcs.filter((npc) => npc?.id !== baked.id && npc?.name !== bakedName),
           },
+          ...(typeof originalVarTree === "function" ? {
+            varTree: (prev) => {
+              const hadEverSeen = (prev?.世界?.曾经出现人物 || []).includes(bakedName);
+              const prevLastSeen = prev?.世界?.上次同框回合?.[bakedName];
+              let tree = originalVarTree(prev);
+              const world = { ...(tree?.世界 || {}) };
+              if (!hadEverSeen && Array.isArray(world.曾经出现人物)) {
+                world.曾经出现人物 = world.曾经出现人物.filter((n) => n !== bakedName);
+              }
+              if (world.上次同框回合 && Object.prototype.hasOwnProperty.call(world.上次同框回合, bakedName)) {
+                const restored = { ...world.上次同框回合 };
+                if (prevLastSeen == null) delete restored[bakedName];
+                else restored[bakedName] = prevLastSeen;
+                world.上次同框回合 = restored;
+              }
+              return { ...(tree || {}), 世界: world };
+            },
+          } : {}),
         },
-        logs: (arrivalResult.logs || []).filter((l) => !(l?.t === "desc" && baked.line && String(l.text || "").includes(baked.line))),
+        logs: (arrivalResult.logs || []).filter((l) => !(l?.t === "desc" && baked.line && String(l.text || "").includes(baked.line))
+          && !(l?.t === "sys" && bakedName && String(l.text || "").includes("新人物出现") && String(l.text || "").includes(bakedName))),
       };
     }
     applyLocal(arrivalResult, "格子移动");
