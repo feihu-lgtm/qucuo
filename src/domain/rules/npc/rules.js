@@ -287,14 +287,18 @@ export const residentNpcRule = {
         // Review 修：跨据点挪窝要接住旧身的随身物账——缓存里的 sold/stolen/dropped
         // 痕迹是已扒事实，newbuild 重掷会让同一批货被重复扒第二次
         let existing = existingByName.get(found.name);
+        let cachedCrossDistrict = false;
         if (!existing) {
           for (const [cachedName, cached] of Object.entries(roomMap || {})) {
             if (cachedName === room.name) continue;
             const hit = (cached?.npcs || []).find((n) => n.name === found.name);
-            if (hit) { existing = hit; break; }
+            if (hit) { existing = hit; cachedCrossDistrict = true; break; }
           }
         }
         const built = buildRoomNpcWithCombat(found, { existingNpc: existing, luck, trade: npcTradeOf(state.npcState, found) });
+        // Review 修：跨据点接旧身时 innerRoom 是旧据点的房名——新据点没这间房
+        // 的话人在每一间都不可见。剥掉让后段 seeded 分房重新派位。
+        if (cachedCrossDistrict) delete built.innerRoom;
         built.squadId = sq.id;
         built.squadName = sq.name;
         livingToInject.push(built);
