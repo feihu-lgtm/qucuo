@@ -93,16 +93,16 @@ const ROLES = {
     { role: "拓碑弟子", art: "rubbing-disciple", level: [1, 1], culture: "han", personality: "背着拓包和纸卷，满手墨灰，见了青铜残片眼睛就发亮" },
   ],
   萨迦世家: [
-    { role: "萨迦护院僧", art: "traveling-monk", level: [1, 2], culture: "tibetan", gender: "男", personality: "身穿三色花纹法袍在庄园巡守，说话慢条斯理却带着半个衙门的威势" },
-    { role: "溪卡交租庄户", art: "market-villager", level: [0, 1], culture: "tibetan", personality: "赶着驮青稞和红盐的骡子去丹霞外城交租，逢人便叹今年盐井收成" },
+    { role: "萨迦护院僧", art: "sajia-house-monk", level: [1, 2], culture: "tibetan", gender: "男", personality: "身穿三色花纹法袍在庄园巡守，说话慢条斯理却带着半个衙门的威势" },
+    { role: "溪卡交租庄户", art: "sajia-rent-farmer", level: [0, 1], culture: "tibetan", personality: "赶着驮青稞和红盐的骡子去丹霞外城交租，逢人便叹今年盐井收成" },
   ],
   噶举山人: [
-    { role: "白衣苦行僧", art: "traveling-monk", level: [1, 2], culture: "tibetan", gender: "男", personality: "隆冬亦只穿单层白布僧衣，周身隐隐透出热气，走路像踩着河谷焚风" },
-    { role: "渡口牧夫", art: "herder", level: [0, 1], culture: "tibetan", personality: "替噶举白门放牧纯白牦牛，也兼着撑牛皮筏子渡人过狼曲" },
+    { role: "白衣苦行僧", art: "gaju-white-ascetic", level: [1, 2], culture: "tibetan", gender: "男", personality: "隆冬亦只穿单层白布僧衣，周身隐隐透出热气，走路像踩着河谷焚风" },
+    { role: "渡口牧夫", art: "gaju-ferry-herder", level: [0, 1], culture: "tibetan", personality: "替噶举白门放牧纯白牦牛，也兼着撑牛皮筏子渡人过狼曲" },
   ],
   古象雄苯门: [
-    { role: "左旋黑衣武士", art: "stockade-scout", level: [1, 2], culture: "tibetan", gender: "男", personality: "腰插天铁钢钎，转经必定逆时针左旋，遇上顺转喇嘛就要瞪眼" },
-    { role: "天铁矿工", art: "porter", level: [0, 1], culture: "tibetan", gender: "男", personality: "背着沉甸甸的雪山陨铁矿袋下山，满手黑灰却护着腰间的黑铜牌" },
+    { role: "左旋黑衣武士", art: "bon-black-guard", level: [1, 2], culture: "tibetan", gender: "男", personality: "腰插天铁钢钎，转经必定逆时针左旋，遇上顺转喇嘛就要瞪眼" },
+    { role: "天铁矿工", art: "bon-ore-miner", level: [0, 1], culture: "tibetan", gender: "男", personality: "背着沉甸甸的雪山陨铁矿袋下山，满手黑灰却护着腰间的黑铜牌" },
   ],
   散人: [
     { role: "流民", art: "displaced-traveler", level: [0, 0], personality: "逃荒来的，只想找口饭吃，对谁都提防" },

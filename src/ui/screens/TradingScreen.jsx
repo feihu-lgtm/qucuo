@@ -8,6 +8,7 @@ import { discountedBuyPrice } from "../../domain/rules/economy/equipment.js";
 import { THEME_VARS, chromeBtn } from "../../utils/theme.js";
 import { cherishHearts } from "../../domain/rules/npc/npcCarry.js";
 import ModalShell from "../primitives/ModalShell.jsx";
+import ArtImage from "../components/ArtImage.jsx";
 import { QUALITY_COLOR } from "../../domain/data/items/qualityColor.js";
 
 export default function TradingScreen({ shopName, shopItems = [], playerInv, playerMoney, playerWit = 5, repCoef = 1, onBuy, onSell, onClose, inline, onInspect, queueCount = 0,
@@ -20,6 +21,7 @@ export default function TradingScreen({ shopName, shopItems = [], playerInv, pla
   // sellToNpcCarry 的实付一致——不然显示 50 实收 35。
   sellCoef = 1,
   headerContent,
+  buildingArtSrc,
   // 货币名。雪山派门派商坊用功德（QUCUO_SHOPS 里 currency:"karma"），调用方
   // 传进来的 playerMoney 与各件的 buyPrice 都是功德值——但此前本组件五处
   // 都把单位写死成"银两/两"，于是界面显示「银两：37 两」，玩家一对自己的实际
@@ -63,6 +65,11 @@ export default function TradingScreen({ shopName, shopItems = [], playerInv, pla
         <div style={{ fontSize: "var(--fs-sm)", color: "var(--gold-bright)" }}>{currencyName}：{playerMoney || 0} {currencyUnit}</div>
         <span className="mobile-overlay-close mobile-only-close" onClick={onClose} aria-label="关闭交易">×</span>
       </div>
+      {buildingArtSrc && (
+        <div className="building-art" style={{ flexShrink: 0, alignSelf: "center", width: "min(100%, 360px)" }}>
+          <ArtImage key={buildingArtSrc} src={buildingArtSrc} alt={shopName} variant="panel" />
+        </div>
+      )}
 
       <div className="mobile-trading-content" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
         {/* 左侧：玩家物品，可卖。功德商店不收货，整半边不渲染 */}

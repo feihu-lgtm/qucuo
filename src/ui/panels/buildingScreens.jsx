@@ -13,6 +13,7 @@ import { buildShopInventory, rollShopStock } from "../../domain/data/shops/qucuo
 import { factionShopOffer, factionShopOutlet, isFactionShop } from "../../features/buildings/factionShop.js";
 import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { buildingClosedReason } from "../../domain/rules/economy/strongholdGate.js";
+import { buildingArtUrl } from "../art/art.js";
 import TradingScreen from "../screens/TradingScreen.jsx";
 import { factionShopCoef } from "../../domain/rules/economy/factionRep.js";
 import InnScreen from "../screens/buildings/InnScreen.jsx";
@@ -39,6 +40,7 @@ import FestivalScreen from "../screens/buildings/FestivalScreen.jsx";
 import { Button } from "../primitives/index.js";
 
 const DungeonScreen = lazy(() => import("../screens/dungeon/DungeonScreen.jsx"));
+const DEDICATED_ART_ONLY = { byType: {} };
 
 // 既卖现货又接定制的铺子（SHOP 族 + craft 字段）：现货/定制页签切换。
 function shopWithCraftScreen(c, shopData, trading) {
@@ -61,6 +63,7 @@ function shopScreen(c) {
     ? factionShopOffer(c.building.shopKey, c.varTree, factionShopOutlet(c.building.shopKey, c.building.id), c.flags) : null;
   const trading = (
     <TradingScreen inline queueCount={c.queueCount}
+      buildingArtSrc={buildingArtUrl(c.building, DEDICATED_ART_ONLY)}
       shopName={factionShop ? `${c.building.name}${factionShop.closed ? `（${factionShop.closed}）` : ""}` : shopData.shopName}
       shopItems={factionShop ? factionShop.items : shopData.items}
       playerInv={c.inv} playerMoney={isKarma ? (c.dao.karma || 0) : (c.char.money || 0)}
