@@ -27,7 +27,7 @@ import { evalWhen, evalWorldStates } from "./evalWorld.js";
 import { getRngState, setRngState, setSeed } from "../../../utils/rng.js";
 
 export const EVENT_CAP = 80;
-export const CONFLICT_TENSION_THRESHOLD = 70;
+export const ENCOUNTER_TENSION_THRESHOLD = 60; // 同节点遭遇战敌对线（BASE 敌对对子 60 即算 hostile）
 export const POWER_RECOVER_PER_DAY = 2; // 稳态微恢复：每日向满血 100 回 2 点
 export const POWER_BASELINE = 100;
 const HOUR_MARK = "活世界时辰";
@@ -130,7 +130,11 @@ export function stepHourlyBeat(state, registry) {
       for (let j = i + 1; j < list.length; j += 1) {
         const [x, y] = [list[i], list[j]];
         const tension = getTension(world.tension || {}, x.squad.faction, y.squad.faction);
-        if (x.squad.faction && y.squad.faction && x.squad.faction !== y.squad.faction && tension >= CONFLICT_TENSION_THRESHOLD) {
+        if (!x.squad.faction || !y.squad.faction || x.squad.faction === y.squad.faction) continue;
+        // 天敌生态位：raider 遇 caravan 必劫（账面张力无关）——商路断货涨价的源头剧本
+        const predator = (x.squad.role === "raider" && y.squad.role === "caravan")
+          || (y.squad.role === "raider" && x.squad.role === "caravan");
+        if (tension >= ENCOUNTER_TENSION_THRESHOLD || predator) {
           pairs.push({ node, x, y, tension });
         }
       }
@@ -158,8 +162,9 @@ export function stepHourlyBeat(state, registry) {
       const loser = result.winner === "A" ? pick.y : result.winner === "B" ? pick.x : null;
       const winner = result.winner === "A" ? pick.x : result.winner === "B" ? pick.y : null;
       // 战果记账：成员 hpRatio 写 人物动态、势力战力增减、事件录入册
+      // lethal:none 的离线架打不出死人——hp 0 记重伤 0.05；hpRatio 0 专留真死（永不恢复）
       for (const [npcId, [hp, maxHp]] of Object.entries(result.finalHp || {})) {
-        hpUpdates[npcId] = maxHp > 0 ? hp / maxHp : 0;
+        hpUpdates[npcId] = maxHp > 0 ? Math.max(0.05, hp / maxHp) : 0.05;
       }
       if (loser && winner) {
         powerDelta[loser.squad.faction] = (powerDelta[loser.squad.faction] || 0) - (loser.squad.onDefeated?.boostPower ? 0 : 4);
@@ -177,7 +182,7 @@ export function stepHourlyBeat(state, registry) {
         knownDistricts: [pick.node],
         loserSquad: loser?.squad.id || null,
         winnerSquad: winner?.squad.id || null,
-        addTargetSituation: loser?.squad.onDefeated?.addTargetSituation || null,
+        addTargetSituation: loser?.squad.onDefeated?.addTargetSituation || null, // 字符串或数组均可
       });
     }
   }
@@ -269,13 +274,14 @@ function stepSingleBeat(state, registry) {
             w.事件录 = [...prevEvents, ...fresh].slice(-EVENT_CAP);
             const boards = { ...(w.据点局势 || {}) };
             for (const ev of fresh) {
-              if (!ev.addTargetSituation) continue;
-              const sit = registry?.situations?.find((x) => x.id === ev.addTargetSituation);
-              if (!sit) continue;
-              const cards = [...(boards[ev.district] || [])];
-              if (!cards.some((c) => c.id === sit.id)) {
-                cards.push({ id: sit.id, sinceDay: ev.day, expireDay: ev.day + (sit.durationDays || 3), sourceEventId: ev.id });
-                boards[ev.district] = cards;
+              for (const sitId of [].concat(ev.addTargetSituation || []).filter(Boolean)) {
+                const sit = registry?.situations?.find((x) => x.id === sitId);
+                if (!sit) continue;
+                const cards = [...(boards[ev.district] || [])];
+                if (!cards.some((c) => c.id === sit.id)) {
+                  cards.push({ id: sit.id, sinceDay: ev.day, expireDay: ev.day + (sit.durationDays || 3), sourceEventId: ev.id });
+                  boards[ev.district] = cards;
+                }
               }
             }
             w.据点局势 = boards;
@@ -304,11 +310,13 @@ function stepSingleBeat(state, registry) {
             }
             return { ...ev, knownDistricts: [...known] };
           });
-          // 伤员稳态恢复：hpRatio 每日向满血回 0.2，回满即销账（防世界三天打死自毁的另一半）
+          // 伤员稳态恢复：hpRatio 每日向满血回 0.2，回满即销账（防世界三天打死自毁的另一半）。
+          // hpRatio<=0 是死人/出局——绝不奶活；显式 status dead/recruited 同例。
           if (w.人物动态) {
             const dyn = {};
             for (const [npcId, rec] of Object.entries(w.人物动态)) {
-              if (typeof rec?.hpRatio === "number" && rec.hpRatio < 1) {
+              const out = rec?.hpRatio <= 0 || rec?.status === "dead" || rec?.status === "recruited";
+              if (!out && typeof rec?.hpRatio === "number" && rec.hpRatio < 1) {
                 const recovered = Math.min(1, rec.hpRatio + 0.2);
                 if (recovered < 1) dyn[npcId] = { ...rec, hpRatio: recovered };
                 else if (rec.status) dyn[npcId] = { ...rec, hpRatio: 1 };
