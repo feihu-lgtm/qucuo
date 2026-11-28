@@ -49,13 +49,16 @@ export function scanChronicleTail() {
     const events = st?.varTree?.世界?.事件录;
     if (!Array.isArray(events) || !events.length) return;
     const idx = _chronicleCursor ? events.findIndex((e) => e?.id === _chronicleCursor) : -1;
-    const fresh = idx === -1 ? (_chronicleCursor == null ? [] : events.slice(-3)) : events.slice(idx + 1);
-    // 首次进游戏只立游标不补录（历史事件不是本设备发生的，别给云端灌水）。
     const last = events[events.length - 1];
-    if (_chronicleCursor == null) { _chronicleCursor = last?.id || null; return; }
+    // 首次进游戏只立游标不补录（历史事件不是本设备发生的，别给云端灌水）；
+    // 读档换档后游标在事件录里找不到——同样只重新锚定不补录（旧档历史非本设备新事）。
+    if (_chronicleCursor == null || idx === -1) { _chronicleCursor = last?.id || null; return; }
+    const fresh = events.slice(idx + 1);
     _chronicleCursor = last?.id || _chronicleCursor;
     if (!fresh.length) return;
-    const branchId = typeof st?.branchId === "string" ? st.branchId : "";
+    // 谱系 branchId 取 proseLineage 当前分支尾（编年史段无 branchId 会被谱系过滤永不可见）。
+    const lineage = Array.isArray(st?.proseLineage) ? st.proseLineage : [];
+    const branchId = typeof lineage[lineage.length - 1]?.b === "string" ? lineage[lineage.length - 1].b : "";
     recordWorldChronicle(fresh, { branchId, turn: st?.time || 0 });
   } catch { /* 编年史绝不阻断规则管线 */ }
 }
