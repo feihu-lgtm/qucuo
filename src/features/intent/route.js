@@ -4,6 +4,7 @@ import { HARD_ACTION_RE } from "../../domain/rules/intent/actionKinds.js";
 import { isIntimateInput } from "../../domain/rules/prompt/inputIntent.js";
 import { gateRecognition, confirmLine, ROUTES } from "../../domain/rules/intent/gate.js";
 import { validatePlan } from "../../domain/rules/intent/systemGate.js";
+import { fillMoveSlots } from "../../domain/rules/intent/moveSlots.js";
 import { formatPlanNote } from "../../domain/rules/intent/planNotes.js";
 import { parseDir } from "../../utils/mudHelpers.js";
 import { turnRuntime } from "../turnRuntime.js";
@@ -36,7 +37,7 @@ export async function recognizeAndGate(state, cmd, { classifier, onStage, thresh
 }
 
 export function planSteps(state, actions) {
-  const plan = validatePlan(state, actions);
+  const plan = validatePlan(state, fillMoveSlots(state, actions));
   return { plan, note: formatPlanNote(plan, state), single: plan.valid.length === 1 && !plan.rejected };
 }
 

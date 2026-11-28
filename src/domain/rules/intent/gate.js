@@ -48,7 +48,10 @@ function describePlain(action) {
     case ACTION_KINDS.APPEASE: return `向${who(action)}赔罪`;
     case ACTION_KINDS.PICKUP: return `捡起${action.item && action.item !== NONE ? action.item : "东西"}`;
     case ACTION_KINDS.EQUIP: return `${UNEQUIP_RE.test(action.text || "") ? "卸下" : "穿戴"}${action.item && action.item !== NONE ? action.item : "装备"}`;
-    case ACTION_KINDS.MOVE: return `往${action.direction && action.direction !== NONE ? action.direction : "前"}走`;
+    case ACTION_KINDS.MOVE:
+      if (action.enterBuilding?.name) return `进「${action.enterBuilding.name}」`;
+      if (action.outerDest) return `往${action.direction}去「${action.outerDest}」`;
+      return `往${action.direction && action.direction !== NONE ? action.direction : "前"}走`;
     case ACTION_KINDS.USE_ITEM: return `用掉${action.item && action.item !== NONE ? action.item : "东西"}`;
     case ACTION_KINDS.TALK: return `和${who(action)}说话`;
     default: return action.text || "这么做";
