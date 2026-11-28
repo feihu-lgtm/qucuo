@@ -33,8 +33,12 @@ function sectsOf(npc) {
 
 // 同门判定：双方在册 faction 俱全时以在册为准（档案提及某派不等于出身该派——
 // Review 实证：两人档案都提到同一派便被误认为同门）；缺在册数据才退回关键词。
+// 「散人」是无门无派标记而不是门派——两个散人之间不存在同门香火情（Review 实证）。
+const NON_AFFILIATION = new Set(["散人"]);
 function sameSect(a, b) {
-  if (a?.faction && b?.faction) return a.faction === b.faction ? [a.faction] : [];
+  if (a?.faction && b?.faction) {
+    return a.faction === b.faction && !NON_AFFILIATION.has(a.faction) ? [a.faction] : [];
+  }
   return sectsOf(a).filter((k) => sectsOf(b).includes(k));
 }
 

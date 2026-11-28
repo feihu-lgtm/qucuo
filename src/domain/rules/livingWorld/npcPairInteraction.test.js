@@ -161,4 +161,9 @@ describe("Review 回归：faction 在册优先", () => {
     const d = { name: "丁", brief: "青城剑修", personality: "" };
     expect(scorePair(c, d, {}).reasons).toContain("同门");
   });
+  it("两个散人不算同门——散人是无门无派标记", () => {
+    const a = { name: "甲", brief: "行脚客", faction: "散人" };
+    const b = { name: "乙", brief: "过路的", faction: "散人" };
+    expect(scorePair(a, b, {}).reasons).not.toContain("同门");
+  });
 });
