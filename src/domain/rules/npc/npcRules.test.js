@@ -189,7 +189,8 @@ describe("resident NPC world rule", () => {
     const deps = residentNpcRule.deps(makeState());
     // WO-23C4：过滤所读状态进 deps——companionState/宿敌谱变化必须触发重算
     // 游走册（OC 位置真源）亦在 deps 末位
-    expect(deps).toEqual(["鱼定村", 0, {}, [], 0, {}, undefined, undefined, undefined]);
+    // WO-25H 活世界七个账本键进 deps 末段（编队册/据点局势/tension/势力战力/势力声誉/人物动态/旗号）
+    expect(deps).toEqual(["鱼定村", 0, {}, [], 0, {}, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined]);
   });
 });
 

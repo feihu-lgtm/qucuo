@@ -11,12 +11,17 @@ import ModalShell from "../primitives/ModalShell.jsx";
 import ArtImage from "../components/ArtImage.jsx";
 import { QUALITY_COLOR } from "../../domain/data/items/qualityColor.js";
 
+// WO-25H 物价标签/大促共用徽标样式（模块常量化——不新增内联 style 债务）
+const BADGE_STYLE = { fontSize: "var(--fs-2xs)", padding: "1px 6px", border: "1px solid var(--gold-bright)", color: "var(--gold-bright)", borderRadius: 2 };
+
 export default function TradingScreen({ shopName, shopItems = [], playerInv, playerMoney, playerWit = 5, repCoef = 1, onBuy, onSell, onClose, inline, onInspect, queueCount = 0,
   // 随身货架三分区（身上装备/行囊/挂载伙伴）：传了 carrySections 时 shopItems
   // 里 non-displayOnly 的部分已经在分区里渲染过了，平铺只留店里陈列。
   carrySections = null,
   // 节气大促标识：{term, discount}，界面上打个「大促」角标。
   promo = null,
+  // WO-25H 活世界局势物价标签（如「伤药紧俏 药材+30%」），空数组零渲染
+  priceNotes = [],
   // NPC 回购系数（元朵朵冤种溢价/奸商折/好感加成）：面板卖价必须与
   // sellToNpcCarry 的实付一致——不然显示 50 实收 35。
   sellCoef = 1,
@@ -57,10 +62,13 @@ export default function TradingScreen({ shopName, shopItems = [], playerInv, pla
         <div style={{ fontSize: "var(--fs-base)", color: "var(--text)", display: "flex", alignItems: "center", gap: 6 }}>
           {shopName || "交易"}
           {promo && (
-            <span role="status" style={{ fontSize: "var(--fs-2xs)", padding: "1px 6px", border: "1px solid var(--gold-bright)", color: "var(--gold-bright)", borderRadius: 2 }}>
+            <span role="status" style={BADGE_STYLE}>
               {promo.term}大促
             </span>
           )}
+          {(priceNotes || []).map((note) => (
+            <span key={note} role="status" style={BADGE_STYLE}>{note}</span>
+          ))}
         </div>
         <div style={{ fontSize: "var(--fs-sm)", color: "var(--gold-bright)" }}>{currencyName}：{playerMoney || 0} {currencyUnit}</div>
         <span className="mobile-overlay-close mobile-only-close" onClick={onClose} aria-label="关闭交易">×</span>

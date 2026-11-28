@@ -10,6 +10,7 @@ import { ADVENTURER_POOL } from "../../data/dungeon/adventurers.js";
 import { positionsWithFallback } from "./ocWander.js";
 import { injectNpcs } from "../npc/roomNpcs.js";
 import { getResidentNpcs, RESIDENT_NPCS } from "../../data/npc/residentNpcs.js";
+import { getDistrictSnapshot } from "../livingWorld/projectWorld.js";
 import { ESCORT_QUESTS } from "../../data/quests/escortQuests.js";
 import { seededRand } from "../../../utils/seededRandom.js";
 import { parseQuestPlace, questPlaceDistrict } from "../quests/questPlace.js";
@@ -66,6 +67,11 @@ export function buildRoomNpcWithCombat(poolNpc, { existingNpc, luck = 5, trade }
 // 迁过据点的常驻 → 原据点。旧存档还把人缓存在原据点：进新据点照样请到，回原据点把人清掉
 const RELOCATED_RESIDENTS = { 唐老太: "锦官城", 说书人陈七: "天都镇" };
 
+// WO-25H 内容索引：覆写增员/编队成员按 id 查实（查无实据不投放，绝不编造）
+const CONTENT_LOOKUP_BY_ID = new Map(
+  [...Object.values(RESIDENT_NPCS).flat(), ...NPC_POOL].filter((n) => n?.id).map((n) => [n.id, n]),
+);
+
 export const residentNpcRule = {
   id: "npc.residents",
   deps: (state) => [
@@ -82,8 +88,16 @@ export const residentNpcRule = {
     state.varTree?.世界?.驻足锁,
     // 游走册即 OC 冒险者位置真源：有人挪窝/进出本据点都要触发重建
     state.varTree?.世界?.游走册,
+    // WO-25H 活世界：编队册/据点局势/势力账/人物动态/旗号变动都可能改写驻场
+    state.varTree?.世界?.编队册,
+    state.varTree?.世界?.据点局势,
+    state.varTree?.世界?.tension,
+    state.varTree?.世界?.势力战力,
+    state.varTree?.世界?.势力声誉,
+    state.varTree?.世界?.人物动态,
+    state.varTree?.世界?.旗号,
   ],
-  run(state, { importedRegistry, roomMap, companionState = state.companionState }) {
+  run(state, { importedRegistry, roomMap, companionState = state.companionState, livingWorldRegistry = null }) {
     const { room, time, questProgress = {}, flags = [], char } = state;
     if (!room?.name) return null;
     const dayIdx = Math.floor(time / 24);
@@ -230,7 +244,63 @@ export const residentNpcRule = {
     // 名册 OC 游走者：不认日子夜签，只认册子除名
     const isStaleOcWanderer = (npc) => npc?.ocWanderer && !rosterNames.has(npc.name);
     const hasStalePassers = (room.npcs || []).some((npc) => isStalePasser(npc) || isStaleOcWanderer(npc));
-    const toInject = [...poolNpcs, ...residentNpcs, ...activeEscortTargets, ...gambleBidders, ...importedNpcs, ...worldAdventurers, ...passers];
+    // ── WO-25H 活世界驻场层：据点覆写增删 + 离线编队代表上线（ Kenshi 式：
+    // 只在离境重返/跨日重建时切换，绝不当着玩家面闪变——本规则恰好在那些时刻重建）。
+    let livingToInject = [];
+    const livingStaleIds = new Set(); // 覆写 removeResidents 与离场编队要清的名字
+    if (livingWorldRegistry) {
+      const snap = getDistrictSnapshot(state, room.name, livingWorldRegistry);
+      const removedIds = new Set((snap.override?.removeResidents || []));
+      // 覆写剔除：按 id 或名字命中都要清（覆盖在册/已在房两路）
+      for (const npc of [...poolNpcs, ...residentNpcs]) {
+        if (removedIds.has(npc.id) || removedIds.has(npc.poolId)) {
+          livingStaleIds.add(npc.name);
+        }
+      }
+      for (const npc of room.npcs || []) {
+        if (removedIds.has(npc.id) || removedIds.has(npc.poolId)) livingStaleIds.add(npc.name);
+      }
+      // 覆写新增驻场
+      for (const addId of snap.override?.addResidents || []) {
+        const found = CONTENT_LOOKUP_BY_ID.get(addId);
+        if (!found) continue;
+        const existing = existingByName.get(found.name);
+        const built = buildRoomNpcWithCombat(found, { existingNpc: existing, luck, trade: npcTradeOf(state.npcState, found) });
+        built.livingOverride = snap.override.overrideId;
+        livingToInject.push(built);
+      }
+      // 离线编队代表上线：编队正经过本据点 → 首位成员实体化（带 squadId 账，
+      // 编队挪窝后下一拍重建即清走；玩家与该编队同处一内层房时本拍不清——驻足锁同口径）。
+      const activeSquadIdsHere = new Set();
+      for (const sq of snap.squads || []) {
+        activeSquadIdsHere.add(sq.id);
+        const decl = livingWorldRegistry.roamingSquads.find((x) => x.id === sq.id);
+        const memberId = decl?.members?.[0];
+        const found = memberId && CONTENT_LOOKUP_BY_ID.get(memberId);
+        if (!found) continue;
+        const existing = existingByName.get(found.name);
+        const built = buildRoomNpcWithCombat(found, { existingNpc: existing, luck, trade: npcTradeOf(state.npcState, found) });
+        built.squadId = sq.id;
+        built.squadName = sq.name;
+        livingToInject.push(built);
+      }
+      // 编队已挪窝：带 squadId 但所属编队不在本据点的旧身清走
+      for (const npc of room.npcs || []) {
+        if (npc.squadId && !activeSquadIdsHere.has(npc.squadId)) livingStaleIds.add(npc.name);
+      }
+    }
+    if (livingStaleIds.size > 0) {
+      for (const name of livingStaleIds) staleNames.add(name);
+    }
+    const toInjectRaw = [...poolNpcs, ...residentNpcs, ...activeEscortTargets, ...gambleBidders, ...importedNpcs, ...worldAdventurers, ...passers, ...livingToInject]
+      .filter((npc) => !livingStaleIds.has(npc.name));
+    // 编队代表/覆写新增可能与既有层撞名（同池客多路投放）——先到先得去重
+    const seenNames = new Set();
+    const toInject = toInjectRaw.filter((npc) => {
+      if (seenNames.has(npc.name)) return false;
+      seenNames.add(npc.name);
+      return true;
+    });
     const injectNameSet = new Set(toInject.map((npc) => npc.name));
     // 不具名群众：按天固定，有内层地图的分散到各公共房间
     const crowdRooms = hasInnerMap(room.name) ? getPublicInnerRoomNames(room.name) : [];

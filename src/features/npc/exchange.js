@@ -10,6 +10,8 @@ import { getCurrentStage, isQuestGateOpen } from "../../domain/rules/quests/ques
 import { snowMedicineGift, snowMeatGift } from "../quest/snowLeopard.js";
 import { buildShopInventory, buildOcShopInventory, rollShopStock } from "../../domain/data/shops/qucuoShops.js";
 import { affectionOf, buildCarryShelf, flattenShelf, sellCoefOf } from "../../domain/rules/npc/npcTradeFlow.js";
+import { getDistrictSnapshot } from "../../domain/rules/livingWorld/projectWorld.js";
+import { buildDefaultRegistry } from "../../domain/data/livingWorld/index.js";
 import { refreshDailyShop, dailyShopDayKey, promoForDay, isDailyShopNpc } from "../../domain/rules/npc/dailyShop.js";
 import { appeaseAngryNpc, recordNpcAttempt } from "./anger.js";
 import { add, applyWrite, set, updateField } from "../../domain/rules/state/applyWrite.js";
@@ -296,7 +298,21 @@ export function tradeWithNpc(state, npc) {
   // 经 normalizeCarryEntry 后按 slot 分区；mount 只展示，sellable=false 标「不卖」，
   // 钟爱走 quoteBuy 价档（中钟爱 3×、挚爱拒售、好感≥60 割爱 2×）。
   const affection = affectionOf(state.varTree, npc.name);
-  const sections = buildCarryShelf(npc, affection);
+  // WO-25H 活世界物价：据点快照 priceMod 叠入报价；局势原因标签随货架传给 UI
+  const snap = state.room?.name
+    ? getDistrictSnapshot({ time: state.time, varTree: state.varTree }, state.room.name, LIVING_WORLD_REGISTRY_EXCHANGE)
+    : null;
+  const priceMod = snap && Object.keys(snap.priceMod || {}).length > 0 ? snap.priceMod : null;
+  const priceNotes = (snap?.situations || [])
+    .filter((sit) => sit.priceMod)
+    .map((sit) => {
+      const parts = Object.entries(sit.priceMod)
+        .filter(([, v]) => v !== 1)
+        .map(([cat, v]) => `${cat === "all" ? "全场" : cat}${v > 1 ? "+" : ""}${Math.round((v - 1) * 100)}%`);
+      return parts.length ? `${sit.label} ${parts.join("、")}` : null;
+    })
+    .filter(Boolean);
+  const sections = buildCarryShelf(npc, affection, priceMod);
   const items = flattenShelf(sections);
   // 旧独立货架（OC 货单/店档）改作「店里陈列」：保留展示但不走随身清单成交。
   const displayData = buildOcShopInventory(npc.name) || rollShopStock(npc.name, state.time) || buildShopInventory(npc.name);
@@ -314,9 +330,13 @@ export function tradeWithNpc(state, npc) {
       sellCoef: sellCoefOf(npc, affection),
       // 节气日给 UI 一个「大促」标识——折扣已在生成时折进 price，不再二次减价。
       promo: refreshed ? refreshed.promo : (isDailyShopNpc(npc) ? promoForDay(dailyShopDayKey()) : null),
+      priceNotes,
       items: [...items, ...display],
     },
     // 日更刷新落账：换货后的 room + 记了刷新日的 npcState + 吆喝日志。
     ...(refreshed ? { changes: { room: refreshed.room, npcState: refreshed.npcState }, logs: refreshed.logs } : {}),
   };
 }
+
+// WO-25H 活世界注册表（模块级单例，纯数据装配）
+const LIVING_WORLD_REGISTRY_EXCHANGE = buildDefaultRegistry();
