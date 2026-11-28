@@ -22,9 +22,9 @@ const recruit = (owner, cs = {}) => {
 };
 
 describe("每位冒险者的随从都随主人入队，是两个人", () => {
-  it("带随从的冒险者都建出独立伙伴槽，带得动的战斗数据（雪域青年无随从系设计本意，跳过）", () => {
+  it("87 位冒险者的随从都建出独立伙伴槽，带得动的战斗数据", () => {
     const ownersWithFollower = ALL_OC.filter((a) => a.follower);
-    expect(ownersWithFollower.length).toBeGreaterThanOrEqual(77); // 老 77 位全有随从
+    expect(ownersWithFollower.length).toBe(ALL_OC.length);
     for (const owner of ownersWithFollower) {
       const cs = recruit(owner);
       const slots = Object.entries(cs).filter(([, c]) => c.servantOf);
