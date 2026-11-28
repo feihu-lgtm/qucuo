@@ -4,6 +4,7 @@ import "../../domain/rules/prompt/calls/domainCalls.js";
 import "../../domain/rules/prompt/calls/sideCalls.js";
 import "../../domain/rules/prompt/calls/prepCalls.js";
 import "../../domain/rules/prompt/calls/roamCalls.js";
+import "../../domain/rules/prompt/calls/lifeCalls.js";
 import "../../domain/rules/memory/bookkeep.js";
 import "../../engine/ports/storyteller.js";
 import "../../engine/ports/cardScan/scanCalls.js";

@@ -41,14 +41,14 @@ function attireLine(inv) {
 }
 
 // 二十四节气名（用于按游戏日数近似推演节气，游戏级精度：15 日一候）。
-const SOLAR_TERMS = [
+export const SOLAR_TERMS = [
   "立春", "雨水", "惊蛰", "春分", "清明", "谷雨", "立夏", "小满", "芒种", "夏至", "小暑", "大暑",
   "立秋", "处暑", "白露", "秋分", "寒露", "霜降", "立冬", "小雪", "大雪", "冬至", "小寒", "大寒",
 ];
 
-const SHICHEN = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+export const SHICHEN = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
 
-function dayNightLabel(hour) {
+export function dayNightLabel(hour) {
   if (hour >= 23 || hour < 1) return "子夜";
   if (hour < 5) return "凌晨";
   if (hour < 7) return "清晨";

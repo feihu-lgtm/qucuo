@@ -25,6 +25,7 @@ const REGISTERING_MODULES = [
   "../src/domain/rules/prompt/calls/nemesisCalls.js",
   "../src/domain/rules/prompt/calls/prepCalls.js",
   "../src/domain/rules/prompt/calls/roamCalls.js",
+  "../src/domain/rules/prompt/calls/lifeCalls.js",
 ];
 
 function* walkObjects(node, path) {
