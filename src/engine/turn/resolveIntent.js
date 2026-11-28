@@ -25,6 +25,9 @@ import {
   outerArrival as outerArrivalLogic,
 } from "../../features/map/logic.js";
 import { rollMovementEvents } from "../../features/map/encounter.js";
+import { getRoadEventPending, setRoadEventPending, clearRoadEventPending, isPendingFresh } from "../../features/roadevent/pending.js";
+import { rollRoadEvent, ROAD_EVENT_SHARE } from "../../domain/rules/livingWorld/roadEvents.js";
+import { matchRoadEventChoice, settleRoadEventChoice } from "../../features/roadevent/settle.js";
 import { resolveSnowInteraction } from "../../features/quest/snowLeopard.js";
 import { roadNameGuard } from "../../domain/rules/map/encounter.js";
 import { turnMonitor, withTurnContext } from "../../infra/turnMonitor.js";
@@ -67,6 +70,38 @@ export async function resolveIntent(cmd, env) {
 
   // D8：亲密门禁已上移 judgePhase——判意来自 intake 布尔字段（本地合成/缺失时正则兜底），
   // 拦截/拒词/凭卡/已亲密落账全部在判官段执行，此处不再前置拦截（双轨会误判）。
+
+  // WO-25O：挂起路遇的抉择拦截——上一回合照面之后，本句命中可行之事
+  // （按钮照抄 label 直发，或手敲同义）就在这里确定性结算，不占 AI 回合；
+  // 不命中则时过境迁，挂起作废，输入照常走原流程。全程同步无 await，
+  // 不存在跨 await 读旧快照的 stale 窗口。
+  const pendingRoad = getRoadEventPending();
+  if (pendingRoad?.roll) {
+    // epoch 护栏：挂起后若读档/回滚换过账（gameEpoch 递增），那次照面在新账里
+    // 从未发生——挂起静默作废，绝不把旧账的奖惩落到新账上。
+    const fresh = isPendingFresh(pendingRoad, env.proseEpoch);
+    const choiceKey = fresh ? matchRoadEventChoice(pendingRoad.roll, cmd) : null;
+    clearRoadEventPending();
+    if (choiceKey) {
+      turnMonitor.activate(_trace);
+      const settled = settleRoadEventChoice({
+        roll: pendingRoad.roll,
+        optionKey: choiceKey,
+        state: { ...getGameState() },
+        luck: char.special?.气运 ?? 5,
+      });
+      setInput("");
+      setCmdHistory(p => [cmd, ...p].slice(0, 50));
+      setHistIdx(-1);
+      applyLocal({
+        feature: "roadEvent",
+        changes: settled.changes,
+        logs: [{ t: "cmd", text: `> ${cmd}` }, ...settled.logs],
+      }, "roadEvent");
+      traceStep(_trace, "路遇结算", "pass", `${pendingRoad.roll.eventId}·${choiceKey}`);
+      return { proceed: false, summary: `路遇结算（${choiceKey}）` };
+    }
+  }
 
   const localCommand = !isTalk
     ? parseLocalCommand(cmd, { ...getGameState(), isTalk, convo }, { surface: "web" })
@@ -193,7 +228,7 @@ export async function resolveIntent(cmd, env) {
   if (outerLock.blocked) { movingDir = null; pendDir = null; }
   if (outerLock.outerDepart) outerDepart = outerLock.outerDepart;
 
-  const arrivalResult = !isTalk && lockedDestName
+  let arrivalResult = !isTalk && lockedDestName
     ? outerArrivalLogic(
       {
         ...getGameState(),
@@ -214,7 +249,17 @@ export async function resolveIntent(cmd, env) {
       },
     )
     : null;
-  if (arrivalResult?.cached) {
+  // WO-25O：格子预埋遭遇与现掷遭遇同权分流——预埋 encounter 命中时按
+  // ROAD_EVENT_SHARE 换路遇；换成就不能走纯前端捷径（照面要 AI 叙事），
+  // 本拍 fall through 进正常回合，由下面统一注入同一份 roadRoll。
+  let cachedForcedRoadRoll = null;
+  if (arrivalResult?.cached && arrivalResult.traceInfo?.encounter && !isTalk) {
+    const luckForRoad = char.special?.气运 ?? 5;
+    if (Math.random() < ROAD_EVENT_SHARE) {
+      cachedForcedRoadRoll = rollRoadEvent({ ...getGameState() }, lockedDestName, { rng: Math.random, luck: luckForRoad }) || null;
+    }
+  }
+  if (arrivalResult?.cached && !cachedForcedRoadRoll) {
     const traceInfo = arrivalResult.traceInfo;
     traceStep(_trace, "格子移动", "pass", `${room.name}→${lockedDestName} 格子命中，纯前端${traceInfo.hasSquareDesc ? "" : "（格子未就绪，兜底文本）"}`);
     if (traceInfo.item) {
@@ -229,19 +274,75 @@ export async function resolveIntent(cmd, env) {
     prerunSquares(); // 自愈：补齐未跑成的格子（全跑过则空转即返）
     return { proceed: false, summary: `到达 ${lockedDestName}（格子·纯前端）` };
   }
-  if (arrivalResult) applyLocal(arrivalResult, "格子移动");
+  if (arrivalResult && cachedForcedRoadRoll) {
+    // 路遇顶替格子预埋遭遇：预埋 NPC 不进房、预埋台词不上屏（格子仍 consume，
+    // 那位过路人叙事上化作了路遇的来人），其余移动/拾取/新面孔照常落账。
+    const baked = arrivalResult.traceInfo?.encounter;
+    if (baked && arrivalResult.changes?.room?.npcs) {
+      // 顶替要顶干净——预埋过路人的痕迹全部抹掉：
+      // ①room.npcs 不进房 ②台词不上屏 ③「新人物出现」公告不上屏
+      // ④曾经出现人物/上次同框回合不入账（此人压根没照面，不能进相遇史）
+      // ⑤time+1 剥离——本拍走正常叙事回合，commitRound 会统一推进，双加就跳两格
+      const bakedName = baked.name;
+      const originalVarTree = arrivalResult.changes.varTree;
+      const strippedChanges = { ...arrivalResult.changes };
+      delete strippedChanges.time; // 正常叙事回合 commitRound 统一推进，剥掉防双加
+      arrivalResult = {
+        ...arrivalResult,
+        changes: {
+          ...strippedChanges,
+          room: {
+            ...arrivalResult.changes.room,
+            npcs: arrivalResult.changes.room.npcs.filter((npc) => npc?.id !== baked.id && npc?.name !== bakedName),
+          },
+          ...(typeof originalVarTree === "function" ? {
+            varTree: (prev) => {
+              const hadEverSeen = (prev?.世界?.曾经出现人物 || []).includes(bakedName);
+              const prevLastSeen = prev?.世界?.上次同框回合?.[bakedName];
+              let tree = originalVarTree(prev);
+              const world = { ...(tree?.世界 || {}) };
+              if (!hadEverSeen && Array.isArray(world.曾经出现人物)) {
+                world.曾经出现人物 = world.曾经出现人物.filter((n) => n !== bakedName);
+              }
+              if (world.上次同框回合 && Object.prototype.hasOwnProperty.call(world.上次同框回合, bakedName)) {
+                const restored = { ...world.上次同框回合 };
+                if (prevLastSeen == null) delete restored[bakedName];
+                else restored[bakedName] = prevLastSeen;
+                world.上次同框回合 = restored;
+              }
+              return { ...(tree || {}), 世界: world };
+            },
+          } : {}),
+        },
+        logs: (arrivalResult.logs || []).filter((l) => !(l?.t === "desc" && baked.line && String(l.text || "").includes(baked.line))
+          && !(l?.t === "sys" && bakedName && String(l.text || "").includes("新人物出现") && String(l.text || "").includes(bakedName))),
+      };
+    }
+    applyLocal(arrivalResult, "格子移动");
+  } else if (arrivalResult) applyLocal(arrivalResult, "格子移动");
 
   const targetedRumor = findTargetedRumor(vt(), cmd);
 
-  const { pickupJudgment, encounterToDescribe } = rollMovementEvents({
+  const rolled = rollMovementEvents({
     isTalk,
     movingDir,
     lockedDestName,
     targetedRumor,
     luck: char.special?.气运 ?? 5,
     isTaken: roadNameGuard({ varTree: vt(), time, extraNames: (room?.npcs || []).map((npc) => npc.name) }),
+    state: { ...getGameState() },
   });
+  let { pickupJudgment, encounterToDescribe, roadRoll } = rolled;
+  if (cachedForcedRoadRoll) {
+    // 格子预埋遭遇已在分流中换成路遇：现掷结果作废，统一走同一份 roadRoll
+    roadRoll = cachedForcedRoadRoll;
+    encounterToDescribe = null;
+  }
   if (encounterToDescribe) stopAutoTravel(encounterToDescribe);
+  if (roadRoll) {
+    stopAutoTravel({ label: "路遇" });
+    setRoadEventPending({ roll: roadRoll, epoch: env.proseEpoch ?? null });
+  }
   else if (lockedDestName) intentRouterRef?.current?.fireEvent?.("arrive", { dest: lockedDestName, travelDone: !env.refs.autoTravelRef.current });
 
   // ── 采集裁决（系统层）──（判定在 act/roundNotes.js，副作用在此执行）
@@ -296,7 +397,7 @@ export async function resolveIntent(cmd, env) {
     plan: {
       intent, isTalk, isSettle, movingDir, lockedDestName, destinationLock,
       collectNote: collectNote + (opts.intentPlanNote || ""),
-      encounterToDescribe, activeGroundItemForTurn, lookNpcs,
+      encounterToDescribe, roadRoll, activeGroundItemForTurn, lookNpcs,
       // WO-06：只读 plan 字段直传 TurnEnvelope（原跨层 ref 透传）
       pendDir, outerDepart, pickupJudgment, collectGranted,
     },

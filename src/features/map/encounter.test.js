@@ -11,14 +11,14 @@ describe("movement encounter logic", () => {
       lockedDestName: "大草甸",
       targetedRumor: false,
       random: () => 0,
-    })).toEqual({ pickupJudgment: null, encounterToDescribe: null });
+    })).toEqual({ pickupJudgment: null, encounterToDescribe: null, roadRoll: null });
     expect(rollMovementEvents({
       isTalk: true,
       movingDir: "n",
       lockedDestName: "大草甸",
       targetedRumor: false,
       random: () => 0,
-    })).toEqual({ pickupJudgment: null, encounterToDescribe: null });
+    })).toEqual({ pickupJudgment: null, encounterToDescribe: null, roadRoll: null });
   });
 
   it("draws pickup before encounter and suppresses encounter for targeted rumors", () => {

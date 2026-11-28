@@ -239,3 +239,35 @@ it("handles absent prompt wiring and rejects incomplete required state", () => {
   });
   expect(() => assemblePrompt({ prompt: createPromptContext({}) }, "", {}, [], [], "", [])).toThrow();
 });
+
+describe("WO-25O 路遇照面注入", () => {
+  it("roadRoll 在场时照面段用 buildRoadEventNote 且只写到抉择之前，势力过路人被顶替", async () => {
+    const { rollRoadEvent } = await import("../../domain/rules/livingWorld/roadEvents.js");
+    const state = {
+      ...fixture(),
+      time: 100,
+      char: { ...fixture().char, special: { 气运: 5 } },
+      varTree: { 世界: {} },
+    };
+    const roll = rollRoadEvent(state, "打箭炉", { rng: () => 0.5, luck: 5 });
+    expect(roll).toBeTruthy();
+    const prompt = createPromptContext(state, {
+      apiCfg: defaultConfig(),
+      intent: classifyIntent("北"),
+      roadRoll: roll,
+      encounter: { factionKey: "x", faction: { label: "不应出现势力" }, passer: null },
+      movingDir: "n",
+      lockedDestName: "打箭炉",
+    });
+    const assembled = assemblePrompt({ prompt }, "北", {}, state.convo, state.convo, "", state.convo);
+    expect(assembled.ctx).toContain("触发路遇");
+    expect(assembled.ctx).toContain("只写到抉择之前");
+    expect(assembled.ctx).toContain(roll.options[0].label);
+    expect(assembled.ctx).not.toContain("不应出现势力");
+
+    const factionOnly = assemblePrompt({
+      prompt: { ...prompt, roadRoll: null },
+    }, "北", {}, state.convo, state.convo, "", state.convo);
+    expect(factionOnly.ctx).not.toContain("只写到抉择之前");
+  });
+});

@@ -1,5 +1,6 @@
 import { ITEM_CATEGORY, makeItem, rollQuality } from "../../domain/rules/economy/equipment.js";
 import { rollEncounter } from "../../domain/rules/map/encounter.js";
+import { rollRoadEvent, ROAD_EVENT_SHARE } from "../../domain/rules/livingWorld/roadEvents.js";
 import { makeItemSmart } from "../../domain/data/items/catalog.js";
 import { detectCollectPickup, allCollected } from "../../domain/rules/quests/collect.js";
 import { getCurrentStage } from "../../domain/rules/quests/questEngine.js";
@@ -16,6 +17,7 @@ export function rollMovementEvents({
   luck = 5,
   random = Math.random,
   isTaken,
+  state = null,
 }) {
   let pickupJudgment = null;
   if (!isTalk && movingDir && random() < 0.35) {
@@ -30,10 +32,20 @@ export function rollMovementEvents({
   }
 
   let encounterToDescribe = null;
+  let roadRoll = null;
   if (!isTalk && movingDir && lockedDestName && !targetedRumor) {
     encounterToDescribe = rollEncounter(lockedDestName, luck, { isTaken });
+    // WO-25O：命中过路人遭遇后按 ROAD_EVENT_SHARE 分流换路遇事件；
+    // 路遇池空（冷却/谓词不搭）落回原势力过路人。势力伏击在别处判，此处不碰。
+    if (encounterToDescribe && state && random() < ROAD_EVENT_SHARE) {
+      const rolled = rollRoadEvent(state, lockedDestName, { rng: random, luck });
+      if (rolled) {
+        roadRoll = rolled;
+        encounterToDescribe = null;
+      }
+    }
   }
-  return { pickupJudgment, encounterToDescribe };
+  return { pickupJudgment, encounterToDescribe, roadRoll };
 }
 
 export function judgeCollect({ isTalk, cmd, room, innerRoomName, questProgress, inv }) {
