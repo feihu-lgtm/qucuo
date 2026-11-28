@@ -261,3 +261,56 @@ describe("WO-25O 二轮复审修包回归", () => {
     expect((settled.logs || []).some((l) => String(l.text).includes("银两"))).toBe(false);
   });
 });
+
+describe("WO-25O 三轮复审修包回归（买卖/罚没分治）", () => {
+  it("罚没不免：劫匪落败的银两损失与购买力无关，穷也要照扣到零", async () => {
+    const { settleRoadEventChoice } = await import("./settle.js");
+    const { eligibleEvents } = await import("../../domain/rules/livingWorld/roadEvents.js");
+    const state = makeState();
+    state.char.money = 5;
+    // 找 lose 含 silver 负码但不含 item/skill 的事件（罚没型）
+    const pool = ["天都镇", "打箭炉", "丹霞城", "焚风渡"].flatMap((n) => eligibleEvents(state, n));
+    const penaltyEvent = pool.find((e) => /silver:-/.test(e.lose || "") && !/item:|skill:/.test(e.lose || ""));
+    if (!penaltyEvent) throw new Error("池里应有罚没型事件");
+    const roll = {
+      eventId: penaltyEvent.id, destNode: "天都镇", day: 4, turn: 100,
+      cast: { kind: "passer", name: "独脚盗" }, situations: [],
+      options: [
+        { key: "main", label: "硬闯", check: penaltyEvent.check, dc: penaltyEvent.dc, rate: 0 },
+        { key: "alt", label: "绕开", check: null, rate: 100 },
+        { key: "leave", label: "离开", check: null, rate: 100 },
+      ],
+    };
+    // rng 0.999 必败（rate 低）——落败罚没型 lose 事实批
+    const settled = settleRoadEventChoice({ roll, optionKey: "main", state, rng: () => 0.999 });
+    if (settled.outcome.success !== false) return; // rate 高的不在本测范围
+    const hasPenaltyFacts = settled.outcome.facts.some((f) => f.op === "CHANGE_VITALS_SILVER" && (f.moneyDelta || 0) < 0);
+    if (!hasPenaltyFacts) return;
+    expect(settled.logs.some((l) => String(l.text).includes("囊中羞涩"))).toBe(false);
+    expect(settled.logs.some((l) => String(l.text).includes("银两"))).toBe(true); // 照扣（钳到零）
+  });
+
+  it("买武学也两讫：夜市学艺付不起则武学一并撤销，不留白拿", async () => {
+    const { eligibleEvents } = await import("../../domain/rules/livingWorld/roadEvents.js");
+    const { settleRoadEventChoice } = await import("./settle.js");
+    const state = makeState();
+    state.char.money = 3;
+    const pool = ["天都镇", "打箭炉", "丹霞城", "焚风渡", "琼隆古墟"].flatMap((n) => eligibleEvents(state, n));
+    // 付费学艺码在 alt（如 R17 夜市奇遇）：silver 负码+skill 同串即交易
+    const skillBuy = pool.find((e) => /silver:-/.test(e.alt || "") && /skill:/.test(e.alt || ""));
+    if (!skillBuy) throw new Error("池里应有付费学艺事件");
+    const roll = {
+      eventId: skillBuy.id, destNode: "天都镇", day: 4, turn: 100,
+      cast: { kind: "passer", name: "夜市把式" }, situations: [],
+      options: [
+        { key: "main", label: "求艺", check: skillBuy.check, dc: skillBuy.dc, rate: 100 },
+        { key: "alt", label: "看看", check: null, rate: 100 },
+        { key: "leave", label: "离开", check: null, rate: 100 },
+      ],
+    };
+    const settled = settleRoadEventChoice({ roll, optionKey: "alt", state, rng: () => 0 });
+    expect(settled.logs.some((l) => String(l.text).includes("囊中羞涩"))).toBe(true);
+    expect(settled.logs.some((l) => String(l.text).includes("银两"))).toBe(false); // 不扣
+    expect(settled.logs.some((l) => String(l.text).includes("习得武学"))).toBe(false); // 也不授
+  });
+});

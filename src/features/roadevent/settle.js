@@ -75,20 +75,24 @@ export function nameWarrantFacts(facts, idSeed = "") {
   });
 }
 
-// 囊中羞涩护栏：路遇买货类事件的代价是 silver 负流水+warrant 货品同批签发，
-// materializeFacts 扣银只钳到零不拒交易——30 两买 50 两的刀照样交货。
-// 结算前轧账：负流水总额超过囊中银两，整笔交易不成立（扣银与货品一并撤销，
-// 不付不收两讫）；声望/人情等旁支事实不受影响。
+// 囊中羞涩护栏——先辨「买卖」再轧账，两种银两负流水身份迥异：
+//   买货：silver 负流水与 warrant 货品（item/skill）同批签发——是交易，
+//         付不起就整笔不成立（代价与货品一并撤销，不付不收两讫）；
+//   罚没：silver 负流水不带货品（劫匪落败、赔偿之类）——是损失，
+//         与购买力无关，永远照扣（materializeFacts 钳到零，有多少损失多少，
+//         光棍被抢光了也认——绝不能因穷免罚）。
 function dropUnaffordablePurchase(facts, state) {
-  const cost = (facts || [])
+  const list = facts || [];
+  const isWarrantGoods = (f) => f?.warrant && (f.op === "GRANT_ITEM" || f.op === "BESTOW_SKILL");
+  const hasGoods = list.some(isWarrantGoods);
+  const cost = list
     .filter((f) => f?.op === "CHANGE_VITALS_SILVER" && (f.moneyDelta || 0) < 0)
     .reduce((sum, f) => sum + Math.abs(f.moneyDelta), 0);
-  if (!cost) return { facts, dropped: false };
+  if (!cost || !hasGoods) return { facts, dropped: false }; // 无交易或纯罚没，原样照走
   const silver = state?.char?.money ?? 0;
   if (silver >= cost) return { facts, dropped: false };
   return {
-    facts: (facts || []).filter((f) => !(f?.op === "CHANGE_VITALS_SILVER" && (f.moneyDelta || 0) < 0)
-      && !(f?.op === "GRANT_ITEM" && f.warrant)),
+    facts: list.filter((f) => !(f?.op === "CHANGE_VITALS_SILVER" && (f.moneyDelta || 0) < 0) && !isWarrantGoods(f)),
     dropped: true,
   };
 }
