@@ -10,7 +10,7 @@ import { EVENTS_O, EVENTS_P } from "./eventsOP.js";
 import { EVENTS_Q, EVENTS_R } from "./eventsQR.js";
 import { EVENTS_S, EVENTS_T } from "./eventsST.js";
 
-export { ROAD_EVENT_CATEGORIES, CATEGORY_KEYS, PLACE_TAGS, ALL_TAGS, ROAD_EVENT_RULES } from "./categories.js";
+export { ROAD_EVENT_CATEGORIES, CATEGORY_KEYS, PLACE_TAGS, ALL_TAGS, ROAD_EVENT_RULES, SITUATION_IDS, livingAffinity } from "./categories.js";
 
 export const ROAD_EVENTS = Object.freeze([
   ...EVENTS_A, ...EVENTS_B, ...EVENTS_C, ...EVENTS_D, ...EVENTS_E,

@@ -41,7 +41,7 @@ export const EVENTS_I = [
   ev("I19", "银匠打护身符", "打箭炉|丹霞城|城镇", "一个藏族银匠在路边摆摊，叮叮当当地敲一块护身符，符里嵌着一颗小绿松石；他说给有缘人打的护身符，比给有钱人打的灵。",
     { cast: "散人:银匠:男:四十", check: "气运", dc: 6, win: "item:饰品:roll|silver:-10", lose: "silver:-10", alt: "silver:-30|item:饰品:roll" }),
   ev("I20", "会鸣的剑", "古墟|秘境|琼隆古墟|广汉", "一处古墓的石棺上横着一把剑，主角走近时剑在鞘里嗡嗡作响，退后一步就停了，像是在认人。",
-    { check: "气运", dc: 9, win: "item:武器:橙|clue", lose: "cond:胆寒:3", alt: "clue|scene", tier: 3, once: true, req: { stat: { 气运: 6 } } }),
+    { check: "气运", dc: 9, win: "item:武器:橙|clue", lose: "cond:胆寒:3", alt: "clue|scene", tier: 3, once: true, when: { type: "statGte", stat: "气运", value: 6 } }),
 ];
 
 // J 黑风敲诈：只求财不求命；与黑风寨交好的人会被让路。
@@ -55,9 +55,9 @@ export const EVENTS_J = [
   ev("J04", "假官差", "官道|天都镇|锦官城", "几个穿着捕快衣服的人拦路查验路引，说主角的路引过期了要罚银子；可他们的腰牌是木头刻的，靴子也是匪里常穿的样式。",
     { cast: "散人:假官差:男:三十", check: "智谋", dc: 7, win: "rep:锦官城+4|silver:+20", lose: "silver:-25", alt: "silver:-15|clue" }),
   ev("J05", "劫生不劫熟", "黑风寨|山道|大草甸", "黑风寨的伏路人认出了主角，收起刀拱手说是自家朋友，不但不劫，还递过来一壶酒，顺嘴说了一句寨里最近的事。",
-    { cast: "黑风寨:伏路人:男:二十八", check: null, win: "clue|aff:+10", alt: "clue", req: { rep: { 黑风寨: 20 } } }),
+    { cast: "黑风寨:伏路人:男:二十八", check: null, win: "clue|aff:+10", alt: "clue", when: { type: "factionRepGte", faction: "黑风寨", value: 20 } }),
   ev("J06", "冒名的流寇", "官道|大草甸|草原", "一伙打着黑风寨旗号的流寇在劫一个牧民，可黑风寨从不劫牧民；他们的旗子是新缝的，旗角还带着线头。",
-    { cast: "散人:流寇:男:三十", check: "体魄", dc: 7, win: "rep:黑风寨+5|rep:玉泉寨+3|item:武器:roll", lose: "hp:-12", alt: "clue|rep:黑风寨+2" }),
+    { cast: "散人:流寇:男:三十", check: "体魄", dc: 7, win: "rep:黑风寨+5|rep:玉泉寨+3|item:武器:roll|situation:-sit_road_blockade", lose: "hp:-12", alt: "clue|rep:黑风寨+2" }),
   ev("J07", "讨一顿酒", "山道|黑风寨", "一个醉醺醺的山匪拦路，不要钱，只要一顿酒，说寨主不许他们白天喝酒，他已经憋了半个月了。",
     { cast: "黑风寨:醉匪:男:三十五", check: "魅力", dc: 5, win: "clue|aff:+10|rep:黑风寨+2", lose: "cond:醉酒:2", alt: "silver:-8|clue" }),
   ev("J08", "劫茶不劫人", "官道|打箭炉|大草甸", "一伙山匪截住了一支茶队，只卸茶不伤人，领头的说今年雪大寨里断了粮，等开春了再还。",
@@ -77,7 +77,7 @@ export const EVENTS_J = [
   ev("J15", "寨里的军师", "黑风寨|山道", "一个文士模样的人拦住主角，身后跟着十几个山匪，他不要钱，只请主角坐下谈一谈：黑风寨想跟外面做一笔买卖，缺个靠得住的中人。",
     { cast: "黑风寨:军师:男:四十五", check: "智谋", dc: 8, win: "pact|rep:黑风寨+6|silver:+30", lose: "rep:黑风寨-2", alt: "clue", tier: 2 }),
   ev("J16", "夜里偷马", "大草甸|官道|草原", "夜里宿营时，几个黑影摸到马桩边解缰绳，马打着响鼻，偷马的人里有一个是半大孩子。",
-    { cast: "黑风寨:偷马贼:男:二十", check: "身法", dc: 7, win: "rep:黑风寨-2|item:杂物:roll", lose: "silver:-20", alt: "clue", when: "夜" }),
+    { cast: "黑风寨:偷马贼:男:二十", check: "身法", dc: 7, win: "rep:黑风寨-2|item:杂物:roll", lose: "silver:-20", alt: "clue", time: "夜" }),
   ev("J17", "绑票", "官道|天都镇|大草甸", "路边的树上贴着一张勒索信，说绑了天都镇一个米商的儿子，赎金放在山神庙后，不许报官；信纸背面有人用炭条画了一个求救的记号。",
     { check: "智谋", dc: 8, win: "rep:锦官城+4|silver:+40|rep:黑风寨-3", lose: "hp:-10", alt: "clue|rep:锦官城+2" }),
   ev("J18", "黑吃黑", "山道|黑风寨|大草甸", "两伙山匪为了一车货在路上打了起来，一伙是黑风寨的，一伙是流窜来的；货车上蒙着的毡布下，露出一角官府的封条。",
@@ -85,5 +85,5 @@ export const EVENTS_J = [
   ev("J19", "落网的匪徒", "锦官城|天都镇|官道", "几个捕快押着一个黑风寨的匪徒路过，匪徒冲主角使了个眼色，用口型说了三个字：救救我。",
     { cast: "黑风寨:落网匪徒:男:二十六", check: "智谋", dc: 8, win: "rep:黑风寨+6|rep:锦官城-4", lose: "rep:锦官城-6|hp:-8", alt: "clue" }),
   ev("J20", "寨主请吃酒", "黑风寨", "黑风寨寨主听说了主角的名头，派人来请上山吃酒，说只是交个朋友；寨门口的旗杆上，挂着一面土司府的旗。",
-    { cast: "黑风寨:寨主亲信:男:三十", check: "魅力", dc: 7, win: "rep:黑风寨+8|pact|item:武器:roll", lose: "rep:黑风寨-3", alt: "clue", tier: 2, req: { rep: { 黑风寨: 0 } } }),
+    { cast: "黑风寨:寨主亲信:男:三十", check: "魅力", dc: 7, win: "rep:黑风寨+8|pact|item:武器:roll", lose: "rep:黑风寨-3", alt: "clue", tier: 2, when: { type: "factionRepGte", faction: "黑风寨", value: 0 } }),
 ];
