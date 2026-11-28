@@ -122,6 +122,23 @@ describe("callMainOnce 组装黄金快照", () => {
     expect(JSON.stringify(chatMessages)).toMatchSnapshot();
   });
 
+  it("WO-25B：11 号位活体感态势与在场活人切片、system 前缀字节完全不变", async () => {
+    // 切片内容只经 d.ctx 进 inChat——sysBlocks 一字未动（前缀缓存保命线）。
+    const soulCtx = "[状态] 时间:第1日 HP:70/100 银两:73\n[体感态势]\n你负了伤，气血亏空，走路都有些踉跄。\n[在场活人]\n【才旦】性情：爽朗直率；心里记着账：怨——酒后失言揭了他的短";
+    const withSouls = makeDeps({ ctx: soulCtx });
+    await callMainOnce(null, false, withSouls);
+    const [, sysBlocksA, chatA] = callModel.mock.calls[0];
+    const inChat = chatA.find((b) => b.tavernBlock === "inChat")?.content || "";
+    expect(inChat).toContain("体感态势");
+    expect(inChat).toContain("走路都有些踉跄");
+    expect(inChat).toContain("怨——酒后失言揭了他的短");
+    expect(inChat).toContain("银两");
+    // 对照组：无切片 ctx 的 system 前缀与带切片完全一致
+    await callMainOnce(null, false, makeDeps({ ctx: "[状态] 时间:第1日 HP:70/100 银两:73" }));
+    const [, sysBlocksB] = callModel.mock.calls[1];
+    expect(JSON.stringify(sysBlocksA)).toBe(JSON.stringify(sysBlocksB));
+  });
+
   it("full·COMBAT 档：物件志 + MVU 全量挂载", async () => {
     const d = makeDeps({ intent: { code: "COMBAT", label: "战斗" }, visibleNpcsCount: 1 });
     await callMainOnce(null, false, d);

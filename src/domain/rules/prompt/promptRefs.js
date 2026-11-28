@@ -48,7 +48,16 @@ export function buildMainStatePrompt(scope, { gmNote = "", preview = false, trac
     : { detailedNpcs: true };
   const text = renderPromptTemplate(preview ? PREVIEW_STATE_TEMPLATE : MAIN_STATE_TEMPLATE,
     { ...scope, promptRefOptions }, { trace }).text;
-  return preview ? text : `[状态] ${gmNote}${text}`;
+  if (preview) return text;
+  // WO-25B：体感态势与在场活人切片进主状态尾段——11 号位动态区（d.ctx）之内，
+  // 严禁进 sysBlocks 前缀；无料整段不挂，不留秃头行污染形状。
+  const scoped = { ...scope, promptRefOptions };
+  const sensory = renderPromptTemplate("@{体感态势}", scoped, { trace }).text.trim();
+  const souls = renderPromptTemplate("@{在场活人切片}", scoped, { trace }).text.trim();
+  let out = `[状态] ${gmNote}${text}`;
+  if (sensory) out += `\n[体感态势]\n${sensory}`;
+  if (souls) out += `\n[在场活人]\n${souls}`;
+  return out;
 }
 
 export function buildWhisperStatePrompt(scope, { preview = false, trace } = {}) {

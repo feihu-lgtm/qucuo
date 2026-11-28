@@ -232,12 +232,15 @@ export const FIELDS = Object.freeze({
     "体感态势": (s) => renderDiegeticState({ char: s.char, inv: s.inv, time: s.time }),
   } },
   "clapboard.npcSoulFrames": { label: "在场活人切片", readOnly: true, refs: {
+    // WO-25B 预算闸：单人心账切片 160 字、全屋总预算 1600 封顶，人多房间不 token 膨胀。
     "在场活人切片": (s) => renderNpcSoulFrames({
       visibleNpcs: (s.room?.npcs || []).filter((npc) =>
         typeof s.innerRoomName !== "string" || isNpcVisibleInInnerRoom(s.room?.name, s.innerRoomName, npc)),
       varTree: s.varTree,
       time: s.time,
       clapboardEntries: s.clapboardEntries,
+      entriesBudget: 160,
+      totalBudget: 1600,
     }),
   } },
   "judge.verdict": {

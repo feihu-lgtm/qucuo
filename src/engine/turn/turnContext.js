@@ -6,6 +6,7 @@
 // IntentConfirmBar/useIntentRouter/CLI 读取，属跨界引用，见 PR 标注）。
 
 import { createPromptContext } from "../prompt/index.js";
+import { buildLivingClapboardEntries } from "../../domain/rules/clapboard/livingEntries.js";
 import * as importedRegistry from "../../domain/rules/cards/importedRegistry.js";
 import { COMPANION_LORE, stationedNpcsFor } from "../../domain/rules/companion/companion.js";
 import { getCompanionDescForm } from "../../domain/rules/companion/companionForms.js";
@@ -96,6 +97,10 @@ export function createTurnContext({ plan, env }) {
     prompt: createPromptContext({
       room, char, inv, skills, dao, flags, questProgress, pendingQuestBranch,
       varTree: preActVarTree, time, preset, companionState, nsfwOn, activeTarget, activeGroundItem: activeGroundItemForTurn, isTalk,
+      // WO-25B 活人通电：知识领域/契约/宿敌谱三本账规范化成场记板条目进 scope——
+      // @在场活人切片 的「其所知所见」层与各 NPC 视角过滤同源取料；轻量模式
+      // （赌石独立 sys/whisper/preview 模板）不含此引用，按既定开关保持瘦身。
+      clapboardEntries: buildLivingClapboardEntries({ varTree: preActVarTree, time }),
       gm, movingDir, lockedDestName, outerDepart, innerRoomName, apiCfg,
       destinationLock, pickupJudgment, categoryLabel: CATEGORY_LABEL,
       encounter: plan.encounterToDescribe, collectNote, intent,
