@@ -1,19 +1,21 @@
 // 路遇随机事件：数据完整性、池子抽人、活世界对接（谓词、局势、编队、事件录、张力）与提示词。
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { ROAD_EVENTS, ROAD_EVENT_CATEGORIES, CATEGORY_KEYS, PLACE_TAGS, ALL_TAGS, SITUATION_IDS, livingAffinity } from "../../src/domain/data/roadEvents/index.js";
+import { ROAD_EVENTS, ROAD_EVENT_CATEGORIES, CATEGORY_KEYS, PLACE_TAGS, ALL_TAGS, SITUATION_IDS, livingAffinity } from "../../data/roadEvents/index.js";
 import {
   SIX_STATS, ITEM_CATEGORY_CODE, parseCast, parseRewardCodes, isEligible, eligibleEvents, ocCandidates, isRomanceEligible,
-  rollRoadEvent, resolveRoadEvent, roadEventWrites, buildRoadEventNote, buildResolutionNote, isNight, evalWhen,
+  rollRoadEvent, resolveRoadEvent, roadEventWrites, buildRoadEventNote, buildResolutionNote, isNight, ROAD_EVENT_SHARE,
 } from "./roadEvents.js";
-import { DOC_PATH, buildDoc } from "./buildRoadEventsDoc.mjs";
-import { SKILL_CATALOG } from "../../src/domain/data/kungfu/qucuoKungfu.js";
-import { QUALITY } from "../../src/domain/rules/economy/equipment.js";
-import { QUCUO_MAP } from "../../src/domain/data/map/qucuoMap.js";
-import { passerRolesOf } from "../../src/domain/data/npc/randomPassers.js";
-import { FACTIONS as REP_FACTIONS } from "../../src/domain/data/map/factions.js";
-import { WANDERING_OCS } from "../../src/domain/rules/npc/ocWander.js";
-import { seededRand } from "../../src/utils/seededRandom.js";
+import { evalWhen } from "./evalWorld.js";
+import { getDistrictSnapshot } from "./projectWorld.js";
+import { DOC_PATH, buildDoc } from "../../../../scripts/roadEvents/buildRoadEventsDoc.mjs";
+import { SKILL_CATALOG } from "../../data/kungfu/qucuoKungfu.js";
+import { QUALITY } from "../../rules/economy/equipment.js";
+import { QUCUO_MAP } from "../../data/map/qucuoMap.js";
+import { passerRolesOf } from "../../data/npc/randomPassers.js";
+import { FACTIONS as REP_FACTIONS } from "../../data/map/factions.js";
+import { WANDERING_OCS } from "../../rules/npc/ocWander.js";
+import { seededRand } from "../../../utils/seededRandom.js";
 
 const PASSER_FACTIONS = [...REP_FACTIONS.map((f) => f.name), "散人"];
 const SCHOOLS = new Set([...Object.keys(SKILL_CATALOG), "any"]);
@@ -23,6 +25,10 @@ const byId = (id) => ROAD_EVENTS.find((e) => e.id === id);
 const withWorld = (w, base = day()) => ({ ...base, varTree: { ...base.varTree, 世界: { ...(base.varTree?.世界 || {}), ...w } } });
 
 describe("路遇事件数据", () => {
+  it("遭遇分流比例钉死设计暂定值 0.6（设计文档§十待拍板项）", () => {
+    expect(ROAD_EVENT_SHARE).toBe(0.6);
+  });
+
   it("20 类各 20 件，共 400 件，编号连续且唯一", () => {
     expect(CATEGORY_KEYS).toHaveLength(20);
     expect(ROAD_EVENTS).toHaveLength(400);
@@ -138,7 +144,7 @@ describe("对接活世界蓝图", () => {
       withWorld({ 据点局势: { 天都镇: [{ id: "sit_herb_shortage", expireDay: 35 }] } }))).toBe(true);
     expect(evalWhen({ type: "flag", flag: "test_flag" }, withWorld({ 旗号: { test_flag: true } }))).toBe(true);
     expect(evalWhen({ type: "questDone", quest: "q_main" }, withWorld({ 任务册: { q_main: { done: true } } }))).toBe(true);
-    expect(() => evalWhen({ type: "无此谓词" }, day())).toThrow();
+    expect(evalWhen({ type: "无此谓词" }, day())).toBe(false); // evalWorld 内核口径：未知谓词不成立，静态校验在 validateWorldPacks
   });
 
   it("夜里才有的事白天不出", () => {
@@ -154,9 +160,14 @@ describe("对接活世界蓝图", () => {
   });
 
   it("编队停在本节点时，来人取编队的势力", () => {
-    const st = withWorld({ 离线编队: { sq_chama_caravan: { at: "打箭炉", role: "caravan", faction: "玉泉寨" } } });
+    // WO-25N 统一投影口径：离线位置账在 varTree.世界.编队册（node/active），
+    // 角色与势力出自注册表 roamingSquads decl——测试手搓最小注册表，不走校验。
+    const registry = { packs: [], worldStates: [], districtOverrides: [], situations: [], aiPackages: [],
+      roamingSquads: [{ id: "sq_chama_caravan", role: "caravan", faction: "玉泉寨", route: ["打箭炉", "天都镇"] }] };
+    const st = withWorld({ 编队册: { sq_chama_caravan: { node: "打箭炉", active: true } } });
+    const snapshotOf = (s) => getDistrictSnapshot(s, "打箭炉", registry);
     let hit = null;
-    for (let i = 0; i < 200 && !hit; i++) { const r = rollRoadEvent(st, "打箭炉", { rng: seededRand(i, "sq") }); if (r.eventId.startsWith("A") && r.cast?.kind === "role") hit = r; }
+    for (let i = 0; i < 200 && !hit; i++) { const r = rollRoadEvent(st, "打箭炉", { rng: seededRand(i, "sq"), snapshot: snapshotOf(st) }); if (r.eventId.startsWith("A") && r.cast?.kind === "role") hit = r; }
     expect(hit.cast.faction).toBe("玉泉寨");
     expect(hit.cast.squadId).toBe("sq_chama_caravan");
   });

@@ -77,6 +77,8 @@ const ENTRY_WHITELIST = new Set([
   "domain/data/livingWorld/index.js",
   // WO-25D 世界状态求值与覆写裁决：纯函数先落库，WO-25E/F 脉冲与投影接线后从此名单摘掉。
   "domain/rules/livingWorld/evalWorld.js",
+  // WO-25N 路遇系统侧纯函数已迁入（数据/投影/谓词齐备），WO-25O encounter 分流接线后从此名单摘掉。
+  "domain/rules/livingWorld/roadEvents.js",
 ]);
 
 function walkSource(dir, out = []) {
