@@ -1,5 +1,13 @@
 [
   {
+    "version": "v0.8.3",
+    "codename": "活世界求值裁决",
+    "time": "2026-11-28 22:56",
+    "notes": [
+      "WO-25D evalWorld 谓词求值与 Kenshi 式据点覆写裁决"
+    ]
+  },
+  {
     "version": "v0.8.2",
     "codename": "活世界五表底座",
     "time": "2026-11-28 22:54",
