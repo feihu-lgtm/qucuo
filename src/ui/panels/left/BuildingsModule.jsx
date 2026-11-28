@@ -1,13 +1,11 @@
-import { getBuildingsForLocation, BUILDING_TYPE_LABEL } from "../../../domain/data/buildings/qucuoBuildings.js";
-import { hasInnerMap, getBuildingIdForInnerRoom } from "../../../domain/rules/map/innerMap.js";
+import { BUILDING_TYPE_LABEL } from "../../../domain/data/buildings/qucuoBuildings.js";
+import { visibleBuildingsAt } from "../../../domain/rules/map/placeIntent.js";
 import { useSessionUi, setActiveBuilding } from "../../../store/sessionUiStore.js";
 import { buildingArtUrl } from "../../art/art.js";
 
+// 可见口径收在 domain（文字指令「进某某」与左栏卡片同源，#670）。
 export function visibleBuildings(room, innerRoomName) {
-  const all = getBuildingsForLocation(room.name);
-  if (!hasInnerMap(room.name) || !innerRoomName) return all;
-  const bid = getBuildingIdForInnerRoom(room.name, innerRoomName);
-  return bid ? all.filter(b => b.id === bid) : [];
+  return visibleBuildingsAt(room.name, innerRoomName);
 }
 
 export default function BuildingsModule({ room, innerRoomName }) {

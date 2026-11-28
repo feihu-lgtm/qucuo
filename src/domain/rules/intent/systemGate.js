@@ -48,7 +48,9 @@ function checkStep(sim, action) {
       return `背包里没有${action.item}`;
     }
   }
-  if (action.kind === ACTION_KINDS.MOVE && (!action.direction || action.direction === NONE)) return "没说清往哪走";
+  if (action.kind === ACTION_KINDS.MOVE && !action.enterBuilding && (!action.direction || action.direction === NONE)) {
+    return action.moveHint || "没说清往哪走（可说「往北走」「去某个相邻地点」，进建筑可说「进某某」或点左栏建筑卡片）";
+  }
   if (action.kind === ACTION_KINDS.APPEASE) {
     if (!isNpcAngry(sim.state?.varTree, action.target)) return `${action.target}并没有在生气`;
   }
