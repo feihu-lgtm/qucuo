@@ -190,8 +190,9 @@ export function validateWorldPacks(registry) {
       }
     });
     for (const key of ["clearSituation", "addTargetSituation"]) {
-      const ref = sq.onArrive?.[key] || sq.onDefeated?.[key];
-      if (ref && !sitIds.has(ref)) errors.push(`roamingSquads「${sq.id}」${key} 引用未声明的 situation「${ref}」`);
+      for (const ref of [].concat(sq.onArrive?.[key] || [], sq.onDefeated?.[key] || []).filter(Boolean)) {
+        if (!sitIds.has(ref)) errors.push(`roamingSquads「${sq.id}」${key} 引用未声明的 situation「${ref}」`);
+      }
     }
   }
 
