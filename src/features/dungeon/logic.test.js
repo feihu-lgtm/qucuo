@@ -135,4 +135,58 @@ describe("内层地图入口出口接线", () => {
     );
     expect(healed.changes.char.hp).toEqual([50, 120]); // 110 - (120-60)
   });
+
+  it("白塔 13×13 结算：扣除spentMoney、写入色色卡/神兵flag、领悟武学并回写7天worlds", () => {
+    const rs = startMapRun("白塔地宫", "settle-v2", { char: { hp: [100, 100], money: 80 } });
+    const settledRun = {
+      ...rs,
+      status: "victory",
+      bossDefeated: true,
+      spentMoney: 30,
+      loot: { money: 20, exp: 10, pot: 15, items: ["不动明王杵"] },
+      unlockedExits: [rs.map.exitRooms[0]],
+      unlockedEntries: [rs.map.anchor, rs.map.exitRooms[0]],
+      unlockedCards: ["cg_baita_jingfan"],
+      divineFlags: ["divine_obtained_budongmingwang"],
+      learnedSkills: [{ id: "kf_lama_zhongming", name: "听钟·无畏", type: "招式", quality: "蓝" }],
+    };
+    const res = settleMapRun({
+      ...baseState,
+      char: { name: "主角", money: 80, hp: [100, 100] },
+      skills: [],
+      dungeonRun: {
+        active: settledRun,
+        worlds: {
+          白塔地宫: {
+            districtKey: "白塔地宫",
+            epoch: 1,
+            seed: rs.seed,
+            createdAtDay: 1,
+            lastExitDay: 1,
+            expiresAtDay: 8,
+            bossClearedDay: null,
+            bossDefeated: false,
+            unlockedExits: [],
+            unlockedEntries: [rs.map.anchor],
+            revealedExits: [],
+            openedChests: [],
+            solvedPuzzles: [],
+            clearedRooms: [],
+            marketBought: {},
+            visitedEver: [rs.map.anchor],
+            adventurers: [],
+            map: rs.map,
+          },
+        },
+      },
+    }, settledRun, { now: 1 });
+
+    expect(res.changes.char.money).toBe(80 + 20 - 30);
+    expect(res.changes.flags).toContain("cg_baita_jingfan");
+    expect(res.changes.flags).toContain("divine_obtained_budongmingwang");
+    expect(res.changes.skills.some((s) => s.id === "kf_lama_zhongming")).toBe(true);
+    expect(res.changes.dungeonRun.active).toBeNull();
+    expect(res.changes.dungeonRun.worlds.白塔地宫.unlockedEntries).toContain(rs.map.exitRooms[0]);
+    expect(res.changes.dungeonRun.worlds.白塔地宫.bossDefeated).toBe(true);
+  });
 });

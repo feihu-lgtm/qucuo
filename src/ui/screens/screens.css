@@ -1108,3 +1108,123 @@
   }
 }
 
+
+/* ui/screens/dungeon/DungeonScreen.jsx — 布局与状态行（原内联样式转类，棘轮只减不增） */
+.dungeon-screen-body { padding: 14px; }
+.dungeon-screen-statbar {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  color: var(--text-dim);
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+.dungeon-screen-log {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+.dungeon-screen-result { font-size: var(--fs-sm); line-height: 1.8; }
+.dungeon-screen-result-title { color: var(--accent); margin-bottom: 6px; }
+.dungeon-screen-result-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.dungeon-screen-btn-checkpoint {
+  padding: 4px 14px;
+  font-size: var(--fs-sm);
+  border: 1px solid var(--accent-dim);
+  color: var(--accent);
+  background: transparent;
+  cursor: pointer;
+}
+.dungeon-screen-entrybar {
+  margin-bottom: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.dungeon-screen-btn-resume {
+  padding: 4px 14px;
+  font-size: var(--fs-sm);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  background: transparent;
+  cursor: pointer;
+}
+.dungeon-screen-btn-reset {
+  padding: 4px 12px;
+  font-size: var(--fs-xs);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  background: transparent;
+  cursor: pointer;
+}
+.dungeon-screen-hint { font-size: var(--fs-2xs); color: var(--text-dim); }
+
+/* ui/components/DungeonMapPanel.jsx — 地宫内层地图面板（原内联样式转类，棘轮只减不增）。
+   注：原代码 theme.gold/green/turquoise 在 THEME_VARS 中 undefined，渲染本就无色，转类忠实现状。 */
+.dungeon-map-panel {
+  padding: 10px 12px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+}
+.dungeon-map-room-name {
+  font-size: var(--fs-md);
+  color: var(--accent);
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+}
+.dungeon-map-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  margin-right: 6px;
+  font-size: var(--fs-xs);
+  border: 1px solid var(--border);
+  color: var(--text);
+  white-space: nowrap;
+}
+.dungeon-map-chip-head { margin-left: 8px; }
+.dungeon-map-desc { color: var(--text-dim); margin-bottom: 12px; white-space: pre-wrap; }
+.dungeon-map-entities { margin-bottom: 12px; }
+.dungeon-map-entity-group { margin-bottom: 6px; }
+.dungeon-map-label {
+  font-size: var(--fs-xs);
+  letter-spacing: 1px;
+  color: var(--accent-dim);
+  margin-bottom: 5px;
+}
+.dungeon-map-flexrow { display: flex; gap: 6px; flex-wrap: wrap; }
+.dungeon-map-inputrow { display: flex; gap: 6px; }
+.dungeon-map-input {
+  flex: 1;
+  height: 24px;
+  padding: 0 8px;
+  font-size: var(--fs-xs);
+  box-sizing: border-box;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  outline: none;
+}
+.dungeon-map-runstate { margin-top: 10px; font-size: var(--fs-2xs); color: var(--text-dim); }
+.dungeon-map-fog { margin-bottom: 10px; }
+.dungeon-map-fog-hint { font-size: var(--fs-2xs); color: var(--text-dim); margin-bottom: 4px; }
+.dungeon-map-fog-empty {
+  width: 18px;
+  height: 18px;
+  display: inline-block;
+  opacity: 0.12;
+  background: #000;
+}
+.dungeon-map-exits { margin-bottom: 12px; }
+.dungeon-map-exits-end { margin-bottom: 14px; }
+.dungeon-map-actions { margin-bottom: 14px; }

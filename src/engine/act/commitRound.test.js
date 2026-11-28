@@ -439,3 +439,45 @@ it("materialized 无日志但有 receipts 时单独补一条天机落账行携�
   const carrier = logs.find((l) => Array.isArray(l.receipts) && l.receipts.length);
   expect(carrier?.text).toContain("天机落账");
 });
+
+describe("系统确定性发放白塔地宫线索 flag", () => {
+  it("向洛桑/行脚僧打听白塔地宫门道时，即使 AI 未吐 flags_add 也系统写入 clue", () => {
+    const state = baseState();
+    state.room = { name: "喇嘛庙", npcs: [{ name: "洛桑" }], items: [] };
+    const { deps, logs } = makeDeps(state, { output: ["洛桑压低声音提起塔底旧事。"] }, {
+      isTalk: true,
+      talkTarget: "洛桑",
+      cmd: "向洛桑打听白塔地宫门道",
+    });
+    commitRound(deps);
+    expect(state.flags).toContain("quest_budong_s1_xingjiaoseng");
+    expect(state.flags).toContain("white_pagoda_crypt_clue");
+    expect(logs.some((l) => l.text.includes("白塔地宫的门道"))).toBe(true);
+  });
+
+  it("向达摩药堂师父或喇嘛庙住持打听地宫线索分别发放对应 stage flag 与 clue", () => {
+    const s1 = baseState();
+    s1.room = { name: "喇嘛庙", npcs: [{ name: "达摩药堂师父" }], items: [] };
+    commitRound(makeDeps(s1, {}, { isTalk: true, talkTarget: "达摩药堂师父", cmd: "请问师父白塔地宫怎么进" }).deps);
+    expect(s1.flags).toContain("quest_budong_s1_yaotang");
+    expect(s1.flags).toContain("white_pagoda_crypt_clue");
+
+    const s2 = baseState();
+    s2.room = { name: "喇嘛庙", npcs: [{ name: "喇嘛庙住持" }], items: [] };
+    commitRound(makeDeps(s2, {}, { isTalk: true, talkTarget: "喇嘛庙住持", cmd: "追问住持地宫入口线索" }).deps);
+    expect(s2.flags).toContain("quest_budong_s1_zhuchi");
+    expect(s2.flags).toContain("white_pagoda_crypt_clue");
+  });
+
+  it("无关 NPC 或无关对话不误发 white_pagoda_crypt_clue", () => {
+    const state = baseState();
+    state.room = { name: "喇嘛庙", npcs: [{ name: "洛桑" }], items: [] };
+    commitRound(makeDeps(state, {}, { isTalk: true, talkTarget: "洛桑", cmd: "今天天气真好" }).deps);
+    expect(state.flags).not.toContain("white_pagoda_crypt_clue");
+
+    const other = baseState();
+    other.room = { name: "鱼定村", npcs: [{ name: "才旦" }], items: [] };
+    commitRound(makeDeps(other, {}, { isTalk: true, talkTarget: "才旦", cmd: "白塔地宫门道在哪" }).deps);
+    expect(other.flags).not.toContain("white_pagoda_crypt_clue");
+  });
+});

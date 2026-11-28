@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { pickDungeonAdventurers, genAdventurerEncounter } from "./dungeonPool.js";
+import { pickDungeonAdventurers, genAdventurerEncounter, calcAdventurerDiveProb, rollDungeonDiveSquad } from "./dungeonPool.js";
+import { genDungeonMap } from "./genMap.js";
 import { DUNGEON_DISTRICTS_ALL } from "../../data/dungeon/districts.js";
 import { ADVENTURER_POOL } from "../../data/dungeon/adventurers.js";
 import { ADVENTURER_POOL_IP } from "../../data/dungeon/adventurersIP.js";
@@ -78,5 +79,48 @@ describe("genAdventurerEncounter", () => {
   it("hiddenHireable 产出 recruitHook", () => {
     const enc = genAdventurerEncounter(ADVENTURER_POOL_IP[0], "hiddenHireable", "seed9");
     expect(enc.options.some((o) => o.effect.recruitHook === true)).toBe(true);
+  });
+});
+
+describe("calcAdventurerDiveProb / rollDungeonDiveSquad（~8人下本模型）", () => {
+  it("同门派与高贪欲倾向者概率显著高于冷门低匹配者且在 [0.02, 0.35] 内", () => {
+    const cfg = DUNGEON_DISTRICTS_ALL["白塔地宫"];
+    const hitAdv = { faction: "雪山派", stealBias: 0.8, levelCap: 2 };
+    const missAdv = { faction: "无关门派", stealBias: 0.1, levelCap: 5 };
+    const pHit = calcAdventurerDiveProb(hitAdv, cfg);
+    const pMiss = calcAdventurerDiveProb(missAdv, cfg);
+    expect(pHit).toBeGreaterThan(pMiss);
+    expect(pHit).toBeLessThanOrEqual(0.35);
+    expect(pMiss).toBeGreaterThanOrEqual(0.02);
+  });
+
+  it("rollDungeonDiveSquad 抽取 7-9 人（目标 8 人）、无重复、排除已入队角色且合法落位", () => {
+    const cfg = DUNGEON_DISTRICTS_ALL["白塔地宫"];
+    const map = genDungeonMap("squad-map", cfg);
+    const excluded = [ADVENTURER_POOL[0].name, ADVENTURER_POOL[1].name];
+    const squadA = rollDungeonDiveSquad("白塔地宫", "sq-1", {
+      targetCount: 8,
+      excludedNames: excluded,
+      mapRooms: map.rooms,
+      anchor: map.anchor,
+      bossRoom: map.bossRoom,
+    });
+    const squadB = rollDungeonDiveSquad("白塔地宫", "sq-1", {
+      targetCount: 8,
+      excludedNames: excluded,
+      mapRooms: map.rooms,
+      anchor: map.anchor,
+      bossRoom: map.bossRoom,
+    });
+    expect(squadA).toEqual(squadB);
+    expect(squadA.length).toBeGreaterThanOrEqual(7);
+    expect(squadA.length).toBeLessThanOrEqual(9);
+    expect(new Set(squadA.map((a) => a.advId)).size).toBe(squadA.length);
+    for (const member of squadA) {
+      expect(excluded).not.toContain(member.name);
+      expect(map.rooms[member.currentRoom]).toBeDefined();
+      expect(member.currentRoom).not.toBe(map.anchor);
+      expect(member.currentRoom).not.toBe(map.bossRoom);
+    }
   });
 });

@@ -122,3 +122,76 @@ describe("genDungeonMap", () => {
     expect(Object.keys(busy.rooms).length).toBeGreaterThan(Object.keys(plain.rooms).length);
   });
 });
+
+describe("genDungeonMap · 13×13 单层大平面", () => {
+  const GRID_CFG = {
+    ...CONFIG,
+    anchor: "塔底佛殿",
+    bossRoom: "明王石室",
+    gridSize: 13,
+    prefixPool: ["金漆", "蒙尘", "酥油", "密宗", "梵音", "玄石", "经幡", "古钟"],
+    suffixPool: ["经阁", "甬道", "禅房", "佛窟", "壁画廊", "石窖", "暗廊", "藏卷室"],
+    exitsPool: [
+      { id: "e1", name: "塔基排水暗孔", desc: "排水孔" },
+      { id: "e2", name: "东侧断碑盗洞", desc: "盗洞" },
+      { id: "e3", name: "风蚀藏经暗窗", desc: "暗窗" },
+      { id: "e4", name: "悬崖引水涵道", desc: "涵道" },
+      { id: "e5", name: "塔腹通风竖井", desc: "竖井" },
+      { id: "e6", name: "西壁密道石门", desc: "石门" },
+    ],
+  };
+
+  it("同 seed 确定性一致、异 seed 图不同", () => {
+    expect(genDungeonMap("baita-1", GRID_CFG)).toEqual(genDungeonMap("baita-1", GRID_CFG));
+    expect(genDungeonMap("baita-1", GRID_CFG)).not.toEqual(genDungeonMap("baita-2", GRID_CFG));
+  });
+
+  it("中心 (6,6) 为唯一 BOSS 总出口，全图 1 入口 + 6 出口 + ≥7 类房间全连通互逆", () => {
+    for (const seed of ["b1", "b2", "b3"]) {
+      const map = genDungeonMap(seed, GRID_CFG);
+      expect(map.gridSize).toBe(13);
+      expect(map.exitRooms).toHaveLength(6);
+
+      const boss = map.rooms["明王石室"];
+      expect(boss.isBoss).toBe(true);
+      expect(boss.x).toBe(6);
+      expect(boss.y).toBe(6);
+
+      const entry = map.rooms["塔底佛殿"];
+      expect(entry.isAnchor).toBe(true);
+      expect(Math.abs(entry.x - 6) + Math.abs(entry.y - 6)).toBeGreaterThanOrEqual(6);
+
+      const coords = new Set();
+      const kinds = new Set();
+      for (const [name, room] of Object.entries(map.rooms)) {
+        expect(room.x).toBeGreaterThanOrEqual(0);
+        expect(room.x).toBeLessThan(13);
+        expect(room.y).toBeGreaterThanOrEqual(0);
+        expect(room.y).toBeLessThan(13);
+        const ck = `${room.x},${room.y}`;
+        expect(coords.has(ck), `坐标重复 ${ck}`).toBe(false);
+        coords.add(ck);
+        kinds.add(room.roomKind);
+        for (const [dir, target] of Object.entries(room.exits)) {
+          expect(["n", "s", "e", "w"]).toContain(dir);
+          expect(map.rooms[target].exits[OPPOSITE[dir]]).toBe(name);
+        }
+      }
+
+      for (const k of ["entry", "exit", "boss", "merchant", "trade", "supply", "puzzle", "chest", "trap_chest", "combat", "neutral"]) {
+        expect(kinds.has(k), `缺少房型 ${k}`).toBe(true);
+      }
+
+      // BFS 全连通
+      const seen = new Set([map.anchor]);
+      const q = [map.anchor];
+      while (q.length) {
+        const cur = q.shift();
+        for (const nxt of Object.values(map.rooms[cur].exits)) {
+          if (!seen.has(nxt)) { seen.add(nxt); q.push(nxt); }
+        }
+      }
+      expect(seen.size).toBe(Object.keys(map.rooms).length);
+    }
+  });
+});

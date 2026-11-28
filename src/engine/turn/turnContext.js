@@ -135,6 +135,7 @@ export function createTurnContext({ plan, env }) {
         judgePipelineActive: turnResult.judgePipelineActive || false,
         intimateTicket,
         pickupExtractionFailed: turnResult.pickupExtractionFailed,
+        cmd: env.cmd,
         rawFull: turnResult.rawFull, narrativeText: turnResult.narrativeText,
         knowledgeTree: turnResult.knowledgeTree, knowledgeTreeBase: turnResult.knowledgeTreeBase,
         isTalk, gm, lockedDestName, room, innerRoomName, time, mapData,

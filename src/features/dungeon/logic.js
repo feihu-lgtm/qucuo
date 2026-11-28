@@ -3,6 +3,10 @@
 // 剩余气血（战败保底留 1 血）、时辰推进与首通 flag 打包成 { changes, logs, note }。
 
 import { computeSettledLoot } from "../../domain/rules/dungeon/engine.js";
+import { normalizeDungeonStore, syncDungeonWorld } from "../../domain/rules/dungeon/mapRun.js";
+import { getAdventurerById } from "../../domain/rules/dungeon/dungeonPool.js";
+import { unlockImportedCompanion } from "../../domain/rules/companion/companion.js";
+import { ocSignatureMoves } from "../../domain/rules/companion/ocKungfu.js";
 import { makeItem, ITEM_CATEGORY } from "../../domain/rules/economy/equipment.js";
 import { makeItemSmart } from "../../domain/data/items/catalog.js";
 import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
@@ -127,10 +131,78 @@ export function settleMapRun(state, mapRun, opts = {}) {
   const res = settleDungeonRun(state, shim, opts);
   // settleDungeonRun 会把 hp[0] 削到上限内——超上限/中途回血要保住，按差值直接回写
   if (res.changes?.char) {
+    const spent = Math.max(0, Number(mapRun.spentMoney) || 0);
     res.changes = {
       ...res.changes,
-      char: { ...res.changes.char, hp: [Math.max(1, charHp[0] - inRunLoss), charHp[1]] },
+      char: {
+        ...res.changes.char,
+        money: Math.max(0, (res.changes.char.money ?? 0) - spent),
+        hp: [Math.max(1, charHp[0] - inRunLoss), charHp[1]],
+      },
     };
   }
+
+  // 合并色色卡 flag 与神兵唯一 flag
+  const extraFlags = [
+    ...(mapRun.unlockedCards || []),
+    ...(mapRun.divineFlags || []),
+  ];
+  if (extraFlags.length) {
+    const curFlags = res.changes.flags || state.flags || [];
+    res.changes.flags = [...new Set([...curFlags, ...extraFlags])];
+  }
+
+  // 合并开箱领悟的武学（已拥有折算潜能）
+  if (mapRun.learnedSkills?.length) {
+    const nextSkills = [...(state.skills || [])];
+    let bonusPot = 0;
+    for (const sk of mapRun.learnedSkills) {
+      if (nextSkills.some((s) => s.id === sk.id || s.name === sk.name)) {
+        bonusPot += sk.dupPot || 25;
+      } else {
+        nextSkills.push({
+          id: sk.id,
+          name: sk.name,
+          type: sk.type || "招式",
+          quality: sk.quality || "蓝",
+          stage: 1,
+          desc: sk.desc || "",
+          moveType: sk.moveType,
+          ...(sk.passiveBonus ? { passiveBonus: sk.passiveBonus } : {}),
+        });
+        res.logs.push({ t: LOG_T.SYS, text: `  ★ 领悟武学《${sk.name}》！` });
+      }
+    }
+    res.changes.skills = nextSkills;
+    if (bonusPot > 0) res.changes.pot = (res.changes.pot ?? state.pot ?? 0) + bonusPot;
+  }
+
+  // 合并地宫内结伴成功的 OC 冒险者入队
+  if (mapRun.recruitedAdvIds?.length) {
+    let comp = state.companionState || {};
+    for (const advId of mapRun.recruitedAdvIds) {
+      const adv = getAdventurerById(advId);
+      if (!adv) continue;
+      const sig = ocSignatureMoves(adv);
+      comp = unlockImportedCompanion(comp, { ...adv, ...(sig ? { signatureMoves: sig } : {}) });
+      res.logs.push({ t: LOG_T.SYS, text: `  ★ 「${adv.name}」随你走出地宫，正式入队！` });
+    }
+    res.changes.companionState = comp;
+  }
+
+  // 持久化 7 天地宫世界状态（保留已解锁入口、已开箱、迷雾与冒险者）
+  const store = normalizeDungeonStore(state.dungeonRun);
+  if (store.worlds?.[mapRun.districtKey]) {
+    const updatedWorld = syncDungeonWorld(store.worlds[mapRun.districtKey], mapRun, {
+      time: res.changes.time ?? state.time ?? 0,
+    });
+    res.changes.dungeonRun = {
+      active: null,
+      worlds: { ...store.worlds, [mapRun.districtKey]: updatedWorld },
+    };
+  } else if (state.dungeonRun) {
+    res.changes.dungeonRun = { ...store, active: null };
+  }
+
   return res;
 }

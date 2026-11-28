@@ -7,7 +7,14 @@ import { ADVENTURER_POOL } from "../../data/dungeon/adventurers.js";
 import { ADVENTURER_POOL_IP } from "../../data/dungeon/adventurersIP.js";
 import { seededRand } from "../../../utils/seededRandom.js";
 
+import { QUCUO_MAP } from "../../data/map/qucuoMap.js";
+
 const FULL_POOL = [...ADVENTURER_POOL, ...ADVENTURER_POOL_IP];
+const ADV_BY_ID = new Map(FULL_POOL.map((a) => [a.id, a]));
+
+export function getAdventurerById(advId) {
+  return ADV_BY_ID.get(advId) || null;
+}
 
 // 双向包含匹配：district 写"天山"，池子写"天山派"也算命中
 const factionHit = (adv, factions) =>
@@ -89,4 +96,119 @@ export function genAdventurerEncounter(adventurer, identity, seed) {
       { label: "点头致意，各走各路", check: null, dc: null, effect: { farewell: true } },
     ],
   };
+}
+
+function getNearbyDistricts(outerDistrict) {
+  const node = QUCUO_MAP[outerDistrict];
+  if (!node) return outerDistrict ? [outerDistrict] : [];
+  return [outerDistrict, ...Object.values(node.exits || {})];
+}
+
+/**
+ * 计算单个 OC 冒险者在当前周期下本的概率：
+ * 综合门派倾向、外层据点邻近度、贪财投机倾向、实力档位匹配。
+ */
+export function calcAdventurerDiveProb(adv, config = {}, { nearbyDistricts } = {}) {
+  const factions = config.adventurerFactions || [];
+  const near = nearbyDistricts || getNearbyDistricts(config.outerDistrict);
+  const base = 0.04;
+  const factionMul = factions.length && factionHit(adv, factions) ? 2.8 : 1.0;
+  const bio = `${adv.faction || ""} ${adv.brief || ""} ${adv.lifeHistory || ""}`;
+  const nearbyBonus = near.some((d) => d && bio.includes(d)) ? 0.08 : 0;
+  const greedBonus = (Number(adv.stealBias) >= 0.6 || adv.archetype === "opportunist") ? 0.04 : 0;
+  const tierDiff = Math.abs((adv.levelCap ?? 2) - (config.baseTier ?? 2));
+  const tierMul = tierDiff <= 1 ? 1.2 : 0.5;
+  return Math.min(0.35, Math.max(0.02, (base * factionMul + nearbyBonus + greedBonus) * tierMul));
+}
+
+function pickWeightedOne(items, rng) {
+  const total = items.reduce((s, x) => s + x.prob, 0);
+  if (total <= 0) return items.splice(0, 1)[0];
+  let r = rng() * total;
+  let idx = 0;
+  for (; idx < items.length; idx++) {
+    r -= items[idx].prob;
+    if (r <= 0) break;
+  }
+  idx = Math.min(idx, items.length - 1);
+  return items.splice(idx, 1)[0];
+}
+
+const SQUAD_IDENTITY = (r) => (r < 0.5 ? "roamer" : r < 0.75 ? "treasureGuard" : r < 0.9 ? "hiddenHireable" : "trader");
+
+/**
+ * 按概率抽取约 8 名（钳制在 targetCount-1 .. targetCount+1）冒险者在本 7 天周期下本，
+ * 并分配身份与落脚房间。纯函数，同 seed 确定性一致。
+ */
+export function rollDungeonDiveSquad(districtKey, seed, {
+  targetCount = 8,
+  excludedNames = [],
+  mapRooms = {},
+  anchor,
+  bossRoom,
+} = {}) {
+  const config = DUNGEON_DISTRICTS_ALL[districtKey] || {};
+  const rng = seededRand(0, `diveSquad|${districtKey}|${seed}`);
+  const excluded = new Set(excludedNames);
+  const near = getNearbyDistricts(config.outerDistrict);
+  const minCount = Math.max(1, targetCount - 1);
+  const maxCount = Math.max(minCount, targetCount + 1);
+
+  const candidates = FULL_POOL
+    .filter((adv) => !excluded.has(adv.name) && !excluded.has(adv.id))
+    .map((adv) => ({ adv, prob: calcAdventurerDiveProb(adv, config, { nearbyDistricts: near }) }));
+
+  const chosen = [];
+  const rest = [];
+  for (const item of candidates) {
+    if (rng() < item.prob) chosen.push(item);
+    else rest.push(item);
+  }
+  while (chosen.length < minCount && rest.length) {
+    chosen.push(pickWeightedOne(rest, rng));
+  }
+  if (chosen.length > maxCount) {
+    const trimmed = [];
+    const pool = chosen.slice();
+    while (trimmed.length < maxCount && pool.length) {
+      trimmed.push(pickWeightedOne(pool, rng));
+    }
+    chosen.length = 0;
+    chosen.push(...trimmed);
+  }
+
+  const allRoomNames = Object.keys(mapRooms).filter((n) => n !== anchor && n !== bossRoom);
+  const pickRoomFor = (identity, usedRooms) => {
+    const filterBy = (fn) => allRoomNames.filter((n) => !usedRooms.has(n) && fn(mapRooms[n]));
+    let pool = [];
+    if (identity === "treasureGuard") pool = filterBy((r) => r.roomKind === "chest" || r.isTreasure);
+    else if (identity === "trader") pool = filterBy((r) => r.roomKind === "merchant" || r.roomKind === "trade");
+    else if (identity === "hiddenHireable") pool = filterBy((r) => (r.roomKind === "neutral" && !r.empty) || r.roomKind === "supply");
+    else pool = filterBy((r) => !r.isExit && r.roomKind !== "chest");
+    if (!pool.length) pool = allRoomNames.filter((n) => !usedRooms.has(n));
+    if (!pool.length) pool = allRoomNames;
+    if (!pool.length) return anchor || "";
+    const chosenRoom = pool[Math.floor(rng() * pool.length) % pool.length];
+    usedRooms.add(chosenRoom);
+    return chosenRoom;
+  };
+
+  const usedRooms = new Set();
+  return chosen.map(({ adv }, i) => {
+    const identity = i === 0 ? "roamer" : i === 1 ? "hiddenHireable" : SQUAD_IDENTITY(rng());
+    return {
+      advId: adv.id,
+      name: adv.name,
+      title: adv.title,
+      faction: adv.faction,
+      levelCap: adv.levelCap ?? 2,
+      identity,
+      roomRole: ROOM_ROLE[identity] || "any",
+      currentRoom: pickRoomFor(identity, usedRooms),
+      alive: true,
+      recruited: false,
+      met: false,
+      cooldownStep: 0,
+    };
+  });
 }
