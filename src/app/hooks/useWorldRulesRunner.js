@@ -38,6 +38,8 @@ import { recordWorldChronicle } from "../../engine/ports/recallBlock.js";
 import * as importedRegistry from "../../domain/rules/cards/importedRegistry.js";
 import { gameActions, gameStore, subscribeGameReplaced } from "../../store/gameStore.js";
 import { roamReactionBackfill } from "./roamReactionBackfill.js";
+import { lifeVignetteBackfill } from "./lifeVignetteBackfill.js";
+import { npcPairVignetteRule } from "../../domain/rules/livingWorld/npcPairInteraction.js";
 import { newBackfillKey } from "../../engine/ports/backfill.js";
 
 
@@ -94,6 +96,7 @@ export function useWorldRulesRunner({
         timeAdvanceRule,
         residentNpcRule,
         npcRoamRule,
+        npcPairVignetteRule,
         ocWanderRule,
         stationedFavorDecayRule,
         followFavorDriftRule,
@@ -147,6 +150,18 @@ export function useWorldRulesRunner({
             // （离线/无 Key 即保底），随后异步 roam.reaction 白描原位补到其下。
             let roamKey = null;
             let roamTrigger = null;
+            // WO-25K：本拍起了同屋微互动时，占位行打 backfill 标记（保底），
+            // 异步 life.vignette 白描原位替换；与 roam 同拍的概率极低，各占各的占位行。
+            let vignetteKey = null;
+            if (result.pairVignette && result.logs?.length) {
+              vignetteKey = newBackfillKey("lifeVignette");
+              const vlogs = [...result.logs];
+              // 按占位行文本定位本规则自己的那条——不与 roam 的末条进出动向混淆
+              const vidx = vlogs.findIndex((l) => l?.text === result.pairVignette.line);
+              const target = vidx >= 0 ? vidx : vlogs.length - 1;
+              vlogs[target] = { ...vlogs[target], fillKey: vignetteKey, fillSlot: 0 };
+              result = { ...result, logs: vlogs };
+            }
             if (result.roamMovements?.length && result.logs?.length) {
               roamKey = newBackfillKey("roamReact");
               const cur = gameStore.getState();
@@ -161,6 +176,14 @@ export function useWorldRulesRunner({
                 key: roamKey,
                 triggerRoomName: roamTrigger.roomName,
                 triggerInnerRoomName: roamTrigger.innerRoomName,
+              });
+            }
+            if (vignetteKey) {
+              const cur = gameStore.getState();
+              lifeVignetteBackfill(result.pairVignette, {
+                key: vignetteKey,
+                triggerRoomName: cur.room?.name || "",
+                triggerInnerRoomName: cur.innerRoomName ?? null,
               });
             }
             if (result.forcedDuelNpc) {
