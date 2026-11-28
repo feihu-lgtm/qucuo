@@ -363,6 +363,8 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
     let rawText = "";
     const fb = await streamWithFirstTokenFallback({
       invoke: async (onChunk) => {
+        const judgeStream = d.judgePipelineActive ? createStorytellerStream() : null;
+        let pushedLen = 0;
         const res = await withAI(
           "turn.main",
           { payload },
@@ -372,10 +374,14 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
             isStale: d.isStale,
             stream: true,
             onChunk: (_delta, fullSoFar) => {
-              if (d.judgePipelineActive) {
-                // 全量重放维持滑动缓冲（纯函数重算幂等，与原接线同一手法）
-                const judgeStream = createStorytellerStream();
-                judgeStream.push(fullSoFar);
+              if (judgeStream) {
+                const delta = typeof _delta === "string" && _delta
+                  ? _delta
+                  : (typeof fullSoFar === "string" ? fullSoFar.slice(pushedLen) : "");
+                if (delta) {
+                  pushedLen += delta.length;
+                  judgeStream.push(delta);
+                }
                 onChunk(null, judgeStream.screenText);
               } else {
                 onChunk(null, fullSoFar);
@@ -437,12 +443,17 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
         return copy;
       });
     }, Number.isFinite(d._firstTokenBudgetMs) ? d._firstTokenBudgetMs : firstTokenBudgetFor(effectiveCfg));
+    let pushedLen = 0;
     onChunk = (_delta, fullSoFar) => {
       firstChunkSeen = true;
       if (judgeStream) {
-        // 以全量重放维持滑动缓冲（chunk 重放幂等：纯函数重算，成本 O(len)，可接受）
-        judgeStream = createStorytellerStream();
-        judgeStream.push(fullSoFar);
+        const delta = typeof _delta === "string" && _delta
+          ? _delta
+          : (typeof fullSoFar === "string" ? fullSoFar.slice(pushedLen) : "");
+        if (delta) {
+          pushedLen += delta.length;
+          judgeStream.push(delta);
+        }
       }
       d.setLog(l => {
         if (d.isStale?.()) return l;

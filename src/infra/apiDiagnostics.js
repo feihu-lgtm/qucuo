@@ -1,12 +1,14 @@
 import { observeAi } from "./observeAi.js";
 import { readSSE, stripReasoning } from "./apiSse.js";
 import { getApiModel } from "./apiModel.js";
-import { withProxy, httpFailure, callModel, fetchWithTimeout, readJsonOrThrow, setRequestTimeout, getRequestTimeout, rejectNonStream, formatBlock, fetchOpenAI, isOpenAICompatible } from "./apiTransport.js";
-import { API_TYPES, migrateProvider, DEFAULT_CALL_TOKEN_LIMITS, PROVIDERS,
-
-  normalizeOpenAIEndpoint, normalizeAnthropicEndpoint, normalizeGeminiBase,
-  applyThinkingAnthropic, applyThinkingGemini, applyThinkingOpenAI,
-  clampMaxTokensForProvider, ANTHROPIC_KNOWN_MODELS } from "./providers.js";
+import {
+  withProxy, callModel, fetchWithTimeout, readJsonOrThrow, setRequestTimeout, getRequestTimeout,
+  rejectNonStream, fetchOpenAI, isOpenAICompatible, buildAnthropicRequest, buildGeminiRequest,
+} from "./apiTransport.js";
+import {
+  API_TYPES, migrateProvider, DEFAULT_CALL_TOKEN_LIMITS, PROVIDERS,
+  normalizeOpenAIEndpoint, normalizeGeminiBase, ANTHROPIC_KNOWN_MODELS,
+} from "./providers.js";
 
 // W-FIX3 协调裁决（方案 c）：首包看门狗随用户超时缩放 min(用户超时, max(18000, 用户超时/3))——
 // 慢思考模型首 token 合法晚到不该被硬 18s 误杀；假死连接（永远零字节）必须快切。
@@ -39,8 +41,6 @@ export function callModelStream(cfg, systemPrompt, messages, onChunk, opts = {})
 
 async function requestStream(cfg, systemPrompt, messages, onChunk, opts) {
   setRequestTimeout(cfg.timeoutMs || 60000); // Review 修：无自定义超时的配置档必须把全局复位回默认，否则上一档的长超时泄漏
-  const maxTokens = opts.maxTokens ?? cfg.maxTokens;
-  const temperature = opts.temperature ?? cfg.temperature;
 
   try {
     let full = "";
@@ -50,20 +50,10 @@ async function requestStream(cfg, systemPrompt, messages, onChunk, opts) {
     const sse = (res, handler) => readSSE(res, handler, { idleTimeoutMs: getRequestTimeout(), firstByteTimeoutMs: firstByteWatchdogMs() });
 
     if (cfg.apiType === API_TYPES.ANTHROPIC) {
-      const provider = PROVIDERS[cfg.provider];
-      const url = withProxy(normalizeAnthropicEndpoint(cfg.endpoint || provider.endpoint), cfg);
-      const system = Array.isArray(systemPrompt)
-        ? (systemPrompt.length === 1 ? formatBlock(systemPrompt[0]) : systemPrompt.map(b => ({ type: "text", text: formatBlock(b) })))
-        : systemPrompt;
-      const maxOutputTokens = clampMaxTokensForProvider(maxTokens, cfg, provider);
-      const abody = { model: cfg.model, [provider.maxTokensField]: maxOutputTokens, temperature, system, messages, stream: true };
-      applyThinkingAnthropic(abody, cfg, maxOutputTokens);
+      const { url, headers, body: abody } = buildAnthropicRequest(cfg, systemPrompt, messages, opts, true);
       const res = await fetchWithTimeout(url, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json", ...provider.extraHeaders, "x-api-key": cfg.apiKey,
-          "anthropic-version": "2023-06-01",
-        },
+        headers,
         body: JSON.stringify(abody),
       });
       await rejectNonStream(res, "Anthropic 流式调用", url);
@@ -94,21 +84,11 @@ async function requestStream(cfg, systemPrompt, messages, onChunk, opts) {
     } else if (cfg.apiType === API_TYPES.GEMINI) {
       // Gemini 原生 SSE：streamGenerateContent?alt=sse，每个事件的 candidates[0].content.parts
       // 只带增量文本；usageMetadata 在末帧给出（含 cachedContentTokenCount 缓存命中数）。
-      const provider = PROVIDERS[cfg.provider];
-      const base = normalizeGeminiBase(cfg.endpoint || provider.endpoint);
-      const url = withProxy(`${base}/${encodeURIComponent(cfg.model)}:streamGenerateContent?alt=sse&key=${encodeURIComponent(cfg.apiKey)}`, cfg);
-      const contents = messages.map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
-      if (contents.length && contents[0].role === "user") {
-        const systemText = Array.isArray(systemPrompt) ? systemPrompt.map(formatBlock).join("\n\n") : systemPrompt;
-        contents[0].parts[0].text = systemText + "\n\n" + contents[0].parts[0].text;
-      }
-      const genConfig = { temperature, maxOutputTokens: clampMaxTokensForProvider(maxTokens, cfg, provider) };
-      if (opts.jsonOnly) genConfig.responseMimeType = "application/json";
-      applyThinkingGemini(genConfig, cfg, opts);
+      const { url, headers, body } = buildGeminiRequest(cfg, systemPrompt, messages, opts, true);
       const res = await fetchWithTimeout(url, {
         method: "POST",
-        headers: { ...provider.extraHeaders, "Content-Type": "application/json" },
-        body: JSON.stringify({ contents, generationConfig: genConfig }),
+        headers,
+        body: JSON.stringify(body),
       });
       await rejectNonStream(res, "Gemini 流式调用", url);
       await sse(res, (eventData) => {

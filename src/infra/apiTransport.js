@@ -163,7 +163,7 @@ export async function fetchOpenAI(cfg, systemPrompt, messages, opts, stream = fa
     messages: [...system.map(content => ({ role: "system", content })), ...(vertex ? vertex.prepareVertexMessages(messages) : messages)],
   };
   if (stream) Object.assign(body, { stream: true, stream_options: { include_usage: true } });
-  else for (const [option, field] of [["topP", "top_p"], ["frequencyPenalty", "frequency_penalty"], ["presencePenalty", "presence_penalty"]]) {
+  for (const [option, field] of [["topP", "top_p"], ["frequencyPenalty", "frequency_penalty"], ["presencePenalty", "presence_penalty"]]) {
     const value = opts[option] ?? cfg[option];
     if (value != null) body[field] = value;
   }
@@ -189,6 +189,112 @@ export async function fetchOpenAI(cfg, systemPrompt, messages, opts, stream = fa
   }
 }
 
+function buildAnthropicSystem(systemPrompt) {
+  const texts = Array.isArray(systemPrompt)
+    ? systemPrompt.map(formatBlock).filter((t) => String(t).trim())
+    : (systemPrompt && String(systemPrompt).trim() ? [String(systemPrompt)] : []);
+  if (!texts.length) return undefined;
+  return texts.map((text, idx) => (
+    idx === texts.length - 1
+      ? { type: "text", text, cache_control: { type: "ephemeral" } }
+      : { type: "text", text }
+  ));
+}
+
+function buildAnthropicMessages(messages) {
+  if (!Array.isArray(messages) || messages.length < 2) return messages;
+  const first = messages[0];
+  if (first?.role !== "user" || typeof first.content !== "string" || !first.content.startsWith("[前情提要]")) {
+    return messages;
+  }
+  const c = first.content;
+  const splitIdx = ["\n\n[近期前情]", "\n\n[最近对话]"]
+    .map((marker) => c.indexOf(marker))
+    .filter((idx) => idx > 0)
+    .sort((a, b) => a - b)[0];
+  const cachedContent = splitIdx > 0
+    ? [
+      { type: "text", text: c.slice(0, splitIdx), cache_control: { type: "ephemeral" } },
+      { type: "text", text: c.slice(splitIdx) },
+    ]
+    : [{ type: "text", text: c, cache_control: { type: "ephemeral" } }];
+  return [{ ...first, content: cachedContent }, ...messages.slice(1)];
+}
+
+export function buildAnthropicRequest(cfg, systemPrompt, messages, opts = {}, stream = false) {
+  const provider = PROVIDERS[cfg.provider];
+  const url = withProxy(normalizeAnthropicEndpoint(cfg.endpoint || provider.endpoint), cfg);
+  const maxTokens = opts.maxTokens ?? cfg.maxTokens;
+  const temperature = opts.temperature ?? cfg.temperature;
+  const topP = opts.topP ?? cfg.topP ?? null;
+  const topK = opts.topK ?? cfg.topK ?? null;
+  const maxOutputTokens = clampMaxTokensForProvider(maxTokens, cfg, provider);
+  const system = buildAnthropicSystem(systemPrompt);
+  const abody = {
+    model: cfg.model,
+    [provider.maxTokensField]: maxOutputTokens,
+    ...(system ? { system } : {}),
+    messages: buildAnthropicMessages(messages),
+    ...(stream ? { stream: true } : {}),
+  };
+  // Opus 4.8（及未来同类"自适应采样"模型）直接拒绝任何采样参数——传了就 400。
+  const rejectsSampling = /opus-4[.-]8|opus4\.8/i.test(cfg.model || "");
+  if (!rejectsSampling) {
+    if (topP != null) abody.top_p = topP;
+    else abody.temperature = temperature;
+    if (topK != null) abody.top_k = topK;
+  }
+  if (!opts.schema) applyThinkingAnthropic(abody, cfg, maxOutputTokens);
+  if (opts.schema) {
+    abody.tools = [{ name: opts.schema.name, input_schema: opts.schema.schema }];
+    abody.tool_choice = { type: "tool", name: opts.schema.name };
+  }
+  const headers = {
+    "Content-Type": "application/json",
+    ...provider.extraHeaders,
+    "x-api-key": cfg.apiKey,
+    "anthropic-version": "2023-06-01",
+    ...getSamplingHeaders(),
+  };
+  return { url, headers, body: abody };
+}
+
+export function buildGeminiRequest(cfg, systemPrompt, messages, opts = {}, stream = false) {
+  const provider = PROVIDERS[cfg.provider];
+  const base = normalizeGeminiBase(cfg.endpoint || provider.endpoint);
+  const action = stream ? "streamGenerateContent?alt=sse&" : "generateContent?";
+  const url = withProxy(`${base}/${encodeURIComponent(cfg.model)}:${action}key=${encodeURIComponent(cfg.apiKey)}`, cfg);
+  const contents = messages.map((m) => ({
+    role: m.role === "assistant" ? "model" : "user",
+    parts: [{ text: m.content }],
+  }));
+  const systemText = (Array.isArray(systemPrompt) ? systemPrompt.map(formatBlock).join("\n\n") : String(systemPrompt || "")).trim();
+  const maxTokens = opts.maxTokens ?? cfg.maxTokens;
+  const temperature = opts.temperature ?? cfg.temperature;
+  const topP = opts.topP ?? cfg.topP ?? null;
+  const topK = opts.topK ?? cfg.topK ?? null;
+  const frequencyPenalty = opts.frequencyPenalty ?? cfg.frequencyPenalty ?? null;
+  const presencePenalty = opts.presencePenalty ?? cfg.presencePenalty ?? null;
+  const genConfig = { temperature, maxOutputTokens: clampMaxTokensForProvider(maxTokens, cfg, provider) };
+  if (topP != null) genConfig.topP = topP;
+  if (topK != null) genConfig.topK = topK;
+  if (frequencyPenalty != null) genConfig.frequencyPenalty = frequencyPenalty;
+  if (presencePenalty != null) genConfig.presencePenalty = presencePenalty;
+  if (opts.jsonOnly) genConfig.responseMimeType = "application/json";
+  if (opts.schema) {
+    genConfig.responseMimeType = "application/json";
+    genConfig.responseSchema = stripAdditionalProperties(opts.schema.schema);
+  }
+  applyThinkingGemini(genConfig, cfg, opts);
+  const body = {
+    ...(systemText ? { systemInstruction: { parts: [{ text: systemText }] } } : {}),
+    contents,
+    generationConfig: genConfig,
+  };
+  const headers = { ...provider.extraHeaders, "Content-Type": "application/json", ...getSamplingHeaders() };
+  return { url, headers, body };
+}
+
 // 统一调用入口。返回 { text, raw } ；text 是模型输出的纯文本。
 // systemPrompt: string | [{role:'system', content:string, tavernBlock?, tavernLabel?}]
 // messages: [{role:'user'|'assistant', content:string}]
@@ -199,60 +305,14 @@ export function callModel(cfg, systemPrompt, messages, opts = {}) {
 
 async function requestModel(cfg, systemPrompt, messages, opts) {
   setRequestTimeout(cfg.timeoutMs || 60000); // Review 修：无自定义超时的配置档必须把全局复位回默认，否则上一档的长超时泄漏
-  const maxTokens = opts.maxTokens ?? cfg.maxTokens;
-  const temperature = opts.temperature ?? cfg.temperature;
-  // 采样参数（本轮新增）：top_p/top_k/frequency_penalty/presence_penalty 这几个概念
-  // 在三家 API 之间并不通用——Anthropic 没有 frequency/presence penalty 这两个概念，
-  // OpenAI 没有 top_k，Gemini 全都支持。且 Anthropic 的 Opus 4.8 这类"自适应采样"模型
-  // 直接拒绝 temperature/top_p/top_k（传了就 400）。所以这里只是统一收集这几个可选值，
-  // 真正决定"传给谁、传哪几个"的判断放在各家分支内部，不支持的字段静默跳过，
-  // 而不是无脑塞进请求体导致报错。留空（undefined/null）的字段一律不传，跟随各 API
-  // 自己的默认值。
-  const topP = opts.topP ?? cfg.topP ?? null;
-  const topK = opts.topK ?? cfg.topK ?? null;
-  const frequencyPenalty = opts.frequencyPenalty ?? cfg.frequencyPenalty ?? null;
-  const presencePenalty = opts.presencePenalty ?? cfg.presencePenalty ?? null;
   try {
     let text, raw, finishReason, usage;
 
     if (cfg.apiType === API_TYPES.ANTHROPIC) {
-      const provider = PROVIDERS[cfg.provider];
-      const url = withProxy(normalizeAnthropicEndpoint(cfg.endpoint || provider.endpoint), cfg);
-      const system = Array.isArray(systemPrompt)
-        ? (systemPrompt.length === 1 ? formatBlock(systemPrompt[0]) : systemPrompt.map(b => ({ type: "text", text: formatBlock(b) })))
-        : systemPrompt;
-      const maxOutputTokens = clampMaxTokensForProvider(maxTokens, cfg, provider);
-      const abody = { model: cfg.model, [provider.maxTokensField]: maxOutputTokens, system, messages };
-      // Opus 4.8（及未来同类"自适应采样"模型）直接拒绝任何采样参数——传了就 400。
-      // 判断依据是模型名包含 opus-4-8/opus-4.8 这类标识；命中就完全不传任何采样参数，
-      // 让模型用它自己的自适应采样，静默跳过而不是让整轮请求失败。
-      const rejectsSampling = /opus-4[.-]8|opus4\.8/i.test(cfg.model || "");
-      if (!rejectsSampling) {
-        // Anthropic 文档要求 temperature 和 top_p 二选一，不能同传；有 top_p 就优先用 top_p，
-        // 没有才退回 temperature（沿用原有默认行为，不影响没配置过采样参数的老用户）。
-        if (topP != null) abody.top_p = topP;
-        else abody.temperature = temperature;
-        if (topK != null) abody.top_k = topK;
-        // frequency_penalty/presence_penalty：Anthropic API 没有这两个概念，永远不传。
-      }
-      // 原生结构化输出：Anthropic 没有 response_format，用单工具强制——挂唯一工具并
-      // tool_choice 点名，模型只能以 tool_use.input 的形式吐出合规 JSON。
-      // 注意：extended thinking 与强制 tool_choice 互斥（Anthropic 直接拒绝同传），
-      // schema 调用本就是结构化抽取小调用，强制工具时不再挂思考。
-      if (!opts.schema) applyThinkingAnthropic(abody, cfg, maxOutputTokens);
-      if (opts.schema) {
-        abody.tools = [{ name: opts.schema.name, input_schema: opts.schema.schema }];
-        abody.tool_choice = { type: "tool", name: opts.schema.name };
-      }
+      const { url, headers, body: abody } = buildAnthropicRequest(cfg, systemPrompt, messages, opts, false);
       const res = await fetchWithTimeout(url, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...provider.extraHeaders,
-          "x-api-key": cfg.apiKey,
-          "anthropic-version": "2023-06-01",
-          ...getSamplingHeaders(),
-        },
+        headers,
         body: JSON.stringify(abody),
       });
       raw = await readJsonOrThrow(res, "Anthropic 调用", url);
@@ -273,35 +333,11 @@ async function requestModel(cfg, systemPrompt, messages, opts) {
       usage = raw.usage;
 
     } else if (cfg.apiType === API_TYPES.GEMINI) {
-      const provider = PROVIDERS[cfg.provider];
-      const base = normalizeGeminiBase(cfg.endpoint || provider.endpoint);
-      const url = withProxy(`${base}/${encodeURIComponent(cfg.model)}:generateContent?key=${encodeURIComponent(cfg.apiKey)}`, cfg);
-      const contents = messages.map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
-      if (contents.length && contents[0].role === "user") {
-        const systemText = Array.isArray(systemPrompt) ? systemPrompt.map(formatBlock).join("\n\n") : systemPrompt;
-        contents[0].parts[0].text = systemText + "\n\n" + contents[0].parts[0].text;
-      }
-      const genConfig = { temperature, maxOutputTokens: clampMaxTokensForProvider(maxTokens, cfg, provider) };
-      // Gemini 的 generationConfig 原生支持这四个字段，直接按官方字段名传。
-      if (topP != null) genConfig.topP = topP;
-      if (topK != null) genConfig.topK = topK;
-      if (frequencyPenalty != null) genConfig.frequencyPenalty = frequencyPenalty;
-      if (presencePenalty != null) genConfig.presencePenalty = presencePenalty;
-      // 结构化抽取任务（角色卡扫描）要求纯 JSON 输出。官方接口支持这个字段，但
-      // 第三方反代常常把它过滤掉，所以调用方那边**不能只靠它**——提示词里同样
-      // 要写死"只输出 JSON"，并对返回值做剥围栏/截取的容错解析。这里加上是因为
-      // 原生支持时它确实能显著降低跑偏率，成本为零。
-      if (opts.jsonOnly) genConfig.responseMimeType = "application/json";
-      // 原生结构化输出：responseSchema 走 v1beta 官方字段；additionalProperties 键 Gemini 不收，递归剔除。
-      if (opts.schema) {
-        genConfig.responseMimeType = "application/json";
-        genConfig.responseSchema = stripAdditionalProperties(opts.schema.schema);
-      }
-      applyThinkingGemini(genConfig, cfg, opts);
+      const { url, headers, body } = buildGeminiRequest(cfg, systemPrompt, messages, opts, false);
       const res = await fetchWithTimeout(url, {
         method: "POST",
-        headers: { ...provider.extraHeaders, "Content-Type": "application/json", ...getSamplingHeaders() },
-        body: JSON.stringify({ contents, generationConfig: genConfig }),
+        headers,
+        body: JSON.stringify(body),
       });
       raw = await readJsonOrThrow(res, "Gemini 调用", url);
       if (raw.error) throw new Error(raw.error.message || "Gemini API 错误");

@@ -109,6 +109,10 @@ describe("WO-16F-F1 free_act 按表签发", () => {
     expect(cold.facts.filter((x) => x.op === "APPLY_CONDITION").map((x) => x.attr)).toEqual(["身法"]);
     const poison = judgeTurn(base(), act(fa("受寒中毒", "无", "误食毒蘑菇")), { rng: () => 0.5 });
     expect(poison.facts.filter((x) => x.op === "APPLY_CONDITION").map((x) => x.attr)).toEqual(["体魄"]);
+    const riskyPoison = judgeTurn(base(), act(fa("受寒中毒", "中", "误食毒蘑菇")), { rng: () => 0.5 });
+    expect(riskyPoison.facts.find((x) => x.op === "CHANGE_VITALS_SILVER")?.hpDelta).toBe(-12);
+    const ambientMed = judgeTurn(base(), act(fa("服用", "无", "冲服一包药粉")), { rng: () => 0.5 });
+    expect(ambientMed.facts.find((x) => x.op === "CHANGE_VITALS_SILVER")?.hpDelta).toBe(5);
     const both = judgeTurn(base(), act(fa("受寒中毒", "无", "寒毒入体")), { rng: () => 0.5 });
     expect(both.facts.filter((x) => x.op === "APPLY_CONDITION").length).toBe(2);
     const unclear = judgeTurn(base(), act(fa("受寒中毒")), { rng: () => 0.5 });
@@ -135,6 +139,17 @@ describe("WO-16F-F1 steal 按表裁定", () => {
     const v = judgeTurn(base(), act(steal), { rng: () => 0 });
     const f = v.facts.find((x) => x.op === "TRANSFER_ITEM");
     expect(f.from).toBe("才旦"); expect(f.to).toBe("player"); expect(f.itemName).toBe("钱袋");
+  });
+  it("指定目标物名时优先偷取对应 carriedItems，而非硬编码首件", () => {
+    const rich = base({ npcs: [{ name: "掌柜", personality: "", carriedItems: [{ id: "tea", name: "茶壶" }, { id: "purse", name: "钱袋" }] }] });
+    const v = judgeTurn(rich, act({ kind: "steal", target: "掌柜", item: "钱袋", itemId: "钱袋", stance: "casual" }), { rng: () => 0 });
+    expect(v.facts.find((x) => x.op === "TRANSFER_ITEM")?.itemName).toBe("钱袋");
+  });
+  it("高/中风险偷窃败露连带伤损扣血", () => {
+    const hard = base({ npcs: [{ name: "才旦", personality: "精明多疑", carriedItems: [{ name: "钱袋" }] }, { name: "乙" }, { name: "丙" }] });
+    hard.char.special = { 身法: 0, 智谋: 0 };
+    const v = judgeTurn(hard, act({ kind: "steal", target: "才旦", risk: "中", stance: "casual" }), { rng: () => 0 });
+    expect(v.facts.find((x) => x.op === "CHANGE_VITALS_SILVER")?.hpDelta).toBe(-8);
   });
   it("失败：MUTATE_SOCIAL 怨 -6 + 生气标记", () => {
     // 低属性+多人警觉：身法0智谋0 rng0 → 0 < 4+2+2
