@@ -182,7 +182,7 @@ export function stepHourlyBeat(state, registry) {
         knownDistricts: [pick.node],
         loserSquad: loser?.squad.id || null,
         winnerSquad: winner?.squad.id || null,
-        addTargetSituation: loser?.squad.onDefeated?.addTargetSituation || null,
+        addTargetSituation: loser?.squad.onDefeated?.addTargetSituation || null, // 字符串或数组均可
       });
     }
   }
@@ -274,13 +274,14 @@ function stepSingleBeat(state, registry) {
             w.事件录 = [...prevEvents, ...fresh].slice(-EVENT_CAP);
             const boards = { ...(w.据点局势 || {}) };
             for (const ev of fresh) {
-              if (!ev.addTargetSituation) continue;
-              const sit = registry?.situations?.find((x) => x.id === ev.addTargetSituation);
-              if (!sit) continue;
-              const cards = [...(boards[ev.district] || [])];
-              if (!cards.some((c) => c.id === sit.id)) {
-                cards.push({ id: sit.id, sinceDay: ev.day, expireDay: ev.day + (sit.durationDays || 3), sourceEventId: ev.id });
-                boards[ev.district] = cards;
+              for (const sitId of [].concat(ev.addTargetSituation || []).filter(Boolean)) {
+                const sit = registry?.situations?.find((x) => x.id === sitId);
+                if (!sit) continue;
+                const cards = [...(boards[ev.district] || [])];
+                if (!cards.some((c) => c.id === sit.id)) {
+                  cards.push({ id: sit.id, sinceDay: ev.day, expireDay: ev.day + (sit.durationDays || 3), sourceEventId: ev.id });
+                  boards[ev.district] = cards;
+                }
               }
             }
             w.据点局势 = boards;
