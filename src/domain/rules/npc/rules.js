@@ -278,6 +278,10 @@ export const residentNpcRule = {
         const memberId = decl?.members?.[0];
         const found = memberId && CONTENT_LOOKUP_BY_ID.get(memberId);
         if (!found) continue;
+        // Review 修：代表仍锁在上一个据点（房间缓存里有他）时本拍不在新驻地投放——
+        // 否则同一 NPC 同时站在两个据点（锁期副本+新驻地副本）。锁过期后旧身清走、
+        // 下一拍重建自然补上，玩家无感。
+        if (cachedNpcNames.has(found.name)) continue;
         const existing = existingByName.get(found.name);
         const built = buildRoomNpcWithCombat(found, { existingNpc: existing, luck, trade: npcTradeOf(state.npcState, found) });
         built.squadId = sq.id;

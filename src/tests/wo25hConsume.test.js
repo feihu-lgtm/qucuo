@@ -145,3 +145,18 @@ describe("WO-25H Review 修：实收价与离场锁", () => {
     expect(npcs2.some((n) => n.name === "锁中客")).toBe(false);
   });
 });
+
+it("Review 修：代表仍锁在旧据点（房间缓存在册）时新驻地不投放——杜绝跨据点双身", () => {
+  // 商队已到打箭炉，但张骟（成员一）的影子还在雅江缓存里锁着
+  const state = {
+    room: { name: "打箭炉", npcs: [] },
+    time: 240, questProgress: {}, flags: [], char: { special: { 气运: 5 } },
+    varTree: { 世界: { 编队册: { sq_chama_caravan: { active: true, node: "打箭炉" } }, 据点局势: {}, tension: {}, 势力战力: {}, 人物动态: {}, 事件录: [], 驻足锁: {}, 游走册: {}, 宿敌谱: {} } },
+  };
+  const memberName = "张商人";
+  const roomMap = { 雅江: { npcs: [{ name: memberName, squadId: "sq_chama_caravan" }] } };
+  const out = residentNpcRule.run(state, { importedRegistry: fakeImported, roomMap, companionState: {}, livingWorldRegistry: registry });
+  const npcs = out ? out.changes.room(state.room).npcs : [];
+  // 缓存有锁影 → 新驻地整只代表不投放（而非投一个无名版）
+  expect(npcs.some((n) => n.squadId === "sq_chama_caravan")).toBe(false);
+});
