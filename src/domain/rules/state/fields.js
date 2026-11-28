@@ -233,9 +233,13 @@ export const FIELDS = Object.freeze({
   } },
   "clapboard.npcSoulFrames": { label: "在场活人切片", readOnly: true, refs: {
     // WO-25B 预算闸：单人心账切片 160 字、全屋总预算 1600 封顶，人多房间不 token 膨胀。
+    // 在场名单优先取 visibleNpcsForAI——buildPresence 已把随行同伴并入并做过内层房过滤，
+    // 同伴随行在场却不上活人切片的缺口由此闭合；缺该键时（测试/直调）回退本地过滤口径。
     "在场活人切片": (s) => renderNpcSoulFrames({
-      visibleNpcs: (s.room?.npcs || []).filter((npc) =>
-        typeof s.innerRoomName !== "string" || isNpcVisibleInInnerRoom(s.room?.name, s.innerRoomName, npc)),
+      visibleNpcs: Array.isArray(s.visibleNpcsForAI)
+        ? s.visibleNpcsForAI
+        : (s.room?.npcs || []).filter((npc) =>
+          typeof s.innerRoomName !== "string" || isNpcVisibleInInnerRoom(s.room?.name, s.innerRoomName, npc)),
       varTree: s.varTree,
       time: s.time,
       clapboardEntries: s.clapboardEntries,
