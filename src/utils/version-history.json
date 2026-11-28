@@ -1,5 +1,13 @@
 [
   {
+    "version": "v0.8.7",
+    "codename": "路遇事件数据入库",
+    "time": "2026-11-28 23:36",
+    "notes": [
+      "路遇 400 件事件数据迁入 src/domain/data/roadEvents（纯数据不接线）"
+    ]
+  },
+  {
     "version": "v0.8.6",
     "codename": "活世界投影与江湖局势仪",
     "time": "2026-11-28 23:27",

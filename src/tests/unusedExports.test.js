@@ -10,7 +10,11 @@ const SRC = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const ROOTS = [SRC];
 const EXPORT = /export\s+(?:async\s+)?(?:function\*?|const|let|class)\s+([A-Za-z_$][\w$]*)/g;
 
-const KEEP = {};
+const KEEP = {
+  // WO-25N 前半截：id 索引表现有消费方在 scripts/roadEvents staging（不入扫描），
+  // 机制迁入 src 后即被引用，届时摘出 KEEP。
+  "domain/data/roadEvents/index.js:ROAD_EVENT_BY_ID": "WO-25N 后半截机制迁入后由 resolveRoadEvent 引用",
+};
 
 function listFiles(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -40,6 +44,6 @@ it("has no export that nothing references", () => {
 it("every KEEP entry still exists", () => {
   for (const key of Object.keys(KEEP)) {
     const [file, name] = key.split(":");
-    expect(readFileSync(join(SRC, file), "utf8")).toMatch(new RegExp(`export\\s+(?:async\\s+)?function\\s+${name}\\b`));
+    expect(readFileSync(join(SRC, file), "utf8")).toMatch(new RegExp(`export\\s+(?:async\\s+)?(?:function\\*?|const|let|class)\\s+${name}\\b`));
   }
 });

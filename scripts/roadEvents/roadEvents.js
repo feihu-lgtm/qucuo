@@ -13,7 +13,7 @@
 // 现阶段放在 scripts/ 下供审阅与校验，接线时整体移入 src/domain（见 docs/路遇随机事件设计.md）。
 import {
   ROAD_EVENTS, ROAD_EVENT_BY_ID, ROAD_EVENT_CATEGORIES, PLACE_TAGS, ROAD_EVENT_RULES, livingAffinity,
-} from "./index.js";
+} from "../../src/domain/data/roadEvents/index.js";
 import { calcDungeonCheckRate } from "../../src/domain/rules/dungeon/internal.js";
 import { QUALITY } from "../../src/domain/rules/economy/equipment.js";
 import { factionRepOf } from "../../src/domain/rules/economy/factionRep.js";

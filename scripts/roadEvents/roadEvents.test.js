@@ -1,7 +1,7 @@
 // 路遇随机事件：数据完整性、池子抽人、活世界对接（谓词、局势、编队、事件录、张力）与提示词。
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { ROAD_EVENTS, ROAD_EVENT_CATEGORIES, CATEGORY_KEYS, PLACE_TAGS, ALL_TAGS, SITUATION_IDS, livingAffinity } from "./index.js";
+import { ROAD_EVENTS, ROAD_EVENT_CATEGORIES, CATEGORY_KEYS, PLACE_TAGS, ALL_TAGS, SITUATION_IDS, livingAffinity } from "../../src/domain/data/roadEvents/index.js";
 import {
   SIX_STATS, ITEM_CATEGORY_CODE, parseCast, parseRewardCodes, isEligible, eligibleEvents, ocCandidates, isRomanceEligible,
   rollRoadEvent, resolveRoadEvent, roadEventWrites, buildRoadEventNote, buildResolutionNote, isNight, evalWhen,
