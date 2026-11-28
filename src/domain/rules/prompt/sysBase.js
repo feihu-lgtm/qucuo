@@ -66,7 +66,8 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
   // 心灵之海（绿灯）：玩家真的在海里时才注入那套场景铁律。不在时一个字不发——
   // 这段挺长，寻常在江湖上走的轮次读它纯属浪费，且会诱导 AI 提起不该提的地方。
   const inSeaOfMind = !!opts.inSeaOfMind;
-  const wantIsolation = scope !== "move" && !isSettle;
+  // 认知隔离恒常挂在 sysBlocks（冰山缓存前缀），避免 move/settle 与 talk/full 交替击穿全量缓存。
+  const wantIsolation = true;
   // MVU（绿灯·批二）：只有"这一轮可能改好感/变量"才挂——即场上真有人。
   // 独自赶路、荒野探索、无人结算这类轮次灭灯，每轮省 717 字；
   // 创造模式(gm)强制挂（要能凭空设变量）。move 档本就无 MVU 段，不受影响。

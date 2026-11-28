@@ -114,6 +114,41 @@ describe("老存档兼容（条目没有 memory 字段）", () => {
   });
 });
 
+describe("前缀缓存稳定性", () => {
+  it("房间元数据用静态 [幕址:...] 标签，玩家移动时不重刷历史文本", () => {
+    const convo = [
+      { role: "user", content: "去老孙饭馆", room: "鱼定村", innerRoomName: "老孙饭馆" },
+      { role: "assistant", content: '{"output":["喝了一碗热茶。"],"memory":"在老孙饭馆喝茶。"}', memory: "在老孙饭馆喝茶。", room: "鱼定村", innerRoomName: "老孙饭馆" },
+      { role: "user", content: "走出饭馆", room: "鱼定村" },
+      { role: "assistant", content: '{"output":["回到街口。"],"memory":"回到鱼定村街口。"}', memory: "回到鱼定村街口。", room: "鱼定村" },
+      { role: "user", content: "往北走", room: "天都镇" },
+      { role: "assistant", content: '{"output":["进城门。"],"memory":"进入天都镇。"}', memory: "进入天都镇。", room: "天都镇" },
+    ];
+    const atVillage = buildHistBlock(convo, { recentPairs: 1, currentRoom: "鱼定村", currentInner: null });
+    const atTown = buildHistBlock(convo, { recentPairs: 1, currentRoom: "天都镇", currentInner: "悦来客栈" });
+    expect(atVillage).toBe(atTown);
+    expect(atTown).toContain("[幕址:鱼定村·老孙饭馆]");
+  });
+
+  it("anchorStep 冻结 [前情提要] 边界，连续追加多轮前缀逐字节一致", () => {
+    const base = mkConvo(8); // 16 条：recentPairs=2(4条) → older=12条，正好整块冻结
+    const frontOf = (text) => text.split("\n\n[近期前情]")[0].split("\n\n[最近对话]")[0];
+    const frozen0 = frontOf(buildHistBlock(base, { recentPairs: 2, anchorStep: 12 }));
+    let growing = [...base];
+    for (let k = 9; k <= 13; k++) {
+      growing = [
+        ...growing,
+        { role: "user", content: `第${k}回指令` },
+        { role: "assistant", content: `{"output":["正文${k}"]}`, memory: `少侠第${k}回遇事。` },
+      ];
+      const out = buildHistBlock(growing, { recentPairs: 2, anchorStep: 12 });
+      expect(frontOf(out)).toBe(frozen0);
+      expect(out).toContain("[近期前情]");
+      if (k >= 11) expect(out).toContain(`少侠第${k - 2}回遇事。`);
+    }
+  });
+});
+
 describe("边界", () => {
   it("空/脏输入返回空串不炸", () => {
     for (const v of [[], null, undefined, "abc", 123]) {

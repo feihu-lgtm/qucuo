@@ -54,15 +54,54 @@ describe("callModelStream Gemini 原生 SSE", () => {
     expect(result.usage?.cachedContentTokenCount).toBe(80);
   });
 
-  it("系统提示拼进首条 user 消息（与非流式 Gemini 一致）", async () => {
+  it("系统提示通过原生 systemInstruction 下发（与非流式 Gemini 一致）", async () => {
     const bodies = [];
     vi.stubGlobal("fetch", async (_url, opts) => {
       bodies.push(JSON.parse(opts.body));
       return sseResponse([{ candidates: [{ content: { parts: [{ text: "好" }] } }] }]);
     });
     await callModelStream(geminiCfg, "你是系统", [{ role: "user", content: "问" }], () => {});
+    expect(bodies[0].systemInstruction).toEqual({ parts: [{ text: "你是系统" }] });
     expect(bodies[0].contents[0].role).toBe("user");
-    expect(bodies[0].contents[0].parts[0].text).toBe("你是系统\n\n问");
+    expect(bodies[0].contents[0].parts[0].text).toBe("问");
+  });
+});
+
+describe("Anthropic 提示词缓存与流式参数对齐", () => {
+  const anthropicCfg = {
+    provider: "anthropic",
+    apiType: "anthropic",
+    apiKey: "ant-key",
+    model: "claude-sonnet-4-5",
+  };
+
+  it("system 末块与冻结 [前情提要] 带 ephemeral cache_control，且 opus-4-8 流式不传采样参数", async () => {
+    const bodies = [];
+    vi.stubGlobal("fetch", async (_url, opts) => {
+      bodies.push(JSON.parse(opts.body));
+      return sseResponse([{ type: "content_block_delta", delta: { text: "行" } }]);
+    });
+    const sys = [
+      { role: "system", tavernBlock: "main", content: "引擎身份" },
+      { role: "system", tavernBlock: "worldInfoAfter", content: "规则底座" },
+    ];
+    const msgs = [
+      { role: "user", content: "[前情提要]\n旧事一条\n\n[近期前情]\n近事\n\n[最近对话]\n[玩家] 问" },
+      { role: "user", content: "[状态] ..." },
+      { role: "assistant", content: "{" },
+    ];
+    await callModelStream({ ...anthropicCfg, model: "claude-opus-4-8", topP: 0.9, topK: 40 }, sys, msgs, () => {});
+    const b = bodies[0];
+    expect(b.system).toHaveLength(2);
+    expect(b.system[0].cache_control).toBeUndefined();
+    expect(b.system[1].cache_control).toEqual({ type: "ephemeral" });
+    expect(b.messages[0].content).toEqual([
+      { type: "text", text: "[前情提要]\n旧事一条", cache_control: { type: "ephemeral" } },
+      { type: "text", text: "\n\n[近期前情]\n近事\n\n[最近对话]\n[玩家] 问" },
+    ]);
+    expect(b.temperature).toBeUndefined();
+    expect(b.top_p).toBeUndefined();
+    expect(b.top_k).toBeUndefined();
   });
 });
 

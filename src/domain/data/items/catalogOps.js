@@ -193,5 +193,12 @@ export function consumableOfItem(item) {
     return CATALOG_INDEX[item.name].consumable;
   }
   if (item.category === "food") return { hpRestore: 0.08 };
+  if (item.category === "medicine") return { hpRestore: 0.15 };
+  if (item.category === "drink") return { sixDimTemp: { 体魄: 1 } };
+  if (!item.noCatalog && item.category === "misc" && typeof item.name === "string") {
+    if (/^(?:干粮|口粮|炒面|肉干|馒头|大饼|米饭|汤饼)$/.test(item.name)) return { hpRestore: 0.08 };
+    if (/^(?:伤药|金创药|草药|药粉|药丸|汤药|止血散|跌打药)$/.test(item.name)) return { hpRestore: 0.15 };
+    if (/^(?:烧刀子|浊酒|米酒|烈酒|水囊|清茶)$/.test(item.name)) return { sixDimTemp: { 体魄: 1 } };
+  }
   return null;
 }

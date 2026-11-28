@@ -2,7 +2,7 @@ import { callMainOnce } from "./act/actCall.js";
 import { parseMainResponse } from "./act/parseResponse.js";
 import { step as traceStep } from "../infra/actionTrace.js";
 import { PHASE, turnMonitor } from "../infra/turnMonitor.js";
-import { runKnowledgeTurn, runRecall } from "./act/memoryLayer.js";
+import { evolveKnowledgeSync, runRecall } from "./act/memoryLayer.js";
 import { formatRecallEntries } from "./ports/recallBlock.js";
 import { buildHistBlock, histBlockSavings } from "../domain/rules/memory/histWindow.js";
 import { bindTurnAi, createWebAi } from "./ports/ai.js";
@@ -116,27 +116,33 @@ async function runTurnSteps(ctx, cmd, opts) {
   const isSettle = !!opts.settle || !!ctx.isSettle;
   const contextWindow = ctx.apiCfg?.contextWindow || 16;
   const histWindow = isSettle ? 6 : isTalk ? Math.max(contextWindow, 20) : contextWindow;
-  const histSource = mainConvo.length > histWindow ? mainConvo.slice(-histWindow) : mainConvo;
-  const hist = buildHistBlock(histSource, {
+  const anchorStep = histWindow >= 12 ? 12 : 0;
+  const start = anchorStep
+    ? Math.floor(Math.max(0, mainConvo.length - histWindow) / anchorStep) * anchorStep
+    : Math.max(0, mainConvo.length - histWindow);
+  const histSource = mainConvo.slice(start);
+  const histOpts = {
     recentPairs: isTalk ? 3 : 2,
-    // Review 修：room 不在 ctx 顶层——turnContext 挂在 state/prompt 下，
-    // 取不到会让「他处旧幕」房间头永远失效。
-    currentRoom: ctx.state?.room?.name || ctx.prompt?.room?.name || "",
-    currentInner: ctx.innerRoomName ?? ctx.state?.innerRoomName ?? ctx.prompt?.innerRoomName ?? null,
-  });
-  const historySavings = histBlockSavings(histSource, { recentPairs: isTalk ? 3 : 2 });
+    ...(anchorStep ? { maxSummaries: Math.max(12, histWindow), anchorStep } : {}),
+  };
+  const hist = buildHistBlock(histSource, histOpts);
+  const historySavings = histBlockSavings(histSource, histOpts);
   if (historySavings.savedChars > 0) {
     traceStep(ctx._trace, "历史压缩", "info", `${historySavings.legacyChars}→${historySavings.nowChars}字（省 ${historySavings.savedChars}，约 ${Math.round(historySavings.savedChars * 1.6)} tokens）`);
   }
   const onPromptRefMissing = (paths) => traceStep(ctx._trace, "提示词引用缺失", "warn", paths.join("、"));
   const preparedPrompt = assemblePrompt(withPresenceTrace({ ...ctx, onPromptRefMissing }), cmd, opts, convo, mainConvo, hist, newConvo);
   const promptContext = { ...preparedPrompt };
-  let knowledgeTurn = null;
+  // 知识推演同步化（<1ms）：只做传播/淡忘计算，待补摘要交给 finalizeTurn 后异步回填。
+  const knowledgeTurn = ctx.memory
+    ? evolveKnowledgeSync({
+      ...ctx.memory,
+      ...(preparedPrompt.visibleNpcsForAI ? { infoDomainNpcNames: preparedPrompt.visibleNpcsForAI.map(n => n.name) } : {}),
+    })
+    : null;
   let recall = { recallInfo: null, recallBlock: "" };
-  if (ctx.memory) {
-    // 知识推演仅更新信息域，不增删 角色 键；与只读向量召回互相独立，可并行执行。
-    // 若 playTurn 在软结算阶段已提前发起只读召回，这里直接复用其 Promise。
-    const recallPromise = ctx._prefetchedRecall || runRecall({
+  const recallPromise = ctx.memory
+    ? (ctx._prefetchedRecall || runRecall({
       ...ctx.memory.recall,
       lastAiText: preparedPrompt.lastAiText || ctx.memory.recall.lastAiText,
       varTreeLatest: ctx.memory.varTreeLatest,
@@ -144,25 +150,13 @@ async function runTurnSteps(ctx, cmd, opts) {
       viewer: ctx.prompt?.char?.name || ctx.char?.name || "主角",
       currentTurn: ctx.getGameState?.()?.time ?? undefined,
       lineage: ctx.getGameState?.()?.proseLineage,
-    });
-    [knowledgeTurn, recall] = await Promise.all([
-      runKnowledgeTurn({
-        ...ctx.memory,
-        ...(preparedPrompt.visibleNpcsForAI ? { infoDomainNpcNames: preparedPrompt.visibleNpcsForAI.map(n => n.name) } : {}),
-        ai,
-      }),
-      recallPromise,
-    ]);
-    if (ctx.isStale?.()) return { stale: true };
-    if (ctx._prefetchedRecall && recall?.recallInfo) {
-      recall = formatRecallEntries(recall.recallInfo, { recentTexts: [hist] });
-    }
-  }
+    }))
+    : Promise.resolve(recall);
   const memoryDeps = {
     varTree: knowledgeTurn?.kTree,
     infoDomainBlock: knowledgeTurn?.infoDomainBlock || "",
-    recallInfo: recall.recallInfo,
-    recallBlock: recall.recallBlock,
+    recallInfo: null,
+    recallBlock: "",
   };
   const baseDeps = {
     ...(typeof ctx.callDeps === "function" ? ctx.callDeps(memoryDeps, promptContext) : (ctx.callDeps || ctx)),
@@ -184,11 +178,21 @@ async function runTurnSteps(ctx, cmd, opts) {
   const trace = (layer, status, detail, fields = {}) => traceStep(deps._trace, layer, status, detail, "domain", fields);
   const callDeps = () => ({ ...deps });
   const apiCfg = deps.apiCfg;
-  // ── WO-13 判官管线：前哨听意 → 纯函数判官 → 定案单注入主叙事（S4 拆到 turn/judgePhase.js）──
-  const judgePhaseOut = await runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cmd, ai, isTalk, isSettle, trace });
-  if (judgePhaseOut?.stale) return { stale: true };
+  // ── WO-13 判官管线与只读向量召回并行发起（runJudgePhase 不依赖 recallBlock）──
+  const [recallRaw, judgePhaseOut] = await Promise.all([
+    recallPromise,
+    runJudgePhase({ ctx, deps, opts, preparedPrompt, convo, cmd, ai, isTalk, isSettle, trace }),
+  ]);
+  if (ctx.isStale?.() || judgePhaseOut?.stale) return { stale: true };
   // D8：亲密门槛拒决——拒词与扣好感已在判官段直写落盘，本回合就此打住不进主叙事。
   if (judgePhaseOut?.intimacyRefused) return { intimacyRefused: true, done: true };
+  if (ctx.memory) {
+    recall = (ctx._prefetchedRecall && recallRaw?.recallInfo)
+      ? formatRecallEntries(recallRaw.recallInfo, { recentTexts: [hist] })
+      : (recallRaw || recall);
+    deps.recallInfo = recall.recallInfo;
+    deps.recallBlock = recall.recallBlock;
+  }
   let judgeVerdict = judgePhaseOut?.judgeVerdict || null;
   const isGroupTalk = !!judgePhaseOut?.isGroupTalk;
   const visibleNpcsPre = judgePhaseOut?.visibleNpcsPre || [];
@@ -409,6 +413,7 @@ async function runTurnSteps(ctx, cmd, opts) {
     pickupExtractionFailed,
     knowledgeTree: knowledgeTurn?.kTree,
     knowledgeTreeBase: knowledgeTurn ? ctx.memory.varTreeLatest : undefined,
+    pendingFactIds: knowledgeTurn?.pendingFids || [],
     recallInfo: recall.recallInfo,
     recallBlock: recall.recallBlock,
     newConvo,

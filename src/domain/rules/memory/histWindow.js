@@ -31,6 +31,7 @@ const DEFAULTS = {
   maxSummaries: 12,    // 前情最多带几条摘要
   budgetChars: 1200,   // 这一块的字数预算；超了先丢最旧的摘要
   rawClip: 500,        // 单条原始的截断长度（与 commitRound 存的一致）
+  anchorStep: 0,       // >0 时按步长冻结 [前情提要] 前缀边界，中间差量落 [近期前情]
 };
 
 // 从一条 convo 记录里取"这一轮发生了什么"的短摘要。
@@ -62,39 +63,52 @@ export function buildHistBlock(convo, opts = {}) {
   const list = Array.isArray(convo) ? convo : [];
   if (!list.length) return "";
 
-  // V4 跨房知情隔离：条目带房间元数据（appendConvo 落条）且与当前房间不同时，
-  // 行首加「他处旧幕」标记——模型据此知道这是别处的旧场景，当前在场不知情者
-  // 严禁复述或默认知晓其中密谈细节。老存档条目无 room 键，不外推。
-  const curRoom = o.currentRoom || "";
-  const curInner = o.currentInner ?? null;
+  // V4 跨房知情隔离（静态前缀版）：直接打稳定地点标签 [幕址:X]，不随当前房间变化
+  // 重写历史前缀，避免玩家每次移动都整段击穿 Anthropic/Gemini 前缀缓存。
+  // 老存档条目无 room 键时返回空串，不外推。
   const roomTag = (entry) => {
-    if (!entry?.room || !curRoom) return "";
-    if (entry.room === curRoom && (entry.innerRoomName ?? null) === curInner) return "";
-    const label = entry.innerRoomName ? `${entry.room}·${entry.innerRoomName}` : entry.room;
-    return `[他处旧幕·${label}，当前在场者不知情] `;
+    if (!entry?.room) return "";
+    const loc = entry.innerRoomName ? `${entry.room}·${entry.innerRoomName}` : entry.room;
+    return `[幕址:${loc}] `;
   };
 
   const recentCount = Math.max(0, o.recentPairs * 2);
   const recent = recentCount ? list.slice(-recentCount) : [];
   const older = recentCount ? list.slice(0, -recentCount) : list;
+  const anchorStep = Number.isFinite(o.anchorStep) && o.anchorStep > 0 ? Math.floor(o.anchorStep) : 0;
+  const anchoredLen = anchorStep ? Math.floor(older.length / anchorStep) * anchorStep : older.length;
+  const anchoredOlder = older.slice(0, anchoredLen);
+  const deltaOlder = older.slice(anchoredLen);
 
-  // ── 前情：更早那些轮的摘要，从新到旧填进预算，再倒回时间顺序 ──
+  // ── 前情：冻结边界内更早那些轮的摘要，从新到旧填进预算，再倒回时间顺序 ──
   const picked = [];
   let used = 0;
-  for (let i = older.length - 1; i >= 0; i--) {
+  for (let i = anchoredOlder.length - 1; i >= 0; i--) {
     if (picked.length >= o.maxSummaries) break;
-    const s = summarize(older[i]);
+    const s = summarize(anchoredOlder[i]);
     if (!s) continue;
-    const line = `${roomTag(older[i])}${label(older[i].role)} ${s}`;
+    const line = `${roomTag(anchoredOlder[i])}${label(anchoredOlder[i].role)} ${s}`;
     if (used + line.length > o.budgetChars) break;   // 超预算：更旧的一律不要
     picked.unshift(line);
     used += line.length;
   }
 
+  const deltaLines = deltaOlder
+    .map((m) => {
+      const s = summarize(m);
+      return s ? `${roomTag(m)}${label(m.role)} ${s}` : "";
+    })
+    .filter(Boolean);
+
   const parts = [];
   if (picked.length) {
-    parts.push("[前情提要]（更早发生的事，只记要点，供你了解来路，不必复述）");
+    parts.push("[前情提要]（更早发生的事，只记要点，供你了解来路，不必复述；非当前地点的旧幕，未亲历者不知情）");
     parts.push(picked.join("\n"));
+  }
+  if (deltaLines.length) {
+    if (parts.length) parts.push("");
+    parts.push("[近期前情]（承接上段的近期要点，供你了解来路，不必复述）");
+    parts.push(deltaLines.join("\n"));
   }
   if (recent.length) {
     if (parts.length) parts.push("");

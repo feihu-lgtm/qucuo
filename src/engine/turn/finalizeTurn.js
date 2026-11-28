@@ -6,6 +6,7 @@ import { commitRound } from "../act/commitRound.js";
 import { writeTurnProse } from "../act/proseWrite.js";
 import { addProseChunks as proseChunkSink } from "../ports/recallBlock.js";
 import { runBookkeepAfterTurn } from "../act/bookkeepTurn.js";
+import { backfillFactSummaries } from "../act/memoryLayer.js";
 import { PHASE, turnMonitor, withTurnContext } from "../../infra/turnMonitor.js";
 
 export async function finalizeTurn({ ctx, trace, turn, turnOpts, opts, setPhase }) {
@@ -76,6 +77,20 @@ export async function finalizeTurn({ ctx, trace, turn, turnOpts, opts, setPhase 
     } catch (error) {
       recordBookkeepError(error);
     }
+  }
+  if (!ctx.isStale?.() && turn?.pendingFactIds?.length && ctx.memory) {
+    const setVarTree = commitDeps.setVarTree || ctx.setVarTree || ctx.gameActions?.setVarTreeState;
+    void backfillFactSummaries({
+      pendingFids: turn.pendingFactIds,
+      getVarTree: () => ctx.getGameState?.()?.varTree,
+      setVarTree,
+      apiCfg: ctx.apiCfg,
+      flags: ctx.memory.flags,
+      ai: ctx.ai,
+      isStale: ctx.isStale,
+      subscribeGameReplaced: ctx.subscribeGameReplaced,
+      trace,
+    }).catch(() => {});
   }
   return { ok: true, turn, duelRequest: committed?.duelRequest ?? turn.p?.duelRequest };
 }

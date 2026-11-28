@@ -24,7 +24,12 @@ export function handleSteal(J, action) {
       // 否则首件被取走后后续偷窃永远选到死记录。
       .filter((it) => it && it.name && !it.taken && !it.dropped && !it.sold);
     if (carry.length) {
-      const item = carry[0];
+      const wantedId = action.itemId && action.itemId !== "无" ? action.itemId : "";
+      const wantedName = action.item && action.item !== "无" ? action.item : "";
+      const item = carry.find((it) => (
+        (wantedId && (it.id === wantedId || it.name === wantedId))
+        || (wantedName && it.name === wantedName)
+      )) || carry[0];
       facts.push({
         id: nextFactId(), op: "TRANSFER_ITEM",
         itemId: item.id || "", itemName: item.name,
@@ -41,6 +46,15 @@ export function handleSteal(J, action) {
       witnesses: ["主角", target.name],
       anger: { active: true, reason: "偷窃败露", turnsLeft: 3 },
     });
+    if (action.outcome === "伤损" || action.risk === "中" || action.risk === "高") {
+      const maxHp = Array.isArray(ch2.hp) ? (ch2.hp[1] ?? 100) : 100;
+      const ratio = action.risk === "高" ? 0.18 : action.risk === "中" ? 0.08 : 0.05;
+      facts.push({
+        id: nextFactId(), op: "CHANGE_VITALS_SILVER",
+        hpDelta: -Math.max(1, Math.round(maxHp * ratio)),
+        witnesses: ["主角", target.name],
+      });
+    }
     notes.push(`偷窃败露：${target.name}结怨（检定${check.toFixed(1)}<${difficulty}）`);
   }
 }

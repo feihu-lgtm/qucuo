@@ -26,6 +26,12 @@ const markEvent = (runState, patch) => {
   return withRoom(runState, { ...room, roomEvent: { ...room.roomEvent, ...patch } });
 };
 
+// 13×13 大平面：房间事件了结（非「离开」）即记入 clearedRooms 账本，随 7 天世界落盘；
+// 旧 10 区图没有世界持久化，不记（#669）。
+const recordCleared = (runState) => (runState.map?.gridSize
+  ? { ...runState, clearedRooms: [...new Set([...(runState.clearedRooms || []), runState.current])] }
+  : runState);
+
 const takeCheckpoint = (runState) => ({
   room: runState.current,
   hp: [...runState.hp],
@@ -104,7 +110,7 @@ function chooseOption(runState, option, { attrs, rng }) {
   const log = success
     ? `${option.label}——${outcome || "成了。"}`
     : `${option.label}——火候差了一线，${outcome || "没能如愿。"}`;
-  let next = markEvent(runState, { resolved: true, options: undefined });
+  let next = recordCleared(markEvent(runState, { resolved: true, options: undefined }));
   next.log = [...next.log, log];
   // 成年向色色卡奇遇成功直接点亮对应收藏 flag
   const cardFlag = roomOf(runState)?.roomEvent?.cardFlag;
@@ -476,7 +482,9 @@ export function routeRoomAction(runState, label, { attrs = {}, rng = random } = 
     const res = resolveRoomEvent(ev.kind, ev, { attrs, loot: runState.loot, rng });
     let next = applyEffects(runState, res);
     if (res.combatNpc) {
-      next = markEvent(next, { resolved: true, options: undefined });
+      // 13×13 大平面的遭遇战不在开打时结清：赢了由 applyMapBattleResult 结清并记账，
+      // 脱出战圈则敌人仍在原地，可再迎战（#669）。旧 10 区图维持开打即结清。
+      if (!runState.map?.gridSize) next = markEvent(next, { resolved: true, options: undefined });
       if (runState.map?.gridSize) {
         next.status = "combat";
         next.activeBattle = {
@@ -500,7 +508,7 @@ export function routeRoomAction(runState, label, { attrs = {}, rng = random } = 
       next = markEvent(next, { options: res.branch.options });
       return { runState: next, log: res.log, branch: res.branch };
     }
-    next = markEvent(next, { resolved: true, options: undefined });
+    next = recordCleared(markEvent(next, { resolved: true, options: undefined }));
     return { runState: next, log: res.log };
   }
 
