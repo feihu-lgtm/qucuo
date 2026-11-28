@@ -219,8 +219,8 @@ export function stepDailyBeat(state, registry) {
   return { boards, tension, power, events, sitById };
 }
 
-// 主入口：按节拍推进。返回 applyResult 兼容 result（changes.varTree 函数式写盘）或 null。
-export function stepLivingWorld(state, registry) {
+// 单拍内核：只结算 pseudo.time 所在的当前时辰桶/日（幂等由节拍标记兜底）。
+function stepSingleBeat(state, registry) {
   const time = Math.floor(state?.time || 0);
   const hourBucket = Math.floor(time / 2);
   const day = Math.floor(time / 24);
@@ -322,6 +322,44 @@ export function stepLivingWorld(state, registry) {
         }
         return { ...(prev || {}), 世界: w };
       },
+    },
+    logs: [], // 离线推演静默落账，不刷屏（可读性出口归 WO-25F 投影）
+  };
+}
+
+// 追赶窗口上限：防病态跳时（如读档跨月） churn 过久，超过则只追最近窗口
+export const CATCHUP_CAP_BUCKETS = 240; // 240 时辰桶 = 20 天
+
+// 主入口：按节拍推进。跳时（客栈住宿一跳 23 格等）逐桶追赶——中间的编队步进、
+// 冲突与跨日结算一拍不吞。首跑无标记时只结当前拍（firstRun 不补罚原则）。
+// 返回 applyResult 兼容 result 或 null。
+export function stepLivingWorld(state, registry) {
+  const time = Math.floor(state?.time || 0);
+  const hourBucket = Math.floor(time / 2);
+  const world = worldOf(state);
+  const hasMark = Number.isFinite(world[HOUR_MARK]);
+  const lastHour = hasMark ? world[HOUR_MARK] : hourBucket - 1;
+  if (lastHour >= hourBucket) return null;
+  const from = Math.max(lastHour + 1, hourBucket - CATCHUP_CAP_BUCKETS + 1);
+  let work = state;
+  let stepped = false;
+  for (let h = from; h <= hourBucket; h += 1) {
+    const pseudo = { ...work, time: h * 2 + 1 };
+    const single = stepSingleBeat(pseudo, registry);
+    if (single) {
+      work = { ...pseudo, varTree: single.changes.varTree(pseudo.varTree) };
+      stepped = true;
+    }
+  }
+  if (!stepped) return null;
+  const finalWorld = work.varTree?.世界 || {};
+  return {
+    changes: {
+      // 只覆盖本模块写过的 世界 子键——同拍其他世界规则写入的键不遭殃
+      varTree: (prev) => ({
+        ...(prev || {}),
+        世界: { ...(prev?.世界 || {}), ...finalWorld },
+      }),
     },
     logs: [], // 离线推演静默落账，不刷屏（可读性出口归 WO-25F 投影）
   };

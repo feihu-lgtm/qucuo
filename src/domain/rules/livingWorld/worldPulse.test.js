@@ -82,6 +82,37 @@ describe("WO-25E worldPulse 时辰节拍", () => {
   });
 });
 
+describe("WO-25E 跳时追赶", () => {
+  it("客栈住宿跳 23 格：逐桶追赶不吞中间节拍", () => {
+    const registry = mkRegistry();
+    // 先在 time 0 结一拍（落标记）
+    const s0 = mkState(0);
+    const settled = applyResultToState(s0, stepLivingWorld(s0, registry));
+    // 住宿跳到 time 46（23 个时辰桶之后）
+    const jumped = { ...settled, time: 46 };
+    const result = stepLivingWorld(jumped, registry);
+    expect(result).not.toBeNull();
+    const next = applyResultToState(jumped, result);
+    const w = next.varTree.世界;
+    // 中间多拍冲突事件不只在最后一桶——事件 id 含 turn 可证
+    const turns = (w.事件录 || []).map((e) => e.turn);
+    expect(turns.length).toBeGreaterThanOrEqual(2); // 多拍结过（休整护栏下不必每场都打）
+    expect(Math.min(...turns)).toBeLessThan(46); // 有中间时刻的事件，证明逐桶结过
+    // 日结也被追：day0→day1 跨日，事件已扩散
+    expect((w.事件录 || []).some((e) => (e.knownDistricts || []).length > 1)).toBe(true);
+  });
+
+  it("首跑无标记只结当前拍（firstRun 不补罚）", () => {
+    const registry = mkRegistry();
+    // 无标记直接从 time 46 起跑：只结当前桶，不回放历史
+    const s = mkState(46);
+    const result = stepLivingWorld(s, registry);
+    const next = applyResultToState(s, result);
+    const turns = (next.varTree.世界.事件录 || []).map((e) => e.turn);
+    for (const t of turns) expect(t).toBeGreaterThanOrEqual(46);
+  });
+});
+
 describe("WO-25E worldPulse 跨日节拍", () => {
   it("过期局势移除 + 事件扩散 1 跳 + 战力稳态恢复", () => {
     const registry = mkRegistry();
