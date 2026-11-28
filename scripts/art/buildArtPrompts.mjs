@@ -2,7 +2,7 @@
 // 数据只改 scripts/art/artPrompts.mjs，改完跑 `npm run art:prompts`。
 import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { BATCHES, KINDS, REFERENCE_LINE, RUN_ORDER, STYLE_ANCHOR, renderPrompt, rosterLine } from "./artPrompts.mjs";
+import { BATCHES, KINDS, PORTRAIT_ANCHOR, REFERENCE_LINE, RUN_ORDER, STYLE_ANCHOR, renderPrompt, rosterLine } from "./artPrompts.mjs";
 
 export const DOC_PATH = "docs/美术_夜色素材提示词.md";
 
@@ -50,13 +50,20 @@ export function buildDoc() {
     "| --- | --- |",
     "| 底色 | 四边是近黑 #0c0b09，没有灰边、白边、棋盘格 |",
     "| 文字 | 画面里没有任何字、印章、落款、水印 |",
-    "| 光 | 光都从左上来，大面积是暗部 |",
-    "| 用色 | 只有画风锚里的几种颜色，朱红只出现在本身是红的东西上 |",
+    "| 光 | 光都从左上来；景物大面积是暗部，人物亮部充足、从暗底上跳出来 |",
+    "| 用色 | 景物只用夜色锚里的几种颜色，朱红只出现在本身是红的东西上；人物按人物画风锚，每人一个主色加一个对比色，整张不能罩成一片暖棕 |",
+    "| 人物区分 | 同一张九宫格里没有两张相同的脸，年龄、脸型、体格、肤色、发型、表情、标志物逐格对得上描述 |",
     "| 构图 | 九格、四格之间有黑缝，顺序与格号一致 |",
     "",
     "## 画风锚",
     "",
+    "景物（舆图、地点、建筑、物品）用夜色锚：",
+    "",
     fence(STYLE_ANCHOR),
+    "",
+    "人物用人物画风锚，照 R01 定稿的实际效果写：",
+    "",
+    fence(PORTRAIT_ANCHOR),
     "",
   ];
 
