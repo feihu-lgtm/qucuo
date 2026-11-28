@@ -216,6 +216,10 @@ export async function runShadowJudge({
       // 否则非搭话回合差 +1，day/跨日配额/warrantId/rng seed/origin 全错位。
       turn: preState?.turn ?? postState?.turn ?? 1, day: Math.floor((preState?.turn ?? postState?.turn ?? 1) / 24) + 1,
       place: preState?.room?.name || "",
+      roomName: preState?.room?.name || "",
+      innerRoomName: innerNow,
+      encounter: preState?.encounter || null,
+      char: preState?.char || {},
       npcs, varTree: preState?.varTree || {},
       inv: preState?.inv || [], entries: [], talkOnly: isTalk,
       // S7 送银桥：与真实判官同一可信源——金额只认玩家原文，影子不同源会对账失真。

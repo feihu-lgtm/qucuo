@@ -51,13 +51,11 @@ describe("wantMvu 绿灯：只在'这一轮可能改好感/变量'时挂 MVU 说
   });
 });
 
-describe("wantIsolation / wantCatalog 按 scope 灭灯", () => {
-  it("move 与 settle 砍掉认知隔离；full/talk 保留", () => {
-    // 契约：wantIsolation = scope!=='move' && !isSettle；移动/结算轮不挂信息域规则。
-    expect(worldInfoAfter(mk("move", false, { hasNpc: true }))).not.toContain("NPC 认知隔离");
-    expect(worldInfoAfter(mk("settle", false, { settleNpc: "温掌柜" }))).not.toContain("NPC 认知隔离");
-    expect(worldInfoAfter(mk("full", false, { hasNpc: true }))).toContain("NPC 认知隔离");
-    expect(worldInfoAfter(mk("talk", false))).toContain("NPC 认知隔离");
+describe("wantIsolation / wantCatalog 按 scope 亮灭", () => {
+  it("认知隔离常驻全部 scope（保 sysBlocks 冰山前缀缓存不被 move/settle 击穿）", () => {
+    for (const [scope, opts] of [["move", { hasNpc: true }], ["settle", { settleNpc: "温掌柜" }], ["full", { hasNpc: true }], ["talk", {}]]) {
+      expect(worldInfoAfter(mk(scope, false, opts))).toContain("NPC 认知隔离");
+    }
   });
 
   it("物件志只在 full+mayGrantItem 时挂；move/settle 一律不挂", () => {

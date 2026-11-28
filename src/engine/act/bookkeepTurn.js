@@ -26,10 +26,24 @@ function turnHasStateWrites({ ctx, turn, opts }) {
   if (Array.isArray(turn?.mvuCommands) && turn.mvuCommands.length) return true;
   const p = turn?.p;
   if (!p || typeof p !== "object") return true; // 形态不明按有变动处理，照常记账
-  // 提取层自己判了"值得记"（许下承诺、结下人情之类只活在正文里、不进任何字段）——
-  // 提取规格允许纯琐事省略 memory，故非空 memory 即照常记账，空才允许短路。
+  const hasNonNarrationKey = Object.keys(p).some((key) => !NARRATION_ONLY_P_KEYS.has(key));
+  if (hasNonNarrationKey) return true;
+
+  // 判官管线启用时，p.memory 来自 composeJudgeMemory 的确定性模板（闲聊也会填充
+  // 「玩家对X说：…」），不能用非空 memory 作为状态变更判据，否则每次对话都触发后台记账。
+  if (turn?.judgePipelineActive) {
+    if (turn?.judgeEffects?.sealReport?.sealData?.spontaneousPact) return true;
+    if ((turn?.judgeEffects?.materialized?.receipts || []).length > 0) return true;
+    if ((turn?.judgeEffects?.routeReceipts || []).some((r) => r?.ok && r?.kind !== "move")) return true;
+    const facts = turn?.judgeEffects?.verdict?.facts || [];
+    // 例行闲聊搭话投机（无 anger）已由 materializeFacts 确定性入心账，不值得再跑后台记账模型；
+    // 透露秘闻、言语冲撞/生气、赠礼、窃取、赔罪、拜师、破费、得财等才启动记账。
+    return facts.some((f) => !(f?.op === "MUTATE_SOCIAL" && f?.reason === "搭话投机" && !f?.anger));
+  }
+
+  // 旧单调用/提取层模式：保留 memory 非空判定（可能承载纯文本承诺/人情）。
   if (typeof p.memory === "string" && p.memory.trim()) return true;
-  return Object.keys(p).some((key) => !NARRATION_ONLY_P_KEYS.has(key));
+  return false;
 }
 
 export async function runBookkeepAfterTurn({ ctx = {}, turn = {}, opts = {}, trace } = {}) {

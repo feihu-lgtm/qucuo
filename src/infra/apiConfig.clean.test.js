@@ -53,12 +53,18 @@ describe("cleanJsonString", () => {
   });
 });
 
-describe("bookkeep configuration", () => {
-  it("defaults on and treats saved configs without the key as enabled", () => {
+describe("bookkeep and stream defaults", () => {
+  it("defaults bookkeepEnabled and streamEnabled on while honoring saved false overrides", () => {
     expect(defaultConfig().bookkeepEnabled).toBe(true);
+    expect(defaultConfig().streamEnabled).toBe(true);
     vi.stubGlobal("localStorage", {
       getItem: () => JSON.stringify({ apiType: "openai" }),
     });
     expect(loadConfig().bookkeepEnabled).toBe(true);
+    expect(loadConfig().streamEnabled).toBe(true);
+    vi.stubGlobal("localStorage", {
+      getItem: () => JSON.stringify({ apiType: "openai", streamEnabled: false }),
+    });
+    expect(loadConfig().streamEnabled).toBe(false);
   });
 });

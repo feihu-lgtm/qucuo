@@ -77,7 +77,7 @@ export function defaultConfig() {
     // 有的中转站/供应商地址本就是完整或非标准路径，自动补反而变 404，
     // 所以改成显式勾选、勾了才补，不勾就用户填什么原样发什么。
     openaiAutoComplete: false,
-    streamEnabled: false, // 流式输出开关，默认关闭（不影响现有行为）
+    streamEnabled: true, // 流式输出开关，出厂默认开启，降低首字延迟（尊重用户已保存的 false）
     // 思考/推理控制（可在设置里大改特改）。默认 off：把 token 全留给正文，
     // 避免 Gemini 2.5 等模型的思考 token 吃穿额度导致正文被截断。
     thinkingMode: "off", // off | low | medium | high | custom
