@@ -736,9 +736,20 @@ describe("V2 出村路由防劫持与安全屋出门", () => {
   });
   it("Review 三轮：据点前缀限定的内层房——「喇嘛庙大殿」剥前缀进大殿北行", () => {
     const st = mkState({ room: { name: "喇嘛庙", npcs: [], items: [], exits: [] }, innerRoomName: "山门" });
+    // 只说「去」：维持原内层移动，不开门
+    const go = resolveMoveTarget(st, mkAction({ target: "喇嘛庙大殿", direction: "无", text: "去喇嘛庙大殿" }));
+    expect(go).toEqual({ type: "inner", dir: "n" });
+    // #670 说「进」：大殿也是一座建筑，先北行到门前再开门
     const r = resolveMoveTarget(st, mkAction({ target: "喇嘛庙大殿", direction: "无", text: "进喇嘛庙大殿" }));
-    expect(r.type).toBe("inner");
-    expect(r.dir).toBe("n");
+    expect(r.type).toBe("building");
+    expect(r.intent).toMatchObject({ type: "approach", dir: "n", innerRoom: "大殿" });
+  });
+  it("#670 门前说「进入断鞍古驿」→ 建筑进门；原先落 unknown 被拒", () => {
+    const st = mkState({ room: { name: "大草甸", npcs: [], items: [], exits: [] }, innerRoomName: "断鞍古驿" });
+    const r = resolveMoveTarget(st, mkAction({ target: "断鞍古驿", direction: "无", text: "进入断鞍古驿" }));
+    expect(r.type).toBe("building");
+    expect(r.intent).toMatchObject({ type: "enter" });
+    expect(r.intent.building.id).toBe("dacaodian_duanan_post");
   });
   it("Review 二轮：更长的新名/虚构名不许别名——「大草甸营地」「山门施药棚」unknown", () => {
     const r1 = resolveMoveTarget(mkState(), mkAction({ target: "大草甸营地", text: "去大草甸营地" }));
