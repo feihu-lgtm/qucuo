@@ -23,11 +23,11 @@ describe("blocksForAction：单调用（single）各动作分类的亮灭", () =
     }
   });
 
-  it("move/settle：认知隔离与在场人设都灭灯", () => {
-    // 契约：scope=move/settle 时 isolation、npc_lore 两块带原因灭灯。
+  it("move/settle：在场人设灭灯，认知隔离常驻保前缀缓存", () => {
+    // 契约：scope=move/settle 时 isolation 常驻以稳定前缀缓存，npc_lore 仍灭灯。
     for (const view of ["move", "settle"]) {
       const blocks = blocksForAction(view);
-      expect(byId(blocks, "isolation").lit).toBe(false);
+      expect(byId(blocks, "isolation").lit).toBe(true);
       expect(byId(blocks, "npc_lore").lit).toBe(false);
     }
   });

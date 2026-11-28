@@ -15,6 +15,10 @@ import { heifeng } from "./heifeng.js";
 import { dacaodian } from "./dacaodian.js";
 import { tianlongying } from "./tianlongying.js";
 import { baita } from "./baita.js";
+import { dajianlu } from "./dajianlu.js";
+import { danxiacheng } from "./danxiacheng.js";
+import { fenfengdu } from "./fenfengdu.js";
+import { qionglong } from "./qionglong.js";
 
 export const BUILDINGS_BY_LOCATION = {
   蜀南唐堡: shunanTangbao,
@@ -34,4 +38,8 @@ export const BUILDINGS_BY_LOCATION = {
   黑风寨: heifeng,
   大草甸: dacaodian,
   天龙营: tianlongying,
+  打箭炉: dajianlu,
+  丹霞城: danxiacheng,
+  焚风渡: fenfengdu,
+  琼隆古墟: qionglong,
 };

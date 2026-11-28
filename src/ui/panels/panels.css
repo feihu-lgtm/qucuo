@@ -1001,6 +1001,11 @@
 .building-art {
   margin: 0 0 12px;
 }
+.building-art--centered {
+  flex-shrink: 0;
+  align-self: center;
+  width: min(100%, 360px);
+}
 .building-art img {
   display: block;
   width: 100%;

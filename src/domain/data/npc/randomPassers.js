@@ -16,8 +16,8 @@ const SMALL_PLACES = new Set(["山洞", "顶峰"]);
 const HAN_SURNAMES = ["王", "李", "张", "刘", "陈", "杨", "赵", "周", "吴", "徐", "孙", "马", "胡", "郭", "何", "高", "郑", "梁", "宋", "谢", "韩", "冯", "邓", "曹", "彭", "曾", "肖", "田", "蒋", "袁"];
 const HAN_MALE = ["大山", "长贵", "守义", "文远", "铁柱", "德福", "有才", "明远", "子安", "春生", "石头", "世昌", "永年", "三娃", "满仓", "茂林", "广财", "金水"];
 const HAN_FEMALE = ["秀英", "桂兰", "翠花", "玉珍", "小莲", "春梅", "月娥", "素芬", "巧云", "凤仙", "银杏", "招娣"];
-const TIBETAN_MALE = ["次仁", "多吉", "顿珠", "平措", "尼玛", "达瓦", "贡布", "洛桑", "强巴", "索南", "格勒", "群培"];
-const TIBETAN_FEMALE = ["央金", "卓嘎", "德吉", "拉姆", "曲珍", "白玛", "旺姆", "措姆", "仁青", "益西"];
+const TIBETAN_MALE = ["次仁", "多吉", "顿珠", "平措", "尼玛", "达瓦", "贡布", "洛桑", "强巴", "索南", "格勒", "群培", "扎西", "旺堆", "赤列", "巴桑", "班觉", "塔杰"];
+const TIBETAN_FEMALE = ["央金", "卓嘎", "德吉", "拉姆", "曲珍", "白玛", "旺姆", "措姆", "仁青", "益西", "桑姆", "卓玛", "达珍", "康卓", "梅朵", "拉珍", "格桑", "次珍"];
 const MIAO_SURNAMES = ["龙", "吴", "杨", "石", "麻", "滕"];
 const MIAO_MALE = ["阿龙", "阿岩", "阿保", "阿松", "阿牛", "阿勇"];
 const MIAO_FEMALE = ["阿朵", "阿妹", "阿香", "阿银", "阿娇", "阿翠"];
@@ -92,6 +92,18 @@ const ROLES = {
     { role: "古墟守碑人", art: "ruins-steward", level: [1, 2], culture: "han", gender: "男", personality: "守着广汉古墟的三星派门人，话少，问起地底下的事就岔开" },
     { role: "拓碑弟子", art: "rubbing-disciple", level: [1, 1], culture: "han", personality: "背着拓包和纸卷，满手墨灰，见了青铜残片眼睛就发亮" },
   ],
+  萨迦世家: [
+    { role: "萨迦护院僧", art: "sajia-house-monk", level: [1, 2], culture: "tibetan", gender: "男", personality: "身穿三色花纹法袍在庄园巡守，说话慢条斯理却带着半个衙门的威势" },
+    { role: "溪卡交租庄户", art: "sajia-rent-farmer", level: [0, 1], culture: "tibetan", personality: "赶着驮青稞和红盐的骡子去丹霞外城交租，逢人便叹今年盐井收成" },
+  ],
+  噶举山人: [
+    { role: "白衣苦行僧", art: "gaju-white-ascetic", level: [1, 2], culture: "tibetan", gender: "男", personality: "隆冬亦只穿单层白布僧衣，周身隐隐透出热气，走路像踩着河谷焚风" },
+    { role: "渡口牧夫", art: "gaju-ferry-herder", level: [0, 1], culture: "tibetan", personality: "替噶举白门放牧纯白牦牛，也兼着撑牛皮筏子渡人过狼曲" },
+  ],
+  古象雄苯门: [
+    { role: "左旋黑衣武士", art: "bon-black-guard", level: [1, 2], culture: "tibetan", gender: "男", personality: "腰插天铁钢钎，转经必定逆时针左旋，遇上顺转喇嘛就要瞪眼" },
+    { role: "天铁矿工", art: "bon-ore-miner", level: [0, 1], culture: "tibetan", gender: "男", personality: "背着沉甸甸的雪山陨铁矿袋下山，满手黑灰却护着腰间的黑铜牌" },
+  ],
   散人: [
     { role: "流民", art: "displaced-traveler", level: [0, 0], personality: "逃荒来的，只想找口饭吃，对谁都提防" },
     { role: "独行游侠", art: "lone-wanderer", level: [1, 2], personality: "无门无派，仗剑独行，最不把旁人当回事" },
@@ -101,11 +113,11 @@ const ROLES = {
 };
 
 // 每个节点：[势力, 权重] 与人数区间。势力腹地以自家人为主，商路要冲混杂。
-const NODE_PASSERS = {
+export const NODE_PASSERS = {
   鱼定村: { count: [2, 4], factions: [["鱼定村", 3], ["鱼定土司府", 2], ["玉泉寨", 1], ["喇嘛庙", 1], ["散人", 2]] },
   鱼定土司: { count: [1, 3], factions: [["鱼定土司府", 4], ["鱼定村", 1], ["散人", 1]] },
   喇嘛庙: { count: [1, 3], factions: [["喇嘛庙", 4], ["散人", 1]] },
-  白塔: { count: [1, 3], factions: [["喇嘛庙", 3], ["雪山派", 1], ["散人", 1]] },
+  白塔: { count: [1, 3], factions: [["喇嘛庙", 3], ["古象雄苯门", 1], ["雪山派", 1], ["散人", 1]] },
   后山平台: { count: [1, 3], factions: [["雪山派", 3], ["喇嘛庙", 1], ["散人", 1]] },
   雪山派: { count: [1, 3], factions: [["雪山派", 4], ["散人", 1]] },
   山洞: { count: [0, 1], factions: [["散人", 1]] },
@@ -121,21 +133,26 @@ const NODE_PASSERS = {
   天龙营: { count: [1, 3], factions: [["天龙教", 5], ["散人", 1]] },
   雾隐寨: { count: [1, 3], factions: [["五仙教", 4], ["百花门", 1], ["散人", 1]] },
   蜀南唐堡: { count: [1, 3], factions: [["唐门", 4], ["散人", 1]] },
+  打箭炉: { count: [2, 4], factions: [["萨迦世家", 2], ["噶举山人", 1], ["古象雄苯门", 1], ["青城派", 1], ["散人", 3]] },
+  丹霞城: { count: [2, 4], factions: [["萨迦世家", 5], ["喇嘛庙", 1], ["散人", 1]] },
+  焚风渡: { count: [2, 4], factions: [["噶举山人", 5], ["玉泉寨", 1], ["散人", 1]] },
+  琼隆古墟: { count: [2, 4], factions: [["古象雄苯门", 5], ["散人", 1]] },
 };
 
 // ── OC 冒险者游走层 ──────────────────────────────────────────────
 // 77 名 OC 冒险者在全图游走可被偶遇：势力就近落点（本地派系回自家权重池，
 // 外来门派无处落脚的按散人游走），每天每节点至多撞见一位，seeded 可复现。
 const OC_POOL = [...ADVENTURER_POOL, ...ADVENTURER_POOL_IP];
-const OC_FACTION_NEAR = {
+export const OC_FACTION_NEAR = {
   锦官: "锦官城", 锦官城: "锦官城", 锦官派: "锦官城", 峨眉: "峨眉派", 青城: "青城派",
   唐门: "唐门", 天龙: "天龙教", 天龙门: "天龙教", 血刀: "天龙教", 丐帮: "丐帮三星分舵",
   三星堆: "三星派", 三星: "三星派", 五仙: "五仙教", 五仙教: "五仙教", 五毒: "五仙教", 五毒教: "五仙教",
   百花: "百花门", 百花门: "百花门", 百花谷: "百花门", 雪山: "雪山派", 天山: "雪山派", 天山派: "雪山派",
   喇嘛: "喇嘛庙", 喇嘛庙: "喇嘛庙", 玉泉: "玉泉寨", 巫山: "玉泉寨", 巫山派: "玉泉寨",
   黑风: "黑风寨", 黑风寨: "黑风寨", 欢喜: "欢喜教", 欢喜教: "欢喜教", 鱼定: "鱼定土司府", 土司: "鱼定土司府",
+  萨迦: "萨迦世家", 萨迦世家: "萨迦世家", 噶举: "噶举山人", 噶举山人: "噶举山人", 苯门: "古象雄苯门", 古象雄苯门: "古象雄苯门",
 };
-const ocNearFaction = (adv) => OC_FACTION_NEAR[adv.faction] || "散人";
+export const ocNearFaction = (adv) => OC_FACTION_NEAR[adv.faction] || "散人";
 // 每天每节点撞见 OC 的基础概率：稀有事件，不是天天有人撞大运
 const OC_WANDER_RATE = 0.14;
 
@@ -144,7 +161,7 @@ export function ocWanderersAt(locationName, dayIdx, isTaken = () => false) {
   const cfg = NODE_PASSERS[locationName];
   if (!cfg) return [];
   const near = Object.fromEntries(cfg.factions);
-  const candidates = OC_POOL.filter((adv) => near[ocNearFaction(adv)] != null && !isTaken(adv.name));
+  const candidates = OC_POOL.filter((adv) => !adv.homeDistrict && near[ocNearFaction(adv)] != null && !isTaken(adv.name));
   if (!candidates.length) return [];
   const rng = seededRand(dayIdx, `ocWander|${locationName}`);
   if (rng() >= OC_WANDER_RATE) return [];
@@ -196,7 +213,7 @@ function isReserved(name) {
 
 // 一天的全图名单一起排，同一天各节点不重名；reserved 是调用方要避开的名字
 // （玩家认识的人、导入角色卡），名字撞上就重抽，免得好感度、认识记录串到别人身上。
-function passersAt(locationName, dayIdx, used, isTaken) {
+function passersAt(locationName, dayIdx, used, isTaken, ocPositions = null) {
   const cfg = NODE_PASSERS[locationName];
   const rng = seededRand(dayIdx, `passers|${locationName}`);
   const [lo, hi] = cfg.count;
@@ -228,8 +245,26 @@ function passersAt(locationName, dayIdx, used, isTaken) {
       passerArt: `passer-${role.art}${role.gender ? "" : gender === "男" ? "-male" : "-female"}`,
     });
   }
-  // OC 冒险者日刷游走：同名已被占（玩家认识/驻场/别处刷出）就让位
-  for (const oc of ocWanderersAt(locationName, dayIdx, isTaken)) {
+  // OC 冒险者游走：名册模式（ocPositions 持久游走册，大肥鱼跑路案后唯一正路）下
+  // 位置落盘不再按日重掷；旧日刷口径只留作无册兜底（路遇等瞬态场景沿用）。
+  const ocList = ocPositions
+    ? ADVENTURER_POOL_IP
+        // 名册 OC 是本尊唯一身：玩家认识他之后照样刷出（好感正主就是他），
+        // 不适用日抛龙套的撞名回避——Reviewer 实证：认识后 isTaken 永久排斥致其人间蒸发
+        .filter((adv) => !adv.homeDistrict && ocPositions[adv.name]?.at === locationName)
+        .map((adv) => ({
+          id: `oc_${adv.id}`,
+          name: adv.name,
+          brief: adv.brief,
+          personality: adv.personality,
+          faction: ocNearFaction(adv),
+          gender: adv.gender,
+          levelCap: adv.levelCap,
+          ocAdventurer: adv.id,
+          ocWanderer: true,
+        }))
+    : ocWanderersAt(locationName, dayIdx, isTaken);
+  for (const oc of ocList) {
     used.add(oc.name);
     out.push(oc);
   }
@@ -262,13 +297,13 @@ export function makeRoadPasser(faction, rng, isTaken = () => false) {
 }
 
 // 给定节点名 + 游戏时间 → 今天在此的随机过路人（纯函数，同日同地、同一组 reserved 结果一致）
-export function getRandomPassers(locationName, time, reserved = new Set()) {
+export function getRandomPassers(locationName, time, reserved = new Set(), ocPositions = null) {
   if (!NODE_PASSERS[locationName]) return [];
   const dayIdx = Math.floor(time / 24);
   const used = new Set();
   const isTaken = (name) => used.has(name) || isReserved(name) || reserved.has(name);
   for (const node of Object.keys(NODE_PASSERS)) {
-    const list = passersAt(node, dayIdx, used, isTaken);
+    const list = passersAt(node, dayIdx, used, isTaken, ocPositions);
     if (node === locationName) return list;
   }
   return [];

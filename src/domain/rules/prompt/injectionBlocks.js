@@ -41,7 +41,7 @@ export const INJECTION_PATHS = {
       { id: "catalog", name: "曲措乡物件志", kind: "gated", depth: 8,
         summary: "全物品目录 describeCatalogForAI()。仅本轮可能发物时挂(拾取命中/战斗/创造模式)，寻常行动轮灭灯防诱导发物。" },
       { id: "isolation", name: "NPC 认知隔离(硬规则)", kind: "engine", depth: 9,
-        summary: "为每个在场 NPC 划已知/可知/不可知信息域，甲知道的乙不能无端知道。move/settle 之外都挂。" },
+        summary: "为每个在场 NPC 划已知/可知/不可知信息域，甲知道的乙不能无端知道。全 scope 常驻保前缀缓存。" },
       { id: "map_law", name: "地图铁律", kind: "engine", depth: 10,
         summary: "固定地图，不能造新据点/改出口，room.name 与 exits 系统强制覆盖，AI 只负责场景描述。" },
       { id: "schema", name: "输出 JSON schema + MVU", kind: "engine", depth: 11,
@@ -227,9 +227,7 @@ export function blocksForAction(actionId, mode = "single") {
       else if (scope !== "full") { lit = false; off = `scope=${scope}，非全量档不挂物件志`; }
       else if (view.id === "explore" || view.id === "meta") { lit = false; off = "本轮无拾取判定命中，灭灯防诱导发物（战斗/创造模式才常亮）"; }
     }
-    if (b.id === "isolation" && (scope === "move" || scope === "settle")) {
-      lit = false; off = scope === "move" ? "移动轮无 NPC 对白博弈，砍掉" : "结算轮 AI 无状态裁量权，砍掉";
-    }
+    // isolation 常驻全 scope 以稳定前缀缓存，不再按 move/settle 灭灯
     if (b.id === "npc_lore" && (scope === "move" || scope === "settle")) {
       lit = false; off = "绿灯：本轮无在场者需注入人设";
     }

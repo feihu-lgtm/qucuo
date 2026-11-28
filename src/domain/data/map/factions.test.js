@@ -4,8 +4,8 @@ import { FACTION_NAMES, FACTIONS } from "./factions.js";
 import { QUCUO_MAP } from "./qucuoMap.js";
 
 describe("FACTIONS", () => {
-  it("lists the 16 factions of the design roster, matching the NPC faction tags", () => {
-    expect(FACTION_NAMES).toHaveLength(16);
+  it("lists the 19 factions of the design roster, matching the NPC faction tags", () => {
+    expect(FACTION_NAMES).toHaveLength(19);
     expect([...FACTION_NAMES].sort()).toEqual(Object.values(FACTION).sort());
   });
 

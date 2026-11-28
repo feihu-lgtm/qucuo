@@ -22,7 +22,7 @@ export default { district: {
         // 属性门：内功≥100 才能强行破门进入。地图上可见按钮，
         // 点击时判定属性，不够则提示失败。
         unlockCondition: { type: "stat", stat: "neigong", threshold: 100 },
-        buildingId: "gongcuo_submerged_vault",
+        // 名册外 legacy 地宫入口已清退（2026-11 名册归一）：本房保留为纯任务空间
         // WO-22B-P2：悬空秘宝《寒潭剑谱》的落点容器——前辈剑修遗物的沉水之函。
         // 不写 presetItems：函中无剧本写死之物，真品由判官第三关悬空秘宝落定签发。
         containers: [

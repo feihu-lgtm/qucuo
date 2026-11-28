@@ -6,6 +6,7 @@ import { invalidAmountResult, noOpResult, isPositiveAmount } from "./helpers.js"
 const TRANSPORT_PRICES = {
   鱼定村: 5, 鱼定土司: 5, 喇嘛庙: 5, 白塔: 8, 后山平台: 8, 玉泉寨: 5, 大草甸: 5, 贡措海: 8,
   天都镇: 5, 锦官城: 15, 雪山派: 12,
+  打箭炉: 8, 丹霞城: 8, 焚风渡: 10, 琼隆古墟: 10,
 };
 
 export const getPriceForDest = (dest) => TRANSPORT_PRICES[dest] || 10;

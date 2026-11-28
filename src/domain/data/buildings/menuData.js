@@ -43,4 +43,12 @@ export const SERVICE_MENUS = {
     { name: "干粮包", price: 5, buff: "体魄", val: 1, duration: 20, desc: "压缩的行路口粮，吃了体力略有回升。" },
     { name: "高原人参", price: 40, buff: "体魄", val: 2, duration: 100, desc: "高原特产的药材，效力持久，体质明显增强。" },
   ],
+  牦牛骨汤馆: [
+    { name: "奶白牦牛筒骨汤", price: 12, buff: "体魄", val: 2, duration: 50, desc: "铜锅滚煮一整夜的浓汤，驱寒补气，喝完整个人暖得像炉火。" },
+    { name: "康定红酒烫锅", price: 16, buff: "根骨", val: 2, duration: 45, desc: "当地青稞红酒配熏羊杂，辣中带甘，抗寒耐打一绝。" },
+  ],
+  烈火铜锅肆: [
+    { name: "炙烤白牦牛肋排", price: 15, buff: "体魄", val: 2, duration: 55, desc: "炭火现烤的河谷白牦牛排骨，撒满野花椒盐，吃了浑身是劲。" },
+    { name: "焚风青稞烈酒", price: 10, buff: "身法", val: 1, duration: 40, desc: "干热河谷酿出的烈性烧酒，一口下去如吞焚风。" },
+  ],
 };

@@ -342,4 +342,67 @@ describe("runBookkeepAfterTurn", () => {
     });
     expect(getLedger(gameStore.getState().varTree, "阿旺").lines).toEqual(["收钱办事", "刀光一闪"]);
   });
+
+  it("short-circuits under judgePipelineActive on pure talk template memory or routine casual talk", async () => {
+    const ai = { chat: vi.fn() };
+    const zeroFactTalk = await runBookkeepAfterTurn({
+      ctx: { ai, apiCfg: {}, ...storeAccess() },
+      turn: {
+        narrativeText: "两人随便寒暄了两句。",
+        judgePipelineActive: true,
+        p: { memory: "玩家对阿旺说：今天天气不错" },
+        judgeEffects: { verdict: { facts: [] }, materialized: { receipts: [] } },
+      },
+      opts: {},
+    });
+    const casualTalkFact = await runBookkeepAfterTurn({
+      ctx: { ai, apiCfg: {}, ...storeAccess() },
+      turn: {
+        narrativeText: "两人多聊了几句家常。",
+        judgePipelineActive: true,
+        p: { memory: "MUTATE_SOCIAL·阿旺·搭话投机" },
+        judgeEffects: {
+          verdict: { facts: [{ op: "MUTATE_SOCIAL", npc: "阿旺", affectionDelta: 1, reason: "搭话投机" }] },
+          materialized: { receipts: [] },
+        },
+      },
+      opts: {},
+    });
+    expect(zeroFactTalk).toBeNull();
+    expect(casualTalkFact).toBeNull();
+    expect(ai.chat).not.toHaveBeenCalled();
+  });
+
+  it("still runs bookkeep under judgePipelineActive when talk discloses secret or seals spontaneous pact", async () => {
+    const ai = createMockAi([
+      '{"ledger":{"阿旺":["听闻秘闻"]}}',
+      '{"ledger":{"阿旺":["约定三日后再聚"]}}',
+    ]);
+    await runBookkeepAfterTurn({
+      ctx: { ai, apiCfg: {}, ...storeAccess() },
+      turn: {
+        narrativeText: "少侠把秘密相告。",
+        judgePipelineActive: true,
+        p: { memory: "MUTATE_SOCIAL·阿旺·透露秘闻" },
+        judgeEffects: {
+          verdict: { facts: [{ op: "MUTATE_SOCIAL", npc: "阿旺", affectionDelta: 1, reason: "透露秘闻" }] },
+        },
+      },
+      opts: {},
+    });
+    await runBookkeepAfterTurn({
+      ctx: { ai, apiCfg: {}, ...storeAccess() },
+      turn: {
+        narrativeText: "两人一言为定。",
+        judgePipelineActive: true,
+        p: { memory: "玩家对阿旺说：三日后镇口见" },
+        judgeEffects: {
+          verdict: { facts: [] },
+          sealReport: { sealData: { spontaneousPact: { summary: "三日后相见" } } },
+        },
+      },
+      opts: {},
+    });
+    expect(getLedger(gameStore.getState().varTree, "阿旺").lines).toEqual(["听闻秘闻", "约定三日后再聚"]);
+  });
 });

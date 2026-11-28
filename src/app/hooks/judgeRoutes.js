@@ -16,6 +16,11 @@ import { consumableOfItem } from "../../domain/data/items/catalogOps.js";
 import { QUCUO_MAP, resolveExit, isNodeUnlocked } from "../../domain/data/map/qucuoMap.js";
 import { visibleInnerExits, getDistrictAnchor, hasInnerMap, resolveInnerExit } from "../../domain/rules/map/innerMap.js";
 import { serializeSquares } from "../../domain/rules/map/mapSquares.js";
+import { completedQuestIdSet, matchPlaceName, mentionsPlaceName, resolveBuildingIntent } from "../../domain/rules/map/placeIntent.js";
+import { setActiveBuilding } from "../../store/sessionUiStore.js";
+
+// 地名匹配纯函数已下沉到 domain/rules/map/placeIntent.js（#670 两条回合链共用），此处转出保持旧引用。
+export { matchPlaceName, mentionsPlaceName };
 
 // S7 move 路由：intake.direction（n/s/e/w）直接消费，不从长文本重猜。
 const VALID_DIRS = new Set(["n", "s", "e", "w"]);
@@ -31,15 +36,6 @@ function stripTurnSpan(res) {
   return { ...res, changes: restChanges };
 }
 
-// D4：已完成任务集合（questProgress status === "completed"）——与 features/map 同口径。
-function completedQuestIdSet(questProgress) {
-  const out = new Set();
-  for (const [id, q] of Object.entries(questProgress || {})) {
-    if (q?.status === "completed") out.add(id);
-  }
-  return out;
-}
-
 // D4 目的地名解析纯函数：move 复用 target 填地名（不加 schema 键）。
 // 返回{type} 分派：
 //   inner       同据点内层相邻房间（含「回村/出去/去村口」命中内层出口）→ dir 走 innerMove
@@ -50,28 +46,6 @@ function completedQuestIdSet(questProgress) {
 //   locked      相邻但 !isNodeUnlocked——前路未开启
 // 地名匹配（Review 修）：先精确，再唯一子串——玩家/模型常写短名（「饭馆」→「老孙饭馆」、
 // 「草甸」→「大草甸」），精确不等就拒太硬；但子串命中多个候选（如「庙」）时宁可 unknown 不猜。
-export function matchPlaceName(target, candidates, { exactOnly = false } = {}) {
-  if (!target) return "";
-  const list = [...candidates].filter(Boolean);
-  if (list.includes(target)) return target;
-  if (exactOnly) return "";
-  if (target.length < 2) return "";
-  // Review 二轮修：只认「短名含于全名」（饭馆⊂老孙饭馆、草甸⊂大草甸），
-  // 不认反向——「大草甸营地」「山门施药棚」是更长的新名/虚构名，含了真名也不许别名过去。
-  const hits = list.filter((name) => name !== target && name.includes(target));
-  return hits.length === 1 ? hits[0] : "";
-}
-
-// 原话点名判定：子串命中且后一个字不是建物后缀——「大草甸营地」里的「大草甸」
-// 不算点名（整词是另一地名），incidental 提及不误当目的地。
-const PLACE_SUFFIX_RE = /[营寨馆楼村庄镇城山谷甸滩口坪院宅府棚帐行店铺栈]/;
-export function mentionsPlaceName(text, name) {
-  const idx = String(text || "").indexOf(name);
-  if (idx < 0) return false;
-  const nextCh = String(text)[idx + name.length] || "";
-  return !(nextCh && PLACE_SUFFIX_RE.test(nextCh));
-}
-
 export function resolveMoveTarget(state, action) {
   const text = String(action?.text || "");
   const targetRaw = String(action?.target || "").trim();
@@ -81,6 +55,12 @@ export function resolveMoveTarget(state, action) {
   const roomName = state?.room?.name || "";
   const innerNow = state?.innerRoomName ?? null;
   const unlockCtx = { completedQuests: completedQuestIdSet(state?.questProgress), flags: state?.flags || [] };
+
+  // #670：原话点名本据点的建筑（「进断鞍古驿」）——进门优先于同名内层房与地名核验。
+  // 只说「去/到」某建筑所在的相邻房时维持原内层移动，不开门。
+  const buildingIntent = resolveBuildingIntent(state, text || (target ? `进${target}` : ""));
+  if (buildingIntent?.type === "approach" && !buildingIntent.wantsEnter) return { type: "inner", dir: buildingIntent.dir };
+  if (buildingIntent) return { type: "building", intent: buildingIntent };
 
   // V2 出村防劫持：原话明确点名某个外层据点（非当前据点）时，外层据点第一优先——
   // 即使 intake 把 target 填成同方向内层房（「离开鱼定村去大草甸」target 被写成
@@ -181,6 +161,28 @@ export function resolveMoveTarget(state, action) {
   return { type: "outer", dir: hitDir, dest: destName };
 }
 
+// #670 进建筑：在眼前就开门；隔一间房先按 innerMove 同一套账走到门前再开门；
+// 更远只回执所在位置，不编位移。开门只是打开建筑界面，不写任何状态账。
+function runBuildingEntry(state, intent, action) {
+  const b = intent.building;
+  const opened = { ...b, district: intent.district };
+  if (intent.type === "enter") {
+    setActiveBuilding(opened);
+    return { kind: "move", ok: true, text: `玩家已走进「${b.name}」，系统已打开该处界面；正文只写走到门前、入内的一两句，不写里面的交易、战斗或事件。` };
+  }
+  if (intent.type === "approach") {
+    const result = innerMove(state, { direction: intent.dir, command: action?.text || intent.dir, includeCommand: false });
+    if (result?.changes?.innerRoomName) {
+      applyResult(featureCtx(), stripTurnSpan(result), { feature: "judgeRoute.move" });
+      setActiveBuilding(opened);
+      return { kind: "move", ok: true, text: `你已走到${result.changes.innerRoomName}并进入「${b.name}」——系统已结算位置并打开该处界面；正文只写走过去、入内的几句。` };
+    }
+    return { kind: "move", ok: false, text: `去不了「${b.name}」（通往${intent.innerRoom}的路走不通），系统未移动，叙事不得写成已进入。` };
+  }
+  const where = intent.innerRoom ? `${intent.district}的「${intent.innerRoom}」` : intent.district;
+  return { kind: "move", ok: false, text: `「${b.name}」在${where}，离此处还隔着几间房，系统未移动；正文可写玩家望见方向、尚未走到，严禁写成已进入。` };
+}
+
 // 移动确定性路由：内层复用 features/map innerMove（锁门/无出口/新人物/lastSeen 同一套账），
 // 外层复用 outerArrival（格子缓存/路遇/拾取同一套账）——写账都走 applyResult 单边界，
 // 都 stripTurnSpan 剥 time/convo 防与 commitRound 双跑。系统移动回合由 judgePhase
@@ -189,6 +191,7 @@ function runMove(action) {
   const state = gameStore.getState();
   const res = resolveMoveTarget(state, action);
 
+  if (res.type === "building") return runBuildingEntry(state, res.intent, action);
   if (res.type === "unknown") {
     return { kind: "move", ok: false, text: `去不了「${res.target || "彼处"}」（曲措乡并无此去处或方向不明），系统未移动，严禁编造新地名或写成已离开原地。` };
   }

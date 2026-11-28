@@ -68,6 +68,12 @@ const ENTRY_WHITELIST = new Set([
   // 势力冲突/NPC 自动对战纯领域规则（原由 cli/npc-conflict.mjs 调用），CLI 退役后保留领域实现待 web 接线。
   "domain/rules/conflict/npcAutoBattle.js",
   "domain/rules/conflict/tension.js",
+  // WO-25A 活世界场记板规范化出口：纯函数先落库，WO-25B actCall 11 号位接线后从此名单摘掉。
+  "domain/rules/clapboard/livingEntries.js",
+  // WO-25C 活世界五表底座：注册内核与扩展包聚合入口先落库不接运行时（工单明确），
+  // WO-25D/E 内核消费与 WO-25G 首批数据包接线后从此名单摘掉。
+  "domain/rules/livingWorld/worldRegistry.js",
+  "domain/data/livingWorld/index.js",
 ]);
 
 function walkSource(dir, out = []) {

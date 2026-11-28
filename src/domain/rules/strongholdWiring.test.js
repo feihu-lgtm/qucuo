@@ -23,7 +23,7 @@ import { EFFECT_CN } from "./economy/itemEffectText.js";
 const ALL_DISTRICTS = Object.keys(QUCUO_MAP);
 // 无人区：按设计就不该有常驻NPC（纯景观/传送/剧情场景）
 const UNPEOPLED_BY_DESIGN = new Set([
-  "白塔", "后山平台", "第三新东京市", "心灵之海", "山洞", "贡措海",
+  "后山平台", "第三新东京市", "心灵之海", "山洞", "贡措海",
 ]);
 const QUALITY_RANK = { 白: 0, 绿: 1, 蓝: 2, 紫: 3, 橙: 4, 红: 5 };
 
@@ -339,11 +339,12 @@ describe("BUG3 地名别名过期：打「去锦官城」不能走到雅江去",
     expect(parseDir("锦官城")).toBe(null);
   });
 
-  it("出乡是一路向东：曲措乡 → 雅江 → 锦官城（地名别名当年就是这么过期的）", () => {
-    expect(QUCUO_MAP["鱼定村"].exits.e).toBe("雅江");
+  it("出乡是一路向东：曲措乡 → 打箭炉 → 雅江 → 锦官城（地名别名当年就是这么过期的）", () => {
+    expect(QUCUO_MAP["鱼定村"].exits.e).toBe("打箭炉");
+    expect(QUCUO_MAP["打箭炉"].exits.e).toBe("雅江");
     expect(QUCUO_MAP["雅江"].exits.e).toBe("锦官城");
-    expect(QUCUO_MAP["雅江"].exits.w).toBe("鱼定村");
-    // 雅江的描述写着「出西门行三日便是曲措乡界」，西边必须真的是曲措乡
+    expect(QUCUO_MAP["雅江"].exits.w).toBe("打箭炉");
+    // 雅江的描述写着「出西门行三日便是曲措乡界」，西边必须经打箭炉回曲措乡
     expect(QUCUO_MAP["雅江"].desc).toContain("出西门");
   });
 

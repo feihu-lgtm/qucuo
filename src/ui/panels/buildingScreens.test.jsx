@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { renderToStaticMarkup } from "react-dom/server";
 import { BUILDING_SCREENS } from "./buildingScreens.jsx";
 import { BUILDING_TYPE } from "../../domain/data/buildings/qucuoBuildings.js";
 import TradingScreen from "../screens/TradingScreen.jsx";
@@ -41,6 +42,16 @@ describe("BUILDING_SCREENS 覆盖", () => {
     for (const key of Object.keys(BUILDING_SCREENS)) {
       expect(known.has(key), key).toBe(true);
     }
+  });
+});
+
+describe("店铺建筑专图", () => {
+  it("在专图店铺的交易面板显示头图，普通交易不显示通用建筑图", () => {
+    const renderShop = (id) => renderToStaticMarkup(BUILDING_SCREENS[BUILDING_TYPE.SHOP](makeCtx({
+      building: { id, type: BUILDING_TYPE.SHOP, name: "雪域珍宝行", shopKey: "雪域珍宝行" },
+    })));
+    expect(renderShop("shop_dajianlu")).toContain('src="/art/building/shop_dajianlu.webp"');
+    expect(renderShop("not_registered")).not.toContain("/art/building/");
   });
 });
 

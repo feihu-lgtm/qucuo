@@ -9,16 +9,19 @@ const ALL = { ...DUNGEON_DISTRICTS, ...DUNGEON_DISTRICTS_EXTRA };
 const KINDS = ["fight", "event", "nsfw", "supply", "loot", "watch", "meet", "appraise", "puzzle", "checkpoint"];
 const PUZZLE_TYPES = new Set(["sequenceReset", "recipeCraft", "pushPull", "timedAgility"]);
 const ENV_TAGS = new Set([
-  "baitaPrayerWheel", "huanjingSpore", "sanxingduiPatrol", "shuwangPhosphor", "xueshanWindchill",
-  "wuxianVenom", "yajiangRope", "tianlongSeal", "tangGear", "huanxiDesire", "tusiWatch",
+  "baitaPrayerWheel", "huanjingSpore", "sanxingduiPatrol", "shuwangPhosphor",
+  "wuxianVenom", "yajiangRope", "tianlongSeal", "tusiWatch",
 ]);
 
-describe("十宫配置数据", () => {
-  it("十宫齐全且鱼定土司内府禁库独立挂载", () => {
-    expect(Object.keys(ALL)).toHaveLength(10);
-    expect(Object.keys(DUNGEON_DISTRICTS)).toHaveLength(5);
-    expect(Object.keys(DUNGEON_DISTRICTS_EXTRA)).toHaveLength(5);
+describe("八宫名册配置数据", () => {
+  it("钦定八宫名册齐全且鱼定土司内府禁库独立挂载（名册外 legacy 已清退）", () => {
+    expect(Object.keys(ALL)).toHaveLength(7);
+    expect(Object.keys(DUNGEON_DISTRICTS)).toHaveLength(4);
+    expect(Object.keys(DUNGEON_DISTRICTS_EXTRA)).toHaveLength(3);
     expect(DUNGEON_DISTRICTS_ALL["鱼定土司内府禁库"]).toBeDefined();
+    // 名册唯一真源：八宫 key 与 displayName 一致
+    expect(Object.keys(DUNGEON_DISTRICTS_ALL).sort()).toEqual(
+      ["白塔地宫", "断鞍古驿", "沉沙古坞", "锦官鬼市", "归墟青铜宫", "鱼定土司内府禁库", "五仙百毒禁谷", "摩呼罗迦蛇窟"].sort());
   });
 
   it.each(Object.entries(ALL))("%s 字段齐整且十类落位齐全", (name, d) => {
@@ -34,9 +37,9 @@ describe("十宫配置数据", () => {
     for (const k of KINDS) expect(kinds, `${name} 缺 ${k}`).toContain(k);
   });
 
-  it("envTag 十宫不重复", () => {
+  it("envTag 七宫不重复", () => {
     const tags = Object.values(ALL).map((d) => d.envTag);
-    expect(new Set(tags).size).toBe(10);
+    expect(new Set(tags).size).toBe(7);
   });
 });
 

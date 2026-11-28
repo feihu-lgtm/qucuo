@@ -7,59 +7,124 @@ import { reembedStaleNotes } from "../ports/noteMemory.js";
 import { createWebAi } from "../ports/ai.js";
 import { withAI } from "../ports/withAI.js";
 
-// 信息领域·知识系统（代码驱动）：每回合由代码确定性推演"谁知道什么"——
-// 同框传播 + 传闻淡忘（见 knowledge.js）。推演产物是"待补摘要"——在场者涉及、
-// 但账上还没有一句话描述的事实。此时才把 AI 当工具点一下：发一个独立小 prompt
-// 要一句话，收回来存进账里（agents 式：代码调度，AI 填词）。最后据此账生成
-// 【信息域】硬约束块注入主剧情，让 NPC 言行严格符合各自知情状态。
-// 请求段无副作用：返回 { infoDomainBlock, kTree }，由 act 统一 setVarTree 提交
-// （本回合状态的一部分，失败会随整体回滚）。
-// 注意：必须读 act 传来的最新 varTree（varTreeRef 的值）：哪怕 act 是旧闭包
-// （切磋结算后 setTimeout 调来的），evolveKnowledge 也基于最新状态推演——否则
-// 推演结果整体覆盖写回时会把刚进账的认识/好感度更新冲掉（"交情已加但仍显示
-// 尚未认识"bug 的根源，见 varTreeRef 注释）。
-// infoDomainNpcNames：【信息域】只列此刻喂给 AI 的在场者（内层房间过滤后+随行伙伴）；
-// 知识传播也只能在这批人之间发生——拿据点全员走会让别的内层房间的人隔空
-// "教会"本房 NPC，信息域就会点出一个本轮没听过、却忽然知情的名字。
-export async function runKnowledgeTurn({ varTreeLatest, roomNpcNames, infoDomainNpcNames = roomNpcNames, time, apiCfg, flags, ai = createWebAi(), rng }) {
+const MAX_SUMMARY_FAILURES = 5;
+let consecutiveSummaryFailures = 0;
+
+export function _resetSummaryCircuitBreaker() {
+  consecutiveSummaryFailures = 0;
+}
+
+// 同步知识推演：纯函数计算同框传播与淡忘，生成【信息域】约束块与待补摘要事实 ID（<1ms，零网络阻塞）。
+export function evolveKnowledgeSync({ varTreeLatest, roomNpcNames, infoDomainNpcNames = roomNpcNames, time, rng }) {
   const evo = evolveKnowledge(varTreeLatest, { roomNpcNames: infoDomainNpcNames, currentTurn: time, rng });
-  let kTree = evo.varTree;
-  // 按需补摘要（最多 2 条/回合，失败静默——摘要非关键，不阻断游戏）
-  // 内容层优先从向量库召回真旧事据以归纳；召不回才让 AI 现编兜底。
-  const pendingFids = evo.待补摘要.slice(0, 2);
-  if (pendingFids.length) {
-    ensureSideCalls();
-    const settled = await Promise.all(pendingFids.map(async (fid) => {
-      try {
-        // 1) 先拿事实名当查询词，去现成向量库召回相关的真旧事
-        let recallTexts = [];
-        if (embeddingReady(apiCfg)) {
-          const rc = await recallWithVisibility({
-            cfg: apiCfg, queryText: fid, contextText: "",
-            focusEntities: [], unlockedFlags: flags, topK: 3,
-          });
-          recallTexts = (rc?.visible || []).map(v => v.text).filter(Boolean);
-        }
-        // 2) 有命中→据素材归纳（有据不瞎编）；无命中→纯现编兜底（经 withAI 统一出口）
-        const callId = recallTexts.length ? "fact.summaryFromRecall" : "fact.summary";
-        const res = await withAI(
-          callId,
-          { cue: fid, recallTexts },
-          { ai, apiCfg, throwOnError: false },
-        );
-        const line = res.ok ? (res.text || "").trim().split("\n")[0].slice(0, 40) : "";
-        return { fid, line };
-      } catch (_) {
-        /* 补词失败就留空，下回合再试 */
-        return { fid, line: "" };
+  const kTree = evo.varTree;
+  return {
+    infoDomainBlock: buildInfoDomainBlock(kTree, infoDomainNpcNames),
+    kTree,
+    pendingFids: (evo.待补摘要 || []).slice(0, 2),
+  };
+}
+
+async function generateFactSummaries(pendingFids, { apiCfg, flags, ai }) {
+  if (!pendingFids.length) return [];
+  ensureSideCalls();
+  return Promise.all(pendingFids.map(async (fid) => {
+    try {
+      // 1) 先拿事实名当查询词，去现成向量库召回相关的真旧事
+      let recallTexts = [];
+      if (embeddingReady(apiCfg)) {
+        const rc = await recallWithVisibility({
+          cfg: apiCfg, queryText: fid, contextText: "",
+          focusEntities: [], unlockedFlags: flags, topK: 3,
+        });
+        recallTexts = (rc?.visible || []).map(v => v.text).filter(Boolean);
       }
-    }));
-    // 按原始顺序确定性写回 kTree，避免并发乱序
+      // 2) 有命中→据素材归纳（有据不瞎编）；无命中→纯现编兜底（经 withAI 统一出口）
+      const callId = recallTexts.length ? "fact.summaryFromRecall" : "fact.summary";
+      const res = await withAI(
+        callId,
+        { cue: fid, recallTexts },
+        { ai, apiCfg, throwOnError: false },
+      );
+      const line = res.ok ? (res.text || "").trim().split("\n")[0].slice(0, 40) : "";
+      return { fid, line, failed: !res.ok && Boolean(res.error) };
+    } catch (_) {
+      /* 补词失败就留空，下回合再试 */
+      return { fid, line: "", failed: true };
+    }
+  }));
+}
+
+// 后台异步补全待补摘要（finalizeTurn 落盘后 fire-and-forget）：
+// 连续失败 5 次熔断，防止接口异常时后台空转。
+export async function backfillFactSummaries({
+  pendingFids = [],
+  getVarTree,
+  setVarTree,
+  apiCfg,
+  flags,
+  ai = createWebAi(),
+  isStale,
+  subscribeGameReplaced,
+  trace,
+} = {}) {
+  if (!pendingFids.length || typeof setVarTree !== "function") return null;
+  if (consecutiveSummaryFailures >= MAX_SUMMARY_FAILURES) return null;
+  if (isStale?.()) return null;
+
+  const latestBefore = getVarTree?.();
+  const candidates = pendingFids
+    .slice(0, 2)
+    .filter((fid) => fid && !latestBefore?.世界?.知识领域?.事实?.[fid]?.摘要);
+  if (!candidates.length) return null;
+
+  let gameReplaced = false;
+  let unsubscribe = null;
+  try {
+    unsubscribe = subscribeGameReplaced?.(() => { gameReplaced = true; }) ?? null;
+    const settled = await generateFactSummaries(candidates, {
+      apiCfg,
+      flags,
+      ai,
+    });
+    if (isStale?.() || gameReplaced) return null;
+
+    const succeeded = settled.some((s) => Boolean(s.line));
+    const hadFailure = settled.some((s) => s.failed);
+    if (succeeded) {
+      consecutiveSummaryFailures = 0;
+      setVarTree((prev) => {
+        let next = prev;
+        for (const { fid, line } of settled) {
+          if (line && !next?.世界?.知识领域?.事实?.[fid]?.摘要) {
+            next = setFactSummary(next, fid, line);
+          }
+        }
+        return next;
+      });
+    } else if (hadFailure) {
+      consecutiveSummaryFailures += 1;
+    }
+    return settled;
+  } catch (_) {
+    consecutiveSummaryFailures += 1;
+    return null;
+  } finally {
+    unsubscribe?.();
+  }
+}
+
+// 兼容直接调用入口（单测保留）：同步推演 + 按需补摘要。
+export async function runKnowledgeTurn({ varTreeLatest, roomNpcNames, infoDomainNpcNames = roomNpcNames, time, apiCfg, flags, ai = createWebAi(), rng }) {
+  const evo = evolveKnowledgeSync({ varTreeLatest, roomNpcNames, infoDomainNpcNames, time, rng });
+  let kTree = evo.kTree;
+  if (evo.pendingFids.length) {
+    const settled = await generateFactSummaries(evo.pendingFids, { apiCfg, flags, ai });
     for (const { fid, line } of settled) {
       if (line) kTree = setFactSummary(kTree, fid, line);
     }
   }
-  return { infoDomainBlock: buildInfoDomainBlock(kTree, infoDomainNpcNames), kTree };
+  return { infoDomainBlock: buildInfoDomainBlock(kTree, infoDomainNpcNames), kTree, pendingFids: evo.pendingFids };
 }
 
 // 三层记忆·向量召回层（请求段，无副作用）：从长期记忆库里捞出与"当前这句输入 +

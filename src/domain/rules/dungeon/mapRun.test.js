@@ -160,7 +160,7 @@ describe("事件与环境机制", () => {
   });
 
   it("handler 改 envTags 不污染上一份快照（同走法重放不涨层）", () => {
-    const rs0 = startMapRun("大草甸子虚幻境", "spore1");
+    const rs0 = startMapRun("断鞍古驿", "spore1");
     const dir = Object.keys(rs0.map.rooms[rs0.current].exits)[0];
     const a = moveRoom(rs0, dir).runState;
     const b = moveRoom(rs0, dir).runState; // 从同一份快照重放同一走法
@@ -172,7 +172,7 @@ describe("事件与环境机制", () => {
   it("孢子检查点清零后感知减益随之解除", () => {
     // 扫若干 seed 找到可达检查点房，进房前先有 statMod 减益、进后清除
     for (const seed of ["p1", "p2", "p3", "p4", "p5", "p6"]) {
-      let rs = startMapRun("大草甸子虚幻境", seed);
+      let rs = startMapRun("断鞍古驿", seed);
       let found = false;
       let sawDebuff = false;
       const stack = [rs.current];
@@ -396,8 +396,13 @@ describe("7 天周期 · 选入口重进 · 银两黑市 · 奖励箱 · 战斗/
 
   it("normalizeDungeonStore 向下兼容 null / 老格式 / 新包装", () => {
     expect(normalizeDungeonStore(null)).toEqual({ active: null, worlds: {} });
-    const legacy = startMapRun("雪山茫野", "leg");
-    expect(normalizeDungeonStore(legacy).active.districtKey).toBe("雪山茫野");
+    // 名册归一迁移：旧 key 的进行中 run 静默改写成新 key（雪山茫野等清宫则了结为 null）
+    const legacy = startMapRun("断鞍古驿", "leg");
+    const migrated = normalizeDungeonStore({ active: { ...legacy, districtKey: "大草甸子虚幻境" }, worlds: {} });
+    expect(migrated.active.districtKey).toBe("断鞍古驿");
+    const purged = normalizeDungeonStore({ active: { ...legacy, districtKey: "雪山茫野" }, worlds: { 雪山茫野: { seed: "x" } } });
+    expect(purged.active).toBeNull();
+    expect(purged.worlds).toEqual({});
   });
 
   it("商人银两购买清神藏香、焦黄塔道残图并支持典售回银", () => {

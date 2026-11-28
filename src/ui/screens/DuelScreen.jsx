@@ -21,7 +21,8 @@ export { HpBar, EnergyDots } from "./duel/DuelBars.jsx";
 export { MoveButton } from "./duel/MoveButton.jsx";
 export { MoveInspect } from "./duel/MoveInspect.jsx";
 
-export default function DuelScreen({ npc, playerChar, pendingCombatBuff, playerInv, playerMoveset, playerSkills = [], onFinish }) {
+// kind：spar（默认，点到为止的切磋）/ fight（地宫遭遇战）/ boss（镇宫首领战），只影响胜负标语与收尾按钮措辞。
+export default function DuelScreen({ npc, playerChar, pendingCombatBuff, playerInv, playerMoveset, playerSkills = [], onFinish, kind = "spar" }) {
   const b = useDuelBattle({ npc, playerChar, pendingCombatBuff, playerInv, playerMoveset, playerSkills, onFinish });
   const selecting = b.phase === "select";
 
@@ -38,6 +39,7 @@ export default function DuelScreen({ npc, playerChar, pendingCombatBuff, playerI
 
         {/* ── 上半：操作区 ── */}
         <DuelOpPanel
+          kind={kind}
           npc={npc}
           selecting={selecting} phase={b.phase} outcome={b.outcome} error={b.error}
           round={b.round} combatBuff={b.combatBuff}

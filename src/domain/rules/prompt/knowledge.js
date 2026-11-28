@@ -175,7 +175,8 @@ export function buildInfoDomainBlock(varTree, roomNpcNames = []) {
     const f = 领域.事实[fid];
     const 知情 = present.filter(n => f.知晓者[n]);
     if (!知情.length) continue;                       // 在场没人知道这事，略过
-    const 摘要 = f.摘要 || "（内容待定）";
+    if (!f.摘要) continue;
+    const 摘要 = f.摘要;
     // 不再逐个点名"在场但不知情"：表头已裁定未列为知情者一律不知情，点名是重复。
     lines.push(`- 事实「${摘要}」：知情者 ${知情.join("、")}`);
   }

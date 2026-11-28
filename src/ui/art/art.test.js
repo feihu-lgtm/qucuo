@@ -10,12 +10,19 @@ import {
   npcArtUrl,
   placeArtUrl,
   questArtUrl,
+  roomArtUrl,
 } from "./art.js";
 
 describe("按字段查图", () => {
   it("据点按外层名查图，没登记的返回 null", () => {
     expect(placeArtUrl("鱼定村")).toMatch(/art\/place\/L01\.webp$/);
     expect(placeArtUrl("不存在的地方")).toBeNull();
+  });
+
+  it("内层房间按所属据点查专图，不把同名房间或建筑当作场景", () => {
+    expect(roomArtUrl("打箭炉", "折多索桥")).toBe("/art/room/dajianlu-04.webp");
+    expect(roomArtUrl("丹霞城", "折多索桥")).toBeNull();
+    expect(roomArtUrl("打箭炉", "榷茶官栈")).toBeNull();
   });
 
   it("建筑先查个别专图，再查类型图，都没有返回 null", () => {
@@ -59,6 +66,12 @@ describe("按字段查图", () => {
     expect(classifyItemArtKey({ name: "玉器轩断簪", category: "accessory" })).toBe("accessory-hairpin");
     expect(classifyItemArtKey("青稞炒面")).toBe("misc-food");
     expect(itemArtUrl("雪山当归")).toMatch(/art\/item\/misc-herb\.webp$/);
+  });
+
+  it("具名物品优先显示专图，同名不同品质未匹配时仍走类别图", () => {
+    expect(decodeURIComponent(itemArtUrl("康巴厚背重刀"))).toBe("/art/item/康巴厚背重刀.webp");
+    expect(decodeURIComponent(itemArtUrl({ name: "九眼天珠", quality: "紫" }))).toBe("/art/item/九眼天珠.webp");
+    expect(itemArtUrl({ name: "九眼天珠", quality: "橙" })).toBe("/art/item/accessory-beads.webp");
   });
 
   it("任务插图与旁白立绘按 ID 和好感档查图", () => {

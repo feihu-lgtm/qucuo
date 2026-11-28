@@ -5,17 +5,21 @@ import {
   BUILDING_ID_ART,
   HOME_ART,
   ITEM_ART,
+  ITEM_NAME_ART,
   MAP_ART,
   NPC_ART,
   PLACE_ART,
   QUEST_ART,
+  ROOM_ART,
 } from "./artManifest.js";
 import { QUCUO_MAP } from "../map/qucuoMap.js";
 import { BUILDING_TYPE, getBuildingsForLocation } from "../buildings/qucuoBuildings.js";
 import { HOMESTEAD_FEATURES } from "../../rules/map/homestead.js";
+import { getInnerRoom } from "../../rules/map/innerMap.js";
 import { passerRolesOf } from "../npc/randomPassers.js";
 import { FACTIONS } from "../map/factions.js";
 import { QUCUO_PRESET } from "../presets/qucuo.js";
+import snowlandItems from "../../../content/item/snowland-sects-1.js";
 
 const webpFile = (kind, name) => `public/art/${kind}/${name}.webp`;
 
@@ -27,7 +31,7 @@ describe("美术素材登记表", () => {
     }
   });
 
-  it("21 个外层据点的头图都已入库", () => {
+  it("25 个外层据点的头图都已入库", () => {
     expect(Object.keys(PLACE_ART).sort()).toEqual(Object.keys(QUCUO_MAP).sort());
   });
 
@@ -41,6 +45,17 @@ describe("美术素材登记表", () => {
     if (MAP_ART) expect(existsSync(webpFile("map", MAP_ART))).toBe(true);
   });
 
+  it("内层房间图对应真实房间，目录内每张图都有映射", () => {
+    const files = new Set();
+    for (const [district, rooms] of Object.entries(ROOM_ART)) {
+      for (const [room, file] of Object.entries(rooms)) {
+        expect(getInnerRoom(district, room), `${district}·${room}`).toBeTruthy();
+        files.add(`${file}.webp`);
+      }
+    }
+    expect(readdirSync("public/art/room").sort()).toEqual([...files].sort());
+  });
+
   it("NPC 头像、物品图标、任务插图登记表均非空且对应 .webp 文件全部存在", () => {
     expect(NPC_ART.length).toBeGreaterThanOrEqual(260);
     expect(ITEM_ART.length).toBe(36);
@@ -48,6 +63,15 @@ describe("美术素材登记表", () => {
     for (const name of NPC_ART) expect(existsSync(webpFile("npc", name)), name).toBe(true);
     for (const key of ITEM_ART) expect(existsSync(webpFile("item", key)), key).toBe(true);
     for (const id of QUEST_ART) expect(existsSync(webpFile("quest", id)), id).toBe(true);
+  });
+
+  it("雪域具名物品都有专图，物品目录只含已登记的专图和类别图", () => {
+    for (const { name, quality } of Object.values(snowlandItems.item)) {
+      const file = ITEM_NAME_ART[`${name}:${quality}`] ?? ITEM_NAME_ART[name];
+      expect(file, name).toBeTruthy();
+    }
+    const files = new Set([...ITEM_ART, ...Object.values(ITEM_NAME_ART)].map((name) => `${name}.webp`));
+    expect(readdirSync("public/art/item").sort()).toEqual([...files].sort());
   });
 
   it("开局预设里的每位 NPC 都能按游戏显示名找到立绘", () => {
@@ -65,8 +89,8 @@ describe("美术素材登记表", () => {
 
   it("每日过路人的身份模板与 WebP 立绘一一对应，随机性别各有一张", () => {
     const roles = new Set(["鱼定村", "散人", ...FACTIONS.map(({ name }) => name)].flatMap(passerRolesOf));
-    const keys = [...roles].flatMap(({ art, gender }) => gender
-      ? [`passer-${art}`] : [`passer-${art}-male`, `passer-${art}-female`]);
+    const keys = [...new Set([...roles].flatMap(({ art, gender }) => gender
+      ? [`passer-${art}`] : [`passer-${art}-male`, `passer-${art}-female`]))];
     expect(readdirSync("public/art/passer").sort()).toEqual(keys.map((key) => `${key}.webp`).sort());
   });
 });

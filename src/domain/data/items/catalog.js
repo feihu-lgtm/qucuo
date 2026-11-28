@@ -158,6 +158,8 @@ export const QINGCHENG_QUEST = getContent("itemGroup", "QINGCHENG_QUEST").map(id
 export const RESIDENT_FILL_GOODS = getContent("itemGroup", "RESIDENT_FILL_GOODS").map(id => getContent("item", id));
 // 跑马大会具名物（named，跑马集市铺货 + 比武彩头仪卫戟）
 export const PAOMA_GOODS = getContent("itemGroup", "PAOMA_GOODS").map(id => getContent("item", id));
+// 雪域三宗（萨迦/噶举/苯门）与打箭炉具名物
+export const SNOWLAND_SECTS_GOODS = getContent("itemGroup", "SNOWLAND_SECTS_GOODS").map(id => getContent("item", id));
 
 // ============================================================================
 // 核心：把 catalog 条目实例化成一个完整物品对象
@@ -243,6 +245,7 @@ export const CATALOG = [
   ...TIANLONG_BABU,        // 天龙八部护法具名物（named，护法随身物+支线奖励）
   ...QINGCHENG_QUEST,      // 青城派任务物与奖励（named）
   ...RESIDENT_FILL_GOODS,    // 合稿补驻场人物（黑风寨、锦官城）的随身物
+  ...SNOWLAND_SECTS_GOODS,   // 雪域三宗与打箭炉具名物
 ];
 
 // name → 条目，供"按名取物"（任务发放具名物品、商店铺货、AI 引用时反查数值）

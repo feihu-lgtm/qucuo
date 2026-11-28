@@ -34,17 +34,23 @@ export const LETTER_TUNE = {
 };
 
 import { findNpcObject } from "../../domain/rules/npc/npcLookup.js";
+import * as importedRegistry from "../../domain/rules/cards/importedRegistry.js";
 export { findNpcObject };
 
 const 世界信箱 = (previous) => previous?.世界 || {};
 
-// 送信人名单：已认识人物，滤掉兽类（不会写信）；好感越高权重越大。
+// 送信人名单：已认识人物，滤掉兽类（不会写信）与随机合成龙套（randomPasser 日抛角色——
+// 玩家一离开他们就蒸发，来信查无此人，按设计不写信）；名册 OC 冒险者游走时虽带日抛标记，
+// 但身份是永久的（ocAdventurer），照常能写；不在场的合成龙套只剩 {name} 裸壳，一并滤掉。
+// 好感越高权重越大。
 export function pickLetterSender(state, rng = Math.random) {
   const known = state.varTree?.世界?.已认识人物 || [];
   const inbox = state.varTree?.世界?.来信箱 || [];
   const candidates = known
-    .map((name) => ({ name, npc: findNpcObject(state, name), aff: Number(state.varTree?.角色?.[name]?.好感度) || 0 }))
+    .map((name) => ({ name, npc: findNpcObject(state, name, importedRegistry), aff: Number(state.varTree?.角色?.[name]?.好感度) || 0 }))
     .filter(({ name, npc }) => !npc.beast
+      && (npc.randomPasser == null || npc.ocAdventurer)
+      && Object.keys(npc).length > 1
       && !inbox.some((letter) => letter.npcName === name && state.time - letter.turn < LETTER_TUNE.senderCooldown));
   if (!candidates.length) return null;
   const weighted = candidates.map((c) => ({ ...c, w: 1 + c.aff / 25 }));
@@ -125,7 +131,7 @@ export function inboundFallbackLine(state, letter, rng = Math.random) {
   }
   const name = letter.npcName;
   const attrs = state.varTree?.角色?.[name] || {};
-  const npc = findNpcObject(state, name);
+  const npc = findNpcObject(state, name, importedRegistry);
   const aff = Number(attrs.好感度) || 0;
   const flirty = /媚|浪|婊|撩|妖/.test(`${npc.personality || ""}${npc.archetypeLabel || ""}${npc.brief || ""}`);
   const poor = /穷|破|落魄|乞|债|穷酸/.test(`${npc.brief || ""}${npc.personality || ""}`);

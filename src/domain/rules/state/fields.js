@@ -212,6 +212,7 @@ export const FIELDS = Object.freeze({
   [FIELD.factionRep]: { label: "势力声誉", default: 0, min: -100, max: 100, ai: true, maxDelta: 10,
     scale: "玩家与一方势力的关系；替该势力办成事、护其人可加3~10，坏其大事、伤其门人同量扣减。" },
   "varTree.世界.驻足锁.**": { label: "NPC交互驻足锁", ai: false },
+  "varTree.世界.游走册.**": { label: "OC冒险者游走位置册", ai: false },
   "varTree.世界.旁白.**": { label: "旁白个人线", ai: false },
   "varTree.世界.好感日增.**": { label: "好感日增账本", ai: false },
   "varTree.世界.起居注.**": { label: "起居注", ai: false, refs: {
@@ -254,19 +255,9 @@ export const FIELDS = Object.freeze({
   } },
 });
 
-export function readPath(value, parts) {
-  for (const part of parts) {
-    if (value == null || !Object.hasOwn(value, part)) return undefined;
-    value = value[part];
-  }
-  return value;
-}
-
-const VAR_ROOTS = new Set(["角色", "世界", "主角"]);
-export function statePath(path) {
-  const parts = Array.isArray(path) ? path : path.split(".");
-  return VAR_ROOTS.has(parts[0]) ? ["varTree", ...parts] : parts;
-}
+// readPath/statePath 已拆入叶子模块 paths.js（拆循环依赖），此处转出保旧引用不破。
+export { readPath, statePath } from "./paths.js";
+import { readPath, statePath } from "./paths.js";
 
 const refs = new Map(Object.entries(FIELDS).flatMap(([path, field]) =>
   Object.entries(field.refs || {}).map(([ref, format]) => [ref, { path, field, format }])));

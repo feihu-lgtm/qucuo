@@ -16,6 +16,8 @@ import { formatPlanNote } from "../../domain/rules/intent/planNotes.js";
 import { createAiClassifier, INTENT_TRUNCATED } from "../../engine/intent/aiClassifier.js";
 import { splitCompositeInput } from "../../domain/rules/input/compositeInput.js";
 import { bindTurnAi, createWebAi } from "../../engine/ports/ai.js";
+import { setActiveBuilding } from "../../store/sessionUiStore.js";
+import { visibleBuildingsAt } from "../../domain/rules/map/placeIntent.js";
 
 const DIR_CMD = { 北: "n", 南: "s", 东: "e", 西: "w" };
 // 条件步「到达」匹配用的地名清单，注入 intentPendingStore（store 不反向引 domain）。
@@ -29,7 +31,12 @@ export function useIntentRouter(routerRef, {
     // 接续的交互不是新玩家动作；旧调用无第三参，行为零变化。
     function runDeferred(step, single, opts = {}) {
       const npc = findStepNpc(gameStore.getState(), step);
-      if (step.kind === ACTION_KINDS.MOVE) return act(DIR_CMD[step.direction] || step.direction, [], { keepUndo: true, intentSkip: true });
+      if (step.kind === ACTION_KINDS.MOVE && step.enterBuilding) return enterBuildingStep(step);
+      // #670：点名相邻据点的移动强制走外层，免得在有内层地图的据点里被同方向内层房截走。
+      if (step.kind === ACTION_KINDS.MOVE) {
+        const layer = step.outerDest ? { forceLayer: "outer" } : step.innerDest ? { forceLayer: "inner" } : {};
+        return act(DIR_CMD[step.direction] || step.direction, [], { keepUndo: true, intentSkip: true, ...layer });
+      }
       // BUY single 守卫：对象不在场/查无此人时不喂 null 进 handler
       if (step.kind === ACTION_KINDS.BUY && single) {
         if (!npc) {
@@ -53,6 +60,20 @@ export function useIntentRouter(routerRef, {
         setActiveTarget(npc.name);
         setDuelPending(npc);
       }, { feature: "intent.duel" }));
+    }
+
+    // #670「进某某」：建筑就在眼前直接开门；隔一间房先走到门前（内层移动是本地瞬时结算），
+    // 到了且门在眼前才开门，没走到就只留移动结果。
+    function enterBuildingStep(step) {
+      const building = step.enterBuilding;
+      const open = () => {
+        const st = gameStore.getState();
+        if (!visibleBuildingsAt(st.room?.name, st.innerRoomName).some((b) => b.id === building.id)) return;
+        setActiveBuilding(building);
+        addLog?.([{ t: "sys", text: `  你走进了「${building.name}」。` }]);
+      };
+      if (!step.innerDir) return open();
+      return Promise.resolve(act(step.innerDir, [], { keepUndo: true, intentSkip: true, forceLayer: "inner" })).then(open);
     }
 
     // 条件步触发：走原有命令调度器排队；立即结算类照旧 stepEffect，需要交互/自由文本的走原入口。

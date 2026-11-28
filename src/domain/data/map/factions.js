@@ -19,6 +19,9 @@ export const FACTIONS = Object.freeze([
   { name: "五仙教", districts: ["雾隐寨"], foes: ["百花门", "峨眉派"] },
   { name: "天龙教", districts: ["天龙营"], foes: ["青城派", "峨眉派", "丐帮三星分舵"] },
   { name: "三星派", districts: [], foes: [] },
+  { name: "萨迦世家", districts: ["丹霞城"], foes: [] },
+  { name: "噶举山人", districts: ["焚风渡"], foes: [] },
+  { name: "古象雄苯门", districts: ["琼隆古墟"], foes: [] },
 ]);
 
 export const FACTION_NAMES = Object.freeze(FACTIONS.map((faction) => faction.name));

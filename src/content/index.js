@@ -48,6 +48,15 @@ import pack51 from "./item/wuxian-1.js";
 import pack52 from "./item/xueshan-1.js";
 import pack53 from "./residentGroup/天龙营.js";
 import pack54 from "./district/天龙营.js";
+import residentDajianlu from "./residentGroup/打箭炉.js";
+import districtDajianlu from "./district/打箭炉.js";
+import residentDanxiacheng from "./residentGroup/丹霞城.js";
+import districtDanxiacheng from "./district/丹霞城.js";
+import residentFenfengdu from "./residentGroup/焚风渡.js";
+import districtFenfengdu from "./district/焚风渡.js";
+import residentQionglong from "./residentGroup/琼隆古墟.js";
+import districtQionglong from "./district/琼隆古墟.js";
+import residentBaita from "./residentGroup/白塔.js";
 import pack55 from "./item/tusi-1.js";
 import lamaItems from "./item/lama-1.js";
 import pack56 from "./item/baihua-1.js";
@@ -69,6 +78,7 @@ import tangmen from "./quest/tangmen-1.js";
 import tangmen2 from "./quest/tangmen-2.js";
 import tangmenItems from "./item/tangmen-1.js";
 import residentsFillItems from "./item/residents-fill-1.js";
+import snowlandSectsItems from "./item/snowland-sects-1.js";
 import wuxianjiao from "./quest/wuxianjiao-1.js";
 import emei from "./quest/emei-1.js";
 import emei2 from "./quest/emei-2.js";
@@ -101,5 +111,7 @@ export const DEFAULT_CONTENT_PACKS = [
   pack24, pack25, pack26, pack27, pack28, pack29, pack30, pack31, pack32,
   pack33, pack34, pack35, pack36, pack37, pack38, pack39, pack40, pack41,
   pack42, pack43, pack44, pack45, pack46, pack47, pack48, pack49, pack50, pack51,
-  pack52, pack53, pack54, pack55, pack56, tangmenItems, yudingItems, pack57, lamaItems, tianlongItems, qingchengItems, residentsFillItems, paomaItems,
+  pack52, pack53, pack54, pack55, pack56, tangmenItems, yudingItems, pack57, lamaItems, tianlongItems, qingchengItems, residentsFillItems, paomaItems, snowlandSectsItems,
+  residentDajianlu, districtDajianlu, residentDanxiacheng, districtDanxiacheng, residentFenfengdu, districtFenfengdu, residentQionglong, districtQionglong,
+  residentBaita,
 ];

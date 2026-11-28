@@ -13,6 +13,11 @@ import { scrubLogEntries } from "../log/logTypes.js";
 export const LEGACY_NPC_RENAMES = {
   石重岳: "厉苍龙", // 龙王·天龙教现任教主
   安世衡: "厉苍天", // 天王·前教主，被废软禁
+  // AI娘四位冒险者改用诗经二字名（id 不变）
+  "Claude娘": "秩秩",
+  "Gemini猫娘": "参昴",
+  "Grok娘": "笑敖",
+  "大肥鱼": "鱼丽",
 };
 
 // npc id → 新 npc id（resident_ 前缀的常驻人物 id，act 指令按它找人）

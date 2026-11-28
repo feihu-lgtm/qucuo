@@ -18,8 +18,4 @@ export const heifeng = [
       id: "kitchen_heifeng", name: "伙房大灶", type: BUILDING_TYPE.KITCHEN,
       desc: "寨门东侧的露天大灶，老阿雅婶掌勺。出征前一席饭全员同吃是寨规，铁锅底结着十几年的锅巴，熬出来的牦牛肉汤格外厚。",
     },
-    {
-      id: "heifeng_wolf_cavern", name: "狼曲旧契藏窟", type: BUILDING_TYPE.DUNGEON, dungeonId: "heifeng_wolf_cavern",
-      desc: "寨后柴垛掩盖的夹缝密道，直通狼曲绝崖藏窟与十年前血账旧地。",
-    },
 ];
