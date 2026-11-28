@@ -3,15 +3,18 @@ import {
   LEGACY_NPC_RENAMES, LEGACY_NPC_ID_RENAMES, migrateLegacySnapshot,
 } from "./legacyContent.js";
 import { RESIDENT_NPCS } from "../../data/npc/residentNpcs.js";
+import { ADVENTURER_POOL_IP } from "../../data/dungeon/adventurersIP.js";
 
 // PR274 天龙教改回原作名：石重岳→厉苍龙、安世衡→厉苍天（含 resident id）。
 // 老存档读档时按这套表迁移，迁错或漏迁会直接表现在玩家档里，逐项断言。
 
 describe("legacyContent 迁移表与现网人物对得上", () => {
   const tianlong = RESIDENT_NPCS["天龙营"] || [];
-  it("每个新名都真实存在于天龙营人物表", () => {
+  // 人名改名既有天龙营常驻人物，也有冒险者池（AI娘四位改诗经名）
+  const liveNames = [...tianlong.map(n => n.name), ...ADVENTURER_POOL_IP.map(a => a.name)];
+  it("每个新名都真实存在于现网人物表（天龙营或冒险者池）", () => {
     for (const newName of Object.values(LEGACY_NPC_RENAMES)) {
-      expect(tianlong.map(n => n.name)).toContain(newName);
+      expect(liveNames).toContain(newName);
     }
   });
   it("每个新 id 都真实存在于天龙营人物表", () => {
@@ -20,7 +23,7 @@ describe("legacyContent 迁移表与现网人物对得上", () => {
     }
   });
   it("旧名/旧 id 已不在人物表里（防改名回滚后误迁）", () => {
-    const names = tianlong.map(n => n.name);
+    const names = liveNames;
     const ids = tianlong.map(n => n.id);
     for (const old of Object.keys(LEGACY_NPC_RENAMES)) expect(names).not.toContain(old);
     for (const old of Object.keys(LEGACY_NPC_ID_RENAMES)) expect(ids).not.toContain(old);
