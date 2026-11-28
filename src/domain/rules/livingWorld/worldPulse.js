@@ -158,8 +158,9 @@ export function stepHourlyBeat(state, registry) {
       const loser = result.winner === "A" ? pick.y : result.winner === "B" ? pick.x : null;
       const winner = result.winner === "A" ? pick.x : result.winner === "B" ? pick.y : null;
       // 战果记账：成员 hpRatio 写 人物动态、势力战力增减、事件录入册
+      // lethal:none 的离线架打不出死人——hp 0 记重伤 0.05；hpRatio 0 专留真死（永不恢复）
       for (const [npcId, [hp, maxHp]] of Object.entries(result.finalHp || {})) {
-        hpUpdates[npcId] = maxHp > 0 ? hp / maxHp : 0;
+        hpUpdates[npcId] = maxHp > 0 ? Math.max(0.05, hp / maxHp) : 0.05;
       }
       if (loser && winner) {
         powerDelta[loser.squad.faction] = (powerDelta[loser.squad.faction] || 0) - (loser.squad.onDefeated?.boostPower ? 0 : 4);
@@ -304,11 +305,13 @@ function stepSingleBeat(state, registry) {
             }
             return { ...ev, knownDistricts: [...known] };
           });
-          // 伤员稳态恢复：hpRatio 每日向满血回 0.2，回满即销账（防世界三天打死自毁的另一半）
+          // 伤员稳态恢复：hpRatio 每日向满血回 0.2，回满即销账（防世界三天打死自毁的另一半）。
+          // hpRatio<=0 是死人/出局——绝不奶活；显式 status dead/recruited 同例。
           if (w.人物动态) {
             const dyn = {};
             for (const [npcId, rec] of Object.entries(w.人物动态)) {
-              if (typeof rec?.hpRatio === "number" && rec.hpRatio < 1) {
+              const out = rec?.hpRatio <= 0 || rec?.status === "dead" || rec?.status === "recruited";
+              if (!out && typeof rec?.hpRatio === "number" && rec.hpRatio < 1) {
                 const recovered = Math.min(1, rec.hpRatio + 0.2);
                 if (recovered < 1) dyn[npcId] = { ...rec, hpRatio: recovered };
                 else if (rec.status) dyn[npcId] = { ...rec, hpRatio: 1 };
