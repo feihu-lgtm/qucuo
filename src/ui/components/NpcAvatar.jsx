@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { npcArtUrl } from "../art/art.js";
+import { useGameStore } from "../../store/gameStore.js";
 
 // 统一人物头像框（夜色精修 · 镂空水墨底）：
 //   size: xs(22px) | sm(28px) | md(40px) | lg(56px) | xl(92px) | dossier(144px)
@@ -15,7 +16,10 @@ export default function NpcAvatar({
   onClick,
   title,
 }) {
-  const url = src || npcArtUrl(name);
+  // 只传名字时，在场npc若挂着身份配像（passerArt，如税吏→tax-clerk）要带上——
+  // 否则路人脸在细看卡/对话 gutters 全部漏成单字印章。
+  const roomNpc = useGameStore((s) => (s?.room?.npcs || []).find((n) => n?.name === name));
+  const url = src || npcArtUrl(roomNpc?.passerArt ? roomNpc : name);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
