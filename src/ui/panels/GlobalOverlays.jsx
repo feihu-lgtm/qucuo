@@ -20,6 +20,8 @@
 // 已迁到 ModalShell 的弹层同档之间靠 DOM 顺序决定上下，所以这张表的顺序不能随意调。
 import { Fragment, lazy, Suspense, useCallback } from "react";
 import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
+import { getWorldOverview } from "../../domain/rules/livingWorld/projectWorld.js";
+import { buildDefaultRegistry } from "../../domain/data/livingWorld/index.js";
 import { listCharacters } from "../../domain/rules/prompt/mvu.js";
 import { getTimeStr } from "../../utils/mudHelpers.js";
 import { getPipelineEntries, getTraceLog } from "../../infra/actionTrace.js";
@@ -27,6 +29,9 @@ import { duelLineup, isCompanionUnlockedByName } from "../../domain/rules/compan
 import { OC_BY_NAME } from "../../domain/rules/npc/npcCarry.js";
 import { ocMenuRoutes } from "../../features/npc/ocRecruit.js";
 import ErrorBoundary from "../components/ErrorBoundary.jsx";
+
+// WO-25F 江湖局势仪：活世界注册表单例——纯数据装配，零状态写入
+const LIVING_WORLD_REGISTRY = buildDefaultRegistry();
 import NpcActionMenu from "../components/NpcActionMenu.jsx";
 import ItemActionMenu from "../components/ItemActionMenu.jsx";
 import { awakenableWeapons } from "../../domain/rules/items/itemAwaken.js";
@@ -147,6 +152,7 @@ export default function GlobalOverlays({
         varTree={varTree}
         time={time}
         turnToStr={getTimeStr}
+        worldOverview={getWorldOverview({ varTree, time }, LIVING_WORLD_REGISTRY)}
         onClose={() => closeOverlay(OVERLAY.LORE)}
       />
     )},
