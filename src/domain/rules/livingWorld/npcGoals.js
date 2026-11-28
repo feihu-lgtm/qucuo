@@ -25,6 +25,15 @@ const PACKAGE_RULES = [
 ];
 
 // 由档案推断职业包；带伤（hpRatio<0.4）时一律 injured_rest 压过一切。
+// 医药亲和：档案里带着行医痕迹的人（不管主职是不是郎中），身处药庐医馆时
+// 坐堂是本分。与 inferAiPackage 的单角色推断解耦——了因师太既是佛堂管事又施药包扎，
+// 单角色推断了管事，不等于她不看诊（Review 实证）。
+export function hasHealingAffinity(npc) {
+  const keys = PACKAGE_RULES.find((r) => r.pkg === "herbalist").keys;
+  const text = `${npc?.title || ""}${npc?.brief || ""}${npc?.personality || ""}${npc?.archetypeLabel || ""}`;
+  return keys.some((k) => text.includes(k));
+}
+
 export function inferAiPackage(npc, { hpRatio } = {}) {
   if (Number.isFinite(hpRatio) && hpRatio < 0.4) return "injured_rest";
   const text = `${npc?.title || ""}${npc?.brief || ""}${npc?.personality || ""}${npc?.archetypeLabel || ""}`;
@@ -179,7 +188,7 @@ export function resolveLifeSlice({ npc, varTree = {}, time = 0, buildings = [], 
   // 不把兵器铺掌柜写成坐诊医师（Review 实证：唐三少/玄女被写成看诊大夫）。
   const injured = aiPackage === "injured_rest" || hpRatio < 0.7;
   if (picked.dim === "recovery" && !injured) {
-    if (aiPackage === "herbalist") {
+    if (hasHealingAffinity(npc)) {
       picked = { dim: "work", building: picked.building, healingWork: true };
     } else {
       return null;

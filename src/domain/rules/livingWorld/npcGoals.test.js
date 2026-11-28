@@ -339,3 +339,14 @@ describe("Review 回归：健康非药医不坐堂、黑市归谋生", () => {
     expect(slice.detail).not.toContain("看诊");
   });
 });
+
+describe("Review 回归：双角色医者的坐堂叙事", () => {
+  it("了因师太（管事+行医双角色）锚定施药棚：按坐堂谋生，不回退通用句", () => {
+    const npc = { name: "了因师太", brief: "佛堂管事，教清心普善咒，城里郎中也来听", personality: "话密心软，谁受伤都先骂一顿再包扎" };
+    const hosp = { id: "h2", name: "慈济佛堂·施药棚", type: "hospital" };
+    const slice = resolveLifeSlice({ npc, varTree: {}, time: 100, buildings: [hosp], anchorBuilding: hosp });
+    expect(slice).not.toBeNull();
+    expect(slice.detail).toContain("坐堂捣药");
+    expect(slice.hook).not.toContain("身上有伤");
+  });
+});
