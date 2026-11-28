@@ -344,7 +344,8 @@ export function stepLivingWorld(state, registry) {
   let work = state;
   let stepped = false;
   for (let h = from; h <= hourBucket; h += 1) {
-    const pseudo = { ...work, time: h * 2 + 1 };
+    // 每桶用桶内第二拍结算，但绝不越过真实当前时刻——偶数时刻落地时最后一拍不预支未来
+    const pseudo = { ...work, time: Math.min(h * 2 + 1, time) };
     const single = stepSingleBeat(pseudo, registry);
     if (single) {
       work = { ...pseudo, varTree: single.changes.varTree(pseudo.varTree) };
