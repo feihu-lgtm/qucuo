@@ -247,7 +247,8 @@ export const residentNpcRule = {
     // ── WO-25H 活世界驻场层：据点覆写增删 + 离线编队代表上线（ Kenshi 式：
     // 只在离境重返/跨日重建时切换，绝不当着玩家面闪变——本规则恰好在那些时刻重建）。
     let livingToInject = [];
-    const livingStaleIds = new Set(); // 覆写 removeResidents 与离场编队要清的名字
+    const livingStaleIds = new Set(); // 覆写 removeResidents 要清的名字
+    const activeSquadIdsHere = new Set(); // 本据点在场编队（修：提升作用域供过滤器闭包用）
     if (livingWorldRegistry) {
       const snap = getDistrictSnapshot(state, room.name, livingWorldRegistry);
       const removedIds = new Set((snap.override?.removeResidents || []));
@@ -271,7 +272,6 @@ export const residentNpcRule = {
       }
       // 离线编队代表上线：编队正经过本据点 → 首位成员实体化（带 squadId 账，
       // 编队挪窝后下一拍重建即清走；玩家与该编队同处一内层房时本拍不清——驻足锁同口径）。
-      const activeSquadIdsHere = new Set();
       for (const sq of snap.squads || []) {
         activeSquadIdsHere.add(sq.id);
         const decl = livingWorldRegistry.roamingSquads.find((x) => x.id === sq.id);
@@ -284,23 +284,31 @@ export const residentNpcRule = {
         built.squadName = sq.name;
         livingToInject.push(built);
       }
-      // 编队已挪窝：带 squadId 但所属编队不在本据点的旧身清走
-      for (const npc of room.npcs || []) {
-        if (npc.squadId && !activeSquadIdsHere.has(npc.squadId)) livingStaleIds.add(npc.name);
-      }
     }
     if (livingStaleIds.size > 0) {
       for (const name of livingStaleIds) staleNames.add(name);
     }
     const toInjectRaw = [...poolNpcs, ...residentNpcs, ...activeEscortTargets, ...gambleBidders, ...importedNpcs, ...worldAdventurers, ...passers, ...livingToInject]
       .filter((npc) => !livingStaleIds.has(npc.name));
-    // 编队代表/覆写新增可能与既有层撞名（同池客多路投放）——先到先得去重
+    // 编队代表/覆写新增可能与既有层撞名（同池客多路投放）——先到先得去重；
+    // 但编队账（squadId/squadName）必须并到保留份上，不然领队恰好在本地班表时
+    // 留住的是无账版，编队挪窝后离场清理认不出他（Review 修）
     const seenNames = new Set();
-    const toInject = toInjectRaw.filter((npc) => {
-      if (seenNames.has(npc.name)) return false;
+    const toInject = [];
+    for (const npc of toInjectRaw) {
+      if (seenNames.has(npc.name)) {
+        if (npc.squadId) {
+          const kept = toInject.find((x) => x.name === npc.name);
+          if (kept && !kept.squadId) {
+            kept.squadId = npc.squadId;
+            kept.squadName = npc.squadName;
+          }
+        }
+        continue;
+      }
       seenNames.add(npc.name);
-      return true;
-    });
+      toInject.push(npc);
+    }
     const injectNameSet = new Set(toInject.map((npc) => npc.name));
     // 不具名群众：按天固定，有内层地图的分散到各公共房间
     const crowdRooms = hasInnerMap(room.name) ? getPublicInnerRoomNames(room.name) : [];
@@ -349,7 +357,10 @@ export const residentNpcRule = {
               && npc.carriedItems.some((e) => e?.sold || e?.stolen || e?.dropped);
             const isStalePool = npc.isPoolNpc && !Array.isArray(npc.schedule) && !hasLootHistory
               && typeof npc.pursuitInnerRoom !== "string" && !injectedNames.has(npc.name);
-            if (!isStalePasser(npc) && !isStaleAdventurer(npc) && !isStaleOcWanderer(npc) && !isStalePool) return true;
+            // WO-25H Review 修：编队挪窝清代表走锁感知链——玩家正与其同屋交互
+            // （驻足锁未过期）时本拍不离场，与过路人/冒险者同一口径
+            const isDepartedSquadRep = npc.squadId && !activeSquadIdsHere.has(npc.squadId);
+            if (!isStalePasser(npc) && !isStaleAdventurer(npc) && !isStaleOcWanderer(npc) && !isStalePool && !isDepartedSquadRep) return true;
             // 名册时代位置唯一持久，无双身风险——驻足锁对冒险者/OC 一视同仁：
             // 锁期内就算册子挪了窝，人也留到锁过期后的下一次重建再离场。
             return (state.varTree?.世界?.驻足锁?.[npc.name] ?? -1) > time;

@@ -16,7 +16,7 @@ function worldState(overrides = {}) {
 
 describe("WO-25H 商店物价倍率", () => {
   it("覆写 priceMod 叠入报价，解除后回落", () => {
-    const entry = { name: "铁剑", buyPrice: 100 };
+    const entry = { name: "测剑", buyPrice: 100 };
     // 无物价倍率：原价
     expect(quoteBuy(entry, 0, null).price).toBe(100);
     // 封锁卡 all 1.12：价格上浮
@@ -113,5 +113,35 @@ describe("WO-25H 覆写驻场与编队上线", () => {
   it("编队不在本据点零注入", () => {
     const npcs = runResidents("打箭炉", { 编队册: { sq_chama_caravan: { active: true, node: "雅江" } } }, registry);
     expect(npcs.some((n) => n.squadId === "sq_chama_caravan")).toBe(false);
+  });
+});
+
+describe("WO-25H Review 修：实收价与离场锁", () => {
+  it("buyFromNpcCarry 实收价叠物价倍率，与货架展示同口径", async () => {
+    const { buyFromNpcCarry } = await import("../domain/rules/npc/npcTradeFlow.js");
+    const npc = { name: "商", carriedItems: [{ name: "测剑", price: 100 }] };
+    const noMod = buyFromNpcCarry(npc, { name: "测剑" }, { money: 999 });
+    const modded = buyFromNpcCarry(npc, { name: "测剑" }, { money: 999, priceMod: { all: 1.12 } });
+    expect(noMod.ok && noMod.price).toBe(100);
+    expect(modded.ok && modded.price).toBe(112);
+    // 银两只够原价时，加价局如实拒售而不是按原价放走
+    const short = buyFromNpcCarry(npc, { name: "测剑" }, { money: 105, priceMod: { all: 1.12 } });
+    expect(short.ok).toBe(false);
+  });
+
+  it("编队挪窝但驻足锁未过期——代表本拍不离场", () => {
+    const state = {
+      room: { name: "打箭炉", npcs: [{ name: "锁中客", squadId: "sq_chama_caravan", innerRoom: "街口" }] },
+      time: 240, questProgress: {}, flags: [], char: { special: { 气运: 5 } },
+      varTree: { 世界: { 驻足锁: { 锁中客: 300 }, 编队册: { sq_chama_caravan: { active: true, node: "雅江" } }, 据点局势: {}, tension: {}, 势力战力: {}, 人物动态: {}, 事件录: [], 游走册: {}, 宿敌谱: {} } },
+    };
+    const out = residentNpcRule.run(state, { importedRegistry: fakeImported, roomMap: {}, companionState: {}, livingWorldRegistry: registry });
+    const npcs = out ? out.changes.room(state.room).npcs : state.room.npcs;
+    expect(npcs.some((n) => n.name === "锁中客")).toBe(true);
+    // 锁过期后下一拍清走
+    const state2 = { ...state, varTree: { 世界: { ...state.varTree.世界, 驻足锁: { 锁中客: 100 } } } };
+    const out2 = residentNpcRule.run(state2, { importedRegistry: fakeImported, roomMap: {}, companionState: {}, livingWorldRegistry: registry });
+    const npcs2 = out2 ? out2.changes.room(state2.room).npcs : state2.room.npcs;
+    expect(npcs2.some((n) => n.name === "锁中客")).toBe(false);
   });
 });
