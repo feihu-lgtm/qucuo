@@ -2,16 +2,19 @@
 // 关系约定（设计稿·夜色精修 §四「地点头图与建筑头图放哪」）：
 //   天地栏小图 = 外层据点图，只在换据点时变；它和江湖栏「进场横幅」是同一张图、同一构图。
 //   建筑图只出现在打开的建筑面板顶部：先查个别建筑专图，再查类型图。
+//   内层房间图独立展示，不替换固定的外层据点头图。
 //   人物/物品/任务小图统一使用 public/art/{npc,item,quest}/*.webp（高分辨抠底/裁切版）。
 import {
   BUILDING_ART,
   BUILDING_ID_ART,
   HOME_ART,
   ITEM_ART,
+  ITEM_NAME_ART,
   MAP_ART,
   NPC_ART,
   PLACE_ART,
   QUEST_ART,
+  ROOM_ART,
 } from "../../domain/data/art/artManifest.js";
 import { CATALOG_INDEX } from "../../domain/data/items/catalog.js";
 
@@ -25,6 +28,12 @@ const QUEST_ART_SET = new Set(QUEST_ART);
 export function placeArtUrl(district, manifest = PLACE_ART) {
   const file = district && manifest[district];
   return file ? `${BASE}place/${file}.webp` : null;
+}
+
+export function roomArtUrl(district, roomName) {
+  const rooms = Object.hasOwn(ROOM_ART, district) && ROOM_ART[district];
+  const file = rooms && Object.hasOwn(rooms, roomName) && rooms[roomName];
+  return file ? `${BASE}room/${file}.webp` : null;
 }
 
 export function buildingArtUrl(building, { byId = BUILDING_ID_ART, byType = BUILDING_ART } = {}) {
@@ -161,6 +170,13 @@ export function classifyItemArtKey(itemOrName) {
 }
 
 export function itemArtUrl(itemOrName) {
+  const name = typeof itemOrName === "string" ? itemOrName : itemOrName?.name;
+  const quality = itemOrName?.quality;
+  const variant = name && quality && `${name}:${quality}`;
+  const exact = variant && Object.hasOwn(ITEM_NAME_ART, variant)
+    ? ITEM_NAME_ART[variant]
+    : name && Object.hasOwn(ITEM_NAME_ART, name) && ITEM_NAME_ART[name];
+  if (exact) return `${BASE}item/${encodeURIComponent(exact)}.webp`;
   const key = classifyItemArtKey(itemOrName);
   return key ? `${BASE}item/${key}.webp` : null;
 }

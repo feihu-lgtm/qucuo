@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { itemArtUrl } from "../art/art.js";
 import { Icon } from "../primitives/index.js";
 
-// 物品类别图原语（PR #632 抠底透明图）：
-// 优先按物品字段匹配 36 类实物小图，缺图或加载失败时退回线描 <Icon> 或空白占位。
+// 优先显示具名物品专图，再按物品字段匹配通用实物图；加载失败时退回线描图标或空白。
 export default function ItemIcon({
   item,
   size = "md",
