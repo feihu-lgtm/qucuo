@@ -228,7 +228,7 @@ export async function resolveIntent(cmd, env) {
   if (outerLock.blocked) { movingDir = null; pendDir = null; }
   if (outerLock.outerDepart) outerDepart = outerLock.outerDepart;
 
-  const arrivalResult = !isTalk && lockedDestName
+  let arrivalResult = !isTalk && lockedDestName
     ? outerArrivalLogic(
       {
         ...getGameState(),
