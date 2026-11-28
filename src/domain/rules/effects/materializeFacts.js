@@ -30,6 +30,8 @@ import { followingCompanionKey } from "../companion/companion.js";
 import { readDailyLootUsed } from "../judge/budgetInput.js";
 import { relicById } from "../judge/floatingRelics.js";
 import { CATALOG_INDEX } from "../../data/items/catalog.js";
+import { applyFactionRep } from "../economy/factionRep.js";
+import { adjustTension } from "../conflict/tension.js";
 
 const PLAYER = "player";
 
@@ -79,6 +81,15 @@ function locateItem(state, itemId, itemName) {
   }
   return null;
 }
+
+// SITUATION_TRIGGER 化解映射（WO-25P）：触发词头/货物 → 可化解的局势卡 id。
+// 商队到站=山道封锁打通；药品到埠额外化解伤药紧俏。数据驱动，新触发词只扩表。
+const TRIGGER_HEAD_RESOLVES = Object.freeze({
+  caravan_arrived: ["sit_road_blockade"],
+});
+const TRIGGER_GOODS_RESOLVES = Object.freeze({
+  medicine: ["sit_herb_shortage"],
+});
 
 export function materializeFacts(state, facts, compiledWarrants) {
   const changes = {};
@@ -680,6 +691,161 @@ export function materializeFacts(state, facts, compiledWarrants) {
         if (!Object.keys(updates).length) {
           logs.push({ t: "err", text: `  ⛔ 事实 ${fact.id}：场景改写无内容` });
         }
+        break;
+      }
+
+      // ── 13. FACTION_REP：势力声誉 → applyFactionRep（路遇 WO-25P）──
+      // merge 更新器在提交时对当前 varTree 求值——同回合多条 rep 事实串行叠加不互相覆盖；
+      // ±10 单回合限幅与对头联动扣分全在 applyFactionRep 内部（边界钳制走既有口径）。
+      case "FACTION_REP": {
+        if (!fact.faction || !Number.isFinite(fact.delta) || !fact.delta) {
+          logs.push({ t: "err", text: `  ⛔ 事实 ${fact.id}：声誉无势力或无增量` }); break;
+        }
+        patches.push({
+          op: "merge", path: ["varTree"],
+          value: (prev) => applyFactionRep(prev, { [fact.faction]: fact.delta }),
+          factId: fact.id,
+        });
+        receipts.push({ kind: "faction_rep", faction: fact.faction, delta: fact.delta, factId: fact.id });
+        break;
+      }
+
+      // ── 14. FACTION_TENSION：势力张力 → adjustTension（0-100 钳制、回基线即删）──
+      case "FACTION_TENSION": {
+        if (!fact.a || !fact.b || !Number.isFinite(fact.delta) || !fact.delta) {
+          logs.push({ t: "err", text: `  ⛔ 事实 ${fact.id}：张力无对子或无增量` }); break;
+        }
+        patches.push({
+          op: "merge", path: ["varTree", "世界", "tension"],
+          value: (prev) => adjustTension(prev, fact.a, fact.b, fact.delta),
+          factId: fact.id,
+        });
+        receipts.push({ kind: "faction_tension", a: fact.a, b: fact.b, delta: fact.delta, factId: fact.id });
+        break;
+      }
+
+      // ── 15. ADD_SITUATION / CLEAR_SITUATION：据点局势卡增删 ──
+      // 卡形状与 worldPulse 同款 { id, sinceDay, expireDay, sourceEventId }；默认 3 天期
+      // （worldPulse 挂载时同口径）。同卡已在不重复挂——幂等。
+      case "ADD_SITUATION": {
+        if (!fact.situation || !fact.district) {
+          logs.push({ t: "err", text: `  ⛔ 事实 ${fact.id}：局势无 id 或无据点` }); break;
+        }
+        const day = Math.floor(turn / 24) + 1;
+        const duration = Number.isFinite(fact.durationDays) ? fact.durationDays : 3;
+        patches.push({
+          op: "merge", path: ["varTree", "世界", "据点局势"],
+          value: (prev) => {
+            const boards = { ...(prev || {}) };
+            const cards = [...(boards[fact.district] || [])];
+            if (cards.some((c) => c?.id === fact.situation)) return boards;
+            cards.push({ id: fact.situation, sinceDay: day, expireDay: day + duration, sourceEventId: fact.sourceEventId || null });
+            boards[fact.district] = cards;
+            return boards;
+          },
+          factId: fact.id,
+        });
+        receipts.push({ kind: "add_situation", situation: fact.situation, district: fact.district, factId: fact.id });
+        break;
+      }
+      case "CLEAR_SITUATION": {
+        if (!fact.situation || !fact.district) {
+          logs.push({ t: "err", text: `  ⛔ 事实 ${fact.id}：局势无 id 或无据点` }); break;
+        }
+        patches.push({
+          op: "merge", path: ["varTree", "世界", "据点局势"],
+          value: (prev) => {
+            const boards = { ...(prev || {}) };
+            const cards = (boards[fact.district] || []).filter((c) => c?.id !== fact.situation);
+            if (cards.length) boards[fact.district] = cards;
+            else delete boards[fact.district];
+            return boards;
+          },
+          factId: fact.id,
+        });
+        receipts.push({ kind: "clear_situation", situation: fact.situation, district: fact.district, factId: fact.id });
+        break;
+      }
+
+      // ── 16. SITUATION_TRIGGER：化解触发词 ──
+      // 商队到站=山道封锁打通（商队既然能到，封锁即破）；药品到埠额外化解伤药紧俏。
+      // 映射表数据驱动，新触发词只扩表。无卡可化解时静默幂等。
+      case "SITUATION_TRIGGER": {
+        const [head, goods] = String(fact.trigger || "").split(":");
+        const resolved = [
+          ...(TRIGGER_HEAD_RESOLVES[head] || []),
+          ...(TRIGGER_GOODS_RESOLVES[goods] || []),
+        ];
+        if (!resolved.length || !fact.district) {
+          logs.push({ t: "err", text: `  ⛔ 事实 ${fact.id}：触发词无化解映射（${fact.trigger || "空"}）` }); break;
+        }
+        patches.push({
+          op: "merge", path: ["varTree", "世界", "据点局势"],
+          value: (prev) => {
+            const boards = { ...(prev || {}) };
+            const cards = (boards[fact.district] || []).filter((c) => !resolved.includes(c?.id));
+            if (cards.length) boards[fact.district] = cards;
+            else delete boards[fact.district];
+            return boards;
+          },
+          factId: fact.id,
+        });
+        receipts.push({ kind: "situation_trigger", trigger: fact.trigger, district: fact.district, resolves: resolved, factId: fact.id });
+        break;
+      }
+
+      // ── 17. COMPANION_CANDIDATE：合法冒险者 imported 入房 + 钉初始好感 ──
+      // 人已在房不重复注入（幂等）；初始好感只在无既有好感账时钉——已有交情不覆盖。
+      case "COMPANION_CANDIDATE": {
+        if (!fact.npc) { logs.push({ t: "err", text: `  ⛔ 事实 ${fact.id}：候选无名字` }); break; }
+        const exists = (room?.npcs || []).some((n) => n?.name === fact.npc);
+        if (!exists && room) {
+          const cast = fact.cast && typeof fact.cast === "object" ? fact.cast : {};
+          const npc = {
+            name: fact.npc,
+            brief: cast.brief || (fact.beast ? `${fact.role || "兽伴"}，愿意跟随` : "愿意同行的江湖人"),
+            title: cast.title || "",
+            imported: true,
+            companionCandidate: true,
+            ...(fact.beast ? { beast: true, role: fact.role || "兽伴" } : {}),
+            ...(fact.romance ? { romance: true } : {}),
+          };
+          room = { ...room, npcs: [...(room.npcs || []), npc] };
+          roomDirty = true;
+        }
+        if (Number.isFinite(fact.affectionPin)) {
+          patches.push({
+            op: "merge", path: ["varTree", "角色", fact.npc, "好感度"],
+            value: (prev) => (Number.isFinite(prev) ? prev : fact.affectionPin),
+            factId: fact.id,
+          });
+        }
+        receipts.push({ kind: "companion_candidate", npc: fact.npc, affectionPin: fact.affectionPin ?? null, factId: fact.id });
+        break;
+      }
+
+      // ── 18. RUMOR_HOOK：传闻钩——本回合 SEAL 须有新具名人物才落传闻册 ──
+      // 人名由调用方（结算通路）从 ---SEAL--- 尾章 mentionedNewNpcs 校出后挂在事实上传入；
+      // 空则不落——说书人没写出新人物，传闻即未发生（图纸口径）。落册幂等：在册不覆盖。
+      case "RUMOR_HOOK": {
+        const names = (Array.isArray(fact.mentionedNewNpcs) ? fact.mentionedNewNpcs : [])
+          .map((n) => (typeof n === "string" ? n.trim() : "")).filter(Boolean);
+        if (!names.length) {
+          logs.push({ t: "err", text: `  ⛔ 事实 ${fact.id}：传闻钩落空——本回合尾章未见新具名人物` });
+          break;
+        }
+        patches.push({
+          op: "merge", path: ["varTree", "世界", "传闻人物"],
+          value: (prev) => {
+            const rumors = { ...(prev || {}) };
+            for (const name of names) {
+              if (!rumors[name]) rumors[name] = { name, context: fact.npc ? `路遇${fact.npc}捎来的口风` : "路遇口风", mentionedAt: turn };
+            }
+            return rumors;
+          },
+          factId: fact.id,
+        });
+        receipts.push({ kind: "rumor_hook", names, factId: fact.id });
         break;
       }
 
