@@ -1,5 +1,13 @@
 [
   {
+    "version": "v0.8.1",
+    "codename": "活人通电",
+    "time": "2026-11-28 22:43",
+    "notes": [
+      "WO-25A 修复npcSoulFrame心账/外观读取+buildLivingClapboardEntries三本账规范化"
+    ]
+  },
+  {
     "version": "v0.8.0",
     "codename": "名册游走",
     "time": "2026-11-28 22:07",

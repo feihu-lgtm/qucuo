@@ -4,6 +4,8 @@
 // 全部纯函数：不掷骰、不读时间，同输入恒同输出。
 
 import { filterEntriesForViewer, renderClapboardSection } from "./clapboard.js";
+import { normalizeLedgerEntries } from "../memory/npcLedgerCore.js";
+import { deriveAppearance } from "../npc/npcContext.js";
 
 // 性情关键词 → 说话禁忌（ deterministic 映射：什么性子的人吃不住什么话）。
 const TABOO_RULES = [
@@ -61,9 +63,19 @@ function warmthLine(npc, attrs) {
   }
   const anger = attrs?.生气状态;
   if (anger?.active) parts.push(`正在气头上（${anger.reason || "心有芥蒂"}）`);
-  const ledger = attrs?.旧账?.lines;
-  if (Array.isArray(ledger) && ledger.length) {
-    parts.push(`心里记着旧账：${ledger.slice(-2).join("；")}`);
+  // WO-25A 修正：账本现行字段是 心账（normalizeLedgerEntries 归一化，兼容 谊/隙/和 旧类目
+  // 与字符串条），旧账.lines 是历史错位路径永远读空。按最近 2 条恩怨类高权重渲染；
+  // 无心账的老存档回退旧账 lines 兜底，不丢旧档叙事。
+  const heartEntries = normalizeLedgerEntries(attrs?.心账);
+  const grudges = heartEntries.filter((e) => e.summary && (e.tag === "恩" || e.tag === "怨"));
+  const recent = (grudges.length ? grudges : heartEntries.filter((e) => e.summary)).slice(-2);
+  if (recent.length) {
+    parts.push(`心里记着账：${recent.map((e) => `${e.tag}——${e.summary}`).join("；")}`);
+  } else {
+    const legacy = attrs?.旧账?.lines;
+    if (Array.isArray(legacy) && legacy.length) {
+      parts.push(`心里记着旧账：${legacy.slice(-2).join("；")}`);
+    }
   }
   return parts.join("，");
 }
@@ -80,6 +92,15 @@ export function buildNpcSoulFrames({ visibleNpcs = [], varTree = {}, time = 0, c
     if (persona) lines.push(persona);
     lines.push(livelihoodLine(npc, time));
     lines.push(warmthLine(npc, attrs));
+    // WO-25A 外观与伤势：显眼装束取 deriveAppearance（随身装备 live 源），
+    // 伤势读 varTree.世界.人物动态[name].hpRatio（离线战力记账，无记录即无恙不展开）。
+    const { gear } = deriveAppearance(npc);
+    if (gear.length) lines.push(`装束：${gear.slice(0, 2).join("、")}`);
+    const hpRatio = varTree?.世界?.人物动态?.[npc.name]?.hpRatio;
+    if (Number.isFinite(hpRatio) && hpRatio < 0.95) {
+      const word = hpRatio >= 0.7 ? "带着点轻伤" : hpRatio >= 0.4 ? "负伤不轻" : "伤势沉重";
+      lines.push(`如今${word}`);
+    }
     const visible = filterEntriesForViewer(clapboardEntries, npc.name);
     const section = renderClapboardSection(visible, entriesBudget);
     if (section) lines.push(`其所知所见：${section}`);

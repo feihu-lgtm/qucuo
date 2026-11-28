@@ -14,7 +14,7 @@
 //   options  可选，覆盖批量 options（如单条的 defaultValue）。
 // ============================================================================
 
-import { readPath, statePath } from "./fields.js";
+import { readPath, statePath } from "./paths.js";
 import { applyWrite, DANGEROUS_KEYS, writePath } from "./applyWrite.js";
 
 export const merge = (path, value) => ({ op: "merge", path, value });
