@@ -1,5 +1,13 @@
 [
   {
+    "version": "v0.6.6",
+    "codename": "Claude娘立绘",
+    "time": "2026-11-28 00:40",
+    "notes": [
+      "新增 Claude娘 立绘接入"
+    ]
+  },
+  {
     "version": "v0.6.5",
     "codename": "斗蛐蛐大改",
     "time": "2026-11-28 00:23",
