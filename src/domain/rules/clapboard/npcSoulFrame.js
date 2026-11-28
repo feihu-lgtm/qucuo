@@ -85,7 +85,7 @@ function warmthLine(npc, attrs) {
 // 为每位在场角色输出独立分块 { name, text }。
 // clapboardEntries 经 filterEntriesForViewer 按该角色视角过滤——raw_memory 条目的
 // 他人心理（rawText）在过滤层已被覆写成 publicText，想泄也泄不出去。
-export function buildNpcSoulFrames({ visibleNpcs = [], varTree = {}, time = 0, clapboardEntries = [], entriesBudget = 200, totalBudget = Infinity, district = null, buildings = null } = {}) {
+export function buildNpcSoulFrames({ visibleNpcs = [], varTree = {}, time = 0, clapboardEntries = [], entriesBudget = 200, totalBudget = Infinity, district = null, buildings = null, anchorBuilding = null } = {}) {
   // WO-25J 此刻生活：在场者同处玩家所在据点，建筑清单纯由据点查表（显式传参优先便于测试）。
   const venueList = Array.isArray(buildings) ? buildings : (district ? getBuildingsForLocation(district) : []);
   const frames = [];
@@ -97,7 +97,9 @@ export function buildNpcSoulFrames({ visibleNpcs = [], varTree = {}, time = 0, c
     const persona = personaLine(npc);
     if (persona) lines.push(persona);
     // WO-25J：有生活切片时顶替笼统营生句（模版 A）；无合适场子回退旧通用句。
-    const slice = venueList.length ? resolveLifeSlice({ npc, varTree, time, buildings: venueList }) : null;
+    // 锚定铁律（Review 修）：玩家不在建筑内（街头/野外）不给切片——在场者的位置
+    // 就是玩家眼前这间房/这片场，另指一栋楼等于同一个人两个位置。
+    const slice = anchorBuilding ? resolveLifeSlice({ npc, varTree, time, buildings: venueList, anchorBuilding }) : null;
     const sliceLine = slice ? renderLifeSliceLine(slice, time) : null;
     lines.push(sliceLine || livelihoodLine(npc, time));
     lines.push(warmthLine(npc, attrs));

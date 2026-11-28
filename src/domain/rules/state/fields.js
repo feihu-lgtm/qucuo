@@ -6,6 +6,15 @@ import { renderDiegeticState } from "../clapboard/diegeticState.js";
 import { renderNpcSoulFrames } from "../clapboard/npcSoulFrame.js";
 import { renderJudgeVerdict, renderCausalBudget } from "../judge/judgeTurn.js";
 
+// WO-25J 切片锚：玩家当前内层房间关联的建筑对象（村口/广场这类无 buildingId 的户外房为 null）。
+function soulAnchorBuilding(s) {
+  const district = s.room?.name;
+  if (!district || typeof s.innerRoomName !== "string") return null;
+  const bid = getBuildingIdForInnerRoom(district, s.innerRoomName);
+  if (!bid) return null;
+  return (getBuildingsForLocation(district) || []).find((b) => b.id === bid) || null;
+}
+
 export function formatFactSummariesForPrompt(facts) {
   return facts.map((fact) => `· （${getTimeStr(fact.诞生回合 || 0)}）${fact.摘要}${fact.标签 ? `〔${fact.标签}〕` : ""}`).join("\n");
 }
@@ -79,6 +88,8 @@ function npcAttrs(scope) {
 
 import { priceForQuality, QUALITY } from "../economy/equipment.js";
 import { SERVICE_MENUS } from "../../data/buildings/menuData.js";
+import { getBuildingIdForInnerRoom } from "../map/innerMap.js";
+import { getBuildingsForLocation } from "../../data/buildings/qucuoBuildings.js";
 import { getGroundItems } from "../map/groundScope.js";
 
 const signed = (value) => value > 0 ? "+" + value : String(value);
@@ -250,6 +261,8 @@ export const FIELDS = Object.freeze({
       totalBudget: 1600,
       // WO-25J 此刻生活切片：在场者与玩家同据点，据点建筑清单喂给 npcGoals 分配活计
       district: s.room?.name || null,
+      // 锚定玩家所在建筑（内层房 buildingId 关联）；街头/野外无锚不给切片
+      anchorBuilding: soulAnchorBuilding(s),
     }),
   } },
   "judge.verdict": {
