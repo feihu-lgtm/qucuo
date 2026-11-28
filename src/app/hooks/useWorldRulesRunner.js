@@ -34,11 +34,31 @@ import {
   xuannuTriggerRule,
 } from "../../domain/rules/narrator/rules.js";
 import { applyResult } from "../../features/run.js";
+import { recordWorldChronicle } from "../../engine/ports/recallBlock.js";
 import * as importedRegistry from "../../domain/rules/cards/importedRegistry.js";
 import { gameActions, gameStore, subscribeGameReplaced } from "../../store/gameStore.js";
 import { roamReactionBackfill } from "./roamReactionBackfill.js";
 import { newBackfillKey } from "../../engine/ports/backfill.js";
 
+
+// WO-25M：事件录游标——扫到上次见过的 id 为止，之后的都是新事件。
+let _chronicleCursor = null;
+export function scanChronicleTail() {
+  try {
+    const st = gameStore.getState();
+    const events = st?.varTree?.世界?.事件录;
+    if (!Array.isArray(events) || !events.length) return;
+    const idx = _chronicleCursor ? events.findIndex((e) => e?.id === _chronicleCursor) : -1;
+    const fresh = idx === -1 ? (_chronicleCursor == null ? [] : events.slice(-3)) : events.slice(idx + 1);
+    // 首次进游戏只立游标不补录（历史事件不是本设备发生的，别给云端灌水）。
+    const last = events[events.length - 1];
+    if (_chronicleCursor == null) { _chronicleCursor = last?.id || null; return; }
+    _chronicleCursor = last?.id || _chronicleCursor;
+    if (!fresh.length) return;
+    const branchId = typeof st?.branchId === "string" ? st.branchId : "";
+    recordWorldChronicle(fresh, { branchId, turn: st?.time || 0 });
+  } catch { /* 编年史绝不阻断规则管线 */ }
+}
 export function useWorldRulesRunner({
   seaReturnRef, setForcedDuelNpc, schedulerRef, dispatchCommand = (_id, fn) => fn(),
 }) {
@@ -115,6 +135,9 @@ export function useWorldRulesRunner({
         },
         applyResult: (result) => {
           dispatchCommand("worldRules", () => {
+            // WO-25M 编年史索引：规则落账后扫事件录尾部——新增重大 WorldEvent 写编年史段
+            // （本地 prose 库+自动云端上行）。按事件 id 记游标防重，离线/未绑定零网络。
+            scanChronicleTail();
             // WO-06：房间缓存写走 applyResult 统一写入口（changes.roomCache → setRoomCache）
             if (result.roomMap) result.changes = { ...result.changes, roomCache: result.roomMap };
             // W-ROAM 增量：本拍有玩家视野内进出动向时，末条占位行打 backfill 标记

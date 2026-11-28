@@ -65,6 +65,53 @@ export async function recallProse({ queryText, viewer, topK = 5, epoch, currentT
   return mergeCloudProseEntries(localEntries, cloudHits, { viewer, topK });
 }
 
+// ── WO-25M 编年史索引：重大 WorldEvent → 原文段落库 + proseUplink 上行 ──
+// 重大世界事件（据点覆写切换/重要角色战伤陨落/商路断绝这类）不能只躺在 varTree 事件录里——
+// 云端 memory-hub 要有跨设备可召回的编年史索引。实现口径：
+//   · 一句短结构化摘要写成 prose 段（witnesses 公开、entities 涉事人、branchId 谱系），
+//     经 addProseChunks 落本地段落库——proseStore 写库成功自动 enqueueProseUplink，
+//     幂等/退避/dead-letter/跨绑守门全套复用，零新增网络路径、零服务端改动。
+//   · driver!=="cloud" 或未绑定时 flush 层自守（零网络请求），本地段照常可召回。
+//   · 重大口径：importance>=2，或无 importance 的编队交手（战果即战伤/势力消长）。
+const CHRONICLE_MAJOR_KINDS = new Set(["编队冲突"]);
+
+export function isChronicleMajor(event) {
+  if (!event || typeof event !== "object") return false;
+  if (Number.isFinite(event.importance)) return event.importance >= 2;
+  return CHRONICLE_MAJOR_KINDS.has(event.kind);
+}
+
+// WorldEvent → prose 段形状（纯函数）。摘要一行：第N日·据点·正文，涉事人进 entities。
+export function chronicleChunkOf(event, { branchId = "", turn = 0 } = {}) {
+  if (!event?.id) return null;
+  const text = `【编年史】第${event.day ?? Math.floor((event.turn ?? turn) / 24)}日·${event.district || "江湖"}：${event.text || event.summary || event.id}`;
+  return {
+    id: `chron_${event.id}`,
+    turn: Number.isFinite(event.turn) ? event.turn : turn,
+    location: String(event.district || ""),
+    witnesses: ["*"], // 编年史是公开风声——私密目击过滤不适用
+    entities: [...new Set([...(event.actors || []), ...(event.entities || [])].filter(Boolean))],
+    rawText: text,
+    publicText: text,
+    ...(branchId ? { branchId } : {}),
+  };
+}
+
+// 记录入口：过滤重大事件写段落库（自动上行）。fire-and-forget，绝不阻断规则管线。
+export function recordWorldChronicle(events, { branchId = "", turn = 0 } = {}) {
+  // 返回 Promise<写入条数>：规则管线 void 掉 fire-and-forget，测试可 await 避免时序漂。
+  try {
+    const chunks = (Array.isArray(events) ? events : [])
+      .filter(isChronicleMajor)
+      .map((ev) => chronicleChunkOf(ev, { branchId, turn }))
+      .filter(Boolean);
+    if (!chunks.length) return Promise.resolve(0);
+    return addProseChunks(chunks).then((written) => written.length).catch(() => 0);
+  } catch {
+    return Promise.resolve(0);
+  }
+}
+
 export function formatRecallEntries(recallInfo, { recentTexts = [], header = DEFAULT_HEADER, proseEntries = [], budgetChars = RECALL_BUDGET_CHARS } = {}) {
   const hasNotes = recallInfo && Array.isArray(recallInfo.visible) && recallInfo.visible.length;
   if (!hasNotes && !proseEntries.length) {
