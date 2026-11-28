@@ -48,7 +48,8 @@ function requestOptions(provider) {
 function expectedUrl(provider, cfg) {
   if (provider.protocol === "vertex") return buildVertexEndpoint(cfg.vertexProject, cfg.vertexLocation);
   if (provider.protocol === "gemini") {
-    return `${provider.endpoint}/${encodeURIComponent(cfg.model)}:generateContent?key=${encodeURIComponent(cfg.apiKey)}`;
+    // 密钥走 x-goog-api-key 请求头，URL 里不再带 key。
+    return `${provider.endpoint}/${encodeURIComponent(cfg.model)}:generateContent`;
   }
   return provider.endpoint;
 }
@@ -91,8 +92,14 @@ function expectThinking(provider, off, high, model) {
     expect(high.thinking).toEqual({ type: "enabled", budget_tokens: 8192 });
     expect(high).not.toHaveProperty("temperature");
   } else if (provider.thinking === "gemini") {
-    expect(off.generationConfig).not.toHaveProperty("thinkingConfig");
+    // 3.8 Flash 不支持 minimal：「思考关」压到 low；3 系列以后不传采样参数，系统提示走 systemInstruction。
+    expect(off.generationConfig.thinkingConfig).toEqual({ thinkingLevel: "low" });
     expect(high.generationConfig.thinkingConfig).toEqual({ thinkingLevel: "high" });
+    for (const body of [off, high]) {
+      expect(body.generationConfig).not.toHaveProperty("temperature");
+      expect(body.systemInstruction).toEqual({ parts: [{ text: "system" }] });
+      expect(body.contents[0].parts[0].text).toBe("hello");
+    }
   } else if (provider.thinking === "vertex") {
     expect(off.reasoning_effort).toBe(vertexReasoningEffort(model, "off"));
     expect(high.reasoning_effort).toBe(vertexReasoningEffort(model, "high"));
@@ -128,7 +135,10 @@ describe("provider request catalog", () => {
       expect(headers["anthropic-dangerous-direct-browser-access"]).toBe("true");
       expect(headers["anthropic-version"]).toBe("2023-06-01");
     }
-    if (provider.auth === "query-key") expect(new URL(requests[0].url).searchParams.get("key")).toBe("test-api-key");
+    if (provider.auth === "header-key") {
+      expect(headers["x-goog-api-key"]).toBe("test-api-key");
+      expect(new URL(requests[0].url).searchParams.get("key")).toBeNull();
+    }
     if (provider.auth === "adc") expect(headers.Authorization).toBe("Bearer vertex-access-token");
     for (const [name, value] of Object.entries(provider.extraHeaders)) expect(headers[name]).toBe(value);
 
@@ -274,7 +284,7 @@ describe("connection test error summaries", () => {
     expect(JSON.stringify(summary)).not.toContain(deepseekConfig.apiKey);
   });
 
-  it("redacts Gemini's query key from a 404 request URL", async () => {
+  it("Gemini 的密钥不进请求地址，404 报错里也见不到", async () => {
     const cfg = { ...configFor(PROVIDERS.gemini), apiKey: "gemini-secret-key", model: "gemini-2.5-flash" };
     vi.stubGlobal("fetch", vi.fn(async () => new Response("Not Found", {
       status: 404,
@@ -282,7 +292,7 @@ describe("connection test error summaries", () => {
     })));
     const summary = await classifyFailure(cfg);
     expect(summary).toMatchObject({ code: "404", cause: "地址或模型名不对" });
-    expect(summary.fix).toContain("key=[REDACTED]");
+    expect(summary.fix).not.toContain("key=");
     expect(JSON.stringify(summary)).not.toContain(cfg.apiKey);
   });
 
@@ -399,14 +409,20 @@ describe("schema response_format 分支选择（WO-03）", () => {
 });
 
 describe("A1 Gemini 3 OpenAI 兼容通道显式思考档", () => {
-  it("custom+openai 协议 gemini-3.8-flash：思考关=minimal、下发 reasoning_effort、无双参数", async () => {
+  it("custom+openai 协议 gemini-3.8-flash：思考关=low（官方：3.8 Flash 传 minimal 报错）、下发 reasoning_effort、无双参数", async () => {
     const { applyThinkingOpenAI, PROVIDERS } = await import("./providers.js");
     for (const pid of ["custom", "openai"]) {
       const provider = { ...PROVIDERS[pid], id: pid, thinking: "openai-effort" };
-      // 思考关 → minimal
+      // 思考关 → 3.8 Flash 不支持 minimal，压到 low；支持 minimal 的 3.6 Flash 仍给 minimal
       const body = { model: "gemini-3.8-flash" };
       applyThinkingOpenAI(body, { model: "gemini-3.8-flash", thinkingMode: "off" }, provider, null, {});
-      expect(body.reasoning_effort).toBe("minimal");
+      expect(body.reasoning_effort).toBe("low");
+      const b36 = { model: "gemini-3.6-flash" };
+      applyThinkingOpenAI(b36, { model: "gemini-3.6-flash", thinkingMode: "off" }, provider, null, {});
+      expect(b36.reasoning_effort).toBe("minimal");
+      const b4 = { model: "gemini-4-argon" };
+      applyThinkingOpenAI(b4, { model: "gemini-4-argon", thinkingMode: "off" }, provider, null, {});
+      expect(b4.reasoning_effort).toBe("low");
       expect(body.extra_body).toBeUndefined();
       // 档位透传 low/medium/high
       for (const [mode, want] of [["low", "low"], ["medium", "medium"], ["high", "high"]]) {
@@ -417,15 +433,18 @@ describe("A1 Gemini 3 OpenAI 兼容通道显式思考档", () => {
       // google/ 前缀归一
       const b3 = { model: "google/gemini-3.8-flash" };
       applyThinkingOpenAI(b3, { model: "google/gemini-3.8-flash", thinkingMode: "off" }, provider, null, {});
-      expect(b3.reasoning_effort).toBe("minimal");
+      expect(b3.reasoning_effort).toBe("low");
     }
   });
-  it("disableThinking 短调用：Gemini 3 下发 minimal；非 Gemini 模型请求体不变", async () => {
+  it("disableThinking 短调用：Gemini 3+ 下发该型号支持的最低档；非 Gemini 模型请求体不变", async () => {
     const { applyThinkingOpenAI, applyShortCallOpenAI, PROVIDERS } = await import("./providers.js");
     const provider = { ...PROVIDERS.custom, id: "custom", thinking: "openai-effort" };
     const b = { model: "gemini-3.8-flash" };
     applyShortCallOpenAI(b, provider, { disableThinking: true });
-    expect(b.reasoning_effort).toBe("minimal");
+    expect(b.reasoning_effort).toBe("low");
+    const lite = { model: "gemini-3.5-flash-lite" };
+    applyShortCallOpenAI(lite, provider, { disableThinking: true });
+    expect(lite.reasoning_effort).toBe("minimal");
     expect(b.extra_body?.google?.thinking_config).toBeUndefined();
     // 非 gemini-3 不下发
     const b2 = { model: "gpt-4o-mini" };

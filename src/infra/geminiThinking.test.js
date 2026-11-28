@@ -18,12 +18,22 @@ describe("applyThinkingGemini", () => {
     const g3Pro = {};
     applyThinkingGemini(g3Pro, { model: "gemini-3-pro-preview", thinkingMode: "high" }, { disableThinking: true });
     expect(g3Pro.thinkingConfig).toEqual({ thinkingLevel: "low" });
+
+    // 官方：3.7 / 3.8 Flash 与 Gemini 4 不支持 minimal（传了报错），最低只能 low
+    for (const model of ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-4-argon"]) {
+      const g = {};
+      applyThinkingGemini(g, { model, thinkingMode: "high" }, { disableThinking: true });
+      expect(g.thinkingConfig, model).toEqual({ thinkingLevel: "low" });
+    }
   });
 
-  it("未传 disableThinking 时保持原有 Gemini 思考配置行为", () => {
+  it("设置里选「关」时 3 系列以后真的压到最低档，不再留空让模型按默认 medium 思考", () => {
     const g3Off = {};
     applyThinkingGemini(g3Off, { model: "gemini-3-flash-preview", thinkingMode: "off" });
-    expect(g3Off.thinkingConfig).toBeUndefined();
+    expect(g3Off.thinkingConfig).toEqual({ thinkingLevel: "minimal" });
+    const g38Off = {};
+    applyThinkingGemini(g38Off, { model: "gemini-3.8-flash", thinkingMode: "off" });
+    expect(g38Off.thinkingConfig).toEqual({ thinkingLevel: "low" });
 
     const g25Med = {};
     applyThinkingGemini(g25Med, { model: "gemini-2.5-flash", thinkingMode: "medium" });

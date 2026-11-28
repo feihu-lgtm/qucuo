@@ -19,15 +19,16 @@ export const PROVIDERS = {
   gemini: {
     id: "gemini", label: "Google Gemini", protocol: "gemini",
     endpoint: "https://generativelanguage.googleapis.com/v1beta/models", altEndpoints: [],
-    auth: "query-key", extraHeaders: {}, thinking: "gemini", maxTokensField: "max_tokens",
-    maxTokensCap: null, corsProxyRequired: false, models: ["gemini-3.7-flash", "gemini-2.5-flash"],
+    auth: "header-key", extraHeaders: {}, thinking: "gemini", maxTokensField: "max_tokens",
+    maxTokensCap: null, corsProxyRequired: false,
+    models: ["gemini-3.8-flash", "gemini-4-argon", "gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash"],
   },
   vertex: {
     id: "vertex", label: "Vertex AI", protocol: "vertex",
     endpoint: "https://aiplatform.googleapis.com/v1/projects/{project}/locations/global/endpoints/openapi/chat/completions",
     altEndpoints: [], auth: "adc", extraHeaders: {}, thinking: "vertex",
     maxTokensField: "max_tokens", maxTokensCap: null, corsProxyRequired: false,
-    models: ["gemini-3.7-flash", "gemini-2.5-flash"],
+    models: ["gemini-3.8-flash", "gemini-4-argon", "gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash"],
   },
   openrouter: OPENAI("openrouter", "OpenRouter", "https://openrouter.ai/api/v1/chat/completions", {
     extraHeaders: { "HTTP-Referer": "https://feihu-lgtm.github.io/qucuo/", "X-Title": "曲措乡" },
@@ -192,10 +193,51 @@ function thinkingEffort(cfg) {
 
 const THINKING_BUDGET_BY_MODE = { low: 512, medium: 2048, high: 8192 };
 
-// A1：Gemini 3 判定（去 google/ 前缀后 gemini-3 开头）——OpenAI 兼容通道
-// 显式思考档的唯一识别口径，custom/openai 中转与官方通道同吃。
-export function isGemini3Model(model) {
-  return /^gemini-3/i.test(String(model || "").replace(/^google\//, ""));
+// ── Gemini 3 及以后（3.x、4 系列）的调用口径 ────────────────────────────────
+// 依据 Gemini API 官方文档（2026-10 版：What's new in Gemini 3.6 / 3.8 Flash / Gemini 4 Argon、Thinking、Caching）：
+// 1. 思考只认 thinkingLevel（low / medium / high，个别型号另有 minimal），不能与 thinkingBudget 同传。
+// 2. minimal 只有 3 Flash、3.5 / 3.6 Flash、3.1 / 3.5 Flash-Lite 支持；3.7 / 3.8 Flash 与 Gemini 4 传 minimal 直接报错。
+// 3. temperature / top_p / top_k 自 3.6 起弃用、被忽略，后续型号会直接报 400；3 系列官方也建议不改默认采样，统一不传。
+// 4. maxOutputTokens 同时计入思考与正文；Gemini 4 官方建议显式设置时不低于 32768，想省 token 应降思考档而不是压上限。
+// 5. 请求末尾不能是 model 轮（预填），否则 400。
+const GEMINI_STRIP = (model) => String(model || "").replace(/^google\//, "").replace(/^models\//, "");
+
+// 3 系列及以后的统一识别口径（原 isGemini3Model 只认 gemini-3，漏了 Gemini 4），custom/openai 中转与官方通道同吃。
+export function isGeminiLevelModel(model) {
+  return /^gemini-(?:[3-9]|\d{2,})(?:[.-]|$)/i.test(GEMINI_STRIP(model));
+}
+
+export const GEMINI_MINIMAL_THINKING = [
+  /^gemini-3(?:\.[56])?-flash(?:-preview)?$/i,
+  /^gemini-3\.[15]-flash-lite(?:-preview)?$/i,
+];
+
+// 「思考关」在 3 系列以后只能压到最低档：支持 minimal 的给 minimal，其余给 low。
+export function geminiOffThinkingLevel(model) {
+  const id = GEMINI_STRIP(model);
+  return GEMINI_MINIMAL_THINKING.some((re) => re.test(id)) ? "minimal" : "low";
+}
+
+// 思考档：off → 最低档；low/medium/high 原样（minimal 只在支持的型号上出现）。
+export function geminiThinkingLevel(model, effort) {
+  return ["low", "medium", "high"].includes(effort) ? effort : geminiOffThinkingLevel(model);
+}
+
+// 输出上限下限：思考与正文共用额度，上限太低会在思考里耗尽、正文截断。计费只按实际生成量，抬高下限不增加花费。
+export function geminiMinOutputTokens(model) {
+  if (!isGeminiLevelModel(model)) return 0;
+  return /^gemini-(?:[4-9]|\d{2,})/i.test(GEMINI_STRIP(model)) ? 32768 : 8192;
+}
+
+// 末尾的 model 轮（预填）在 3.6 以后会 400：把它们并成一条 user 轮，提示接着写。
+export function dropTrailingModelTurns(messages) {
+  let end = messages.length;
+  while (end > 0 && messages[end - 1].role === "assistant") end--;
+  if (end === messages.length) return messages;
+  const text = messages.slice(end).map((m) => m.content).filter((c) => c?.trim()).join("\n");
+  const kept = messages.slice(0, end);
+  if (text) kept.push({ role: "user", content: "（请直接接着下面这段继续写，不要重复）\n" + text });
+  return kept;
 }
 
 function supportsOpenAIReasoning(model) {
@@ -224,8 +266,8 @@ export function applyThinkingOpenAI(body, cfg, provider, vertex, opts = {}) {
       // A1：Gemini 3 走 OpenAI 兼容协议必须显式下发 reasoning_effort——
       // 不识别的中转默认档会狂烧思考 token（前哨中位 217）。思考关=minimal，
       // 其余按设置 low/medium/high；绝不同时下 extra_body.google.thinking_config。
-      if (isGemini3Model(cfg.model)) {
-        body.reasoning_effort = enabled ? effort : "minimal";
+      if (isGeminiLevelModel(cfg.model)) {
+        body.reasoning_effort = geminiThinkingLevel(cfg.model, effort);
         delete body.extra_body;
       } else if (provider.id === "openrouter") {
         body.reasoning = enabled ? { exclude: false, effort } : { exclude: true };
@@ -251,8 +293,8 @@ export function applyShortCallOpenAI(body, provider, opts = {}) {
   const model = String(body.model || "").replace(/^google\//, "");
   // A1：短调用关思考——Gemini 3 在 OpenAI 兼容通道下发 reasoning_effort minimal，
   // 与 thinking 主链互不叠加（主链 delete extra_body，此处不下 extra_body）。
-  if (opts.disableThinking && provider.thinking === "openai-effort" && isGemini3Model(model)) {
-    body.reasoning_effort = "minimal";
+  if (opts.disableThinking && provider.thinking === "openai-effort" && isGeminiLevelModel(model)) {
+    body.reasoning_effort = geminiOffThinkingLevel(model);
   }
   if (opts.disableThinking && provider.thinking === "vertex" && /^gemini-2\.5/i.test(model)) {
     delete body.reasoning_effort;
@@ -278,8 +320,8 @@ export function applyShortCallOpenAI(body, provider, opts = {}) {
 export function applyThinkingGemini(genConfig, cfg, opts = {}) {
   const model = cfg.model || "";
   if (opts?.disableThinking) {
-    if (/^gemini-3/i.test(model)) {
-      genConfig.thinkingConfig = { thinkingLevel: /flash/i.test(model) ? "minimal" : "low" };
+    if (isGeminiLevelModel(model)) {
+      genConfig.thinkingConfig = { thinkingLevel: geminiOffThinkingLevel(model) };
     } else {
       const minBudget = /gemini-2\.5-pro/i.test(model) ? 128 : 0;
       const budget = opts.thinkingBudget !== undefined ? Math.max(minBudget, Number(opts.thinkingBudget) || 0) : minBudget;
@@ -289,13 +331,51 @@ export function applyThinkingGemini(genConfig, cfg, opts = {}) {
   }
   const mode = cfg.thinkingMode || "off";
   const effort = thinkingEffort(cfg);
-  if (/^gemini-3/i.test(model)) {
-    if (effort === "off") return;
-    genConfig.thinkingConfig = { thinkingLevel: effort };
+  if (isGeminiLevelModel(model)) {
+    // 不传 thinkingConfig 时 3.8 Flash / Gemini 4 按默认 medium 思考；设置里选「关」要真的压到最低档。
+    genConfig.thinkingConfig = { thinkingLevel: geminiThinkingLevel(model, effort) };
   } else {
     const budget = mode === "custom" ? Math.max(0, Number(cfg.thinkingBudget) || 0) : THINKING_BUDGET_BY_MODE[mode] || 0;
     genConfig.thinkingConfig = { thinkingBudget: budget };
   }
+}
+
+// Gemini 原生 generateContent / streamGenerateContent 的请求头与请求体（非流式与流式共用一处）。
+// - 系统提示走 systemInstruction，不再拼进第一条 user 消息（第一条不是 user 时系统提示会整段丢失；
+//   放在 systemInstruction 里也让固定前缀稳定，利于隐式缓存——3.8 Flash 与 Gemini 4 前缀需达 4096 token 才计入）。
+// - 密钥放 x-goog-api-key 请求头，不进 URL（URL 会进代理日志、浏览器历史与报错原文）。
+// - 3 系列以后：不传采样参数、思考只用 thinkingLevel、输出上限设下限、去掉末尾预填的 model 轮。
+export function buildGeminiRequest({ cfg, provider, systemText, messages, maxOutputTokens, sampling = {}, opts = {} }) {
+  const model = cfg.model || "";
+  const level = isGeminiLevelModel(model);
+  const turns = level ? dropTrailingModelTurns(messages) : messages;
+  const contents = turns.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
+  const genConfig = { maxOutputTokens: Math.max(maxOutputTokens || 0, geminiMinOutputTokens(model)) || undefined };
+  if (!level) {
+    if (sampling.temperature != null) genConfig.temperature = sampling.temperature;
+    if (sampling.topP != null) genConfig.topP = sampling.topP;
+    if (sampling.topK != null) genConfig.topK = sampling.topK;
+    if (sampling.frequencyPenalty != null) genConfig.frequencyPenalty = sampling.frequencyPenalty;
+    if (sampling.presencePenalty != null) genConfig.presencePenalty = sampling.presencePenalty;
+  }
+  if (opts.jsonOnly) genConfig.responseMimeType = "application/json";
+  applyThinkingGemini(genConfig, cfg, opts);
+  const body = { contents, generationConfig: genConfig };
+  if (systemText && String(systemText).trim()) body.systemInstruction = { parts: [{ text: String(systemText) }] };
+  const headers = { ...(provider?.extraHeaders || {}), "Content-Type": "application/json", "x-goog-api-key": cfg.apiKey || "" };
+  return { headers, body };
+}
+
+// OpenAI 兼容通道（Vertex、OpenRouter、自定义中转）上跑 Gemini 3+ / 4：同样不传采样参数、输出上限设下限。
+export function adaptOpenAIBodyForGemini(body) {
+  if (!isGeminiLevelModel(body.model)) return body;
+  delete body.temperature;
+  delete body.top_p;
+  delete body.top_k;
+  for (const field of ["max_tokens", "max_completion_tokens"]) {
+    if (body[field] != null) body[field] = Math.max(Number(body[field]) || 0, geminiMinOutputTokens(body.model));
+  }
+  return body;
 }
 
 export function applyThinkingAnthropic(body, cfg, maxTokens) {
