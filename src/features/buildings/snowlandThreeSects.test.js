@@ -104,11 +104,13 @@ describe("雪域三宗与打箭炉 · 18 门武学与常驻人物", () => {
     expect(skillUnlockStatus({ flags: [SECT_MEMBER_FLAGS.萨迦世家], questProgress: {}, varTree: { 世界: { 势力声誉: { 萨迦世家: 100 } } } }, topSajia).ok).toBe(true);
   });
 
-  it("30 位常驻 NPC 落位对应内层房间且核心高手配齐四槽专属招式", () => {
-    expect(RESIDENT_NPCS.打箭炉).toHaveLength(8);
-    expect(RESIDENT_NPCS.丹霞城).toHaveLength(7);
-    expect(RESIDENT_NPCS.焚风渡).toHaveLength(8);
-    expect(RESIDENT_NPCS.琼隆古墟).toHaveLength(7);
+  // 口径依据 docs/雪域三宗_据点与门派设计稿.md「七、青年人物落点」：
+  // 每据点常驻人物 = 原班底 + 一男一女两名常驻青年（打箭炉 8+2、丹霞城 7+2、焚风渡 8+2、琼隆古墟 7+2）。
+  it("38 位常驻 NPC 落位对应内层房间且核心高手配齐四槽专属招式", () => {
+    expect(RESIDENT_NPCS.打箭炉).toHaveLength(10);
+    expect(RESIDENT_NPCS.丹霞城).toHaveLength(9);
+    expect(RESIDENT_NPCS.焚风渡).toHaveLength(10);
+    expect(RESIDENT_NPCS.琼隆古墟).toHaveLength(9);
     for (const d of ["打箭炉", "丹霞城", "焚风渡", "琼隆古墟"]) {
       for (const npc of RESIDENT_NPCS[d]) {
         expect(getResidentRoomForNpc(d, npc.name), `${d}·${npc.name}`).toBeTruthy();
