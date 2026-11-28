@@ -30,9 +30,9 @@ const ITEM_AVOID = "[AVOID] no hands or people, no text, no seal stamps, no glow
 // 素材类别：输出目录、切出来的尺寸、该类用哪张样张作参考。
 export const KINDS = {
   map: { label: "舆图底卷", dir: "public/art/map", grid: [1, 1], out: "1024x1024", ref: "place" },
-  place: { label: "地点头图", dir: "public/art/place", grid: [1, 1], out: "600x300", ref: "place" },
+  place: { label: "地点头图", dir: "public/art/place", grid: [1, 1], out: "1024x512", ref: "place" },
   npc: { label: "人物小像", dir: "public/art/npc", grid: [3, 3], out: "256x256", ref: "npc" },
-  building: { label: "建筑头图", dir: "public/art/building", grid: [2, 2], out: "600x300", ref: "place" },
+  building: { label: "建筑头图", dir: "public/art/building", grid: [2, 2], out: "768x384", ref: "place" },
   item: { label: "物品类别图", dir: "public/art/item", grid: [3, 3], out: "256x256", ref: "npc" },
 };
 
@@ -40,7 +40,7 @@ export const KINDS = {
 export const RUN_ORDER = [
   { step: "第一步·定调", ids: ["L01", "R01"], note: "各跑三到四次，各挑一张最满意的作样张；L01 管景，R01 管人。" },
   { step: "第二步·试每类第一批", ids: ["B01", "I01", "R14"], note: "从这一步起附样张，并在提示词最前面加一行参考句。" },
-  { step: "第三步·成批", ids: ["L02-L21", "R02-R19", "B02-B11", "I02-I04"], note: "地点、建筑附 L01 样张；人物、物品附 R01 样张。" },
+  { step: "第三步·成批", ids: ["L02-L25", "R02-R19", "B02-B20", "I02-I04"], note: "地点、建筑附 L01 样张；人物、物品附 R01 样张。L22-L25、B12-B20 是雪域四地（打箭炉、丹霞城、焚风渡、琼隆古墟），建筑按建筑 id 出专图。" },
   { step: "第四步·收尾", ids: ["M01"], note: "先确认舆图水系走向再跑，附 L01 样张。" },
 ];
 
@@ -90,6 +90,11 @@ Water is slate water-blue (#7fa3b0) and is the only clearly colored element. Gra
     "[FORMAT] One landscape painting, 1536x1024, eye-level distant view. The subject sits in the middle band of the picture; the top 30% and bottom 30% are soft so the picture can be cropped to a 2:1 banner. All edges fade into near-black #0c0b09. Exception to the anchor: this scene is not at night."),
   place("L21", "第三新东京市", "A city regrowing on ruins: scaffolding, freshly turned earth, laundry drying on balconies, a small child running. In the distance the sea is red and the sky is very blue. Painted in the same ink-wash manner as the rest.", "[AVOID] no recognisable characters, no giant robots, no logos.",
     "[FORMAT] One landscape painting, 1536x1024, eye-level distant view. The subject sits in the middle band of the picture; the top 30% and bottom 30% are soft so the picture can be cropped to a 2:1 banner. All edges fade into near-black #0c0b09. Exception to the anchor: this scene is in daylight."),
+  // 雪域四地（#663）：按夜色规格画，与 L01-L21 同一画风锚，取代临时借用的 L09/L03/L11/L04。
+  place("L22", "打箭炉", "A gorge city at night where two roaring white rivers meet and run straight through the town. Tall flat-roofed stone tower-houses line both banks, wooden waterwheels turn in the current, the glow of iron furnaces shows in a few doorways, and a great caravan inn courtyard has brick tea stacked under its eaves. A rope bridge hangs far upstream; dark mountains close in on both sides.", "[AVOID] no people in close-up, no readable signboards."),
+  place("L23", "丹霞城", "A great walled city at night on a terrace of grey-white earth and dark red sandstone cliffs. Low streets of tenant farmers and woodblock carvers in the outer town climb toward a massive flat-roofed stone compound at the city's heart, its walls painted with broad horizontal bands of muted red, white and blue-grey. Dark barley fields surround the walls; a few lamps burn at the gate.", "[AVOID] no people in close-up, no readable carving."),
+  place("L24", "焚风渡", "An old ferry crossing in a dry, warm river gorge at night, where a fast river runs between bare ochre slopes and never freezes. Yak-hide coracles are pulled up on a stony beach beside herders' cattle pens and gold panners' sluices. Halfway up the slope stands a pure white flat-roofed compound of white pillars, hundreds of white banners streaming in the wind and one great bronze fire bowl glowing.", "[AVOID] no people in close-up, no readable writing on the banners."),
+  place("L25", "琼隆古墟", "A cliff-top city of black stone at night above a deep gorge. Narrow stone lanes cling to the mountainside; on the summit a flat-roofed black hall is held up by twelve square black stone pillars carved with great-bird motifs. Prayer wheels are set into the walls, smoke of burning juniper drifts over the roofs, and an iron chain bridge crosses the chasm below.", "[AVOID] no people in close-up, no swastika symbols, no readable carving."),
 
   sheet("R01", "npc", "鱼定村与土司府（上）", PORTRAIT_FORMAT, PORTRAIT_AVOID, [
     c("周铭章", "a round, shrewd middle-aged Han merchant, chief of the village trading house, easy smile, dark Shu brocade padded robe with a hidden pattern, an icy-green jade thumb ring, a closed iron-ribbed folding fan."),
@@ -365,6 +370,62 @@ Water is slate water-blue (#7fa3b0) and is the only clearly colored element. Gra
     c("home-guqin", "a guqin zither on a low table beneath a window, three of its strings broken and curling loose."),
     c("home-meditation", "a small household Buddhist hall: a white porcelain Guanyin figure, a censer of cold ash, a worn meditation cushion on the floor."),
     empty(), empty(),
+  ]),
+  // 雪域四地建筑专图（#663）：格号即建筑 id，切出后存成 public/art/building/<id>.webp，
+  // 对上 BUILDING_ID_ART 的专图登记（优先于类型图）。仍是夜里平视门脸，四边渐隐进近黑。
+  sheet("B12", "building", "打箭炉（上）", BUILDING_FORMAT, BUILDING_AVOID, [
+    c("inn_dajianlu", "the largest caravan inn of a tea-trade town: a two-storey flat-roofed stone courtyard with a timber gallery, horses stabled and brick tea stacked on the ground floor, lamplight along the upper gallery."),
+    c("restaurant_dajianlu", "a soup house with steam pouring out of the doorway, a big copper pot of yak-bone broth simmering over a fire just inside, low benches by the door."),
+    c("teahouse_dajianlu", "a big flat-roofed teahouse held up by stone pillars, shutters open, long low tables with butter-tea churns and teapots set side by side."),
+    c("transport_dajianlu", "an official tea-and-horse post station, a heavy iron-studded gate, fast horses and mules tied at the rails, packs of brick tea ready for loading."),
+  ]),
+  sheet("B13", "building", "打箭炉（中）", BUILDING_FORMAT, BUILDING_AVOID, [
+    c("wuguan_dajianlu", "a martial yard at the foot of a mountain enclosed by huge square stone pillars, racks of heavy single-edged sabres and a packed-earth wrestling ring."),
+    c("forge_dajianlu", "an old government forge whose bellows are driven by a river waterwheel, sparks lighting half a stone wall, bundles of heavy arrow shafts and a few metal throwing wheels on the bench."),
+    c("shop_dajianlu", "a jewel trading house with a heavy woven wool curtain over the door; on the counter behind it, shallow trays of turquoise, red coral and banded agate beads."),
+    c("medicine_dajianlu", "a highland medicine shop on a fur traders' street, pelts hanging outside the door, inside shelves of dried herbs and small cloth pill bags."),
+  ]),
+  sheet("B14", "building", "打箭炉（下）、丹霞城（上）", BUILDING_FORMAT, BUILDING_AVOID, [
+    c("bounty_dajianlu", "a flat-roofed meeting hall held up by eight monolithic stone pillars, blank paper notices pinned along one wall, three banners of different muted colors at the door."),
+    c("shop_danxiacheng", "an estate granary and store of red sandstone, open double doors showing sacks of barley, blocks of pink-red rock salt and rolls of woven wool cloth."),
+    c("inn_danxiacheng", "a flat-roofed stone-pillared inn in a red-earth outer town, merchants' mules tied outside, a lamplit doorway."),
+    c("library_sajia", "a woodblock printing workshop: racks of carved birch printing blocks, long benches, bowls of cinnabar-red ink, printed sheets drying on lines."),
+  ]),
+  sheet("B15", "building", "丹霞城（中）", BUILDING_FORMAT, BUILDING_AVOID, [
+    c("sect_entry_sajia", "a massive flat-roofed stone city gate, the wall painted with broad horizontal bands of muted red, white and blue-grey, a dark fringe of dried tamarisk twigs along the parapet."),
+    c("temple_sajia", "the main hall of a noble lineage: eight vermilion-painted monolithic stone pillars, a parapet of dark tamarisk twigs and small gilded victory banners on the roof, one empty stone seat inside."),
+    c("wuguan_sajia", "a training hall whose stone pillars are scarred with deep cuts from spinning metal wheels, a rack of metal throwing wheels by the wall."),
+    c("sectshop_sajia", "a side courtyard held up by twelve thick stone pillars where guardians' gear is issued: metal throwing wheels and ritual implements on plain shelves."),
+  ]),
+  sheet("B16", "building", "丹霞城（下）、焚风渡（上）", BUILDING_FORMAT, BUILDING_AVOID, [
+    c("bounty_sajia", "a half-official magistrate's hall: a black lacquered judge's desk beside a rack of wooden disciplinary rods, ledgers stacked high, a single lamp."),
+    c("chest_sajia", "a locked treasury room in a tower: iron-bound chests, a jade seal resting on a cushion, a stack of iron tally tablets, a heavy lock on the door."),
+    c("inn_fenfengdu", "a ferry-side inn of stone and timber with a flat roof, yak-hide coracles leaning against its wall, warm light from the door."),
+    c("shop_fenfengdu", "a riverside market on a stony beach where gold panners trade: sluice boxes, small balance scales, sacks of salt and knives laid out on a cloth."),
+  ]),
+  sheet("B17", "building", "焚风渡（中）", BUILDING_FORMAT, BUILDING_AVOID, [
+    c("restaurant_fenfengdu", "a gorge tavern where a copper brazier never goes out, yak ribs roasting over the fire, jugs of barley spirit on the counter."),
+    c("sect_entry_gaju", "a pure white flat-roofed mountain gate at the top of a long stone stair, a hundred white banners streaming in the wind."),
+    c("wuguan_gaju", "a white training hall with a great bronze fire bowl blazing in the center, plain stone benches around it."),
+    c("sectshop_gaju", "a long white-pillared cloister where white robes and short copper sabres are laid out on stone benches."),
+  ]),
+  sheet("B18", "building", "焚风渡（下）、琼隆古墟（上）", BUILDING_FORMAT, BUILDING_AVOID, [
+    c("hospital_gaju", "a white stone pool fed by a snow spring, steam rising off the water into the cold night, folded wet robes on its rim."),
+    c("temple_gaju", "a huge flat rock terrace jutting out over a gorge at the edge of a white compound, a cold moon above, one prayer cushion on the stone."),
+    c("inn_qionglong", "a black stone guesthouse whose hearth always burns juniper and wormwood, smoke curling up from the flat roof, furs and ore sacks by the door."),
+    c("shop_qionglong", "a stone-slab street market of an old highland people, white yak skulls hung over the doorways, lumps of ore, bone tools and barley sacks on display."),
+  ]),
+  sheet("B19", "building", "琼隆古墟（中）", BUILDING_FORMAT, BUILDING_AVOID.replace("no frames around cells.", "no frames around cells, no swastika symbols."), [
+    c("forge_qionglong", "a mountain forge working dark meteoric iron, a glowing furnace cut into a black rock wall, a black nine-pronged iron ritual sceptre and long iron chisels on the anvil."),
+    c("kitchen_benmen", "an estate storehouse kitchen where roasted-barley flour and butter are kneaded into hard dough figures shaped like small yaks, sacks and butter churns around."),
+    c("sect_entry_benmen", "a flat-roofed black stone gate set with eighteen dark bronze prayer wheels, heavy iron gate leaves."),
+    c("wuguan_benmen", "a black stone training ground with black wooden bird masks hanging on posts and deep claw marks gouged into wooden pillars."),
+  ]),
+  sheet("B20", "building", "琼隆古墟（下）", BUILDING_FORMAT, BUILDING_AVOID.replace("no frames around cells.", "no frames around cells, no swastika symbols."), [
+    c("sectshop_benmen", "a vault of unearthed relics in black stone: rolled sheepskin scrolls, dark iron blades and carved animal masks on shelves."),
+    c("library_benmen", "a divination tower room with scorched sheep shoulder-blades on a low table, knotted cords, a chart of nine squares on the wall and sheepskin scrolls in niches."),
+    c("hospital_benmen", "a healing cave in black rock lit by butter lamps, mineral powders in stone bowls, a tray of long gold needles beside a low pallet."),
+    c("temple_benmen", "a flat-roofed main hall held up by eight black monolithic pillars; inside, dimly lit, a dark bronze statue of a sage riding a great garuda bird."),
   ]),
 
   sheet("I01", "item", "兵器", ITEM_FORMAT, ITEM_AVOID, [
