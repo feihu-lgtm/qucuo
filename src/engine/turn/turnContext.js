@@ -50,7 +50,12 @@ export function createTurnContext({ plan, env }) {
     pendDir, outerDepart, pickupJudgment, collectGranted,
   } = plan;
   // apiCfg/gm/isStale 挂在 env 顶层（hook 注入），不进 state。
-  const { isStale, _trace, apiCfg, gm, proseEpochGuard, proseSink, proseEpoch, proseSeqAlloc, executeJudgeRoutes } = env;
+  const { isStale, _trace, apiCfg: rawApiCfg, gm, proseEpochGuard, proseSink, proseEpoch, proseSeqAlloc, executeJudgeRoutes } = env;
+  // PR-B2：GM/创造模式是有意例外——继续走单调用 JSON 老路（items_add/gmNote/
+  // room.npcs 凭空造物能力不断），不进判官/双调用叙事。单点派生 effectiveApiCfg，
+  // 下游 judgePipelineActive/extraction 分岔自然全翻旧路；WO-16 再为 GM 设计
+  // 事实化/直通 warrant。
+  const apiCfg = gm && rawApiCfg ? { ...rawApiCfg, extractionEnabled: false } : rawApiCfg;
 
   // 本回合开始时的 varTree：store 直读即为最新（zustand 写读同步）。
   const preActVarTree = getGameState?.()?.varTree ?? {};
