@@ -17,7 +17,7 @@ import {
 import { calcDungeonCheckRate } from "../../src/domain/rules/dungeon/internal.js";
 import { QUALITY } from "../../src/domain/rules/economy/equipment.js";
 import { factionRepOf } from "../../src/domain/rules/economy/factionRep.js";
-import { getTension } from "../../src/domain/rules/conflict/tension.js";
+import { factionTensionProxy, getTension } from "../../src/domain/rules/conflict/tension.js";
 import { WANDERING_OCS, wanderRangeOf } from "../../src/domain/rules/npc/ocWander.js";
 import { ocNearFaction, makeRoadPasser } from "../../src/domain/data/npc/randomPassers.js";
 
@@ -85,7 +85,7 @@ export function roadSnapshot(state, destNode) {
   return { situations, squads, events };
 }
 
-// 蓝图谓词求值（WO-25D 的 evalPredicate 落地后改为调用它；路遇自带的三个谓词随之注册为扩展谓词）。
+// 蓝图谓词求值（与 WO-25C/WO-25D 的 evalPredicate 同口径，同时保留旧字段兼容；路遇自带三扩展谓词）。
 export function evalWhen(pred, state, ctx = {}) {
   if (!pred) return true;
   if (pred.all) return pred.all.every((p) => evalWhen(p, state, ctx));
@@ -93,10 +93,28 @@ export function evalWhen(pred, state, ctx = {}) {
   if (pred.not) return !pred.not.some((p) => evalWhen(p, state, ctx));
   switch (pred.type) {
     case "factionRepGte": return factionRepOf(state?.varTree || {}, pred.faction) >= pred.value;
-    case "factionTensionGte": return getTension(tensionOf(state), pred.a, pred.b) >= pred.value;
-    case "situationActive": return (ctx.snapshot?.situations || []).includes(pred.situation);
-    case "flag": return (state?.flags || []).includes(pred.flag);
-    case "questDone": return state?.questProgress?.[pred.questId]?.status === "completed";
+    case "factionTensionGte": {
+      const fac = pred.faction || pred.a;
+      const value = pred.b ? getTension(tensionOf(state), fac, pred.b) : factionTensionProxy(tensionOf(state), fac);
+      return value >= (pred.value ?? 0);
+    }
+    case "situationActive": {
+      const sid = pred.id || pred.situation;
+      const today = dayOf(state?.time);
+      if (pred.district) {
+        return (world(state).据点局势?.[pred.district] || []).some(
+          (s) => s.id === sid && (s.expireDay == null || s.expireDay >= today),
+        );
+      }
+      if (ctx.snapshot?.situations) return ctx.snapshot.situations.includes(sid);
+      return Object.values(world(state).据点局势 || {}).some((cards) =>
+        (cards || []).some((s) => s.id === sid && (s.expireDay == null || s.expireDay >= today)));
+    }
+    case "flag": return (state?.flags || []).includes(pred.flag) || Boolean(world(state).旗号?.[pred.flag]);
+    case "questDone": {
+      const qid = pred.quest || pred.questId;
+      return state?.questProgress?.[qid]?.status === "completed" || Boolean(world(state).任务册?.[qid]?.done);
+    }
     case "statGte": return statOf(state, pred.stat) >= pred.value;
     case "rumorKnown": return rumorNames(state).length > 0;
     case "knownEventsHere": return (ctx.snapshot?.events || []).length >= (pred.min || 1);
@@ -111,7 +129,7 @@ function placeMatches(event, destNode) {
 
 function lastRoadDay(state, pick) {
   let last = null;
-  for (const e of world(state).事件录 || []) if (e?.type === "road" && pick(e) && (last == null || e.day > last)) last = e.day;
+  for (const e of world(state).事件录 || []) if ((e?.kind === "road" || e?.type === "road") && pick(e) && (last == null || e.day > last)) last = e.day;
   return last;
 }
 
@@ -152,13 +170,24 @@ function pickWeighted(items, weightFn, rng) {
   return items[items.length - 1];
 }
 
+function ocLifeHintOf(state, name) {
+  const dyn = world(state).人物动态?.[name];
+  if (!dyn || typeof dyn !== "object") return "";
+  const parts = [];
+  if (typeof dyn.hpRatio === "number" && dyn.hpRatio < 0.8) parts.push("带伤在身");
+  if (dyn.purse) parts.push(`银囊${dyn.purse}`);
+  if (dyn.mood) parts.push(`心境${dyn.mood}`);
+  return parts.join("、");
+}
+
 function castFor(event, state, destNode, snapshot, rng) {
   const slot = parseCast(event.cast);
   if (!slot) return null;
   if (slot.kind === "rumor") { const names = rumorNames(state); return { kind: "rumor", name: names[Math.floor(rng() * names.length)] }; }
   if (slot.kind === "oc") {
     const { oc } = pickWeighted(ocCandidates(slot, state, destNode), (c) => c.weight, rng);
-    return { kind: "oc", name: oc.name, gender: oc.gender, faction: ocNearFaction(oc), title: oc.title, brief: oc.brief, romance: slot.romance };
+    const lifeHint = ocLifeHintOf(state, oc.name);
+    return { kind: "oc", name: oc.name, gender: oc.gender, faction: ocNearFaction(oc), title: oc.title, brief: oc.brief, romance: slot.romance, ...(lifeHint ? { lifeHint } : {}) };
   }
   // 身份来人：编队停在本节点且角色对得上时，来人取编队成员；否则身份由事件定、姓名由过路人姓名库出
   const squad = snapshot.squads.find((q) => (livingAffinity(event.cat).squadRoles || []).includes(q.role));
@@ -258,17 +287,21 @@ export function resolveRoadEvent(roll, optionKey, state, { rng = Math.random, lu
 export function roadEventWrites(roll, outcome) {
   const event = ROAD_EVENT_BY_ID[roll.eventId];
   const major = outcome.facts.some((f) => f.op === "COMPANION_CANDIDATE" || (f.op === "BESTOW_SKILL" && QUALITY.indexOf(f.quality) >= 3));
+  const actorNames = roll.cast?.name ? [roll.cast.name] : [];
   return {
     flagsAdd: event.once && outcome.optionKey !== "leave" ? [ONCE_FLAG(event.id)] : [],
     worldEvent: {
       id: `road_${event.id}_${roll.turn}`,
+      kind: "road",
       type: "road",
       eventId: event.id,
       category: event.cat,
       day: roll.day,
       turn: roll.turn,
       district: roll.destNode,
-      entities: roll.cast?.name ? [roll.cast.name] : [],
+      actors: actorNames,
+      entities: actorNames,
+      witnesses: ["主角", ...actorNames],
       summary: `${ROAD_EVENT_CATEGORIES[event.cat].name}·${event.name}`,
       outcome: outcome.success == null ? "leave" : outcome.success ? "success" : "fail",
       importance: major ? 2 : 1,
@@ -282,7 +315,8 @@ function describeCast(cast) {
   if (!cast) return "此事不必有固定来人；若情境需要旁人，可写一两个无名路人，不得给他们起名或赋予后续戏份。";
   if (cast.kind === "rumor") return `来人系统已定：传闻人物「${cast.name}」。照传闻写他，此为传闻落地，不得改名。`;
   if (cast.kind === "oc") {
-    return `来人系统已定：游走冒险者${cast.name}（${cast.title}，${cast.brief}）。样貌、口吻、性子与随身之物一律照此人档案写，把情节核里的处境安到此人身上；照抄名字，加入 room.npcs，不要改名。`;
+    const stateNote = cast.lifeHint ? `（此刻状态：${cast.lifeHint}）` : "";
+    return `来人系统已定：游走冒险者${cast.name}（${cast.title}，${cast.brief}）${stateNote}。样貌、口吻、性子与随身之物一律照此人档案写，把情节核里的处境安到此人身上；照抄名字，加入 room.npcs，不要改名。`;
   }
   const who = `${cast.faction === "散人" ? "无门无派" : `隶属【${cast.faction}】`}的${cast.role}，${cast.gender}，${cast.age}岁上下${cast.squadId ? "，是此刻途经此地的编队中人" : ""}`;
   return cast.name ? `来人系统已定：${cast.name}，${who}。照抄名字，加入 room.npcs，不要改名。` : `来人系统已定：${who}。名字由你起，须合其身份与地域，避开已认识的人。`;

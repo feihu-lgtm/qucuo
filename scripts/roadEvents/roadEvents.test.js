@@ -132,6 +132,12 @@ describe("对接活世界蓝图", () => {
     expect(isEligible(byId("T01"), day(), "打箭炉")).toBe(false);
     expect(isEligible(byId("T01"), withWorld({ 传闻人物: { 沙里飞: {} } }), "打箭炉")).toBe(true);
     expect(evalWhen({ type: "factionTensionGte", a: "青城派", b: "天龙教", value: 101 }, day())).toBe(false);
+    expect(evalWhen({ type: "factionTensionGte", faction: "青城派", b: "天龙教", value: 60 }, day())).toBe(true);
+    expect(evalWhen({ type: "factionTensionGte", faction: "青城派", value: 60 }, day())).toBe(true);
+    expect(evalWhen({ type: "situationActive", id: "sit_herb_shortage", district: "天都镇" },
+      withWorld({ 据点局势: { 天都镇: [{ id: "sit_herb_shortage", expireDay: 35 }] } }))).toBe(true);
+    expect(evalWhen({ type: "flag", flag: "test_flag" }, withWorld({ 旗号: { test_flag: true } }))).toBe(true);
+    expect(evalWhen({ type: "questDone", quest: "q_main" }, withWorld({ 任务册: { q_main: { done: true } } }))).toBe(true);
     expect(() => evalWhen({ type: "无此谓词" }, day())).toThrow();
   });
 
@@ -170,10 +176,26 @@ describe("对接活世界蓝图", () => {
     expect(isEligible(byId("A01"), { ...logged, time: logged.time + 24 * 10 }, "天都镇")).toBe(true);
   });
 
-  it("每次路遇产出一条 WorldEvent，首扩散点是本据点", () => {
+  it("每次路遇产出一条 WorldEvent，首扩散点是本据点，且含 kind/actors/witnesses", () => {
     const roll = rollRoadEvent(day(), "打箭炉", { rng: seededRand(9, "we") });
     const w = roadEventWrites(roll, resolveRoadEvent(roll, "main", day(), { rng: () => 0 }));
-    expect(w.worldEvent).toMatchObject({ type: "road", eventId: roll.eventId, district: "打箭炉", knownDistricts: ["打箭炉"], day: 30 });
+    expect(w.worldEvent).toMatchObject({ kind: "road", type: "road", eventId: roll.eventId, district: "打箭炉", knownDistricts: ["打箭炉"], day: 30 });
+    expect(Array.isArray(w.worldEvent.actors)).toBe(true);
+    expect(w.worldEvent.witnesses).toContain("主角");
+  });
+
+  it("人物动态存在时，游走冒险者照面附带此刻状态（#691 对接）", () => {
+    let roll = null;
+    let state = day();
+    for (let i = 0; i < 200 && !roll; i++) {
+      const candidate = rollRoadEvent(state, "天都镇", { rng: seededRand(i, "life") });
+      if (candidate?.cast?.kind === "oc") {
+        state = withWorld({ 人物动态: { [candidate.cast.name]: { hpRatio: 0.55, purse: "宽裕", mood: "微醺" } } });
+        roll = rollRoadEvent(state, "天都镇", { rng: seededRand(i, "life") });
+      }
+    }
+    expect(roll.cast.lifeHint).toBe("带伤在身、银囊宽裕、心境微醺");
+    expect(buildRoadEventNote(roll)).toContain("此刻状态：带伤在身、银囊宽裕、心境微醺");
   });
 
   it("势力摩擦：调停成功两家张力回落，失败或暗中相助则上升", () => {
