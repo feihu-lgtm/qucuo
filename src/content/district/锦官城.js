@@ -261,8 +261,14 @@ export default { district: {
       暗巷入口: {
         x: 1, y: 1,
         desc: "锦官城的暗巷入口，隐秘交易在此进行。",
-        exits: { w: "清风茶馆", e: "永丰粮行" , n: "唐门暗巷"},
+        exits: { w: "清风茶馆", e: "永丰粮行", n: "唐门暗巷", se: "锦官鬼市入口" },
         buildingId: "blackmarket_jingguan",
+      },
+      锦官鬼市入口: {
+        x: 2, y: 2,
+        desc: "暗巷拐角一扇不起眼的生铁地窖小门，门缝漏出潮湿炭火与低声喊价，地下便是锦官城三教九流混迹的黑市暗坊。",
+        exits: { nw: "暗巷入口" },
+        buildingId: "jingguan_ghost_market",
       },
       永丰粮行: {
         x: 3, y: 1,

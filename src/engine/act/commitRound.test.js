@@ -480,4 +480,26 @@ describe("系统确定性发放白塔地宫线索 flag", () => {
     commitRound(makeDeps(other, {}, { isTalk: true, talkTarget: "才旦", cmd: "白塔地宫门道在哪" }).deps);
     expect(other.flags).not.toContain("white_pagoda_crypt_clue");
   });
+
+  it("向土司府与广汉知情人物打听对应地宫门道同样确定性写入线索 flag", () => {
+    const tusi = baseState();
+    tusi.room = { name: "鱼定土司", npcs: [{ name: "洛桑平措" }], items: [] };
+    const { deps: tusiDeps, logs: tusiLogs } = makeDeps(tusi, {}, {
+      isTalk: true,
+      talkTarget: "洛桑平措",
+      cmd: "打听内府禁库门道",
+    });
+    commitRound(tusiDeps);
+    expect(tusi.flags).toContain("tusi_inner_vault_clue");
+    expect(tusiLogs.some((l) => l.text.includes("鱼定土司内府禁库"))).toBe(true);
+
+    const gx = baseState();
+    gx.room = { name: "广汉", npcs: [{ name: "樊枯" }], items: [] };
+    commitRound(makeDeps(gx, {}, {
+      isTalk: true,
+      talkTarget: "樊枯",
+      cmd: "向樊枯打听归墟青铜宫怎么进",
+    }).deps);
+    expect(gx.flags).toContain("guixu_bronze_clue");
+  });
 });

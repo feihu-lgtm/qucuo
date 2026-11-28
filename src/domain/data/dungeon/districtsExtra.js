@@ -1,77 +1,13 @@
-// 十宫配置数据·下五宫（接 districts.js，字段约定同该文件头注释）。
+// 十宫配置数据·下五宫（接 districts.js，其中五仙/雅江/天龙已升级为 13×13 写实武侠大平面地宫）。
+import { CHENSHA_DOCK_CONFIG } from "./gridDungeonsA.js";
+import { WUXIAN_POISON_VALLEY_CONFIG, TIANLONG_SERPENT_CAVE_CONFIG } from "./gridDungeonsB.js";
 
 export const DUNGEON_DISTRICTS_EXTRA = Object.freeze({
-  雾隐寨五仙秘洞: {
-    anchor: "黑市入口安全区",
-    envTag: "wuxianVenom",
-    prefixPool: ["剧毒", "虫蚀", "幽绿", "瘴气", "腥臭"],
-    suffixPool: ["蛊市", "毒潭", "育虫室", "溶洞", "暗河"],
-    descPool: ["{name}瘴气贴着地面爬，虫鸣在石缝里窸窣。", "{name}毒潭泛绿，蛊虫在陶瓮里厮磨。"],
-    boss: { name: "五毒长老", desc: "万蛊神鼎前以竹哨驭蛇吹箭的毒叟。", movesHint: "蛇群哨令/麻痹吹箭" },
-    puzzle: { type: "recipeCraft", config: { recipe: { materials: ["红毒蛛", "蓝毒蛛"], action: "投入" }, materials: ["红毒蛛", "蓝毒蛛", "陶瓮", "腐叶"], stat: "wisdom", dc: 6, prompt: "双蛛互咬熔蛊锁" } },
-    adventurerFactions: ["五毒", "黑市", "散人"],
-    branchRate: 0.35, loopRate: 0.15,
-    eventSeeds: [
-      { kind: "fight", desc: "毒蛊看守与毒蛇", check: "combat", dc: 6, outcome: "毒物掉落" },
-      { kind: "event", desc: "暗河涨水", check: "agility", dc: 6, outcome: "湿身绕行" },
-      { kind: "nsfw", desc: "媚蛊试药交媾现场", check: "stealth", dc: 5, outcome: "旁观/打断" },
-      { kind: "supply", desc: "割取解毒草", check: null, dc: 0, outcome: "解药" },
-      { kind: "loot", desc: "死路暗格奇毒配方", check: "craft", dc: 7, outcome: "毒谱" },
-      { kind: "watch", desc: "看药人角蛊笼斗", check: "stealth", dc: 4, outcome: "押注彩头" },
-      { kind: "meet", desc: "兜售假药的小贩", check: "wisdom", dc: 6, outcome: "识破得真货" },
-      { kind: "appraise", desc: "鉴定毒药成分", check: "wisdom", dc: 6, outcome: "药理情报" },
-      { kind: "puzzle", desc: "蛊蛛熔锁", check: "wisdom", dc: 6, outcome: "死路开锁" },
-      { kind: "checkpoint", desc: "黑市入口安全区", check: null, dc: 0, outcome: "存点" },
-    ],
-  },
+  雾隐寨五仙秘洞: WUXIAN_POISON_VALLEY_CONFIG,
 
-  雅江悬棺裂谷: {
-    anchor: "宽阔崖台",
-    envTag: "yajiangRope",
-    prefixPool: ["风蚀", "朽木", "凌空", "险峻", "孤影"],
-    suffixPool: ["栈道", "崖穴", "悬棺平台", "索桥", "升降梯"],
-    descPool: ["{name}木板朽黑，脚下江涛隐隐。", "{name}悬棺钉在绝壁，鸦影掠过棺缝。"],
-    boss: { name: "驯鹰人与变异巨雕", desc: "崖顶鹰巢的组合：驯鹰人割绳限走位，巨雕高攻高闪。", movesHint: "割绳/俯冲爪击" },
-    puzzle: { type: "timedAgility", config: { stat: "agility", dc: 7, prompt: "狂风索桥待风停刹那通过" } },
-    adventurerFactions: ["武当", "散人", "盗崖人"],
-    branchRate: 0.3, loopRate: 0.1,
-    eventSeeds: [
-      { kind: "fight", desc: "盗崖人与巨雕", check: "combat", dc: 6, outcome: "崖货" },
-      { kind: "event", desc: "栈道木板朽烂踩空", check: "agility", dc: 6, outcome: "跌半血落底" },
-      { kind: "nsfw", desc: "棺中藏身女贼献身", check: "charm", dc: 5, outcome: "保命色诱结缘" },
-      { kind: "supply", desc: "崖壁采石斛", check: null, dc: 0, outcome: "药材" },
-      { kind: "loot", desc: "无主悬棺殉葬金器", check: "craft", dc: 7, outcome: "金器" },
-      { kind: "watch", desc: "看寻宝人失足跌落", check: "stealth", dc: 3, outcome: "险段预警" },
-      { kind: "meet", desc: "被困崖台的武当道士", check: "charm", dc: 5, outcome: "施救换轻功诀" },
-      { kind: "appraise", desc: "鉴定风向找安全点", check: "wisdom", dc: 5, outcome: "风口时刻表" },
-      { kind: "puzzle", desc: "伺机过索桥", check: "agility", dc: 7, outcome: "裂谷对岸" },
-      { kind: "checkpoint", desc: "宽阔崖台", check: null, dc: 0, outcome: "存点" },
-    ],
-  },
+  雅江悬棺裂谷: CHENSHA_DOCK_CONFIG,
 
-  天龙营八部浮屠: {
-    anchor: "层间疗伤静室",
-    envTag: "tianlongSeal",
-    prefixPool: ["修罗", "夜叉", "梵音", "戒律", "狂热"],
-    suffixPool: ["法阵", "擂台", "冥想室", "铁牢", "刑求室"],
-    descPool: ["{name}血幡垂挂，教众诵经的声浪撞在墙上。", "{name}擂台血迹未干，铁牢里闷哼不断。"],
-    boss: { name: "姬无双与樊未离", desc: "阿修罗斗技场双 BOSS：长鞭姬无双脆皮高伤，大刀樊未离重甲。", movesHint: "鞭影缠绵/重刀劈山" },
-    puzzle: { type: "sequenceReset", config: { items: ["天", "龙", "夜叉", "阿修罗", "迦楼罗", "摩呼罗迦", "紧那罗", "乾闼婆"], stat: "wisdom", dc: 7, prompt: "按教义尊卑踩八部石板，错序毒箭" } },
-    adventurerFactions: ["天龙", "武痴", "散人"],
-    branchRate: 0.3, loopRate: 0.1,
-    eventSeeds: [
-      { kind: "fight", desc: "天龙教试炼官", check: "combat", dc: 7, outcome: "令牌" },
-      { kind: "event", desc: "触发暗器木桩", check: "agility", dc: 6, outcome: "箭伤" },
-      { kind: "nsfw", desc: "战败女侠木马受刑", check: "stealth", dc: 5, outcome: "旁观/踢门救人" },
-      { kind: "supply", desc: "演武架疗伤丸", check: null, dc: 0, outcome: "丹药" },
-      { kind: "loot", desc: "精英令牌开宝箱", check: "combat", dc: 7, outcome: "教中藏货" },
-      { kind: "watch", desc: "擂台生死决斗", check: "stealth", dc: 4, outcome: "押注/收尸货" },
-      { kind: "meet", desc: "重伤退下的武痴", check: "charm", dc: 5, outcome: "层攻略情报" },
-      { kind: "appraise", desc: "鉴定擂台暗器机关", check: "craft", dc: 6, outcome: "拆机窍" },
-      { kind: "puzzle", desc: "教义石板序列", check: "wisdom", dc: 7, outcome: "升降通道" },
-      { kind: "checkpoint", desc: "层间疗伤静室", check: null, dc: 0, outcome: "存点" },
-    ],
-  },
+  天龙营八部浮屠: TIANLONG_SERPENT_CAVE_CONFIG,
 
   蜀南唐堡千机楼: {
     anchor: "换班休息室",
@@ -108,7 +44,7 @@ export const DUNGEON_DISTRICTS_EXTRA = Object.freeze({
     adventurerFactions: ["合欢", "散人", "各派落难女侠"],
     branchRate: 0.35, loopRate: 0.15,
     eventSeeds: [
-      { kind: "fight", desc: "欢喜教娈童护法", check: "combat", dc: 7, outcome: "坛中密货" },
+      { kind: "fight", desc: "欢喜堂成年护院武者", check: "combat", dc: 7, outcome: "坛中密货" },
       { kind: "event", desc: "欲火攻心扣内力", check: "inner", dc: 6, outcome: "内力流失" },
       { kind: "nsfw", desc: "汤池群交大典/解毒双修", check: "body", dc: 6, outcome: "救剑舞娘收从者" },
       { kind: "supply", desc: "搜刮清心丸", check: null, dc: 0, outcome: "降欲火药" },

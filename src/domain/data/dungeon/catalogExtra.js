@@ -3,7 +3,7 @@
 export const DUNGEON_CATALOG_EXTRA = Object.freeze({
   sanxing_bronze_abyss: {
     id: "sanxing_bronze_abyss",
-    name: "归墟青铜秘井",
+    name: "归墟青铜宫",
     district: "广汉",
     innerRoom: "金乌暗室·归墟秘井",
     clearFlag: "dungeon_cleared_sanxing_bronze_abyss",
@@ -509,7 +509,7 @@ export const DUNGEON_CATALOG_EXTRA = Object.freeze({
 
   wuxian_centipede_den: {
     id: "wuxian_centipede_den",
-    name: "赤蜈百蛊毒窟",
+    name: "五仙百毒禁谷",
     district: "雾隐寨",
     innerRoom: "赤蜈毒窟",
     clearFlag: "dungeon_cleared_wuxian_centipede_den",
@@ -1476,6 +1476,294 @@ export const DUNGEON_CATALOG_EXTRA = Object.freeze({
         { name: "狼裘大氅", category: "armor", quality: "蓝" },
       ],
       reward: { money: 74, exp: 8, pot: 6, items: ["霜牙"] },
+    },
+  },
+
+  dacaodian_duanan_post: {
+    id: "dacaodian_duanan_post",
+    name: "断鞍古驿",
+    district: "大草甸",
+    innerRoom: "断鞍古驿",
+    clearFlag: "dungeon_cleared_dacaodian_duanan_post",
+    subtitle: "荒草甸东头坍塌半边的军马旧驿，底下窖洞直通各派劫匪火拼的藏货大堂。",
+    floors: [
+      { floor: 1, name: "一层 · 枯草外棚", stepsPerFloor: 2, tier: 2, desc: "断鞍马桩半埋草堆里，天龙与黑风探子在墙缝游走。" },
+      { floor: 2, name: "二层 · 暗槽运粮道", stepsPerFloor: 2, tier: 2, desc: "石槽交错的运粮通道留着刀痕与旧镖包。" },
+      { floor: 3, name: "三层 · 聚义马厩大堂", stepsPerFloor: 2, tier: 3, desc: "血刀头目厉骨踩在断鞍上守着西域镖银。" },
+    ],
+    traps: [
+      {
+        id: "duanan_trap_snare",
+        title: "枯草绊马伏索",
+        desc: "焦枯草堆里拉着一道铁丝伏索，连向壁间短弩。",
+        choices: [
+          { id: "leap_snare", label: "踏墙纵跃掠过", stat: "身法", dc: 6, success: { text: "借壁跃过索线拾得散银。", money: 22, exp: 3 }, fail: { text: "绊中伏索受了箭擦伤。", hpLoss: 16, exp: 1 } },
+          { id: "cut_snare", label: "顺索路挑断机括", stat: "智谋", dc: 6, success: { text: "精准拆去机簧取出伤药。", items: ["守塔僧金疮药"], exp: 3 }, fail: { text: "拆偏一步刮破指掌。", hpLoss: 14, exp: 1 } },
+        ],
+      },
+    ],
+    events: [
+      {
+        id: "duanan_event_pack",
+        title: "废马槽下的皮行囊",
+        desc: "一只沾血牛皮包袱卡在石槽夹角。",
+        choices: [
+          { id: "open_pack", label: "挑破外扣清点物件", stat: "气运", dc: 6, success: { text: "翻出一件厚实熊皮坎肩和碎银。", items: ["熊皮坎肩"], money: 18, exp: 2 }, fail: { text: "只找到十余两散碎银角。", money: 18, exp: 1 } },
+          { id: "take_coin", label: "收起外袋碎银快走", success: { text: "收银二十二两稳妥上路。", money: 22, exp: 1 } },
+        ],
+      },
+    ],
+    treasures: [
+      {
+        id: "duanan_treasure_box",
+        title: "封蜡军饷木匣",
+        desc: "马夫灶后暗格里压着带铜扣的货箱。",
+        choices: [
+          { id: "open_box", label: "细拨铜扣开匣", stat: "智谋", dc: 6, success: { text: "取出完好的血槽铁刀与二十余两纹银。", items: ["血槽铁刀"], money: 24, exp: 3 }, fail: { text: "硬撬震痛手腕，抱出狼骨匕首。", items: ["狼骨匕"], hpLoss: 10 } },
+          { id: "take_outer", label: "取走匣外压着的活血丸", success: { text: "拿走藏红花活血丸与散银。", items: ["藏红花活血丸"], money: 14 } },
+        ],
+      },
+    ],
+    rests: [
+      {
+        id: "duanan_rest_hearth",
+        title: "暖炕马夫宿室",
+        desc: "避风的旧宿室还留着半堆暖炭与清水囊。",
+        choices: [
+          { id: "heal", label: "烤火敷伤回气", success: { text: "暖气透入肺腑，气血回升。", hpHealRatio: 0.35, exp: 1 } },
+          { id: "train", label: "静坐调息整甲", success: { text: "整理思路增进些许潜能。", hpHeal: 12, pot: 6, exp: 2 } },
+        ],
+      },
+    ],
+    enemies: [
+      { id: "duanan_cat_scout", name: "血刀巡坡徒", role: "血刀门徒", region: "藏边", levelCap: 2, desc: "荒原马棚里抢先摸包的血刀恶匪。", carry: [{ name: "黑风断刃", category: "weapon", quality: "绿" }], reward: { money: 32, exp: 4, pot: 3 } },
+      { id: "duanan_cat_bandit", name: "黑风断刀手", role: "山寨打手", region: "藏边", levelCap: 3, desc: "身披兽皮擅挥重刃的黑风匪徒。", carry: [{ name: "狼裘大氅", category: "armor", quality: "蓝" }, { name: "守塔僧金疮药", category: "misc", quality: "绿" }], reward: { money: 46, exp: 6, pot: 4 } },
+    ],
+    boss: {
+      id: "duanan_cat_boss",
+      name: "血刀截货头目·厉骨",
+      role: "血刀头目",
+      region: "藏边",
+      levelCap: 3,
+      desc: "拎着血刀守着西域镖银箱的悍匪：「能过这一关再谈分货。」",
+      carry: [{ name: "血刀·不饮", category: "weapon", quality: "蓝" }, { name: "黑风寨牛皮重铠", category: "armor", quality: "紫" }],
+      reward: { money: 90, exp: 10, pot: 8, items: ["雪莲清毒丸"] },
+    },
+  },
+
+  yajiang_chensha_dock: {
+    id: "yajiang_chensha_dock",
+    name: "沉沙古坞",
+    district: "雅江",
+    innerRoom: "沉沙古坞",
+    clearFlag: "dungeon_cleared_yajiang_chensha_dock",
+    subtitle: "雅江峡谷水底沉船旧坞，历代治水暗闸与沉银龙骨吸引蜀中诸派群雄争宝。",
+    floors: [
+      { floor: 1, name: "一层 · 江崖水栈", stepsPerFloor: 2, tier: 2, desc: "江风伴着水雾拍在浸苔竹栈上。" },
+      { floor: 2, name: "二层 · 分江水则道", stepsPerFloor: 2, tier: 2, desc: "历代水则铜尺嵌在石渠两壁，各派门人暗中较劲。" },
+      { floor: 3, name: "三层 · 沉船龙骨水阁", stepsPerFloor: 2, tier: 3, desc: "沉船龙骨最深处，江铁锚正稳坐在盐箱高台上。" },
+    ],
+    traps: [
+      {
+        id: "chensha_trap_sluice",
+        title: "倒灌急流石闸",
+        desc: "潮浪涌起冲开石槽木闸，暗流挟石块扑面冲来。",
+        choices: [
+          { id: "dash_sluice", label: "飞点浮石急跃避流", stat: "身法", dc: 6, success: { text: "稳稳踏上岸台并拾得旧铜牌。", items: ["离堆水则牌"], exp: 3 }, fail: { text: "滑落冰水撞伤膝骨。", hpLoss: 17, exp: 1 } },
+          { id: "wedge_sluice", label: "撑下分流木卡死", stat: "体魄", dc: 6, success: { text: "硬顶卡住泄水木板平安穿行。", money: 24, pot: 2 }, fail: { text: "木板震碎挨了一记急浪。", hpLoss: 15, exp: 1 } },
+        ],
+      },
+    ],
+    events: [
+      {
+        id: "chensha_event_stele",
+        title: "沉水青铜水则刻石",
+        desc: "露出水面的半截古碑记着都江分流与运劲诀窍。",
+        choices: [
+          { id: "read_stele", label: "细观水势刻痕领悟借力", stat: "悟性", dc: 6, success: { text: "顿悟水势吐纳节律，潜能精进。", pot: 7, exp: 3 }, fail: { text: "仅看清大致方位与水路。", money: 18, exp: 1 } },
+          { id: "take_coin", label: "拾取碑基下冲积的碎银", success: { text: "收起二十六两碎银。", money: 26, exp: 1 } },
+        ],
+      },
+    ],
+    treasures: [
+      {
+        id: "chensha_treasure_chest",
+        title: "防潮沉银货匣",
+        desc: "沉船船骨下卡住的铜扣油蜡木匣。",
+        choices: [
+          { id: "open_hull", label: "巧卸锈锁开匣", stat: "智谋", dc: 6, success: { text: "取出一柄精良的听松玄铁剑。", items: ["听松玄铁剑"], money: 20, exp: 3 }, fail: { text: "只拾走一把青城松纹剑退开。", items: ["青城松纹剑"], hpLoss: 10 } },
+          { id: "take_robe", label: "取走匣外裹着的防水道衣", success: { text: "收走三清鹤羽道衣与些许碎银。", items: ["三清鹤羽道衣"], money: 12 } },
+        ],
+      },
+    ],
+    rests: [
+      {
+        id: "chensha_rest_ledge",
+        title: "避浪干燥崖室",
+        desc: "江崖上方不受水雾侵扰的温暖石室。",
+        choices: [
+          { id: "heal", label: "揩干水渍包扎休整", success: { text: "恢复精力，伤势稳定许多。", hpHealRatio: 0.35, exp: 1 } },
+          { id: "train", label: "听江声调息吐纳", success: { text: "吐纳行气增进武学潜能。", hpHeal: 12, pot: 6, exp: 2 } },
+        ],
+      },
+    ],
+    enemies: [
+      { id: "chensha_cat_scout", name: "川江盐枭哨", role: "盐枭哨兵", region: "巴蜀", levelCap: 2, desc: "专在船坞暗渠放哨拦截外人的盐帮手。", carry: [{ name: "柳叶小刀", category: "weapon", quality: "绿" }], reward: { money: 34, exp: 4, pot: 3 } },
+      { id: "chensha_cat_warden", name: "盐帮铁锚手", role: "盐枭精锐", region: "巴蜀", levelCap: 3, desc: "双臂浑厚的沉船船坞重棍守卫。", carry: [{ name: "老油青竹棒", category: "weapon", quality: "紫" }, { name: "藏红花活血丸", category: "misc", quality: "绿" }], reward: { money: 48, exp: 6, pot: 4 } },
+    ],
+    boss: {
+      id: "chensha_cat_boss",
+      name: "川江沉船大瓢把子·江铁锚",
+      role: "川江盐枭",
+      region: "巴蜀",
+      levelCap: 3,
+      desc: "半辈子捞江吃浪的老水枭：「想要沉船货柜，先接过我手中这柄分水剑。」",
+      carry: [{ name: "听松玄铁剑", category: "weapon", quality: "紫" }, { name: "玄清太极佩", category: "accessory", quality: "紫" }],
+      reward: { money: 94, exp: 10, pot: 8, items: ["雪莲清毒丸"] },
+    },
+  },
+
+  jingguan_ghost_market: {
+    id: "jingguan_ghost_market",
+    name: "锦官鬼市",
+    district: "锦官城",
+    innerRoom: "锦官鬼市",
+    clearFlag: "dungeon_cleared_jingguan_ghost_market",
+    subtitle: "锦官城暗巷地窖门下的地下黑市与销赃暗坊，三教九流提暗灯销赃赌斗。",
+    floors: [
+      { floor: 1, name: "一层 · 提灯销赃巷", stepsPerFloor: 2, tier: 2, desc: "蒙面客低声问价，角落随时起刀抢宝。" },
+      { floor: 2, name: "二层 · 黑赌档与暗当铺", stepsPerFloor: 2, tier: 2, desc: "铁算盘打响，看场打手冷眼盯着每只钱包。" },
+      { floor: 3, name: "三层 · 红布拍案总堂", stepsPerFloor: 2, tier: 3, desc: "瞎眼老掌柜退席，算盘爷摇折扇站在主案之后。" },
+    ],
+    traps: [
+      {
+        id: "guishi_trap_wire",
+        title: "销赃暗道铜铃绞索",
+        desc: "脚底砖隙藏着一排倒钩细丝与暗弩。",
+        choices: [
+          { id: "slip_wire", label: "滑步挑灯越过丝网", stat: "身法", dc: 6, success: { text: "避开全部暗钩顺走碎银。", money: 24, exp: 3 }, fail: { text: "勾中暗丝溅了一身石灰粉。", hpLoss: 15, exp: 1 } },
+          { id: "disarm_wire", label: "拆解铜锁簧片", stat: "智谋", dc: 6, success: { text: "稳妥剪断绞索拿走铁算盘尺。", items: ["铁算盘尺"], exp: 3 }, fail: { text: "夹伤指尖损耗气血。", hpLoss: 13, exp: 1 } },
+        ],
+      },
+    ],
+    events: [
+      {
+        id: "guishi_event_ledger",
+        title: "死当货柜未合页的册子",
+        desc: "夹墙柜台上摊着半本暗市流当记录。",
+        choices: [
+          { id: "decode_book", label: "核对暗押寻出货格", stat: "智谋", dc: 6, success: { text: "打开偏柜取出锦官制式软甲与碎银。", items: ["锦官制式软甲"], money: 18, exp: 2 }, fail: { text: "暗押早已涂改，仅获二十两散银。", money: 20, exp: 1 } },
+          { id: "take_cash", label: "摸走柜边碎银速退", success: { text: "获银二十六两。", money: 26, exp: 1 } },
+        ],
+      },
+    ],
+    treasures: [
+      {
+        id: "guishi_treasure_safe",
+        title: "绝当红木大箱",
+        desc: "上着双重黄铜暗锁的黑市秘藏箱。",
+        choices: [
+          { id: "pick_safe", label: "用铁钩摸拨双锁簧", stat: "智谋", dc: 6, success: { text: "打开箱盖抱走鎏金机关折扇！", items: ["鎏金机关折扇"], money: 25, exp: 3 }, fail: { text: "拉断锁舌退求百香纱衣。", items: ["百香纱衣"], hpLoss: 10 } },
+          { id: "take_pouch", label: "顺走外挂的百面易容匣", success: { text: "取走百面易容匣与纹银。", items: ["百面易容匣"], money: 15 } },
+        ],
+      },
+    ],
+    rests: [
+      {
+        id: "guishi_rest_booth",
+        title: "算账夹室茶桌",
+        desc: "背风无人闯入的废账房，热茶余温未散。",
+        choices: [
+          { id: "heal", label: "喝口热茶包扎擦伤", success: { text: "喘匀了气，恢复稳妥战力。", hpHealRatio: 0.35, exp: 1 } },
+          { id: "train", label: "默思黑市诸派身法", success: { text: "颇有所悟，潜能增长。", hpHeal: 12, pot: 6, exp: 2 } },
+        ],
+      },
+    ],
+    enemies: [
+      { id: "guishi_cat_bouncer", name: "鬼市看场打手", role: "黑市打手", region: "巴蜀", levelCap: 2, desc: "提黑木算盘尺专收过路税的打手。", carry: [{ name: "铁算盘尺", category: "weapon", quality: "蓝" }], reward: { money: 34, exp: 4, pot: 3 } },
+      { id: "guishi_cat_warden", name: "暗坊铁尺护院", role: "暗坊护院", region: "巴蜀", levelCap: 3, desc: "穿着杭绸护心袍的总堂贴身保镖。", carry: [{ name: "金珠算盘", category: "weapon", quality: "蓝" }, { name: "杭绸软银护心袍", category: "armor", quality: "紫" }], reward: { money: 48, exp: 6, pot: 4 } },
+    ],
+    boss: {
+      id: "guishi_cat_boss",
+      name: "鬼市大掌柜·算盘爷",
+      role: "鬼市总掌柜",
+      region: "巴蜀",
+      levelCap: 3,
+      desc: "执掌全城地下暗坊的算盘爷轻合折扇：「鬼市里买命卖货都有价钱，你出得起吗？」",
+      carry: [{ name: "鎏金机关折扇", category: "weapon", quality: "紫" }, { name: "杭绸软银护心袍", category: "armor", quality: "紫" }],
+      reward: { money: 96, exp: 10, pot: 8, items: ["雪莲清毒丸"] },
+    },
+  },
+
+  tusi_inner_vault: {
+    id: "tusi_inner_vault",
+    name: "鱼定土司内府禁库",
+    district: "鱼定土司",
+    innerRoom: "内府禁库",
+    clearFlag: "dungeon_cleared_tusi_inner_vault",
+    subtitle: "高台黑宅库房底藏了三十年的秘仓私牢，双份税粮与伪造地契紧锁于巡捕重阵之后。",
+    floors: [
+      { floor: 1, name: "一层 · 粮仓炭道", stepsPerFloor: 2, tier: 2, desc: "粮袋后藏着通往暗牢的湿冷砖道。" },
+      { floor: 2, name: "二层 · 巡捕军械廊", stepsPerFloor: 2, tier: 2, desc: "巡捕营刀矛林立，铜锣更声阵阵紧逼。" },
+      { floor: 3, name: "三层 · 三十载密契银库", stepsPerFloor: 2, tier: 3, desc: "暗库铁门前立着总校铁面巴桑。" },
+    ],
+    traps: [
+      {
+        id: "tusi_trap_bell",
+        title: "巡夜暗弦铜铃阵",
+        desc: "廊角挂着连往护院营的细铁丝警铃与暗弩。",
+        choices: [
+          { id: "cut_bell", label: "避开细丝跃过廊道", stat: "身法", dc: 6, success: { text: "无声滑过警铃区顺走腰牌。", items: ["巡捕营腰牌"], exp: 3 }, fail: { text: "震响铜铃挨了一支暗箭。", hpLoss: 16, exp: 1 } },
+          { id: "jam_bell", label: "拿软布先按死铜铃舌", stat: "智谋", dc: 6, success: { text: "哑铃剪索安全脱阵得散银。", money: 24, exp: 3 }, fail: { text: "布条滑脱挨了一记机关钢钉。", hpLoss: 14, exp: 1 } },
+        ],
+      },
+    ],
+    events: [
+      {
+        id: "tusi_event_deed",
+        title: "火烤残缺的地契抄架",
+        desc: "桌上压着三十年内外两本不同数目的粮税簿。",
+        choices: [
+          { id: "read_deed", label: "核对双账抓出秘库位置", stat: "智谋", dc: 6, success: { text: "推算出暗门并摸到护心铜牌。", items: ["土司府云雷铜牌"], money: 18, exp: 2 }, fail: { text: "只找到角落的散银。", money: 18, exp: 1 } },
+          { id: "take_coin", label: "抽走抽屉税银", success: { text: "带走二十五两税银。", money: 25, exp: 1 } },
+        ],
+      },
+    ],
+    treasures: [
+      {
+        id: "tusi_treasure_armory",
+        title: "巡捕军械重匣",
+        desc: "上着云雷铁锁的土司府精锐武备匣。",
+        choices: [
+          { id: "open_armory", label: "撬锁取出上好兵甲", stat: "体魄", dc: 6, success: { text: "提走一柄点钢乌木镇边矛！", items: ["点钢乌木镇边矛"], exp: 3 }, fail: { text: "震伤指骨取走乌木长矛。", items: ["精钢乌木长矛"], hpLoss: 10 } },
+          { id: "take_armor", label: "只拿走旁侧备着的札片重甲", success: { text: "收起黑铁札片重甲与散银。", items: ["黑铁札片重甲"], money: 15 } },
+        ],
+      },
+    ],
+    rests: [
+      {
+        id: "tusi_rest_room",
+        title: "废旧账箱夹室",
+        desc: "壁厚隔音且没人巡查的干燥储物室。",
+        choices: [
+          { id: "heal", label: "裹伤喝水喘息", success: { text: "疲惫感褪去大半。", hpHealRatio: 0.35, exp: 1 } },
+          { id: "train", label: "静坐调匀内息", success: { text: "气息凝实，增长些许潜能。", hpHeal: 12, pot: 6, exp: 2 } },
+        ],
+      },
+    ],
+    enemies: [
+      { id: "tusi_cat_guard", name: "土司私兵刀手", role: "土司刀手", region: "藏边", levelCap: 2, desc: "专在暗廊盘查外人的巡捕刀手。", carry: [{ name: "巡捕营制式腰刀", category: "weapon", quality: "绿" }], reward: { money: 34, exp: 4, pot: 3 } },
+      { id: "tusi_cat_sergeant", name: "巡捕营长矛队正", role: "巡捕队正", region: "藏边", levelCap: 3, desc: "精钢长矛直刺迅猛的营房军官。", carry: [{ name: "精钢乌木长矛", category: "weapon", quality: "蓝" }, { name: "守塔僧金疮药", category: "misc", quality: "绿" }], reward: { money: 48, exp: 6, pot: 4 } },
+    ],
+    boss: {
+      id: "tusi_cat_boss",
+      name: "巡捕营暗库总校·铁面巴桑",
+      role: "土司营总校",
+      region: "藏边",
+      levelCap: 3,
+      desc: "铁面巴桑横矛立在三十载密契银库门口：「既踏进土司私库，就别想全须全尾走出去。」",
+      carry: [{ name: "点钢乌木镇边矛", category: "weapon", quality: "紫" }, { name: "黑铁札片重甲", category: "armor", quality: "紫" }],
+      reward: { money: 92, exp: 10, pot: 8, items: ["土司府门客玉扣"] },
     },
   },
 });

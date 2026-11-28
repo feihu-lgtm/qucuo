@@ -6,9 +6,14 @@
 //   branchRate/loopRate: 生成参数；eventSeeds: 十类互动落位压缩成可配置事件 {kind,desc,check,dc,outcome}
 // 纯数据无逻辑。
 
+import { withDungeonDefaults } from "./universalSchema.js";
+import { DUANAN_POST_CONFIG, JINGGUAN_GHOST_MARKET_CONFIG } from "./gridDungeonsA.js";
+import { GUIXU_BRONZE_PALACE_CONFIG, TUSI_INNER_VAULT_CONFIG } from "./gridDungeonsB.js";
+
 export const DUNGEON_DISTRICTS = Object.freeze({
-  白塔地宫: {
+  白塔地宫: withDungeonDefaults({
     id: "white_pagoda_crypt",
+    displayName: "白塔地宫",
     anchor: "塔底佛殿",
     bossRoom: "明王石室",
     gridSize: 13,
@@ -19,6 +24,18 @@ export const DUNGEON_DISTRICTS = Object.freeze({
     envTag: "baitaPrayerWheel",
     envMeter: { tagKey: "baita", field: "alarm", max: 3, label: "铜铃警戒" },
     recruitToken: "白塔护法铜牌",
+    texts: {
+      supplyCheckpointDesc: "一处避风干燥的禅室，炭盆余烬犹存，可稳住警戒并存下进度。",
+      supplyHealLabel: "烤火包扎（回血35%并消铜铃警戒）",
+      supplyHealAction: "在此炭火旁歇息裹伤",
+      supplyNormalDesc: "石缝间淌下清冽雪水，适合暂歇回气。",
+      supplyNormalLabel: "掬水洗伤回气",
+      chestDesc: "死路角落静静卧着一只封蜡宝匣。",
+      trapFailText: "毒针呛粉扑面",
+      exitsAllRevealedText: "塔内六处战术出口已尽数在握。",
+      centerHintText: "明王石室就在坐标 ({cx},{cy}) 一带。",
+      blindBoxFallback: { name: "铁网僧袍", category: "armor", quality: "蓝" },
+    },
     prefixPool: ["金漆", "蒙尘", "酥油", "密宗", "梵音", "玄石", "经幡", "古钟"],
     suffixPool: ["经阁", "甬道", "禅房", "佛窟", "壁画廊", "石窖", "暗廊", "藏卷室"],
     descPool: [
@@ -128,7 +145,7 @@ export const DUNGEON_DISTRICTS = Object.freeze({
       { id: "baita_tianlong_scout", name: "天龙西风探马", camp: "天龙教", role: "西域探马", region: "西域", tier: 1, levelCap: 1, desc: "自西风隘潜入白塔探听经师遗物的天龙探子，弯刀快狠。", carry: [{ name: "西域弯刀", category: "weapon", quality: "绿" }], reward: { money: 26, exp: 4, pot: 3 } },
       { id: "baita_tianlong_warden", name: "天龙外堂护法", camp: "天龙教", role: "天龙护法", region: "西域", tier: 3, levelCap: 3, desc: "为寻前任经师西域法器而强闯白塔的天龙高手，拳脚霸道。", carry: [{ name: "梵铃杵", category: "weapon", quality: "紫" }, { name: "玄甲护心镜", category: "armor", quality: "紫" }], reward: { money: 62, exp: 10, pot: 8 } },
       { id: "baita_xueshan_disciple", name: "雪山查案弟子", camp: "正道", role: "雪山弟子", region: "雪域", tier: 2, levelCap: 2, desc: "暗中下塔核查三十年前雪山旧案的剑手，见外人便起戒心拔剑。", carry: [{ name: "雪山松纹剑", category: "weapon", quality: "蓝" }, { name: "雪山接骨膏", category: "misc", quality: "蓝" }], reward: { money: 35, exp: 6, pot: 5 } },
-      { id: "baita_qingcheng_sword", name: "青城游历剑客", camp: "正道", role: "青城剑客", region: "巴蜀", tier: 2, levelCap: 2, desc: "误以为地宫藏着上乘道武残篇的青城游侠，剑风绵密如松涛。", carry: [{ name: "松纹青铜剑", category: "weapon", quality: "绿" }, { name: "藏红花活血丸", category: "misc", quality: "绿" }], reward: { money: 34, exp: 6, pot: 4 } },
+      { id: "baita_qingcheng_sword", name: "青城游历剑客", camp: "正道", role: "青城剑客", region: "巴蜀", tier: 2, levelCap: 2, desc: "误以为地宫藏着上乘道武残篇的青城游侠，剑风绵密如松涛。", carry: [{ name: "三清松风铁剑", category: "weapon", quality: "绿" }, { name: "藏红花活血丸", category: "misc", quality: "绿" }], reward: { money: 34, exp: 6, pot: 4 } },
       { id: "baita_emei_nun", name: "峨眉巡山女侠", camp: "正道", role: "峨眉弟子", region: "巴蜀", tier: 3, levelCap: 3, desc: "追查流落经卷而来的峨眉好手，步法轻灵、剑点心脉。", carry: [{ name: "百香纱衣", category: "armor", quality: "蓝" }, { name: "雪莲清毒丸", category: "misc", quality: "蓝" }], reward: { money: 56, exp: 9, pot: 7 } },
       { id: "baita_tangmen_rigger", name: "唐门机括手", camp: "唐门", role: "唐门暗探", region: "巴蜀", tier: 2, levelCap: 2, desc: "专程来拆解白塔转经机括的唐门外姓好手，袖藏柳叶飞刃。", carry: [{ name: "柳叶小刀", category: "weapon", quality: "绿" }], reward: { money: 38, exp: 6, pot: 5 } },
       { id: "baita_tangmen_assassin", name: "唐堡暗影刺客", camp: "唐门", role: "唐门刺客", region: "巴蜀", tier: 3, levelCap: 3, desc: "隐身经架阴影中的唐门精锐，专伺偷袭摸宝之人。", carry: [{ name: "百花刺", category: "weapon", quality: "蓝" }, { name: "百香纱衣", category: "armor", quality: "蓝" }], reward: { money: 64, exp: 10, pot: 8 } },
@@ -247,79 +264,13 @@ export const DUNGEON_DISTRICTS = Object.freeze({
       { kind: "puzzle", desc: "唐卡序列复位", check: "wisdom", dc: 6, outcome: "暗门开启" },
       { kind: "checkpoint", desc: "避风炭盆禅室", check: null, dc: 0, outcome: "进度保存" },
     ],
-  },
+  }),
 
-  大草甸子虚幻境: {
-    anchor: "幻境入口草坡",
-    envTag: "huanjingSpore",
-    prefixPool: ["迷幻", "孢子", "斑斓", "腐生", "幽绿"],
-    suffixPool: ["草甸", "泥沼", "菌林", "幽谷", "兽径"],
-    descPool: ["{name}菌盖如伞，孢子在光里旋舞。", "{name}腐草沤出甜腻的迷香。"],
-    boss: { name: "菇母·苗疆女刺客", desc: "以幻药御兽的毒理高手，携双毒獒。", movesHint: "幻毒粉/驭兽哨" },
-    puzzle: { type: "recipeCraft", config: { recipe: { materials: ["清心草", "蛇胆"], action: "捣碎" }, materials: ["清心草", "蛇胆", "腐菌", "清水"], stat: "wisdom", dc: 6, prompt: "合成解幻药才能安全穿高浓度区" } },
-    adventurerFactions: ["五毒", "合欢", "散人"],
-    branchRate: 0.4, loopRate: 0.2,
-    eventSeeds: [
-      { kind: "fight", desc: "毒獒与劫匪", check: "combat", dc: 5, outcome: "摸包" },
-      { kind: "event", desc: "毒气喷发需闪避", check: "agility", dc: 6, outcome: "中毒debuff" },
-      { kind: "nsfw", desc: "致幻交媾·幻情女冒险者", check: "inner", dc: 5, outcome: "内力流失换幻境通行" },
-      { kind: "supply", desc: "采集凝血草", check: null, dc: 0, outcome: "草药" },
-      { kind: "loot", desc: "劫匪尸体摸包", check: "luck", dc: 4, outcome: "随机货" },
-      { kind: "watch", desc: "看野猪陷入泥沼被吞", check: "stealth", dc: 3, outcome: "泥沼预警" },
-      { kind: "meet", desc: "中毒的合欢宗弟子", check: "charm", dc: 5, outcome: "救治入队" },
-      { kind: "appraise", desc: "辨别毒蘑菇", check: "wisdom", dc: 6, outcome: "食材/毒物" },
-      { kind: "puzzle", desc: "合成解幻药", check: "wisdom", dc: 6, outcome: "高浓度区通行" },
-      { kind: "checkpoint", desc: "上风口通风岩石", check: null, dc: 0, outcome: "存点" },
-    ],
-  },
+  大草甸子虚幻境: DUANAN_POST_CONFIG,
 
-  三星堆大墓: {
-    anchor: "王陵入口青铜门",
-    envTag: "sanxingduiPatrol",
-    prefixPool: ["青铜", "纵目", "幽暗", "祭祀", "黄土"],
-    suffixPool: ["悬廊", "深坑", "殉葬室", "甬道", "机关房"],
-    descPool: ["{name}青铜纹饰森然，齿轮声在深处碾动。", "{name}纵目面具俯视来客，双目幽幽。"],
-    boss: { name: "盗墓大锅头", desc: "驾齿轮油柜青铜战车喷火的首领。", movesHint: "火舌喷射/碾压" },
-    puzzle: { type: "pushPull", config: { size: 3, start: { x: 0, y: 1 }, target: { x: 2, y: 1 }, stat: "strength", dc: 6, prompt: "青铜纵目面具推入卡槽拉起闸门" } },
-    adventurerFactions: ["唐门", "散人", "摸金校尉"],
-    branchRate: 0.35, loopRate: 0.15,
-    eventSeeds: [
-      { kind: "fight", desc: "盲眼地穴巨蟒/盗墓贼", check: "combat", dc: 6, outcome: "摸尸" },
-      { kind: "event", desc: "青铜廊桥断裂", check: "agility", dc: 6, outcome: "跌落扣血" },
-      { kind: "nsfw", desc: "机关网吊起的女飞贼可猥亵勒索", check: "craft", dc: 5, outcome: "赎金/情报" },
-      { kind: "supply", desc: "盗墓贼遗留干粮", check: null, dc: 0, outcome: "干粮" },
-      { kind: "loot", desc: "死路青铜宝箱", check: "craft", dc: 7, outcome: "青铜器" },
-      { kind: "watch", desc: "看盗墓贼分赃内讧", check: "stealth", dc: 4, outcome: "趁乱渔利" },
-      { kind: "meet", desc: "可雇佣的摸金校尉", check: "charm", dc: 5, outcome: "入队" },
-      { kind: "appraise", desc: "鉴定青铜器暗记", check: "wisdom", dc: 7, outcome: "断代情报" },
-      { kind: "puzzle", desc: "推拉青铜面具", check: "strength", dc: 6, outcome: "闸门升起" },
-      { kind: "checkpoint", desc: "王陵入口青铜门", check: null, dc: 0, outcome: "存点" },
-    ],
-  },
+  三星堆大墓: GUIXU_BRONZE_PALACE_CONFIG,
 
-  成都蜀王府地宫: {
-    anchor: "地宫通风井口",
-    envTag: "shuwangPhosphor",
-    prefixPool: ["镇库", "金丝", "破败", "藩王", "阴森"],
-    suffixPool: ["仪门", "宝库", "兵仗局", "享殿", "石库"],
-    descPool: ["{name}鎏金残饰剥落，磷火在砖缝里明明灭灭。", "{name}藩王仪仗森列，纸甲死士垂目而立。"],
-    boss: { name: "鬼王统领", desc: "披明光铠持斩马刀的无痛死士头目。", movesHint: "斩马横扫/重铠冲撞" },
-    puzzle: { type: "timedAgility", config: { stat: "agility", dc: 7, prompt: "兵仗局铡刀长廊按摆动间隙穿行" } },
-    adventurerFactions: ["丐帮", "散人", "锦衣残党"],
-    branchRate: 0.35, loopRate: 0.15,
-    eventSeeds: [
-      { kind: "fight", desc: "磷火死士", check: "combat", dc: 6, outcome: "磷粉降命中" },
-      { kind: "event", desc: "翻板掉进水牢", check: "agility", dc: 6, outcome: "湿身扣血" },
-      { kind: "nsfw", desc: "官家女侠被俘受辱", check: "combat", dc: 6, outcome: "救人结缘/偷窥" },
-      { kind: "supply", desc: "兵仗局取弩箭", check: null, dc: 0, outcome: "箭矢" },
-      { kind: "loot", desc: "死路王府宝箱", check: "craft", dc: 7, outcome: "藩王库藏" },
-      { kind: "watch", desc: "看死士换防", check: "stealth", dc: 4, outcome: "换防间隙图" },
-      { kind: "meet", desc: "迷路的丐帮长老", check: "charm", dc: 5, outcome: "换情报" },
-      { kind: "appraise", desc: "鉴定藩王玉玺材质", check: "wisdom", dc: 7, outcome: "真玺/赝品" },
-      { kind: "puzzle", desc: "敏捷躲铡刀", check: "agility", dc: 7, outcome: "长廊通过" },
-      { kind: "checkpoint", desc: "兵仗局锚点库房", check: null, dc: 0, outcome: "存点" },
-    ],
-  },
+  成都蜀王府地宫: JINGGUAN_GHOST_MARKET_CONFIG,
 
   雪山茫野: {
     anchor: "猎人木屋",
@@ -348,8 +299,9 @@ export const DUNGEON_DISTRICTS = Object.freeze({
 
 import { DUNGEON_DISTRICTS_EXTRA } from "./districtsExtra.js";
 
-// 十宫合并表：生成器/run 集成消费入口。
+// 十宫+扩展地宫合并表：生成器/run 集成消费入口。
 export const DUNGEON_DISTRICTS_ALL = Object.freeze({
   ...DUNGEON_DISTRICTS,
   ...DUNGEON_DISTRICTS_EXTRA,
+  鱼定土司内府禁库: TUSI_INNER_VAULT_CONFIG,
 });
