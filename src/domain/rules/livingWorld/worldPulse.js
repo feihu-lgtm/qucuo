@@ -27,7 +27,8 @@ import { evalWhen, evalWorldStates } from "./evalWorld.js";
 import { getRngState, setRngState, setSeed } from "../../../utils/rng.js";
 
 export const EVENT_CAP = 80;
-export const CONFLICT_TENSION_THRESHOLD = 70;
+export const CONFLICT_TENSION_THRESHOLD = 70; // 动态张力达到此线无条件开战
+export const ENCOUNTER_TENSION_THRESHOLD = 60; // 同节点遭遇战敌对线（BASE 敌对对子 60 即算 hostile）
 export const POWER_RECOVER_PER_DAY = 2; // 稳态微恢复：每日向满血 100 回 2 点
 export const POWER_BASELINE = 100;
 const HOUR_MARK = "活世界时辰";
@@ -130,7 +131,11 @@ export function stepHourlyBeat(state, registry) {
       for (let j = i + 1; j < list.length; j += 1) {
         const [x, y] = [list[i], list[j]];
         const tension = getTension(world.tension || {}, x.squad.faction, y.squad.faction);
-        if (x.squad.faction && y.squad.faction && x.squad.faction !== y.squad.faction && tension >= CONFLICT_TENSION_THRESHOLD) {
+        if (!x.squad.faction || !y.squad.faction || x.squad.faction === y.squad.faction) continue;
+        // 天敌生态位：raider 遇 caravan 必劫（账面张力无关）——商路断货涨价的源头剧本
+        const predator = (x.squad.role === "raider" && y.squad.role === "caravan")
+          || (y.squad.role === "raider" && x.squad.role === "caravan");
+        if (tension >= ENCOUNTER_TENSION_THRESHOLD || predator) {
           pairs.push({ node, x, y, tension });
         }
       }

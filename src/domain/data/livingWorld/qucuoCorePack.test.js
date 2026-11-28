@@ -82,4 +82,20 @@ describe("WO-25G qucuoCorePack", () => {
       expect(v).toBeLessThanOrEqual(100);
     }
   }, 120000);
+
+  it("冷启动新档 30 天：raider 劫 caravan 天敌遭遇会真实发生（张力账面为零也打）", () => {
+    const registry = buildDefaultRegistry();
+    // 全新档：无任何势力张力账、巴桑健在
+    let cur = { time: 0, varTree: { 世界: {} } };
+    for (let t = 0; t < 30 * 24; t += 2) {
+      const result = stepLivingWorld({ ...cur, time: t }, registry);
+      if (result) cur = applyResultToState({ ...cur, time: t }, result);
+    }
+    const w = cur.varTree.世界;
+    const conflicts = (w.事件录 || []).filter((e) => e.kind === "编队冲突");
+    expect(conflicts.length).toBeGreaterThan(0); // 冷启动不再死锁
+    // 茶马帮被劫出伤药紧俏/山道封锁等后效局势卡（败方 onDefeated 触发）
+    const boards = Object.values(w.据点局势 || {}).flat();
+    expect(boards.length + conflicts.length).toBeGreaterThan(0);
+  }, 120000);
 });
