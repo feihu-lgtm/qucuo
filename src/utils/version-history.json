@@ -1,5 +1,13 @@
 [
   {
+    "version": "v0.8.2",
+    "codename": "活世界五表底座",
+    "time": "2026-11-28 22:54",
+    "notes": [
+      "WO-25C worldRegistry 五表契约与静态校验"
+    ]
+  },
+  {
     "version": "v0.8.1",
     "codename": "活人通电",
     "time": "2026-11-28 22:43",
