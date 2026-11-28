@@ -80,21 +80,4 @@ export default { residentGroup: {
       ],
     },
   ],
-白塔: [
-    {
-      name: "罗布桑", id: "resident_luobusang",
-      brief: "白塔守塔首座，刚直守戒，左眉有雪疤",
-      personality: "冷峻刚直、执拗守戒、嫉恶如仇；三十年寸步不离白塔，守着师父的舍利与遗言，也守着一肚子对师兄软弱的不满，外冷内热。口吻：「佛祖不渡装睡的人。」",
-      levelCap: 4,
-      carry: [
-        { name: "乌金九环降魔杵", category: "weapon", quality: "紫" },
-        { name: "白塔护法毛褐袍", category: "armor", quality: "蓝" },
-        { name: "黑曜石护法牌", category: "accessory", quality: "蓝" },
-        { name: "守塔僧袍", category: "armor", quality: "绿" },
-        { name: "安魂香", category: "misc", quality: "蓝" },
-        { name: "达摩清心丸", category: "misc", quality: "蓝" },
-        { name: "酥油茶", category: "misc", quality: "白" },
-      ],
-    },
-  ],
 } };

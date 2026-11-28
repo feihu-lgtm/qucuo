@@ -98,5 +98,33 @@ export default { residentGroup: {
       { name: "青稞铁朵玛", category: "misc", quality: "绿" },
     ],
   },
+  {
+    name: "平措乌金", id: "resident_pingcuowujin", gender: "男", faction: "古象雄苯门", levelCap: 2, innerRoom: "青稞朵玛庄房",
+    brief: "朵玛庄房里总把小牦牛多捏一对耳朵的少年",
+    personality: "做错了不藏起来，干脆把最好笑的摆在窗边给人看。知道谁家交粮晚，就多留一碗热糌粑。",
+    carry: [
+      { name: "天铁掘藏钢钎", category: "weapon", quality: "绿" },
+      { name: "象雄黑石片甲", category: "armor", quality: "蓝" },
+      { name: "左旋雍仲黑铜牌", category: "accessory", quality: "绿" },
+      { name: "青稞铁朵玛", category: "misc", quality: "绿" },
+      { name: "白牦牛酥油块", category: "misc", quality: "白" },
+      { name: "高原酥油膏", category: "misc", quality: "白" },
+      { name: "酥油茶", category: "misc", quality: "白" },
+    ],
+  },
+  {
+    name: "央青阿若", id: "resident_yangqingaruo", gender: "女", levelCap: 2, innerRoom: "黑石山民集",
+    brief: "黑石山民集上替矿户辨认小矿石的少女",
+    personality: "喜欢问顾客第一眼把这块石头看成什么。价要算明白，卖不出价的好石头偶尔也乐意白送。",
+    carry: [
+      { name: "天铁掘藏钢钎", category: "weapon", quality: "绿" },
+      { name: "康巴牛皮马帮甲", category: "armor", quality: "绿" },
+      { name: "羊肩胛卜骨挂坠", category: "accessory", quality: "绿" },
+      { name: "青稞铁朵玛", category: "misc", quality: "绿" },
+      { name: "康定红酒", category: "misc", quality: "绿" },
+      { name: "高原酥油膏", category: "misc", quality: "白" },
+      { name: "酥油茶", category: "misc", quality: "白" },
+    ],
+  },
 ],
 } };

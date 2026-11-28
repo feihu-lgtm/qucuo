@@ -21,10 +21,9 @@ beforeEach(() => {
 });
 
 describe("地宫配置表与基础初始化", () => {
-  it("八座名册地宫节点流与二十二位 OC 冒险者的掉落/随身物品均存在于 CATALOG_INDEX", () => {
+  it("八座名册地宫节点流与原创 OC 冒险者的掉落/随身物品均存在于 CATALOG_INDEX", () => {
     expect(Object.keys(DUNGEON_CATALOG)).toHaveLength(8);
-    expect(ADVENTURER_POOL).toHaveLength(22);
-    expect(new Set(ADVENTURER_POOL.map((a) => a.name)).size).toBe(22);
+    expect(new Set(ADVENTURER_POOL.map((a) => a.name)).size).toBe(ADVENTURER_POOL.length);
 
     const names = new Set();
     for (const cfg of Object.values(DUNGEON_CATALOG)) {
@@ -322,10 +321,9 @@ describe("地宫随机冒险者遭遇与世界刷新", () => {
     expect(outwitFail?.activeNode?.stolenFromPlayer?.money).toBeGreaterThan(0);
   });
 
-  it("getWorldAdventurers 每天把 22 位冒险者分布到各地，residentNpcRule 跨天换人并附带炫彩标记", () => {
+  it("无固定落脚点的冒险者每日分布到各地，residentNpcRule 跨天换人并附带炫彩标记", () => {
     const day0List = Object.keys(QUCUO_MAP).flatMap((d) => getWorldAdventurers(d, 6));
-    expect(day0List).toHaveLength(22);
-    expect(new Set(day0List.map((a) => a.name)).size).toBe(22);
+    expect(day0List.map((a) => a.name).sort()).toEqual(ADVENTURER_POOL.filter((a) => !a.homeDistrict).map((a) => a.name).sort());
 
     const hostDistrict = Object.keys(QUCUO_MAP).find((d) => getWorldAdventurers(d, 6).length > 0);
     const expectedToday = getWorldAdventurers(hostDistrict, 6).map((a) => a.name);
@@ -336,7 +334,7 @@ describe("地宫随机冒险者遭遇与世界刷新", () => {
       room: { name: hostDistrict, npcs: [] }, time: 6,
     };
     const npcs0 = residentNpcRule.run(day0State, { importedRegistry }).changes.room(day0State.room).npcs;
-    const spawned0 = npcs0.filter((n) => n.adventurer);
+    const spawned0 = npcs0.filter((n) => n.adventurerDay === 0);
     expect(spawned0.map((n) => n.name).sort()).toEqual(expectedToday.sort());
     expect(spawned0.every((n) => n.rainbow && n.rainbowStyle && n.moveset?.length && n.combatStats)).toBe(true);
 

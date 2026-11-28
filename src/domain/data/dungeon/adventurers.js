@@ -1,10 +1,11 @@
-// 二十二位原创武侠 OC 炫彩冒险者池（第一批：12 改名 + 10 新增，照 docs/设定_OC冒险者_改名随从武学商店.md 落地）。
+// 原创武侠 OC 炫彩冒险者池（首批二十二位及雪域十位）。
 // 既会按日随机游走刷新于世界各地据点，也会在地宫深处与玩家狭路相逢（可帮、可不管、可能反水抢宝）。
 // carry/stealables.equipment 名目全部取自 CATALOG_INDEX 真实词条（文档虚构名目已换近义实物，品阶以词条为准）。
 
 import { QUCUO_MAP } from "../map/qucuoMap.js";
 import { seededRand } from "../../../utils/seededRandom.js";
 import { random } from "../../../utils/rng.js";
+import { SNOWLAND_ADVENTURERS } from "./adventurersSnowland.js";
 
 const EXCLUDED_DISTRICTS = new Set([
   "心灵之海", "第三新东京市", "白塔", "山洞", "顶峰",
@@ -1168,7 +1169,8 @@ export const ADVENTURER_POOL = Object.freeze([
         { "name": "滇南醒神香", "category": "misc", "quality": "绿", "slot": "bag" },
         { "name": "苗银暗器囊", "category": "accessory", "quality": "蓝", "slot": "equipment" }
       ]
-    }
+    },
+  ...SNOWLAND_ADVENTURERS,
 ]);
 
 export const ADVENTURER_BY_NAME = Object.freeze(
@@ -1183,7 +1185,7 @@ function getActiveWorldDistricts() {
   return Object.keys(QUCUO_MAP).filter((name) => !EXCLUDED_DISTRICTS.has(name));
 }
 
-// 每天把 22 位冒险者按确定性种子分布到世界各地据点（同一天每人只落在一个据点，跨天自动换城）。
+// 没有固定落脚据点的原创冒险者按日种子游走；有落脚据点的由驻场规则注入。
 export function getWorldAdventurers(districtName, time = 0) {
   if (!districtName || EXCLUDED_DISTRICTS.has(districtName) || !QUCUO_MAP[districtName]) return [];
   const districts = getActiveWorldDistricts();
@@ -1192,6 +1194,7 @@ export function getWorldAdventurers(districtName, time = 0) {
   const dayIdx = Math.floor((time ?? 0) / 24);
   const matched = [];
   for (const adv of ADVENTURER_POOL) {
+    if (adv.homeDistrict) continue;
     const rng = seededRand(dayIdx, `world_adv_${adv.id}`);
     const targetDistrict = districts[Math.floor(rng() * districts.length) % districts.length];
     if (targetDistrict === districtName) {

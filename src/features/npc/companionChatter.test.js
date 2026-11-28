@@ -256,7 +256,7 @@ describe("冒险者和随从入队后两个人都会插话", () => {
     const pool = [...ADVENTURER_POOL, ...ADVENTURER_POOL_IP];
     const voices = {};
     for (const followerName of ["铁伯", "阿财", "哑奴", "醉花"]) {
-      const owner = pool.find((a) => a.follower.name === followerName);
+      const owner = pool.find((a) => a.follower?.name === followerName);
       const cs = unlockFollowerCompanion(unlockImportedCompanion({}, { name: owner.name, levelCap: 1 }), owner);
       const chatters = eligibleChatters(cs);
       expect(chatters.map((w) => w.name).sort()).toEqual([owner.name, followerName].sort());
