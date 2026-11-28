@@ -212,6 +212,7 @@ export const FIELDS = Object.freeze({
   [FIELD.factionRep]: { label: "势力声誉", default: 0, min: -100, max: 100, ai: true, maxDelta: 10,
     scale: "玩家与一方势力的关系；替该势力办成事、护其人可加3~10，坏其大事、伤其门人同量扣减。" },
   "varTree.世界.驻足锁.**": { label: "NPC交互驻足锁", ai: false },
+  "varTree.世界.游走册.**": { label: "OC冒险者游走位置册", ai: false },
   "varTree.世界.旁白.**": { label: "旁白个人线", ai: false },
   "varTree.世界.好感日增.**": { label: "好感日增账本", ai: false },
   "varTree.世界.起居注.**": { label: "起居注", ai: false, refs: {

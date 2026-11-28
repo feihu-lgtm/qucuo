@@ -6,7 +6,8 @@ import { npcTradeOf } from "../npc/npcTrade.js";
 import { mapDescriptionToGenParams } from "../../data/npc/npcDescriptionMapping.js";
 import { NPC_POOL, getScheduledNpcs, toRoomNpc } from "../../data/npc/npcPool.js";
 import { getCrowd, getRandomPassers } from "../../data/npc/randomPassers.js";
-import { getWorldAdventurers } from "../../data/dungeon/adventurers.js";
+import { ADVENTURER_POOL } from "../../data/dungeon/adventurers.js";
+import { positionsWithFallback } from "./ocWander.js";
 import { injectNpcs } from "../npc/roomNpcs.js";
 import { getResidentNpcs, RESIDENT_NPCS } from "../../data/npc/residentNpcs.js";
 import { ESCORT_QUESTS } from "../../data/quests/escortQuests.js";
@@ -39,7 +40,7 @@ const NPC_FIELDS = [
   "fullBio", "personality", "burdenMoveIds", "carry", "gambleBidder",
   "lockInnerRoom", "bidderKind", "companionCandidate", "guaranteedDrop",
   "portrait", "neigong", "waigong", "imported", "hostile", "faction", "gender", "randomPasser",
-  "adventurer", "adventurerDay", "rainbow", "rainbowStyle", "archetype", "archetypeLabel", "title",
+  "adventurer", "adventurerDay", "ocWanderer", "rainbow", "rainbowStyle", "archetype", "archetypeLabel", "title",
   "ocAdventurer", "npcRef", "tradeStyle",
   // 时段表跟人走：npc.roam 要靠它判断"此刻该去哪"，innerMap 的可见性也认它（见 isNpcVisibleInInnerRoom）
   "schedule",
@@ -79,6 +80,8 @@ export const residentNpcRule = {
     // W-ROAM：驻足锁本身也是名单过滤输入——锁过期后下一次重建（任何交互写锁都会
     // 触发 deps 变化）把身份到期的昨日过客清走，不会赖到子夜。
     state.varTree?.世界?.驻足锁,
+    // 游走册即 OC 冒险者位置真源：有人挪窝/进出本据点都要触发重建
+    state.varTree?.世界?.游走册,
   ],
   run(state, { importedRegistry, roomMap, companionState = state.companionState }) {
     const { room, time, questProgress = {}, flags = [], char } = state;
@@ -176,15 +179,24 @@ export const residentNpcRule = {
     const varTree = state.varTree || {};
     // 已入队/留守的冒险者不再刷世界版（跟 importedNpcs 同一道闸）：
     // 招募后房间里会同时存在"世界版陌生人"和"留守队友"两个同名身。
-    const worldAdventurers = getWorldAdventurers(room.name, time)
+    // 名册归一（大肥鱼跑路案）：游走 OC 位置以持久游走册为唯一真源，
+    // 不再按日种子重掷——子夜更替不会让人凭空蒸发。
+    const wanderPositions = positionsWithFallback(state.varTree?.世界?.游走册, time);
+    const worldAdventurers = ADVENTURER_POOL
+      .filter((adv) => !adv.homeDistrict && wanderPositions[adv.name]?.at === room.name)
+      .map((adv) => ({ ...adv, adventurer: true, adventurerDay: dayIdx }))
       .filter(notRecruited)
       .filter((adv) => !isCompanionUnlockedByName(companionState, adv.name))
       .map((adv) => {
         const existing = existingByName.get(adv.name);
-        return buildRoomNpcWithCombat(adv, { existingNpc: existing?.adventurerDay === dayIdx ? existing : undefined, luck, trade: npcTradeOf(state.npcState, adv) });
+        const npc = buildRoomNpcWithCombat(adv, { existingNpc: existing, luck, trade: npcTradeOf(state.npcState, adv) });
+        // 新来者按册落座；已在房的老人保留 roam 走出来的实际座次（册子由 ocWander 回写同步）
+        if (!existing && wanderPositions[adv.name]?.inner) npc.innerRoom = wanderPositions[adv.name].inner;
+        return npc;
       });
     const advRosterNames = new Set(worldAdventurers.map((npc) => npc.name));
-    const isStaleAdventurer = (npc) => npc?.adventurerDay != null && (npc.adventurerDay !== dayIdx || !advRosterNames.has(npc.name));
+    // 名册时代：冒险者不随子夜换班——只有册子上人已不在本据点（roster 除名）才算离场
+    const isStaleAdventurer = (npc) => npc?.adventurerDay != null && !advRosterNames.has(npc.name);
     const hasStaleAdventurers = (room.npcs || []).some(isStaleAdventurer);
 
     const passerReserved = new Set([
@@ -194,17 +206,20 @@ export const residentNpcRule = {
       ...importedNpcs.map((npc) => npc.name),
       ...advRosterNames,
     ]);
-    const passers = getRandomPassers(room.name, time, passerReserved).filter(notRecruited)
+    const passers = getRandomPassers(room.name, time, passerReserved, wanderPositions).filter(notRecruited)
       .map((passer) => {
         const existing = existingByName.get(passer.name);
-        const npc = buildRoomNpcWithCombat(passer, { existingNpc: existing?.randomPasser === dayIdx ? existing : undefined, luck, trade: npcTradeOf(state.npcState, passer) });
+        const reuse = existing && (existing.randomPasser === dayIdx || existing.ocWanderer) ? existing : undefined;
+        const npc = buildRoomNpcWithCombat(passer, { existingNpc: reuse, luck, trade: npcTradeOf(state.npcState, passer) });
         if (passer.passerArt) npc.passerArt = passer.passerArt;
         return npc;
       });
     // 不在今天这份名单里的过路人一律清掉：隔天的，或名额被新导入角色卡顶替、重抽后换下的
     const rosterNames = new Set(passers.map((npc) => npc.name));
     const isStalePasser = (npc) => npc?.randomPasser != null && (npc.randomPasser !== dayIdx || !rosterNames.has(npc.name));
-    const hasStalePassers = (room.npcs || []).some(isStalePasser);
+    // 名册 OC 游走者：不认日子夜签，只认册子除名
+    const isStaleOcWanderer = (npc) => npc?.ocWanderer && !rosterNames.has(npc.name);
+    const hasStalePassers = (room.npcs || []).some((npc) => isStalePasser(npc) || isStaleOcWanderer(npc));
     const toInject = [...poolNpcs, ...residentNpcs, ...activeEscortTargets, ...gambleBidders, ...importedNpcs, ...worldAdventurers, ...passers];
     const injectNameSet = new Set(toInject.map((npc) => npc.name));
     // 不具名群众：按天固定，有内层地图的分散到各公共房间
@@ -254,8 +269,10 @@ export const residentNpcRule = {
               && npc.carriedItems.some((e) => e?.sold || e?.stolen || e?.dropped);
             const isStalePool = npc.isPoolNpc && !Array.isArray(npc.schedule) && !hasLootHistory
               && typeof npc.pursuitInnerRoom !== "string" && !injectedNames.has(npc.name);
-            if (!isStalePasser(npc) && !isStaleAdventurer(npc) && !isStalePool) return true;
-            return npc.adventurerDay == null && (state.varTree?.世界?.驻足锁?.[npc.name] ?? -1) > time;
+            if (!isStalePasser(npc) && !isStaleAdventurer(npc) && !isStaleOcWanderer(npc) && !isStalePool) return true;
+            // 名册时代位置唯一持久，无双身风险——驻足锁对冒险者/OC 一视同仁：
+            // 锁期内就算册子挪了窝，人也留到锁过期后的下一次重建再离场。
+            return (state.varTree?.世界?.驻足锁?.[npc.name] ?? -1) > time;
           }), toInject),
           crowd,
         }),

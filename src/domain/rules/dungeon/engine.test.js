@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DUNGEON_CATALOG, DUNGEON_NODE_TYPE, getDungeonConfig } from "../../data/dungeon/catalog.js";
 import { ADVENTURER_POOL, getWorldAdventurers, isAdventurerName } from "../../data/dungeon/adventurers.js";
+import { positionsWithFallback } from "../npc/ocWander.js";
 import { QUCUO_MAP } from "../../data/map/qucuoMap.js";
 import { CATALOG_INDEX } from "../../data/items/catalog.js";
 import { residentNpcRule } from "../npc/rules.js";
@@ -321,12 +322,14 @@ describe("地宫随机冒险者遭遇与世界刷新", () => {
     expect(outwitFail?.activeNode?.stolenFromPlayer?.money).toBeGreaterThan(0);
   });
 
-  it("无固定落脚点的冒险者每日分布到各地，residentNpcRule 跨天换人并附带炫彩标记", () => {
-    const day0List = Object.keys(QUCUO_MAP).flatMap((d) => getWorldAdventurers(d, 6));
-    expect(day0List.map((a) => a.name).sort()).toEqual(ADVENTURER_POOL.filter((a) => !a.homeDistrict).map((a) => a.name).sort());
-
-    const hostDistrict = Object.keys(QUCUO_MAP).find((d) => getWorldAdventurers(d, 6).length > 0);
-    const expectedToday = getWorldAdventurers(hostDistrict, 6).map((a) => a.name);
+  it("无固定落脚点的冒险者名册持久分布到各地，跨天不蒸发并附带炫彩标记", () => {
+    // 名册时代（大肥鱼跑路案）：注入以持久游走册为准，不再按日种子重掷。
+    // getWorldAdventurers 旧日种子函数仅留作路遇等瞬态兜底，不再是房间注入真源。
+    const positions = positionsWithFallback(null, 6);
+    const baseWanderers = ADVENTURER_POOL.filter((a) => !a.homeDistrict);
+    const hostDistrict = Object.keys(QUCUO_MAP).find((d) => baseWanderers.some((a) => positions[a.name]?.at === d));
+    expect(hostDistrict, "须有名册落在某据点的冒险者").toBeTruthy();
+    const expectedNames = baseWanderers.filter((a) => positions[a.name]?.at === hostDistrict).map((a) => a.name).sort();
     const importedRegistry = { getImportedForDistrict: () => [], getImportedResidentNames: () => [] };
 
     const day0State = {
@@ -335,12 +338,14 @@ describe("地宫随机冒险者遭遇与世界刷新", () => {
     };
     const npcs0 = residentNpcRule.run(day0State, { importedRegistry }).changes.room(day0State.room).npcs;
     const spawned0 = npcs0.filter((n) => n.adventurerDay === 0);
-    expect(spawned0.map((n) => n.name).sort()).toEqual(expectedToday.sort());
+    expect(spawned0.map((n) => n.name).sort()).toEqual(expectedNames);
     expect(spawned0.every((n) => n.rainbow && n.rainbowStyle && n.moveset?.length && n.combatStats)).toBe(true);
 
-    // 推进到第 10 天时，清理掉过期冒险者
+    // 推进到第 10 天：册子没动，同一批人原地还在——不蒸发、不换人（铁律实证）
     const day10State = { ...day0State, room: { name: hostDistrict, npcs: npcs0 }, time: 24 * 10 + 6 };
     const npcs10 = residentNpcRule.run(day10State, { importedRegistry }).changes.room(day10State.room).npcs;
-    expect(npcs10.some((n) => n.adventurerDay === 0)).toBe(false);
+    for (const name of expectedNames) {
+      expect(npcs10.some((n) => n.name === name), `${name} 跨天仍在`).toBe(true);
+    }
   });
 });
