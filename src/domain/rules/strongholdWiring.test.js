@@ -23,7 +23,7 @@ import { EFFECT_CN } from "./economy/itemEffectText.js";
 const ALL_DISTRICTS = Object.keys(QUCUO_MAP);
 // 无人区：按设计就不该有常驻NPC（纯景观/传送/剧情场景）
 const UNPEOPLED_BY_DESIGN = new Set([
-  "白塔", "后山平台", "第三新东京市", "心灵之海", "山洞", "贡措海",
+  "后山平台", "第三新东京市", "心灵之海", "山洞", "贡措海",
 ]);
 const QUALITY_RANK = { 白: 0, 绿: 1, 蓝: 2, 紫: 3, 橙: 4, 红: 5 };
 

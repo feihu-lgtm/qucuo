@@ -56,6 +56,7 @@ import residentFenfengdu from "./residentGroup/焚风渡.js";
 import districtFenfengdu from "./district/焚风渡.js";
 import residentQionglong from "./residentGroup/琼隆古墟.js";
 import districtQionglong from "./district/琼隆古墟.js";
+import residentBaita from "./residentGroup/白塔.js";
 import pack55 from "./item/tusi-1.js";
 import lamaItems from "./item/lama-1.js";
 import pack56 from "./item/baihua-1.js";
@@ -112,4 +113,5 @@ export const DEFAULT_CONTENT_PACKS = [
   pack42, pack43, pack44, pack45, pack46, pack47, pack48, pack49, pack50, pack51,
   pack52, pack53, pack54, pack55, pack56, tangmenItems, yudingItems, pack57, lamaItems, tianlongItems, qingchengItems, residentsFillItems, paomaItems, snowlandSectsItems,
   residentDajianlu, districtDajianlu, residentDanxiacheng, districtDanxiacheng, residentFenfengdu, districtFenfengdu, residentQionglong, districtQionglong,
+  residentBaita,
 ];

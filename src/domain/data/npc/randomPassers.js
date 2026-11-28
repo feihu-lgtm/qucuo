@@ -161,7 +161,7 @@ export function ocWanderersAt(locationName, dayIdx, isTaken = () => false) {
   const cfg = NODE_PASSERS[locationName];
   if (!cfg) return [];
   const near = Object.fromEntries(cfg.factions);
-  const candidates = OC_POOL.filter((adv) => near[ocNearFaction(adv)] != null && !isTaken(adv.name));
+  const candidates = OC_POOL.filter((adv) => !adv.homeDistrict && near[ocNearFaction(adv)] != null && !isTaken(adv.name));
   if (!candidates.length) return [];
   const rng = seededRand(dayIdx, `ocWander|${locationName}`);
   if (rng() >= OC_WANDER_RATE) return [];

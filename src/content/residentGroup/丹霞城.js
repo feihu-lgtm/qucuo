@@ -98,5 +98,33 @@ export default { residentGroup: {
       { name: "朱砂印经残卷", category: "misc", quality: "蓝" },
     ],
   },
+  {
+    name: "洛桑曲培", id: "resident_luosangqupei", gender: "男", faction: "萨迦世家", levelCap: 2, innerRoom: "班智达辩经坛",
+    brief: "在辩经坛旁听、最爱替外来人补讲前情的少年",
+    personality: "听懂便抢着问，听不懂就把纸往膝上一翻重新记。喜欢拿卖盐和称青稞的旧事解释拗口道理。",
+    carry: [
+      { name: "萨迦金铜飞轮", category: "weapon", quality: "蓝" },
+      { name: "三色花纹法袍", category: "armor", quality: "蓝" },
+      { name: "萨迦三色护法牌", category: "accessory", quality: "绿" },
+      { name: "朱砂印经残卷", category: "misc", quality: "蓝" },
+      { name: "雅州边茶砖", category: "misc", quality: "白" },
+      { name: "高原酥油膏", category: "misc", quality: "白" },
+      { name: "酥油茶", category: "misc", quality: "白" },
+    ],
+  },
+  {
+    name: "云丹梅朵", id: "resident_yundanmeiduo", gender: "女", faction: "萨迦世家", levelCap: 2, innerRoom: "溪卡纳租庄仓",
+    brief: "庄仓前替不识账的庄户盯秤的少女",
+    personality: "能隔着人群看出度量偏了一分，请她喝几杯茶也别想让她少报数。最爱听背盐人讲海那边的故事。",
+    carry: [
+      { name: "康巴厚背重刀", category: "weapon", quality: "绿" },
+      { name: "三色花纹法袍", category: "armor", quality: "蓝" },
+      { name: "萨迦三色护法牌", category: "accessory", quality: "绿" },
+      { name: "白牦牛酥油块", category: "misc", quality: "白" },
+      { name: "雅州边茶砖", category: "misc", quality: "白" },
+      { name: "康定红酒", category: "misc", quality: "绿" },
+      { name: "酥油茶", category: "misc", quality: "白" },
+    ],
+  },
 ],
 } };

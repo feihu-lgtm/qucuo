@@ -112,5 +112,33 @@ export default { residentGroup: {
       { name: "白牦牛酥油块", category: "misc", quality: "白" },
     ],
   },
+  {
+    name: "仁杰洛布", id: "resident_renjieluobu", gender: "男", levelCap: 2, innerRoom: "渡口淘金集",
+    brief: "淘金集上编小篓、替摊贩传话的少年",
+    personality: "起风时喜欢看谁家的布幌先动。攒钱买了个小沙金袋，却常把自己上午赚的零钱借给回不了家的客人。",
+    carry: [
+      { name: "康巴厚背重刀", category: "weapon", quality: "绿" },
+      { name: "白牦牛毛暖氅", category: "armor", quality: "绿" },
+      { name: "白幡口传信物", category: "accessory", quality: "绿" },
+      { name: "狼曲沙金袋", category: "misc", quality: "蓝" },
+      { name: "白牦牛酥油块", category: "misc", quality: "白" },
+      { name: "雅州边茶砖", category: "misc", quality: "白" },
+      { name: "酥油茶", category: "misc", quality: "白" },
+    ],
+  },
+  {
+    name: "玉珍桑果", id: "resident_yuzhensangguo", gender: "女", faction: "噶举山人", levelCap: 2, innerRoom: "冰泉蒸衣池",
+    brief: "替白门换洗和晾晒布衣的俗家少女",
+    personality: "往柱间挂衣总要留出一条路，好让赶路人披着衣就走。收工后喜欢攀到最晒的石头上吹口哨。",
+    carry: [
+      { name: "火焰铜刀", category: "weapon", quality: "蓝" },
+      { name: "噶举单层白布衣", category: "armor", quality: "蓝" },
+      { name: "白幡口传信物", category: "accessory", quality: "绿" },
+      { name: "白牦牛酥油块", category: "misc", quality: "白" },
+      { name: "焚风辟寒丹", category: "misc", quality: "蓝" },
+      { name: "高原酥油膏", category: "misc", quality: "白" },
+      { name: "酥油茶", category: "misc", quality: "白" },
+    ],
+  },
 ],
 } };

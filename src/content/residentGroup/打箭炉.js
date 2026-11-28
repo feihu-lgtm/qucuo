@@ -112,5 +112,33 @@ export default { residentGroup: {
       { name: "雅州边茶砖", category: "misc", quality: "白" },
     ],
   },
+  {
+    name: "阿洛扎西", id: "resident_aluozhaxi", gender: "男", levelCap: 2, innerRoom: "折多索桥",
+    brief: "折多索桥帮马帮扶驮绳的康巴少年",
+    personality: "眼快手快，总能在茶砖滑落前托一把。空下来就数河里的白浪，听见有人叫他时常笑着数错。",
+    carry: [
+      { name: "康巴厚背重刀", category: "weapon", quality: "绿" },
+      { name: "康巴牛皮马帮甲", category: "armor", quality: "绿" },
+      { name: "康定红珊瑚串", category: "accessory", quality: "蓝" },
+      { name: "雅州边茶砖", category: "misc", quality: "白" },
+      { name: "高原酥油膏", category: "misc", quality: "白" },
+      { name: "酥油茶", category: "misc", quality: "白" },
+      { name: "白牦牛酥油块", category: "misc", quality: "白" },
+    ],
+  },
+  {
+    name: "朱弦", id: "resident_zhuxian", gender: "女", levelCap: 2, innerRoom: "榷茶官栈",
+    brief: "榷茶官栈替脚夫认班次、分信袋的少女",
+    personality: "不肯拿纸上时辰骗头一回走山路的人。谁从城外回来晚了，她会把那人托寄的信攥在手里等。",
+    carry: [
+      { name: "康巴厚背重刀", category: "weapon", quality: "绿" },
+      { name: "康巴牛皮马帮甲", category: "armor", quality: "绿" },
+      { name: "雪山问心珠", category: "accessory", quality: "蓝" },
+      { name: "雅州边茶砖", category: "misc", quality: "白" },
+      { name: "康定红酒", category: "misc", quality: "绿" },
+      { name: "高原酥油膏", category: "misc", quality: "白" },
+      { name: "酥油茶", category: "misc", quality: "白" },
+    ],
+  },
 ],
 } };
