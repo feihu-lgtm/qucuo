@@ -1,6 +1,7 @@
 // 势力声誉：玩家与一方势力的关系，存 varTree.世界.势力声誉.<势力>（-100~100）。
 // 参照千山一诺的分域侠名：在该势力据点买东西按声誉打折（15/40/80 → 九二/八五/七五折）。
 import { FACTIONS } from "../../data/map/factions.js";
+import { adjustTension } from "../conflict/tension.js";
 
 const TIERS = [
   { min: 80, label: "生死之交", coef: 0.75 },
@@ -58,6 +59,27 @@ export function factionRepDeltas(deltas, varTree = {}, { step = REP_STEP, ripple
   return out;
 }
 
+
+// WO-25I：声誉落账联动张力——玩家帮某势力实涨声誉时，该势力与其死对头（FACTIONS.foes）
+// 之间的张力小幅升温（实涨 5 点约掀 1 点张力，单次封顶 4），让玩家行为真能搅动局部张力。
+// 只涨联动，跌声誉不浇油（落井下石不是结梁子）；张力回落交给 worldPulse 的跨日节拍。
+function tensionLinkedRep(varTree, before, deltas, step) {
+  const world = before?.世界 || {};
+  let tension = world.tension || {};
+  let touched = false;
+  for (const [faction] of Object.entries(deltas || {})) {
+    const gain = factionRepOf(varTree, faction) - factionRepOf(before, faction);
+    if (!(gain > 0)) continue;
+    const foes = FACTIONS.find((entry) => entry.name === faction)?.foes || [];
+    const heat = Math.min(4, Math.ceil(gain / 5));
+    for (const foe of foes) {
+      tension = adjustTension(tension, faction, foe, heat);
+      touched = true;
+    }
+  }
+  return touched ? tension : (world.tension || {});
+}
+
 // 把一组势力声誉增量（含联动）写进 varTree，返回新的 varTree。
 export function applyFactionRep(varTree, deltas, { step = REP_STEP, ripple = true } = {}) {
   const changes = factionRepDeltas(deltas, varTree || {}, { step, ripple });
@@ -66,7 +88,10 @@ export function applyFactionRep(varTree, deltas, { step = REP_STEP, ripple = tru
     const capped = Math.max(-step, Math.min(step, delta));
     reps[faction] = clampRep(factionRepOf(varTree, faction) + capped);
   }
-  return { ...(varTree || {}), 世界: { ...(varTree?.世界 || {}), 势力声誉: reps } };
+  const next = { ...(varTree || {}), 世界: { ...(varTree?.世界 || {}), 势力声誉: reps } };
+  // WO-25I：张力联动按最终实涨计（含限幅后归零的自然不升温）。
+  next.世界.tension = tensionLinkedRep(next, varTree || {}, deltas, step);
+  return next;
 }
 
 // 系统直接结算的声誉（拜入、日常善举），按当前 varTree 实涨量连带对头扣分，不走 AI 单回合 ±10 限幅。
@@ -79,7 +104,9 @@ export function grantFactionRep(varTree, deltas) {
     reps[faction] = clampRep(before + delta);
     if (reps[faction] !== before) applied[faction] = reps[faction] - before;
   }
-  return { applied, varTree: { ...(varTree || {}), 世界: { ...(varTree?.世界 || {}), 势力声誉: reps } } };
+  const next = { ...(varTree || {}), 世界: { ...(varTree?.世界 || {}), 势力声誉: reps } };
+  next.世界.tension = tensionLinkedRep(next, varTree || {}, deltas, Infinity);
+  return { applied, varTree: next };
 }
 
 export const formatRepChanges = (applied) =>

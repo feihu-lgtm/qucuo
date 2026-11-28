@@ -102,3 +102,46 @@ describe("WO-25F projectWorld", () => {
     expect(() => getWorldOverview({}, registry)).not.toThrow();
   });
 });
+
+describe("WO-25I 茶馆风声按跳数传播", () => {
+  it("近邻一日后听到、两跳外的据点两日后才听到", async () => {
+    const { stepDailyBeat } = await import("./worldPulse.js");
+    const { QUCUO_MAP } = await import("../../data/map/qucuoMap.js");
+    // 程序选定一条 原点→一跳→两跳 的真实相邻链
+    const origin = "天都镇";
+    const hop1 = Object.values(QUCUO_MAP[origin].exits)[0];
+    const hop2 = Object.values(QUCUO_MAP[hop1].exits).find((d) => d !== origin);
+    const mk = (events) => ({
+      varTree: { 世界: { 事件录: events, tension: {} } },
+      time: 24,
+    });
+    const ev = { id: "ev_test", day: 1, turn: 10, kind: "风闻", text: "原点出了大事", district: origin, knownDistricts: [origin] };
+    const registry = { packs: [], worldStates: [], roamingSquads: [] };
+
+    // 第 0 日：只有原点知道
+    expect(getKnownEventsForDistrict(mk([ev]), origin).length).toBe(1);
+    expect(getKnownEventsForDistrict(mk([ev]), hop1).length).toBe(0);
+
+    // 过一日：扩散 1 跳，近邻听到、两跳外还没
+    const wrap = (world) => ({ varTree: { 世界: { 事件录: world.events, tension: {} } }, time: 48 });
+    const day1 = stepDailyBeat(mk([ev]), registry);
+    expect(getKnownEventsForDistrict(wrap(day1), hop1).length).toBe(1);
+    expect(getKnownEventsForDistrict(wrap(day1), hop2).length).toBe(0);
+
+    // 再过一日：两跳外也听到了
+    const day2 = stepDailyBeat({ varTree: { 世界: { 事件录: day1.events, tension: {} } }, time: 48 }, registry);
+    expect(getKnownEventsForDistrict({ varTree: { 世界: { 事件录: day2.events, tension: {} } }, time: 72 }, hop2).length).toBe(1);
+  });
+
+  it("茶馆候选按新→旧排序（新事发先入耳）", () => {
+    const state = {
+      varTree: { 世界: { 事件录: [
+        { id: "a", turn: 5, text: "旧事", district: "天都镇", knownDistricts: ["天都镇"] },
+        { id: "b", turn: 30, text: "新事", district: "天都镇", knownDistricts: ["天都镇"] },
+      ] } },
+      time: 40,
+    };
+    const got = getKnownEventsForDistrict(state, "天都镇");
+    expect(got.map((e) => e.id)).toEqual(["b", "a"]);
+  });
+});

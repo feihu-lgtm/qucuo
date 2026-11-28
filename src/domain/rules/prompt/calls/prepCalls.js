@@ -59,6 +59,22 @@ export function buildWorldPrepInput(state, { maxQualityHint = "紫" } = {}) {
         .map((f) => String(f.摘要).slice(0, 40))
     : [];
 
+  // WO-25I：当前据点活跃局势卡与近期传到当地的世界事件进备料输入——
+  // 风声素材贴着「此地此刻正在发生什么」起，不再凭空编造。
+  // 仍受 prepSeeds 非事实缓存纪律约束：只是裁剪后的素材线索，不写既定事实。
+  const world = varTree?.世界 || {};
+  const today = Math.floor(time / 24);
+  const situationsText = (world.据点局势?.[room.name] || [])
+    .filter((c) => !(Number.isFinite(c?.expireDay) && today > c.expireDay))
+    .slice(0, 3)
+    .map((c) => c.id)
+    .join("、");
+  const districtEventsText = (world.事件录 || [])
+    .filter((e) => (e?.knownDistricts || []).includes(room.name) && String(e?.text || e?.summary || "").trim())
+    .slice(-3)
+    .map((e) => String(e.text || e.summary).slice(0, 40))
+    .join("；");
+
   return {
     playerName: state?.char?.name || "侠客",
     maxQualityHint,
@@ -69,6 +85,8 @@ export function buildWorldPrepInput(state, { maxQualityHint = "紫" } = {}) {
     unlootedContainersText: unlooted.join("、"),
     nemesisSummaryText: nemesisLines.join("、"),
     recentFactsText: recentFacts.join("；"),
+    situationsText,
+    districtEventsText,
   };
 }
 
@@ -80,7 +98,7 @@ export function registerPrepCalls() {
       const p = ctx.prep || {};
       return `你是《天都·曲措》幕后的备料人。${p.playerName || "侠客"} 歇脚、打坐或赶路的空当，你替此地先把暗里的账理好，只交三样素材：
 
-一、在场一位要紧人物今天心里盘算的一件具体的事，以及他接下来真正要去做的事。最多一条。
+一、在场一位要紧人物今天心里盘算的一件具体的事，以及他接下来真正要去做的事。最多一条。打算要贴着这人过日子的样子写：他常去的建筑里能做什么、银囊宽不宽裕、有什么癖好或惦记，不写空泛的"想出去走走"。
 二、茶馆或巷口正在传的一条风声，要和眼前的势力或宿敌有牵连。最多一条。
 三、此处还没被翻过的容器里，可能压着的旧物，零到两件。品阶最高不超过「${p.maxQualityHint || "紫"}」，不许是神兵或绝学。每件附一句翻找之前就能察觉的微弱线索，比如积灰、油纸角、暗格里的空响。
 
@@ -99,6 +117,8 @@ export function registerPrepCalls() {
 在场要紧人物：${p.presentNpcsText || "无"}
 尚未翻过的容器：${p.unlootedContainersText || "无"}
 活跃的宿敌与门派动向：${p.nemesisSummaryText || "平稳无波"}
+此地眼下局势：${p.situationsText || "无"}
+传到此地的风声：${p.districtEventsText || "暂无"}
 最近发生的事：${p.recentFactsText || "暂无新事"}
 请按 schema 输出 npcPlans（最多 1 条）、tavernRumors（最多 1 条）、prepItems（0 到 2 条）。`;
     },
