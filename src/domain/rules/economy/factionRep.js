@@ -63,21 +63,26 @@ export function factionRepDeltas(deltas, varTree = {}, { step = REP_STEP, ripple
 // WO-25I：声誉落账联动张力——玩家帮某势力实涨声誉时，该势力与其死对头（FACTIONS.foes）
 // 之间的张力小幅升温（实涨 5 点约掀 1 点张力，单次封顶 4），让玩家行为真能搅动局部张力。
 // 只涨联动，跌声誉不浇油（落井下石不是结梁子）；张力回落交给 worldPulse 的跨日节拍。
-function tensionLinkedRep(varTree, before, deltas, step) {
+function tensionLinkedRep(varTree, before, deltas) {
   const world = before?.世界 || {};
   let tension = world.tension || {};
-  let touched = false;
+  // 同一对敌手一次落账只按最高热度调一次——同时帮了冤家双方不会双倍升温。
+  const heatByPair = new Map();
   for (const [faction] of Object.entries(deltas || {})) {
     const gain = factionRepOf(varTree, faction) - factionRepOf(before, faction);
     if (!(gain > 0)) continue;
     const foes = FACTIONS.find((entry) => entry.name === faction)?.foes || [];
     const heat = Math.min(4, Math.ceil(gain / 5));
     for (const foe of foes) {
-      tension = adjustTension(tension, faction, foe, heat);
-      touched = true;
+      const key = [faction, foe].sort().join("\u0000");
+      heatByPair.set(key, Math.max(heatByPair.get(key) || 0, heat));
     }
   }
-  return touched ? tension : (world.tension || {});
+  for (const [key, heat] of heatByPair) {
+    const [a, b] = key.split("\u0000");
+    tension = adjustTension(tension, a, b, heat);
+  }
+  return heatByPair.size > 0 ? tension : (world.tension || {});
 }
 
 // 把一组势力声誉增量（含联动）写进 varTree，返回新的 varTree。
@@ -90,7 +95,7 @@ export function applyFactionRep(varTree, deltas, { step = REP_STEP, ripple = tru
   }
   const next = { ...(varTree || {}), 世界: { ...(varTree?.世界 || {}), 势力声誉: reps } };
   // WO-25I：张力联动按最终实涨计（含限幅后归零的自然不升温）。
-  next.世界.tension = tensionLinkedRep(next, varTree || {}, deltas, step);
+  next.世界.tension = ripple === false ? (varTree?.世界?.tension || {}) : tensionLinkedRep(next, varTree || {}, deltas);
   return next;
 }
 
@@ -105,7 +110,7 @@ export function grantFactionRep(varTree, deltas) {
     if (reps[faction] !== before) applied[faction] = reps[faction] - before;
   }
   const next = { ...(varTree || {}), 世界: { ...(varTree?.世界 || {}), 势力声誉: reps } };
-  next.世界.tension = tensionLinkedRep(next, varTree || {}, deltas, Infinity);
+  next.世界.tension = tensionLinkedRep(next, varTree || {}, deltas);
   return { applied, varTree: next };
 }
 

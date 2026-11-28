@@ -142,3 +142,29 @@ describe("WO-25I 声誉联动张力", () => {
     expect(getTension(out.世界.tension, "青城派", "天龙教")).toBeGreaterThan(BASE_TENSION[tensionKey("青城派", "天龙教")] ?? 0);
   });
 });
+
+describe("WO-25I Review 钉死", () => {
+  it("ripple:false 隐秘援助不升温（暗中出手不该搅动公开张力）", async () => {
+    const { getTension, BASE_TENSION, tensionKey } = await import("../../data/factions/npcFactions.js").then(async (m) => {
+      const t = await import("../conflict/tension.js");
+      return { getTension: t.getTension, BASE_TENSION: m.BASE_TENSION, tensionKey: m.tensionKey };
+    });
+    const key = tensionKey("青城派", "天龙教");
+    const base = BASE_TENSION[key] ?? 0;
+    const out = applyFactionRep({ 世界: { 势力声誉: {}, tension: {} } }, { 青城派: 20 }, { ripple: false });
+    expect(getTension(out.世界.tension, "青城派", "天龙教")).toBe(base);
+    // 公开援助对照：升温
+    const open = applyFactionRep({ 世界: { 势力声誉: {}, tension: {} } }, { 青城派: 20 });
+    expect(getTension(open.世界.tension, "青城派", "天龙教")).toBeGreaterThan(base);
+  });
+
+  it("同时帮冤家双方不双倍升温（同一对子按最高热度只调一次）", async () => {
+    const { getTension } = await import("../conflict/tension.js");
+    const { BASE_TENSION, tensionKey } = await import("../../data/factions/npcFactions.js");
+    const base = BASE_TENSION[tensionKey("青城派", "天龙教")] ?? 0;
+    // 青城+20 / 天龙+20 同时落账：pair 只按最高热度调一次（20→4点），不是 4+4=8
+    const both = grantFactionRep({ 世界: { 势力声誉: {}, tension: {} } }, { 青城派: 20, 天龙教: 20 }).varTree;
+    const heat = getTension(both.世界.tension, "青城派", "天龙教") - base;
+    expect(heat).toBe(4);
+  });
+});
