@@ -81,7 +81,7 @@ function makeRouterAi(scripts) {
         script = scripts
           .map((s) => ({ s, idx: s.cmd ? text.lastIndexOf(s.cmd) : -1 }))
           .filter((x) => x.idx >= 0)
-          .sort((a, b) => b.idx - a.idx)[0]?.s;
+          .sort((a, b) => b.idx - a.idx || b.s.cmd.length - a.s.cmd.length)[0]?.s;
       }
       calls.push({ cmd: script?.cmd || "?", intake: isIntake });
       if (!script) throw new Error(`mock ai: no script matched ${text.slice(0, 100)}`);

@@ -602,4 +602,58 @@ describe("runTurn", () => {
     expect(chat).toHaveBeenCalledTimes(2);
     expect(committed).toHaveBeenCalledTimes(1);
   });
+
+  it("runRecall 与 turn.intake 并行发起，且 fact.summary 不阻塞主调用前路径", async () => {
+    const events = [];
+    const vt = {
+      角色: { 才旦: { 好感度: 10 } },
+      世界: { 知识领域: { 事实: { f_pending: { id: "f_pending", 摘要: "", 知晓者: { 才旦: { 途径: "剧本", 得知回合: 0 } } } } } },
+    };
+    const intakeJson = JSON.stringify({
+      read: "和才旦搭话", refIds: [],
+      actions: [{ kind: "talk", target: "才旦", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "问好", useKind: "", intimate: false }],
+      proposals: [],
+    });
+    let releaseRecall;
+    const prefetched = new Promise((resolve) => { releaseRecall = resolve; });
+    const ai = {
+      async chat(messages, chatOpts) {
+        const text = String(chatOpts?.systemPrompt || "") + "\n" + (messages || []).map((m) => String(m?.content || "")).join("\n");
+        if (text.includes("听意员")) {
+          events.push("intake_called_before_recall_settled");
+          releaseRecall({ recallInfo: { visible: [] }, recallBlock: "" });
+          return { text: intakeJson };
+        }
+        if (text.includes("待补") || text.includes("概括成一句")) {
+          events.push("summary_called");
+          return { text: "不该在主调用前出现" };
+        }
+        events.push("main_called");
+        return { text: '才旦点了点头。\n---SEAL---\n{"fills":{},"respondedNpcs":["才旦"],"spontaneousPact":null}' };
+      },
+    };
+    const deps = {
+      convo: [], addLog: vi.fn(), setConvo: vi.fn(),
+      apiCfg: { extractionEnabled: true, judgePipelineEnabled: true, streamEnabled: false, maxTokens: 4000, model: "m", extractionModel: "e" },
+      intent: { code: "UNKNOWN", label: "未知" },
+      room: { name: "鱼定村", npcs: [{ name: "才旦" }], items: [], exits: [] },
+      inv: [], char: { hp: [80, 100], special: { 气运: 5 } }, skills: [],
+      varTree: vt,
+      memory: { varTreeLatest: vt, roomNpcNames: ["才旦"], time: 1, apiCfg: {}, flags: [], recall: { lastAiText: "" } },
+      _prefetchedRecall: prefetched,
+      gm: false, flags: [],
+      narrator: initialNarratorState(), narratorStage: initialNarratorState().stage,
+      scenario: "测试剧本", preset: { scenario: "测试剧本" },
+      charBodyProfile: emptyBodyProfile(), charName: "少侠",
+      dao: { karma: 0, jie: 0 }, questProgress: {}, companionState: {},
+      time: 1, getTimeStr: () => "卯时",
+      hasInnerMap: () => false, describeEquipment: () => "", describeTodayForAI: () => "",
+      visibleNpcsCount: 1, npcLoreBlockWithQuest: "",
+      isTalk: false,
+      ai,
+    };
+    const turn = await runTurn(deps, "朝才旦走过去招呼一声");
+    expect(events).toEqual(["intake_called_before_recall_settled", "main_called"]);
+    expect(turn.pendingFactIds).toEqual(["f_pending"]);
+  });
 });

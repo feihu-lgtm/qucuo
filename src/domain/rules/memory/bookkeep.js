@@ -1,20 +1,16 @@
 // ============================================================================
 // 记账（bookkeep）—— 回合末的后台小模型调用，四阶段的最后一棒
 // ----------------------------------------------------------------------------
-// 主模型只负责叙事；叙事写完后，这个便宜的调用把"值得留下的事"落成两笔账：
-//   1. memory：≤50字客观事实摘要（沿用主叙事 prompt 里 memory 字段的同一套规矩），
-//      返回值里带着，交既有小纸条/事实管线去存，本模块不落库。
-//   2. ledger：在场 NPC 的旧账新条目，每人每轮至多一句，经 applyBookkeep
-//      写进 varTree.角色[name].旧账（npcLedger.js 产 patch，applyPatches 统一提交）。
+// 主模型只负责叙事；叙事写完后，这个便宜的调用把"值得留下的事"落成：
+//   ledger：在场 NPC 的旧账新条目，每人每轮至多一句，经 bookkeepToPatches
+//   写进 varTree.角色[name].旧账（npcLedger.js 产 patch，applyPatches 统一提交）。
 // AI 关/失败一律返回空账，绝不抛错——记账是锦上添花，丢一轮不碍事。
 // ============================================================================
 
 import { definePrompt } from "../prompt/registry.js";
 import { ledgerToPatches, LEDGER_LINE_MAX } from "./npcLedger.js";
 
-export const MEMORY_MAX = 50;
-
-const EMPTY_RESULT = { memory: "", ledger: {} };
+const EMPTY_RESULT = { ledger: {} };
 
 function clampLine(s, max) {
   const t = typeof s === "string" ? s.trim() : "";
@@ -34,15 +30,6 @@ function tryParseObject(raw) {
   } catch {
     return null;
   }
-}
-
-// 截断回复的兜底：直接正则抠 "memory":"..."（允许串没收尾，截到结尾为止）
-function salvageMemory(raw) {
-  const m = raw.match(/"memory"\s*:\s*"((?:[^"\\]|\\.)*)("|$)/);
-  if (!m) return "";
-  let s = m[1];
-  try { s = JSON.parse(`"${s}"`); } catch { /* 半截转义就按原文用 */ }
-  return s;
 }
 
 // 截断回复的兜底：按人名正则抠 "名":[ ... ]，数组没闭合就只收里面完整的 "..."
@@ -67,7 +54,7 @@ function firstLine(val) {
 }
 
 /**
- * 解析记账回复 → { memory, ledger:{人名:[一句]} }。
+ * 解析记账回复 → { ledger:{人名:[一句]} }。
  * 不在场的人丢掉、每人只收第一句、行长截 40 字、垃圾输入返回空账；永不抛错。
  * @param {string} text          AI 原始回复
  * @param {string[]} presentNames 本轮在场 NPC 名（白名单）
@@ -80,11 +67,6 @@ export function parseBookkeep(text, presentNames = []) {
     (Array.isArray(presentNames) ? presentNames : []).filter((n) => typeof n === "string" && n),
   );
   const obj = tryParseObject(raw);
-
-  const memory = clampLine(
-    typeof obj?.memory === "string" ? obj.memory : salvageMemory(raw),
-    MEMORY_MAX,
-  );
 
   const ledger = {};
   const src = obj && typeof obj.ledger === "object" && obj.ledger ? obj.ledger : null;
@@ -100,17 +82,16 @@ export function parseBookkeep(text, presentNames = []) {
       if (line) ledger[name] = [line];
     }
   }
-  return { memory, ledger };
+  return { ledger };
 }
 
 export function registerBookkeepCalls() {
   definePrompt("block", "bookkeep.turn.sys", {
     label: "回合记账系统指令",
     slot: "sys",
-    text: () => `你是幕后记账的小账房。看完这一轮发生的事，把值得留下的客观事实落成账，只输出一个 JSON，不要解释、不要 markdown：
-{"memory":"≤50字客观事实或空串","ledger":{"人名":["一句≤40字的新账"]}}
-- memory：用不超过50字的纯客观事实概括本轮发生了什么（谁做了什么、得到或失去了什么、去了何处、结下或了断了什么、许下或应承了什么）。写清人名地名，不用"那人""某处"这类含糊指代；只记事实，不写情绪、心理、评述；纯私密不宜外传的事不要写；没什么可记就写空串。
-- ledger：只给在场人物记旧账（恩怨、人情、承诺、怒气缘由），每人至多一句新账，没有新事就不写这个人；只能写在场名单里的人。
+    text: () => `你是幕后记账的小账房。看完这一轮发生的事，只输出在场人物值得留下的增量旧账 JSON，不要解释、不要 markdown：
+{"ledger":{"人名":["一句≤40字的新账"]}}
+- ledger：只给在场人物记旧账（恩怨、人情、承诺、怒气缘由），每人至多一句新账，没有新事就输出 {"ledger":{}}；只能写在场名单里的人。
 - 一律用"少侠"称呼玩家角色，不要用"你/我/玩家"。`,
   });
 
@@ -145,13 +126,13 @@ ${ledgerBlock || "（无）"}`;
     label: "回合记账",
     execution: "async_background",
     route: "extraction",
-    reviewDesc: "提取 ≤50 字客观 memory 与在场 NPC 增量旧账，不合法名单自动剔除",
+    reviewDesc: "提取在场 NPC 增量旧账，不合法名单自动剔除",
     tokenLimitKey: "extraction",
     defaultMaxTokens: 1200,
     join: "",
     blocks: ["bookkeep.turn.sys", "bookkeep.turn.user"],
     vet: (text, ctx) => ({ ok: true, value: parseBookkeep(text, ctx.presentNames || []) }),
-    offline: () => ({ memory: "", ledger: {} }),
+    offline: () => ({ ledger: {} }),
   });
 }
 

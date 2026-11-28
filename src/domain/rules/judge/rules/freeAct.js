@@ -152,11 +152,28 @@ export function handleFreeAct(J, action) {
         attr: "体魄", val: -1, negative: true, durationTurns: 12, reason: "中毒", witnesses: wit,
       });
     }
+    if (risk !== "无") {
+      const ratio = risk === "高" ? 0.22 : risk === "中" ? 0.12 : 0.05;
+      facts.push({
+        id: nextFactId(), op: "CHANGE_VITALS_SILVER",
+        hpDelta: -Math.max(1, Math.round(maxHp * ratio)), witnesses: wit,
+      });
+    }
   } else if (outcome === "醉酒") {
     facts.push({
       id: nextFactId(), op: "APPLY_CONDITION", attr: "智谋", val: -1, negative: true,
       durationTurns: 6, reason: "醉酒", witnesses: wit,
     });
+  } else if (outcome === "服用" && /药|丹|散|膏|丸|汤剂|草药/.test(String(action.text || ""))) {
+    const medKey = `med_${Math.floor(turn / 2)}`;
+    const done = (varTree?.世界?.服药账 || []).includes(medKey) || signedRestKeys.has(medKey);
+    if (!done) {
+      signedRestKeys.add(medKey);
+      facts.push({
+        id: nextFactId(), op: "CHANGE_VITALS_SILVER",
+        hpDelta: Math.max(1, Math.round(maxHp * 0.05)), witnesses: wit,
+      });
+    }
   }
-  // 服用/无/其他：不签。
+  // 无/其他/空服用：不签。
 }
