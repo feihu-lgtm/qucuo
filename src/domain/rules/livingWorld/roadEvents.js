@@ -330,3 +330,39 @@ export function buildResolutionNote(roll, outcome) {
     outcome.facts.some((f) => f.warrant) ? "【天机券填空】在尾章 SEAL 里为每件待命名之物给出名字与一句描述，贴合来人与地域，不得超出所给品阶。" : "",
   ].filter(Boolean).join("\n");
 }
+
+// ── WO-25P · roadEventWrites 落账转换（纯函数）──────────────────────
+// 把 roadEventWrites 的三件产物转成 applyResult 可消费的 result：
+//   flagsAdd   → changes.flags 全量数组合并去重（setFlags 是整写语义）
+//   worldEvent → varTree.世界.事件录 追加（id 幂等去重 + EVENT_CAP 截尾，与 worldPulse 同口径）
+//   rosterSync → varTree.世界.游走册 位置同步——inner/carrySnapshot 等册上既有字段保留，
+//                人没被邀走留在册里日后还能重逢；严守 #685 驻足锁：同步目标就是事发现场
+//                节点，同房锁定语义天然不冲突（册上人在玩家眼前，不会被挪走）。
+import { EVENT_CAP } from "./worldPulse.js";
+
+export function buildRoadEventWritesResult(writes, state) {
+  if (!writes) return null;
+  const changes = {};
+  const prevFlags = Array.isArray(state?.flags) ? state.flags : [];
+  const addFlags = (writes.flagsAdd || []).filter((f) => f && !prevFlags.includes(f));
+  if (addFlags.length) changes.flags = [...prevFlags, ...addFlags];
+
+  const turn = state?.time ?? writes.worldEvent?.turn ?? 0;
+  changes.varTree = (prev) => {
+    const world = { ...(prev?.世界 || {}) };
+    if (writes.worldEvent?.id) {
+      const events = Array.isArray(world.事件录) ? world.事件录 : [];
+      if (!events.some((e) => e?.id === writes.worldEvent.id)) {
+        world.事件录 = [...events, writes.worldEvent].slice(-EVENT_CAP);
+      }
+    }
+    if (writes.rosterSync?.name && writes.rosterSync?.at) {
+      const roster = { ...(world.游走册 || {}) };
+      const cur = roster[writes.rosterSync.name] || {};
+      roster[writes.rosterSync.name] = { ...cur, at: writes.rosterSync.at, since: turn };
+      world.游走册 = roster;
+    }
+    return { ...(prev || {}), 世界: world };
+  };
+  return { changes };
+}
