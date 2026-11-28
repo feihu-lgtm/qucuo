@@ -34,7 +34,7 @@ export const LETTER_TUNE = {
 };
 
 import { getNpcRecentEvents } from "../../domain/rules/livingWorld/projectWorld.js";
-import { purseTierOf } from "../../domain/rules/livingWorld/npcGoals.js";
+import { inferQuirks, purseTierOf } from "../../domain/rules/livingWorld/npcGoals.js";
 import { findNpcObject } from "../../domain/rules/npc/npcLookup.js";
 import * as importedRegistry from "../../domain/rules/cards/importedRegistry.js";
 export { findNpcObject };
@@ -60,7 +60,9 @@ export function pickLetterSender(state, rng = Math.random) {
   const enriched = candidates.map((c) => {
     const recentEvents = getNpcRecentEvents(state, c.name, 3)
       .filter((ev) => Number.isFinite(ev?.turn) && state.time - ev.turn <= 72 && typeof ev.text === "string" && ev.text);
-    const poorPurse = purseTierOf(state.varTree, c.name, state.time) === 0;
+    // 与 resolveLifeSlice 同口径：癖好（手痒赌徒波动最大）必须参与分档，
+    // 否则同一个人的银囊在来信与生活切片里两个说法（Review 实证）。
+    const poorPurse = purseTierOf(state.varTree, c.name, state.time, inferQuirks(c.npc || {})) === 0;
     return { ...c, recentEvents, poorPurse };
   });
   const weighted = enriched.map((c) => ({ ...c, w: (1 + c.aff / 25) * (c.recentEvents.length ? 2 : 1) * (c.poorPurse ? 1.5 : 1) }));
