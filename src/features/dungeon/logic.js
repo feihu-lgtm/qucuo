@@ -4,6 +4,7 @@
 
 import { computeSettledLoot } from "../../domain/rules/dungeon/engine.js";
 import { normalizeDungeonStore, syncDungeonWorld } from "../../domain/rules/dungeon/mapRun.js";
+import { DUNGEON_DISTRICTS_ALL } from "../../domain/data/dungeon/districts.js";
 import { getAdventurerById } from "../../domain/rules/dungeon/dungeonPool.js";
 import { unlockImportedCompanion } from "../../domain/rules/companion/companion.js";
 import { ocSignatureMoves } from "../../domain/rules/companion/ocKungfu.js";
@@ -150,6 +151,17 @@ export function settleMapRun(state, mapRun, opts = {}) {
   if (extraFlags.length) {
     const curFlags = res.changes.flags || state.flags || [];
     res.changes.flags = [...new Set([...curFlags, ...extraFlags])];
+  }
+
+  // #668：镇宫名器的去向写进出宫结算日志——拿到了就明说，只拿到线索就指明下一步。
+  const divineArm = DUNGEON_DISTRICTS_ALL[mapRun.districtKey]?.divineArm;
+  if (divineArm && res.logs) {
+    const carried = (mapRun.loot?.items || []).map(lootItemName);
+    if ((mapRun.divineFlags || []).includes(divineArm.flag)) {
+      res.logs.push({ t: LOG_T.SYS, text: `  ★ 镇宫名器「${divineArm.itemName}」认主入囊！` });
+    } else if (carried.includes(divineArm.clueItem)) {
+      res.logs.push({ t: LOG_T.SYS, text: `  ☆ 名器线索：凭「${divineArm.clueItem}」再打通一回${mapRun.displayName || mapRun.districtKey}，首领宝匣便会交出「${divineArm.itemName}」。` });
+    }
   }
 
   // 合并开箱领悟的武学（已拥有折算潜能）

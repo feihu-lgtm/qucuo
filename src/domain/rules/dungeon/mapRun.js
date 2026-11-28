@@ -254,7 +254,9 @@ export function rollChestRewards(chestTier, config, {
         out.notes.push(`★ 镇宫神兵「${da.itemName}」认主出鞘！`);
       } else {
         out.items.push({ name: da.clueItem, category: "misc", quality: "蓝" });
-        out.notes.push(`暗匣留有线索信物「${da.clueItem}」，循此可问神兵旧案`);
+        // #668：名器是双轨设计——首通只出线索，凭线索/通关记录再打通一回才出名器。
+        // 旧文案「循此可问神兵旧案」让人以为要去找人问，实际再闯一回即可，这里写明。
+        out.notes.push(`暗匣留有线索信物「${da.clueItem}」——镇宫名器「${da.itemName}」尚未出世：再打通一回本宫（打通后可「重探新脉」换图再闯），首领宝匣便会交出它`);
       }
     }
   }
@@ -857,6 +859,8 @@ export function applyMapBattleResult(runState, {
       if (chest.cardUnlocked) next.unlockedCards = [...new Set([...(next.unlockedCards || []), chest.cardUnlocked.flag])];
       if (chest.divineDrop) next.divineFlags = [...new Set([...(next.divineFlags || []), chest.divineDrop.flag])];
       if (chest.notes?.length) next.log = [...next.log, ...chest.notes];
+      // #667：通关画面要说清「首领已伏诛、地宫已打通、得了什么」，不能只剩件数。
+      next.victoryNotes = [`镇宫首领「${battle.npc?.name || config?.boss?.name || "首领"}」伏诛，地宫已打通`, ...(chest.notes || [])];
       return runEnd(next, "victory").runState;
     }
 
@@ -919,7 +923,7 @@ const OPTIONAL_RUN_KEYS = [
   "openedChests", "solvedPuzzles", "clearedRooms", "marketBought", "adventurers",
   "charMoney", "spentMoney", "playerFlags", "playerSkills", "playerInv",
   "learnedSkills", "unlockedCards", "divineFlags", "recruitedAdvIds", "usedItems",
-  "activeBattle", "bossDefeated",
+  "activeBattle", "bossDefeated", "victoryNotes",
 ];
 
 export function deserializeMapRun(data) {
