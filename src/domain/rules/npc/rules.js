@@ -284,7 +284,16 @@ export const residentNpcRule = {
         // 只有锁影真被驻足锁钉着才跳过——房间缓存只刷玩家到访的据点，无锁的
         // 陈影不该拦住编队在新驻地上线（Review 修，不然商队永远搁浅在路上）
         if (cachedNpcNames.has(found.name) && (state.varTree?.世界?.驻足锁?.[found.name] ?? -1) > time) continue;
-        const existing = existingByName.get(found.name);
+        // Review 修：跨据点挪窝要接住旧身的随身物账——缓存里的 sold/stolen/dropped
+        // 痕迹是已扒事实，newbuild 重掷会让同一批货被重复扒第二次
+        let existing = existingByName.get(found.name);
+        if (!existing) {
+          for (const [cachedName, cached] of Object.entries(roomMap || {})) {
+            if (cachedName === room.name) continue;
+            const hit = (cached?.npcs || []).find((n) => n.name === found.name);
+            if (hit) { existing = hit; break; }
+          }
+        }
         const built = buildRoomNpcWithCombat(found, { existingNpc: existing, luck, trade: npcTradeOf(state.npcState, found) });
         built.squadId = sq.id;
         built.squadName = sq.name;
