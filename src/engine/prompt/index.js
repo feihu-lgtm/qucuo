@@ -1,6 +1,7 @@
 import { buildPresence, buildNpcContext, buildQuestStageNote, buildForcedEventNote, buildArrivalNote } from "./roundNotes.js";
 import { buildBudgetInstruction } from "../../domain/rules/prompt/inputIntent.js";
 import { buildEncounterNote } from "../../domain/rules/map/encounter.js";
+import { buildRoadEventNote } from "../../domain/rules/livingWorld/roadEvents.js";
 import { findTargetedRumor } from "../../domain/rules/npc/npcEmergence.js";
 import { getTimeStr } from "../../utils/mudHelpers.js";
 import { hasInnerMap } from "../../domain/rules/map/innerMap.js";
@@ -16,7 +17,7 @@ export function createPromptContext(state, args = {}) {
     buildPresence,
     buildNpcContext: (input) => buildNpcContext({ ...input, importedNpcLore, companionForms }),
     buildQuestStageNote, buildForcedEventNote, buildArrivalNote,
-    buildBudgetInstruction, buildEncounterNote, findTargetedRumor,
+    buildBudgetInstruction, buildEncounterNote, buildRoadEventNote, findTargetedRumor,
     getTimeStr, hasInnerMap, quality: QUALITY, categoryLabel: CATEGORY_LABEL,
     describeEquipment, describeTodayForAI,
     ...state,

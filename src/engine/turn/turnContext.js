@@ -83,6 +83,7 @@ export function createTurnContext({ plan, env }) {
     gm,
     innerRoomName,
     encounter: plan.encounterToDescribe || null,
+    roadRoll: plan.roadRoll || null,
     isTalk,
     isSettle,
     isStale,
@@ -103,7 +104,7 @@ export function createTurnContext({ plan, env }) {
       clapboardEntries: buildLivingClapboardEntries({ varTree: preActVarTree, time }),
       gm, movingDir, lockedDestName, outerDepart, innerRoomName, apiCfg,
       destinationLock, pickupJudgment, categoryLabel: CATEGORY_LABEL,
-      encounter: plan.encounterToDescribe, collectNote, intent,
+      encounter: plan.encounterToDescribe, roadRoll: plan.roadRoll || null, collectNote, intent,
       npcState: getGameState?.()?.npcState,
       timeForToday: getGameState?.()?.time,
     }, {

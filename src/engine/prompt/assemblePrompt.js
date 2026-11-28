@@ -86,9 +86,13 @@ export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo)
   // W-ROAM 11 号位动态现场段：玩家眼前的人物进出与公屏同源——公屏去噪后
   // 主叙事不能跟着失明，否则正聊着的人走了叙事还在让他开口。
   const movementNote = buildRecentMovementNote(room, time, innerRoomName);
-  const encounterNote = input.encounter
-    ? input.buildEncounterNote?.(input.encounter, lockedDestName) || ""
-    : "";
+  // WO-25O：路遇事件照面段与势力过路人同位（11 号位）——两段式首段，
+  // buildRoadEventNote 只写到抉择之前并列出可行之事，抉择归玩家下一句。
+  const encounterNote = input.roadRoll
+    ? input.buildRoadEventNote?.(input.roadRoll) || ""
+    : input.encounter
+      ? input.buildEncounterNote?.(input.encounter, lockedDestName) || ""
+      : "";
   // WO-16C：判官管线激活时移动拾取改走条件券通道——品质/类别已由系统锁进
   // 判官定案的条件券（见上文判官定案），叙事只需决定捡不捡：捡就在落实处埋
   // 券上印的 ⟦F⟧ 锚点并在尾章 fills 填名；不捡就忽略，绝不写 delta.items_add。

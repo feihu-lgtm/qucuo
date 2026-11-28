@@ -1,5 +1,6 @@
 // 中栏（江湖）——三栏布局的正中一栏，游戏的主视野。
 import IntentConfirmBar from "../components/IntentConfirmBar.jsx";
+import RoadEventBar from "../components/RoadEventBar.jsx";
 import { factionShopCoef } from "../../domain/rules/economy/factionRep.js";
 import { DevControls, TurnControls } from "./TopBar.jsx";
 import { Icon } from "../primitives/index.js";
@@ -163,6 +164,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
       )}
 
       <IntentConfirmBar />
+      <RoadEventBar onChoose={(label) => turn.act(label)} />
       {duelPending && (
         <div className="center-confirm-bar center-confirm-bar--duel">
           <span className="center-confirm-text">{duelPending.lethal

@@ -25,6 +25,8 @@ import {
   outerArrival as outerArrivalLogic,
 } from "../../features/map/logic.js";
 import { rollMovementEvents } from "../../features/map/encounter.js";
+import { getRoadEventPending, setRoadEventPending, clearRoadEventPending } from "../../features/roadevent/pending.js";
+import { matchRoadEventChoice, settleRoadEventChoice } from "../../features/roadevent/settle.js";
 import { resolveSnowInteraction } from "../../features/quest/snowLeopard.js";
 import { roadNameGuard } from "../../domain/rules/map/encounter.js";
 import { turnMonitor, withTurnContext } from "../../infra/turnMonitor.js";
@@ -67,6 +69,35 @@ export async function resolveIntent(cmd, env) {
 
   // D8：亲密门禁已上移 judgePhase——判意来自 intake 布尔字段（本地合成/缺失时正则兜底），
   // 拦截/拒词/凭卡/已亲密落账全部在判官段执行，此处不再前置拦截（双轨会误判）。
+
+  // WO-25O：挂起路遇的抉择拦截——上一回合照面之后，本句命中可行之事
+  // （按钮照抄 label 直发，或手敲同义）就在这里确定性结算，不占 AI 回合；
+  // 不命中则时过境迁，挂起作废，输入照常走原流程。全程同步无 await，
+  // 不存在跨 await 读旧快照的 stale 窗口。
+  const pendingRoad = getRoadEventPending();
+  if (pendingRoad?.roll) {
+    const choiceKey = matchRoadEventChoice(pendingRoad.roll, cmd);
+    clearRoadEventPending();
+    if (choiceKey) {
+      turnMonitor.activate(_trace);
+      const settled = settleRoadEventChoice({
+        roll: pendingRoad.roll,
+        optionKey: choiceKey,
+        state: { ...getGameState() },
+        luck: char.special?.气运 ?? 5,
+      });
+      setInput("");
+      setCmdHistory(p => [cmd, ...p].slice(0, 50));
+      setHistIdx(-1);
+      applyLocal({
+        feature: "roadEvent",
+        changes: settled.changes,
+        logs: [{ t: "cmd", text: `> ${cmd}` }, ...settled.logs],
+      }, "roadEvent");
+      traceStep(_trace, "路遇结算", "pass", `${pendingRoad.roll.eventId}·${choiceKey}`);
+      return { proceed: false, summary: `路遇结算（${choiceKey}）` };
+    }
+  }
 
   const localCommand = !isTalk
     ? parseLocalCommand(cmd, { ...getGameState(), isTalk, convo }, { surface: "web" })
@@ -233,15 +264,20 @@ export async function resolveIntent(cmd, env) {
 
   const targetedRumor = findTargetedRumor(vt(), cmd);
 
-  const { pickupJudgment, encounterToDescribe } = rollMovementEvents({
+  const { pickupJudgment, encounterToDescribe, roadRoll } = rollMovementEvents({
     isTalk,
     movingDir,
     lockedDestName,
     targetedRumor,
     luck: char.special?.气运 ?? 5,
     isTaken: roadNameGuard({ varTree: vt(), time, extraNames: (room?.npcs || []).map((npc) => npc.name) }),
+    state: { ...getGameState() },
   });
   if (encounterToDescribe) stopAutoTravel(encounterToDescribe);
+  if (roadRoll) {
+    stopAutoTravel({ label: "路遇" });
+    setRoadEventPending({ roll: roadRoll });
+  }
   else if (lockedDestName) intentRouterRef?.current?.fireEvent?.("arrive", { dest: lockedDestName, travelDone: !env.refs.autoTravelRef.current });
 
   // ── 采集裁决（系统层）──（判定在 act/roundNotes.js，副作用在此执行）
@@ -296,7 +332,7 @@ export async function resolveIntent(cmd, env) {
     plan: {
       intent, isTalk, isSettle, movingDir, lockedDestName, destinationLock,
       collectNote: collectNote + (opts.intentPlanNote || ""),
-      encounterToDescribe, activeGroundItemForTurn, lookNpcs,
+      encounterToDescribe, roadRoll, activeGroundItemForTurn, lookNpcs,
       // WO-06：只读 plan 字段直传 TurnEnvelope（原跨层 ref 透传）
       pendDir, outerDepart, pickupJudgment, collectGranted,
     },
