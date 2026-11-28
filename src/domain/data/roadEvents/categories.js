@@ -7,6 +7,8 @@
 // 每类三个可行之事：主行动（走事件自带的检定与奖惩）、次行动（类别给定的稳妥做法）、离开。
 // 契诃夫之枪：每件事至少留下一个钩子——具名人物、传闻、约定、物件或场景改动，不刷纯装饰。
 
+import { loadCopy } from "../../../copy/loadCopy.js";
+
 // 地图节点 → 地形标签。事件的 where 可写节点名，也可写标签。
 export const PLACE_TAGS = Object.freeze({
   鱼定村: ["村寨", "河谷"],
@@ -37,12 +39,7 @@ export const PLACE_TAGS = Object.freeze({
 export const ALL_TAGS = Object.freeze([...new Set(Object.values(PLACE_TAGS).flat())]);
 
 // 各类共用的写作铁律，拼在每段类别提示词之前。
-export const ROAD_EVENT_RULES = `【路遇铁律】
-1. 系统已定的事实一字不改：遇见的是谁、检定成败、得失多少，照「已定事实」写，不增不减，不替系统追加奖励或惩罚。
-2. 世界不围着主角转：来人各有营生与去处，态度看主角与其势力的交情，不默认热情。
-3. 契诃夫之枪：本事件钩子必须落地——点到的新具名人物写进 mentionedNewNpcs，约定写清何时何地，物件写清来历。
-4. 天机券填空：已定事实里有待命名的兵刃或武学，请在尾章给出名字与一句描述，贴合来源人物与地域，不得超出所给品阶。
-5. 分寸：一次路遇写成一两段有画面的照面，不拔高成生死大戏；情爱只写到眼神、言语与举止为止，涉及的人物一律是成年人。`;
+export const ROAD_EVENT_RULES = loadCopy("roadEventRules.txt");
 
 // living：与活世界蓝图（#686）的对接——situations 为该类事件在对应局势卡生效时的权重倍数，
 // squadRoles 为该类事件优先取用的游走编队角色（编队停在本节点时，来人取编队成员）。

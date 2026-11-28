@@ -2,7 +2,7 @@
 // 数据只改 scripts/roadEvents/ 下的源文件，改完跑 `npm run road:doc`。
 import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { ROAD_EVENTS, ROAD_EVENT_CATEGORIES, CATEGORY_KEYS, ROAD_EVENT_RULES } from "./index.js";
+import { ROAD_EVENTS, ROAD_EVENT_CATEGORIES, CATEGORY_KEYS, ROAD_EVENT_RULES } from "../../src/domain/data/roadEvents/index.js";
 import { parseCast } from "./roadEvents.js";
 
 export const DOC_PATH = "docs/路遇随机事件全集.md";

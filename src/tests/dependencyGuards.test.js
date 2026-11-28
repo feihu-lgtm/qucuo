@@ -71,6 +71,9 @@ const ENTRY_WHITELIST = new Set([
   // WO-25C 活世界五表底座：注册内核与扩展包聚合入口先落库不接运行时（工单明确），
   // WO-25D/E 内核消费与 WO-25G 首批数据包接线后从此名单摘掉。
   "domain/rules/livingWorld/worldRegistry.js",
+  // WO-25N 前半截路遇 400 件数据入库：纯数据先落库不接线（工单明确机制归后半截），
+  // WO-25N 后半截/WO-25O 机制迁入与 encounter 接线后从此名单摘掉。
+  "domain/data/roadEvents/index.js",
   "domain/data/livingWorld/index.js",
   // WO-25D 世界状态求值与覆写裁决：纯函数先落库，WO-25E/F 脉冲与投影接线后从此名单摘掉。
   "domain/rules/livingWorld/evalWorld.js",
