@@ -58,7 +58,7 @@ describe("WO-25P 路遇事实码落账", () => {
     expect(cards).toHaveLength(1);
     expect(cards[0].id).toBe("sit_road_blockade");
     expect(cards[0].sinceDay).toBe(Math.floor(42 / 24) + 1);
-    expect(cards[0].expireDay).toBe(cards[0].sinceDay + 3);
+    expect(cards[0].expireDay).toBe(cards[0].sinceDay + 4); // sit_road_blockade 声明 durationDays=4
   });
 
   it("CLEAR_SITUATION：指定卡化解，其他卡不动", () => {

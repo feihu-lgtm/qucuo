@@ -32,6 +32,7 @@ import { relicById } from "../judge/floatingRelics.js";
 import { CATALOG_INDEX } from "../../data/items/catalog.js";
 import { applyFactionRep } from "../economy/factionRep.js";
 import { adjustTension } from "../conflict/tension.js";
+import { buildDefaultRegistry } from "../../data/livingWorld/index.js";
 
 const PLAYER = "player";
 
@@ -82,14 +83,22 @@ function locateItem(state, itemId, itemName) {
   return null;
 }
 
-// SITUATION_TRIGGER 化解映射（WO-25P）：触发词头/货物 → 可化解的局势卡 id。
-// 商队到站=山道封锁打通；药品到埠额外化解伤药紧俏。数据驱动，新触发词只扩表。
-const TRIGGER_HEAD_RESOLVES = Object.freeze({
-  caravan_arrived: ["sit_road_blockade"],
-});
-const TRIGGER_GOODS_RESOLVES = Object.freeze({
-  medicine: ["sit_herb_shortage"],
-});
+// SITUATION_TRIGGER 化解判定（WO-25P）：按 WO-25G 冻结扩展包的局势声明
+// resolveTriggers 匹配——精确命中或 `:any` 通配（caravan_arrived:any 匹配任意货物到站）。
+// 注册表是静态数据聚合，纯函数可直读；无声明的局势卡不被触发词化解。
+function triggerMatches(decl, trigger) {
+  const triggers = decl?.resolveTriggers || [];
+  if (triggers.includes(trigger)) return true;
+  const head = String(trigger || "").split(":")[0];
+  return triggers.includes(`${head}:any`);
+}
+function situationDecl(id) {
+  try {
+    return buildDefaultRegistry()?.situations?.find((x) => x.id === id) || null;
+  } catch {
+    return null;
+  }
+}
 
 export function materializeFacts(state, facts, compiledWarrants) {
   const changes = {};
@@ -732,7 +741,7 @@ export function materializeFacts(state, facts, compiledWarrants) {
           logs.push({ t: "err", text: `  ⛔ 事实 ${fact.id}：局势无 id 或无据点` }); break;
         }
         const day = Math.floor(turn / 24) + 1;
-        const duration = Number.isFinite(fact.durationDays) ? fact.durationDays : 3;
+        const duration = Number.isFinite(fact.durationDays) ? fact.durationDays : (situationDecl(fact.situation)?.durationDays || 3);
         patches.push({
           op: "merge", path: ["varTree", "世界", "据点局势"],
           value: (prev) => {
@@ -771,26 +780,21 @@ export function materializeFacts(state, facts, compiledWarrants) {
       // 商队到站=山道封锁打通（商队既然能到，封锁即破）；药品到埠额外化解伤药紧俏。
       // 映射表数据驱动，新触发词只扩表。无卡可化解时静默幂等。
       case "SITUATION_TRIGGER": {
-        const [head, goods] = String(fact.trigger || "").split(":");
-        const resolved = [
-          ...(TRIGGER_HEAD_RESOLVES[head] || []),
-          ...(TRIGGER_GOODS_RESOLVES[goods] || []),
-        ];
-        if (!resolved.length || !fact.district) {
-          logs.push({ t: "err", text: `  ⛔ 事实 ${fact.id}：触发词无化解映射（${fact.trigger || "空"}）` }); break;
+        if (!fact.trigger || !fact.district) {
+          logs.push({ t: "err", text: `  ⛔ 事实 ${fact.id}：触发词或据点缺失` }); break;
         }
         patches.push({
           op: "merge", path: ["varTree", "世界", "据点局势"],
           value: (prev) => {
             const boards = { ...(prev || {}) };
-            const cards = (boards[fact.district] || []).filter((c) => !resolved.includes(c?.id));
+            const cards = (boards[fact.district] || []).filter((c) => !triggerMatches(situationDecl(c?.id), fact.trigger));
             if (cards.length) boards[fact.district] = cards;
             else delete boards[fact.district];
             return boards;
           },
           factId: fact.id,
         });
-        receipts.push({ kind: "situation_trigger", trigger: fact.trigger, district: fact.district, resolves: resolved, factId: fact.id });
+        receipts.push({ kind: "situation_trigger", trigger: fact.trigger, district: fact.district, factId: fact.id });
         break;
       }
 
