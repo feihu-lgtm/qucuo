@@ -31,11 +31,9 @@ export function evalPredicate(pred, state, ctx = {}) {
   switch (pred.type) {
     case "npcStatus": {
       const dyn = world.人物动态?.[pred.npcId] || {};
-      const status = dyn.status || "alive";
-      const list = [].concat(pred.in || []);
-      if (list.includes(status)) return true;
-      if (list.includes("dead") && typeof dyn.hpRatio === "number" && dyn.hpRatio <= 0) return true;
-      return false;
+      // 生效状态只取一档：显式 status 优先；无显式时 hpRatio<=0 推定 dead，否则 alive——alive/dead 互斥。
+      const status = dyn.status || (typeof dyn.hpRatio === "number" && dyn.hpRatio <= 0 ? "dead" : "alive");
+      return [].concat(pred.in || []).includes(status);
     }
     case "factionTensionGte": {
       const tension = world.tension || {};
@@ -57,6 +55,8 @@ export function evalPredicate(pred, state, ctx = {}) {
       return Boolean(world.旗号?.[pred.flag]);
     }
     case "questDone": {
+      // 真实记账在顶层 state.questProgress[qid].status==="completed"（questEngine），兼留旧账面路径。
+      if (state?.questProgress?.[pred.quest]?.status === "completed") return true;
       return Boolean(world.任务册?.[pred.quest]?.done);
     }
     case "season": {
@@ -94,25 +94,30 @@ export function evalWhen(node, state, ctx = {}) {
   return results.length > 0 && results.every(Boolean);
 }
 
-// 求全部 worldStates 的激活集合。worldState 互引用不动点迭代（静态校验已保无环，
-// 这里最多迭代 N 轮兜底防环死循环）。
+// 求全部 worldStates 的激活集合。惰性记忆化递归求值：每条断言按需解析其 worldState
+// 引用——否定依赖（not: worldState）不受注册顺序影响。无环由 validateWorldPacks 静态保证，
+// 这里 visiting 集合兜底防环（环上节点一律按不激活处理）。
 export function evalWorldStates(registry, state, ctx = {}) {
+  const states = registry?.worldStates || [];
+  const byId = new Map(states.map((ws) => [ws.id, ws]));
+  const memo = new Map(); // id -> boolean
+  const visiting = new Set();
+  const resolve = (id) => {
+    if (memo.has(id)) return memo.get(id);
+    if (visiting.has(id)) return false; // 环兜底
+    const ws = byId.get(id);
+    if (!ws) return false;
+    visiting.add(id);
+    const probe = { has: (ref) => resolve(ref) }; // 惰性探测，逐引用递归
+    const result = evalWhen(ws.when, state, { ...ctx, activeStates: probe });
+    visiting.delete(id);
+    memo.set(id, result);
+    return Boolean(result);
+  };
   const active = new Set();
-  const pending = [...(registry?.worldStates || [])];
-  for (let round = 0; round <= pending.length + 1; round += 1) {
-    let progressed = false;
-    for (const ws of pending) {
-      if (active.has(ws.id)) continue;
-      const before = active.size;
-      if (evalWhen(ws.when, state, { ...ctx, activeStates: active })) {
-        active.add(ws.id);
-        progressed = true;
-      }
-      if (active.size === before && !progressed) continue;
-    }
-    if (!progressed) break;
+  for (const ws of states) {
+    if (resolve(ws.id)) active.add(ws.id);
   }
-  // 兜底：引用尚未激活的 worldState 的断言按不激活处理（无环静态校验下不会走到这）
   return active;
 }
 

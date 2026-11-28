@@ -94,6 +94,35 @@ describe("WO-25D evalWorldStates + resolveDistrictOverride", () => {
     expect(Object.isFrozen(winner)).toBe(true);
   });
 
+  it("否定依赖不受注册顺序影响（依赖在后注册也正确）", () => {
+    const r = createLivingWorldRegistry();
+    registerWorldPack(r, {
+      id: "neg",
+      worldStates: [
+        { id: "ws_neg", label: "否定在前", when: { not: [{ type: "worldState", id: "ws_dep" }] } }, // 先注册
+        { id: "ws_dep", label: "依赖在后", when: { type: "flag", flag: "f" } }, // 后注册且激活
+      ],
+    });
+    const active = evalWorldStates(r, mkState({ 旗号: { f: true } }));
+    expect(active.has("ws_dep")).toBe(true);
+    expect(active.has("ws_neg")).toBe(false); // dep 激活 → 否定必须退却，不得双活
+    const activeOff = evalWorldStates(r, mkState());
+    expect(activeOff.has("ws_neg")).toBe(true); // dep 不激活 → 否定成立
+  });
+
+  it("questDone 读 questProgress completed 真实记账", () => {
+    const state = { ...mkState(), questProgress: { 主线一: { status: "completed" } } };
+    expect(evalPredicate({ type: "questDone", quest: "主线一" }, state)).toBe(true);
+    const active = { ...mkState(), questProgress: { 主线一: { status: "active" } } };
+    expect(evalPredicate({ type: "questDone", quest: "主线一" }, active)).toBe(false);
+  });
+
+  it("hpRatio<=0 无显式 status 只算 dead 不算 alive", () => {
+    const state = mkState({ 人物动态: { npc_x: { hpRatio: 0 } } });
+    expect(evalPredicate({ type: "npcStatus", npcId: "npc_x", in: ["alive"] }, state)).toBe(false);
+    expect(evalPredicate({ type: "npcStatus", npcId: "npc_x", in: ["dead"] }, state)).toBe(true);
+  });
+
   it("同条件数比 priority，再同按注册序", () => {
     const r2 = createLivingWorldRegistry();
     registerWorldPack(r2, {
