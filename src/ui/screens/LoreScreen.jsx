@@ -10,9 +10,18 @@ import { THEME_VARS } from "../../utils/theme.js";
 // props: varTree（读账本）、time（当前回合，算淡忘倒计时）、turnToStr（回合→"第X日·时辰"）、onClose；颜色取 CSS 变量
 
 const 途径色 = { 亲历: "var(--clay)", 目击: "var(--ink-accent)", 告知: "var(--lore-gold)", 传闻: "var(--lore-amber)", 剧本: "var(--lore-script)" };
+
+// WO-25F 江湖态势页样式（模块级常量化——不新增内联 style={{ 债务，颜色全走既有 CSS token）
+const WORLD_STYLES = {
+  sectionTitle: { fontSize: "var(--fs-md)", color: "var(--lore-gold)", fontWeight: "bold", marginBottom: 8, marginTop: 18, letterSpacing: 1 },
+  row: { fontSize: "var(--fs-sm)", color: "var(--ink-soft)", lineHeight: 1.8, paddingLeft: 10 },
+  dim: { fontSize: "var(--fs-xs)", color: "var(--ink-moss)", paddingLeft: 10, lineHeight: 1.7 },
+  tensionUp: { color: "var(--clay)" },
+  tensionDown: { color: "var(--ink-moss)" },
+};
 const 途径说明 = { 亲历: "亲身经历", 目击: "当场看见", 告知: "有人明说", 传闻: "道听途说", 剧本: "夙来知晓" };
 
-export default function LoreScreen({ varTree, time = 0, turnToStr, onClose }) {
+export default function LoreScreen({ varTree, time = 0, turnToStr, worldOverview = null, onClose }) {
   const [tab, setTab] = useState("account"); // account=事实账本 | notes=记忆碎片
   const [notes, setNotes] = useState(null);
   const T = THEME_VARS;
@@ -48,7 +57,7 @@ export default function LoreScreen({ varTree, time = 0, turnToStr, onClose }) {
 
       {/* Tab 切换 */}
       <div style={{ display: "flex", gap: 4, padding: "10px 20px 0" }}>
-        {[["account", "事实账本", facts.length], ["notes", "记忆碎片", notes?.length]].map(([k, label, n]) => (
+        {[["account", "事实账本", facts.length], ["notes", "记忆碎片", notes?.length], ["world", "江湖态势", worldOverview ? worldOverview.eventCount : null]].map(([k, label, n]) => (
           <span key={k} onClick={() => setTab(k)}
             style={{ cursor: "pointer", padding: "6px 16px", borderRadius: 0, fontSize: "var(--fs-md)",
               color: tab === k ? "var(--bg-panel)" : accent, background: tab === k ? accent : "transparent",
@@ -65,6 +74,7 @@ export default function LoreScreen({ varTree, time = 0, turnToStr, onClose }) {
             ? <Empty text="江湖尚且平静，还没有值得记下的事。" textDim={textDim} />
             : facts.map(f => <FactCard key={f.id} fact={f} time={time} fmtTurn={fmtTurn} accent={accent} border={border} bgPanel={bgPanel} textDim={textDim} />)
         )}
+        {tab === "world" && <WorldOverviewTab overview={worldOverview} textDim={textDim} day={Math.floor(time / 24)} />}
         {tab === "notes" && (
           notes === null
             ? <Empty text="正在翻检记忆……" textDim={textDim} />
@@ -139,6 +149,61 @@ function NoteCard({ note, fmtTurn, accent, border, bgPanel, textDim }) {
       {note.entities?.length > 0 && (
         <div style={{ fontSize: "var(--fs-2xs)", color: textDim, marginTop: 5 }}>牵涉：{note.entities.join("、")}</div>
       )}
+    </div>
+  );
+}
+
+
+// ── WO-25F 江湖态势（只读投影，零状态写入）────────────────────────────────
+// 数据全部来自 projectWorld.getWorldOverview——激活的世界状态、全图局势与编队坐标、
+// 偏离基线的势力张力对子（Kenshi Reactive World Checker 的可观测性：不让玩家对着暗门猜条件）。
+function WorldOverviewTab({ overview, textDim, day = 0 }) {
+  if (!overview) return <Empty text="江湖态势仪尚未接通。" textDim={textDim} />;
+  const { states = [], situations = [], squads = [], tensionPairs = [], eventCount = 0 } = overview;
+  const quiet = states.length === 0 && situations.length === 0 && squads.length === 0 && tensionPairs.length === 0;
+  if (quiet) return <Empty text="江湖尚且平静——各方按兵不动，没有值得在意的异动。" textDim={textDim} />;
+  return (
+    <div>
+      {states.length > 0 && (
+        <div>
+          <div style={WORLD_STYLES.sectionTitle}>天下大势</div>
+          {states.map((ws) => <div key={ws.id} style={WORLD_STYLES.row}>◆ {ws.label}</div>)}
+        </div>
+      )}
+      {squads.length > 0 && (
+        <div>
+          <div style={WORLD_STYLES.sectionTitle}>四方行人</div>
+          {squads.map((sq) => (
+            <div key={sq.id} style={WORLD_STYLES.row}>
+              ➤ {sq.name}{sq.faction ? `（${sq.faction}）` : ""}——现于{sq.node}
+            </div>
+          ))}
+        </div>
+      )}
+      {situations.length > 0 && (
+        <div>
+          <div style={WORLD_STYLES.sectionTitle}>各地局势</div>
+          {situations.map((sit) => (
+            <div key={`${sit.district}-${sit.id}`} style={WORLD_STYLES.row}>
+              ◇ {sit.district}·{sit.label}{sit.expireDay != null ? `（约莫再持续${Math.max(0, sit.expireDay - day + 1)}日）` : ""}
+            </div>
+          ))}
+        </div>
+      )}
+      {tensionPairs.length > 0 && (
+        <div>
+          <div style={WORLD_STYLES.sectionTitle}>势力恩怨</div>
+          {tensionPairs.map((tp) => (
+            <div key={tp.pair} style={WORLD_STYLES.row}>
+              <span style={tp.delta > 0 ? WORLD_STYLES.tensionUp : WORLD_STYLES.tensionDown}>
+                {tp.delta > 0 ? "⚔" : "🕊"} {tp.pair.replace("|", " ↔ ")}：{tp.current}
+              </span>
+              <span style={WORLD_STYLES.dim}>（常势 {tp.base}）</span>
+            </div>
+          ))}
+        </div>
+      )}
+      <div style={WORLD_STYLES.dim}>江湖传闻已录 {eventCount} 桩，事发地临近处自会传入耳中。</div>
     </div>
   );
 }
