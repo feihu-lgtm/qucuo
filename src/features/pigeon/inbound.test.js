@@ -9,10 +9,10 @@ const base = (over = {}) => ({
   room: { name: "锦官城", npcs: [] },
   char: { name: "主角", pigeons: 2 },
   varTree: {
-    世界: { 已认识人物: ["元朵朵", "铁伯"], 来信待发: [], 来信箱: [] },
+    世界: { 已认识人物: ["元朵朵", "余味"], 来信待发: [], 来信箱: [] },
     角色: {
       元朵朵: { 好感度: 80, 所在地: "鱼定村" },
-      铁伯: { 好感度: 10, 所在地: "锦官城" },
+      余味: { 好感度: 10, 所在地: "锦官城" },
     },
   },
   npcState: {},
@@ -27,7 +27,7 @@ describe("queueInboundLetter · 抽签入队", () => {
     const next = applyVarTree(base(), res);
     const pending = next.世界.来信待发;
     expect(pending).toHaveLength(1);
-    expect(["元朵朵", "铁伯"]).toContain(pending[0].npcName);
+    expect(["元朵朵", "余味"]).toContain(pending[0].npcName);
     expect(pending[0].arriveTime).toBeGreaterThan(100);
   });
 
@@ -42,19 +42,35 @@ describe("queueInboundLetter · 抽签入队", () => {
   it("写信人冷却：刚来过信的人不再写", () => {
     const s = base();
     s.varTree.世界.来信箱 = [{ id: "a", npcName: "元朵朵", turn: 100 - LETTER_TUNE.senderCooldown + 1, read: true }];
-    // 好感加权后只剩铁伯可选
+    // 好感加权后只剩余味可选
     const res = queueInboundLetter(s, () => 0.1);
     const next = applyVarTree(s, res);
-    expect(next.世界.来信待发[0].npcName).toBe("铁伯");
+    expect(next.世界.来信待发[0].npcName).toBe("余味");
   });
 
   it("好感加权：rng 打在高好感区间挑中元朵朵", () => {
     const s = base();
-    s.varTree.世界.已认识人物 = ["铁伯", "元朵朵"]; // 顺序无关，权重说话
+    s.varTree.世界.已认识人物 = ["余味", "元朵朵"]; // 顺序无关，权重说话
     const rolls = [0.1, 0.6]; let i = 0; // 第一掷过概率，第二掷挑人
-    const res = queueInboundLetter(s, () => rolls[i++ % rolls.length]); // 铁伯 w=1.4, 朵朵 w=4.2 → 0.6*5.6=3.36 落朵朵
+    const res = queueInboundLetter(s, () => rolls[i++ % rolls.length]); // 余味 w=1.4, 朵朵 w=4.2 → 0.6*5.6=3.36 落朵朵
     const next = applyVarTree(s, res);
     expect(next.世界.来信待发[0].npcName).toBe("元朵朵");
+  });
+});
+
+describe("pickLetterSender · 随机龙套不写", () => {
+  it("在场带 randomPasser 标记的被滤掉", () => {
+    const s = base();
+    s.varTree.世界.已认识人物 = ["元朵朵", "阿猫"];
+    s.room.npcs = [{ name: "阿猫", personality: "x", randomPasser: 3 }];
+    const picked = pickLetterSender(s, () => 0.99);
+    expect(picked.name).toBe("元朵朵");
+  });
+  it("不在场只剩裸壳的也被滤掉", () => {
+    const s = base();
+    s.varTree.世界.已认识人物 = ["元朵朵", "路人丁"];
+    const picked = pickLetterSender(s, () => 0.99);
+    expect(picked.name).toBe("元朵朵");
   });
 });
 
