@@ -21,8 +21,8 @@ beforeEach(() => {
 });
 
 describe("地宫配置表与基础初始化", () => {
-  it("十二座静态地宫与二十二位 OC 冒险者的掉落/随身物品均存在于 CATALOG_INDEX", () => {
-    expect(Object.keys(DUNGEON_CATALOG)).toHaveLength(12);
+  it("八座名册地宫节点流与二十二位 OC 冒险者的掉落/随身物品均存在于 CATALOG_INDEX", () => {
+    expect(Object.keys(DUNGEON_CATALOG)).toHaveLength(8);
     expect(ADVENTURER_POOL).toHaveLength(22);
     expect(new Set(ADVENTURER_POOL.map((a) => a.name)).size).toBe(22);
 

@@ -30,7 +30,7 @@ export const ENV_TAG_HANDLERS = {
     tick: () => ok(),
   },
 
-  // 大草甸子虚幻境·孢子浓度：每深入一房叠一层，感知随之下降；检查点清零
+  // 断鞍古驿·孢子浓度：每深入一房叠一层，感知随之下降；检查点清零
   huanjingSpore: {
     onEnter: (room, rs) => {
       const s = env(rs, "spore");
@@ -46,7 +46,7 @@ export const ENV_TAG_HANDLERS = {
     },
   },
 
-  // 三星堆大墓·滑翔翼巡逻：每走三步触发一次潜行检定，失败吃火器打击
+  // 归墟青铜宫·滑翔翼巡逻：每走三步触发一次潜行检定，失败吃火器打击
   sanxingduiPatrol: {
     onEnter: () => ok(),
     onAction: () => ok(),
@@ -75,28 +75,6 @@ export const ENV_TAG_HANDLERS = {
     },
   },
 
-  // 雪山茫野·失温：露天房（room.openAir）行动累积全属性降，避风房（room.shelter）生火清零
-  xueshanWindchill: {
-    onEnter: (room, rs) => {
-      const s = env(rs, "chill");
-      if (room.shelter) { s.level = 0; return ok("你拢起一堆枯枝生火，冻僵的手指渐渐回温。"); }
-      if (room.openAir) {
-        s.level = Math.min(6, (s.level || 0) + 1);
-        return ok("风像刀子一样割过裸露的皮肤，四肢开始发麻。", { statMod: { 全属性: -s.level * 2 } });
-      }
-      return ok();
-    },
-    onAction: (action, rs) => {
-      const s = env(rs, "chill");
-      if (action.type !== "lightFire" || !s.level) return ok();
-      s.level = Math.max(0, s.level - 3);
-      return ok("火舌窜起，暖意顺着血脉爬回指尖。", { statMod: { 全属性: -s.level * 2 } });
-    },
-    tick: (rs) => {
-      const s = env(rs, "chill");
-      return s.level ? ok(null, { statMod: { 全属性: -s.level * 2 } }) : ok();
-    },
-  },
 
   // 雾隐五仙秘洞·毒素渗透：战斗中每回合体质检定，失败持续扣血
   wuxianVenom: {
@@ -115,7 +93,7 @@ export const ENV_TAG_HANDLERS = {
     },
   },
 
-  // 雅江悬棺裂谷·立体索降：走 u/d 出口需身法或力量检定，失败跌半血落到底层
+  // 沉沙古坞·立体索降：走 u/d 出口需身法或力量检定，失败跌半血落到底层
   yajiangRope: {
     onEnter: () => ok(),
     onAction: (action, rs) => {
@@ -172,37 +150,5 @@ export const ENV_TAG_HANDLERS = {
     tick: () => ok(),
   },
 
-  // 蜀南唐堡千机楼·总齿轮：拆掉死路的总齿轮，同区块陷阱 DC 下降
-  tangGear: {
-    onEnter: () => ok(),
-    onAction: (action, rs) => {
-      const s = env(rs, "gear");
-      if (action.type !== "sabotage" || action.target !== "gear" || s.broken) return ok();
-      s.broken = true;
-      return ok("总齿轮崩成一地铜屑，整层楼的机括声都哑了。", { trapDcBonus: -15 });
-    },
-    tick: (rs) => {
-      const s = env(rs, "gear");
-      return s.broken ? ok(null, { trapDcBonus: -15 }) : ok();
-    },
-  },
 
-  // 欢喜教秘坛·欲火值：媚术命中或滞留累积，到顶即判负出局
-  huanxiDesire: {
-    onEnter: () => ok(),
-    onAction: (action, rs) => {
-      const s = env(rs, "desire");
-      if (action.type === "seduced" || action.type === "charmHit") s.value = Math.min(100, (s.value || 0) + 25);
-      else if (action.type === "meditate") s.value = Math.max(0, (s.value || 0) - 15);
-      else return ok();
-      if (s.value >= 100) return ok("欲火焚身，神智彻底堕入温柔乡——此行到此为止。", { defeat: true });
-      return ok(null, { desire: s.value });
-    },
-    tick: (rs) => {
-      const s = env(rs, "desire");
-      s.value = Math.min(100, (s.value || 0) + 2); // 秘坛内滞留持续升温
-      if (s.value >= 100) return ok("欲火焚身，神智彻底堕入温柔乡——此行到此为止。", { defeat: true });
-      return s.value >= 60 ? ok("檀香混着体香往骨头缝里钻，你咬破舌尖才压住心猿。", { desire: s.value }) : ok(null, { desire: s.value });
-    },
-  },
 };

@@ -66,7 +66,7 @@ export default { district: {
 　　桌上摊着唐老太手写的方子，旁边一碗清水——进来的人先喝它，再碰别的。`,
         exits: { w: "外姓竹坞" },
         unlockCondition: { type: "flag", flag: "quest_tang4_s1" },
-        buildingId: "tangmen_poison_vault",
+        // 名册外 legacy 地宫入口已清退（2026-11 名册归一）：本房保留为纯任务空间
       },
     },
   }

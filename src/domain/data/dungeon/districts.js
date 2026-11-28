@@ -266,35 +266,12 @@ export const DUNGEON_DISTRICTS = Object.freeze({
     ],
   }),
 
-  大草甸子虚幻境: DUANAN_POST_CONFIG,
+  断鞍古驿: DUANAN_POST_CONFIG,
 
-  三星堆大墓: GUIXU_BRONZE_PALACE_CONFIG,
+  归墟青铜宫: GUIXU_BRONZE_PALACE_CONFIG,
 
-  成都蜀王府地宫: JINGGUAN_GHOST_MARKET_CONFIG,
+  锦官鬼市: JINGGUAN_GHOST_MARKET_CONFIG,
 
-  雪山茫野: {
-    anchor: "猎人木屋",
-    envTag: "xueshanWindchill",
-    prefixPool: ["风雪", "冰裂", "冻血", "呼啸", "苍白"],
-    suffixPool: ["古战场", "绝壁", "废弃营帐", "冰窟", "雪丘"],
-    descPool: ["{name}风雪漫卷，冻僵的战旗斜插在雪里。", "{name}冰面下隐隐透出冻结的人影。"],
-    boss: { name: "冰封督军·康巴武士首领", desc: "吃雪莲生肉活下来的巨汉，持玄铁长戟。", movesHint: "顺风冲锋/破冰重击" },
-    puzzle: { type: "recipeCraft", config: { recipe: { materials: ["雪莲汁", "牦牛脂肪"], action: "涂抹" }, materials: ["雪莲汁", "牦牛脂肪", "火镰", "碎石"], stat: "wisdom", dc: 6, prompt: "融冰膏涂抹锁芯开青铜门" } },
-    adventurerFactions: ["天山", "昆仑", "散人"],
-    branchRate: 0.3, loopRate: 0.1,
-    eventSeeds: [
-      { kind: "fight", desc: "疯癫雪人与拾荒者", check: "combat", dc: 6, outcome: "兽皮" },
-      { kind: "event", desc: "冰裂隙塌陷", check: "agility", dc: 7, outcome: "坠落扣血减速" },
-      { kind: "nsfw", desc: "睡袋肌肤相亲渡寒", check: "body", dc: 5, outcome: "解失温结缘" },
-      { kind: "supply", desc: "伏击营地烈酒干肉", check: null, dc: 0, outcome: "御寒补给" },
-      { kind: "loot", desc: "干尸怀中宝匣", check: "craft", dc: 7, outcome: "雪狐裘/残页" },
-      { kind: "watch", desc: "看两派剑客雪中决斗", check: "stealth", dc: 4, outcome: "胜者剑谱" },
-      { kind: "meet", desc: "寻雪莲的痴情剑客", check: "charm", dc: 5, outcome: "换秘籍" },
-      { kind: "appraise", desc: "鉴定冻尸致命伤判怪物", check: "wisdom", dc: 6, outcome: "预警情报" },
-      { kind: "puzzle", desc: "融冰膏开门", check: "wisdom", dc: 6, outcome: "大门开启" },
-      { kind: "checkpoint", desc: "猎人木屋生火", check: null, dc: 0, outcome: "存点回暖" },
-    ],
-  },
 });
 
 import { DUNGEON_DISTRICTS_EXTRA } from "./districtsExtra.js";

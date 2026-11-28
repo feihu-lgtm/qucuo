@@ -11,20 +11,35 @@ import { clamp, normalizeHp, mergeLoot, buildCombatNpc } from "./internal.js";
 
 const emptyLoot = () => ({ money: 0, exp: 0, pot: 0, items: [] });
 
+// 钦定八宫名册（2026-11 名册归一）：district key 与 displayName 一致，名册外
+// legacy（tangmen_poison_vault / gongcuo_submerged_vault / heifeng_wolf_cavern /
+// jingguan_iron_dungeon）已全数清退，不再映射。
 export const DUNGEON_ID_TO_DISTRICT = Object.freeze({
   white_pagoda_crypt: "白塔地宫",
-  sanxing_bronze_abyss: "三星堆大墓",
-  tangmen_poison_vault: "蜀南唐堡千机楼",
-  wuxian_centipede_den: "雾隐寨五仙秘洞",
-  tianlong_serpent_crypt: "天龙营八部浮屠",
-  jingguan_iron_dungeon: "成都蜀王府地宫",
-  gongcuo_submerged_vault: "雪山茫野",
-  heifeng_wolf_cavern: "雅江悬棺裂谷",
-  dacaodian_duanan_post: "大草甸子虚幻境",
-  yajiang_chensha_dock: "雅江悬棺裂谷",
-  jingguan_ghost_market: "成都蜀王府地宫",
+  dacaodian_duanan_post: "断鞍古驿",
+  yajiang_chensha_dock: "沉沙古坞",
+  jingguan_ghost_market: "锦官鬼市",
+  sanxing_bronze_abyss: "归墟青铜宫",
   tusi_inner_vault: "鱼定土司内府禁库",
+  wuxian_centipede_den: "五仙百毒禁谷",
+  tianlong_serpent_crypt: "摩呼罗迦蛇窟",
 });
+
+// 存档迁移：名册归一前的旧 district key → 新 key。旧档里 worlds/active 带着
+// 旧 key 的，normalizeDungeonStore 静默改写；key 不在册的（已清退地宫）整条丢弃，
+// 不崩不报错——legacy run 自然消亡。
+export const LEGACY_DISTRICT_KEY_MIGRATION = Object.freeze({
+  大草甸子虚幻境: "断鞍古驿",
+  雅江悬棺裂谷: "沉沙古坞",
+  成都蜀王府地宫: "锦官鬼市",
+  三星堆大墓: "归墟青铜宫",
+  雾隐寨五仙秘洞: "五仙百毒禁谷",
+  天龙营八部浮屠: "摩呼罗迦蛇窟",
+});
+
+function migrateDistrictKey(key) {
+  return LEGACY_DISTRICT_KEY_MIGRATION[key] || key;
+}
 
 function settleLoot(loot, ratio) {
   return {
@@ -44,14 +59,33 @@ export function getGameDayFromTime(time = 0) {
  */
 export function normalizeDungeonStore(raw) {
   if (!raw || typeof raw !== "object") return { active: null, worlds: {} };
+  const migrateWorlds = (worlds) => {
+    if (!worlds || typeof worlds !== "object") return {};
+    const out = {};
+    for (const [key, world] of Object.entries(worlds)) {
+      const newKey = migrateDistrictKey(key);
+      // key 不在册（已清退名册外地宫）→ 静默丢弃不崩
+      if (!DUNGEON_DISTRICTS_ALL[newKey]) continue;
+      out[newKey] = { ...world, districtKey: newKey };
+    }
+    return out;
+  };
+  const migrateActive = (active) => {
+    if (!active) return null;
+    // 无 districtKey 的上古裸 runState 原样兼容（无处可迁，本身也不属于任何清宫）
+    if (!active.districtKey) return deserializeMapRun(active);
+    const newKey = migrateDistrictKey(active.districtKey);
+    if (!DUNGEON_DISTRICTS_ALL[newKey]) return null; // 清退宫进行中的 run 静默了结
+    return deserializeMapRun({ ...active, districtKey: newKey });
+  };
   if ("worlds" in raw || "active" in raw) {
     return {
-      active: raw.active ? deserializeMapRun(raw.active) : null,
-      worlds: raw.worlds && typeof raw.worlds === "object" ? raw.worlds : {},
+      active: migrateActive(raw.active),
+      worlds: migrateWorlds(raw.worlds),
     };
   }
   return {
-    active: raw.map?.rooms ? deserializeMapRun(raw) : null,
+    active: raw.map?.rooms ? migrateActive(raw) : null,
     worlds: {},
   };
 }
