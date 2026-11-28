@@ -14,7 +14,7 @@ const 途径色 = { 亲历: "var(--clay)", 目击: "var(--ink-accent)", 告知: 
 // WO-25F 江湖态势页样式（模块级常量化——不新增内联 style={{ 债务，颜色全走既有 CSS token）
 const WORLD_STYLES = {
   sectionTitle: { fontSize: "var(--fs-md)", color: "var(--lore-gold)", fontWeight: "bold", marginBottom: 8, marginTop: 18, letterSpacing: 1 },
-  row: { fontSize: "var(--fs-sm)", color: "var(--ink-soft)", lineHeight: 1.8, paddingLeft: 10 },
+  row: { fontSize: "var(--fs-sm)", color: "var(--lore-note-text)", lineHeight: 1.8, paddingLeft: 10 },
   dim: { fontSize: "var(--fs-xs)", color: "var(--ink-moss)", paddingLeft: 10, lineHeight: 1.7 },
   tensionUp: { color: "var(--clay)" },
   tensionDown: { color: "var(--ink-moss)" },
