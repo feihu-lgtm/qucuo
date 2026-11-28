@@ -155,8 +155,13 @@ it("Review 修：代表仍锁在旧据点（房间缓存在册）时新驻地不
   };
   const memberName = "张商人";
   const roomMap = { 雅江: { npcs: [{ name: memberName, squadId: "sq_chama_caravan" }] } };
-  const out = residentNpcRule.run(state, { importedRegistry: fakeImported, roomMap, companionState: {}, livingWorldRegistry: registry });
-  const npcs = out ? out.changes.room(state.room).npcs : [];
-  // 缓存有锁影 → 新驻地整只代表不投放（而非投一个无名版）
+  // 无锁陈影：不拦——缓存只刷到访据点，陈影不等于真人还在
+  const out0 = residentNpcRule.run(state, { importedRegistry: fakeImported, roomMap, companionState: {}, livingWorldRegistry: registry });
+  const npcs0 = out0 ? out0.changes.room(state.room).npcs : [];
+  expect(npcs0.some((n) => n.squadId === "sq_chama_caravan")).toBe(true);
+  // 锁影未过期：跳过本拍投放，杜绝双身
+  const stateL = { ...state, varTree: { 世界: { ...state.varTree.世界, 驻足锁: { [memberName]: 300 } } } };
+  const out = residentNpcRule.run(stateL, { importedRegistry: fakeImported, roomMap, companionState: {}, livingWorldRegistry: registry });
+  const npcs = out ? out.changes.room(stateL.room).npcs : [];
   expect(npcs.some((n) => n.squadId === "sq_chama_caravan")).toBe(false);
 });

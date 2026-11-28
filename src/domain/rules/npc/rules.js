@@ -281,7 +281,9 @@ export const residentNpcRule = {
         // Review 修：代表仍锁在上一个据点（房间缓存里有他）时本拍不在新驻地投放——
         // 否则同一 NPC 同时站在两个据点（锁期副本+新驻地副本）。锁过期后旧身清走、
         // 下一拍重建自然补上，玩家无感。
-        if (cachedNpcNames.has(found.name)) continue;
+        // 只有锁影真被驻足锁钉着才跳过——房间缓存只刷玩家到访的据点，无锁的
+        // 陈影不该拦住编队在新驻地上线（Review 修，不然商队永远搁浅在路上）
+        if (cachedNpcNames.has(found.name) && (state.varTree?.世界?.驻足锁?.[found.name] ?? -1) > time) continue;
         const existing = existingByName.get(found.name);
         const built = buildRoomNpcWithCombat(found, { existingNpc: existing, luck, trade: npcTradeOf(state.npcState, found) });
         built.squadId = sq.id;
